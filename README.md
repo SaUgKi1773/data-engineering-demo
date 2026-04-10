@@ -65,4 +65,4 @@ dbt test --target dev --profiles-dir .
 | Secret | Description |
 |--------|-------------|
 | `MOTHERDUCK_TOKEN` | MotherDuck service token |
-| `SOURCE_API_KEY` | Football data API key (if needed) |
+| `API_FOOTBALL_KEY` | api-football.com API key |
