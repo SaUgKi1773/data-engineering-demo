@@ -5,40 +5,25 @@ Fetches raw JSON from api-football.com and lands it as-is into the bronze
 schema in MotherDuck. No transformation — that is dbt's job.
 
 Run modes:
-  --lookback N   Fetch fixtures from the last N days (default: 2). Always
-                 refreshes season aggregates (standings, top scorers, etc.)
-  --full-load    Fetch the entire season plus all reference and per-team data.
-                 Requires an upgraded api-football plan (>100 req/day).
+  --lookback N   Incremental daily run. Fetches fixtures from the last N days
+                 (default: 2) plus a full refresh of current-season aggregates
+                 (standings, top scorers, injuries, etc.).
+  --full-load    Historical load. Fetches all data for every season from
+                 FIRST_SEASON to CURRENT_SEASON. Requires an upgraded
+                 api-football plan (far exceeds 100 req/day).
 
-Tables populated on EVERY run (season aggregates — change each matchday):
-  api_football__standings
-  api_football__topscorers
-  api_football__topassists
-  api_football__topyellowcards
-  api_football__topredcards
-  api_football__injuries
+Daily incremental — what gets loaded:
+  FULL REFRESH (current season only, always up to date):
+    standings, topscorers, topassists, topyellowcards, topredcards, injuries
 
-Tables populated on FULL LOAD only (reference / relatively static):
-  api_football__leagues
-  api_football__teams
-  api_football__venues
-  api_football__rounds
-  api_football__players             (paginated — all player profiles)
-  api_football__team_statistics     (keyed by season + team_id)
-  api_football__coaches             (keyed by team_id)
-  api_football__squads              (keyed by team_id)
-  api_football__transfers           (keyed by team_id)
-  api_football__sidelined           (keyed by team_id)
-  api_football__trophies            (keyed by team_id)
+  INCREMENTAL (fixtures in the lookback window):
+    fixtures, fixture_events, fixture_statistics, fixture_lineups,
+    fixture_players, fixture_predictions, fixture_odds
 
-Tables populated for every finished fixture (both runs):
-  api_football__fixtures
-  api_football__fixture_events
-  api_football__fixture_statistics
-  api_football__fixture_lineups
-  api_football__fixture_players
-  api_football__fixture_predictions
-  api_football__fixture_odds        (free tier: 7-day history only)
+Full load — what gets loaded (for each season from FIRST_SEASON onwards):
+  All of the above, plus reference and per-team data:
+    leagues, teams, venues, rounds, players (paginated),
+    team_statistics, coaches, squads, transfers, sidelined, trophies
 """
 
 import argparse
@@ -60,9 +45,10 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-API_BASE = "https://v3.football.api-sports.io"
-LEAGUE_ID = 119
+API_BASE     = "https://v3.football.api-sports.io"
+LEAGUE_ID    = 119
 CURRENT_SEASON = 2025
+FIRST_SEASON   = 2020  # earliest season to load on --full-load
 
 
 # ---------------------------------------------------------------------------
@@ -89,54 +75,50 @@ def api_get(endpoint: str, params: dict, sleep: float = 0.0) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Season-level fetchers (always run)
+# Season-level fetchers
 # ---------------------------------------------------------------------------
 
-def fetch_standings(sleep: float = 0.0) -> list:
-    return api_get("standings", {"league": LEAGUE_ID, "season": CURRENT_SEASON}, sleep)["response"]
+def fetch_standings(season: int, sleep: float = 0.0) -> list:
+    return api_get("standings", {"league": LEAGUE_ID, "season": season}, sleep)["response"]
 
-def fetch_topscorers(sleep: float = 0.0) -> list:
-    return api_get("players/topscorers", {"league": LEAGUE_ID, "season": CURRENT_SEASON}, sleep)["response"]
+def fetch_topscorers(season: int, sleep: float = 0.0) -> list:
+    return api_get("players/topscorers", {"league": LEAGUE_ID, "season": season}, sleep)["response"]
 
-def fetch_topassists(sleep: float = 0.0) -> list:
-    return api_get("players/topassists", {"league": LEAGUE_ID, "season": CURRENT_SEASON}, sleep)["response"]
+def fetch_topassists(season: int, sleep: float = 0.0) -> list:
+    return api_get("players/topassists", {"league": LEAGUE_ID, "season": season}, sleep)["response"]
 
-def fetch_topyellowcards(sleep: float = 0.0) -> list:
-    return api_get("players/topyellowcards", {"league": LEAGUE_ID, "season": CURRENT_SEASON}, sleep)["response"]
+def fetch_topyellowcards(season: int, sleep: float = 0.0) -> list:
+    return api_get("players/topyellowcards", {"league": LEAGUE_ID, "season": season}, sleep)["response"]
 
-def fetch_topredcards(sleep: float = 0.0) -> list:
-    return api_get("players/topredcards", {"league": LEAGUE_ID, "season": CURRENT_SEASON}, sleep)["response"]
+def fetch_topredcards(season: int, sleep: float = 0.0) -> list:
+    return api_get("players/topredcards", {"league": LEAGUE_ID, "season": season}, sleep)["response"]
 
-def fetch_injuries(sleep: float = 0.0) -> list:
-    return api_get("injuries", {"league": LEAGUE_ID, "season": CURRENT_SEASON}, sleep)["response"]
+def fetch_injuries(season: int, sleep: float = 0.0) -> list:
+    return api_get("injuries", {"league": LEAGUE_ID, "season": season}, sleep)["response"]
 
 
 # ---------------------------------------------------------------------------
-# Reference fetchers (full load only)
+# Reference fetchers
 # ---------------------------------------------------------------------------
 
 def fetch_leagues(sleep: float = 0.0) -> list:
     return api_get("leagues", {"id": LEAGUE_ID}, sleep)["response"]
 
-def fetch_teams(sleep: float = 0.0) -> list:
-    return api_get("teams", {"league": LEAGUE_ID, "season": CURRENT_SEASON}, sleep)["response"]
+def fetch_teams(season: int, sleep: float = 0.0) -> list:
+    return api_get("teams", {"league": LEAGUE_ID, "season": season}, sleep)["response"]
 
 def fetch_venues(sleep: float = 0.0) -> list:
     return api_get("venues", {"league": LEAGUE_ID}, sleep)["response"]
 
-def fetch_rounds(sleep: float = 0.0) -> list:
-    return api_get("fixtures/rounds", {"league": LEAGUE_ID, "season": CURRENT_SEASON}, sleep)["response"]
+def fetch_rounds(season: int, sleep: float = 0.0) -> list:
+    return api_get("fixtures/rounds", {"league": LEAGUE_ID, "season": season}, sleep)["response"]
 
-def fetch_league_players(sleep: float = 0.0) -> list[tuple[int, list]]:
+def fetch_league_players(season: int, sleep: float = 0.0) -> list[tuple[int, list]]:
     """Returns (page, response) tuples across all pages."""
     results = []
     page = 1
     while True:
-        data = api_get(
-            "players",
-            {"league": LEAGUE_ID, "season": CURRENT_SEASON, "page": page},
-            sleep,
-        )
+        data = api_get("players", {"league": LEAGUE_ID, "season": season, "page": page}, sleep)
         results.append((page, data["response"]))
         if page >= data["paging"]["total"]:
             break
@@ -145,13 +127,13 @@ def fetch_league_players(sleep: float = 0.0) -> list[tuple[int, list]]:
 
 
 # ---------------------------------------------------------------------------
-# Per-team fetchers (full load only)
+# Per-team fetchers
 # ---------------------------------------------------------------------------
 
-def fetch_team_statistics(team_id: int, sleep: float = 0.0) -> dict:
+def fetch_team_statistics(team_id: int, season: int, sleep: float = 0.0) -> dict:
     return api_get(
         "teams/statistics",
-        {"league": LEAGUE_ID, "season": CURRENT_SEASON, "team": team_id},
+        {"league": LEAGUE_ID, "season": season, "team": team_id},
         sleep,
     )["response"]
 
@@ -172,17 +154,17 @@ def fetch_trophies(team_id: int, sleep: float = 0.0) -> list:
 
 
 # ---------------------------------------------------------------------------
-# Per-fixture fetchers (both runs)
+# Per-fixture fetchers
 # ---------------------------------------------------------------------------
 
-def fetch_fixtures(from_date: str | None = None, to_date: str | None = None, sleep: float = 0.0) -> list:
-    params = {"league": LEAGUE_ID, "season": CURRENT_SEASON}
+def fetch_fixtures(season: int, from_date: str | None = None, to_date: str | None = None, sleep: float = 0.0) -> list:
+    params = {"league": LEAGUE_ID, "season": season}
     if from_date:
         params["from"] = from_date
     if to_date:
         params["to"] = to_date
     data = api_get("fixtures", params, sleep)
-    log.info("Fetched %d fixtures", len(data["response"]))
+    log.info("Season %d: fetched %d fixtures", season, len(data["response"]))
     return data["response"]
 
 def fetch_events(fixture_id: int, sleep: float = 0.0) -> list:
@@ -245,7 +227,6 @@ def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
         "api_football__topyellowcards",
         "api_football__topredcards",
         "api_football__injuries",
-        "api_football__teams",
         "api_football__rounds",
     ):
         conn.execute(f"""
@@ -282,6 +263,15 @@ def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
             )
         """)
 
+    # season PK — teams vary by season
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS bronze.api_football__teams (
+            season      INTEGER PRIMARY KEY,
+            raw_json    JSON NOT NULL,
+            ingested_at TIMESTAMP DEFAULT current_timestamp
+        )
+    """)
+
     # composite PKs
     conn.execute("""
         CREATE TABLE IF NOT EXISTS bronze.api_football__team_statistics (
@@ -310,7 +300,7 @@ def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
 # ---------------------------------------------------------------------------
 
 def _upsert(conn, table: str, key_cols: list, key_vals: list, payload) -> None:
-    cols = ", ".join(key_cols) + ", raw_json"
+    cols         = ", ".join(key_cols) + ", raw_json"
     placeholders = ", ".join(["?"] * len(key_vals)) + ", ?"
     conn.execute(
         f"INSERT OR REPLACE INTO bronze.{table} ({cols}) VALUES ({placeholders})",
@@ -318,116 +308,40 @@ def _upsert(conn, table: str, key_cols: list, key_vals: list, payload) -> None:
     )
 
 
-def load_fixtures(conn, fixtures: list) -> None:
+def load_fixtures_bulk(conn, fixtures: list) -> None:
     rows = [(f["fixture"]["id"], json.dumps(f)) for f in fixtures]
     conn.executemany(
         "INSERT OR REPLACE INTO bronze.api_football__fixtures (fixture_id, raw_json) VALUES (?, ?)",
         rows,
     )
-    log.info("Loaded %d rows into bronze.api_football__fixtures", len(rows))
+    log.info("Upserted %d rows into bronze.api_football__fixtures", len(rows))
 
 
 # ---------------------------------------------------------------------------
-# Main
+# Shared helpers
 # ---------------------------------------------------------------------------
 
-def run(lookback_days: int = 2, full_load: bool = False) -> None:
-    conn = connect()
-    ensure_schema_and_tables(conn)
-
-    sleep = 6.5 if full_load else 0.0
-
-    # --- Season aggregates (every run) ---
-    log.info("Fetching season aggregates")
+def load_season_aggregates(conn, season: int, sleep: float = 0.0) -> None:
+    """Full refresh of season-level aggregates. Runs on every daily run and full load."""
+    log.info("Season %d: loading aggregates", season)
     for table, fetcher in (
-        ("api_football__standings",      lambda: fetch_standings(sleep)),
-        ("api_football__topscorers",     lambda: fetch_topscorers(sleep)),
-        ("api_football__topassists",     lambda: fetch_topassists(sleep)),
-        ("api_football__topyellowcards", lambda: fetch_topyellowcards(sleep)),
-        ("api_football__topredcards",    lambda: fetch_topredcards(sleep)),
-        ("api_football__injuries",       lambda: fetch_injuries(sleep)),
+        ("api_football__standings",      lambda: fetch_standings(season, sleep)),
+        ("api_football__topscorers",     lambda: fetch_topscorers(season, sleep)),
+        ("api_football__topassists",     lambda: fetch_topassists(season, sleep)),
+        ("api_football__topyellowcards", lambda: fetch_topyellowcards(season, sleep)),
+        ("api_football__topredcards",    lambda: fetch_topredcards(season, sleep)),
+        ("api_football__injuries",       lambda: fetch_injuries(season, sleep)),
     ):
         try:
-            _upsert(conn, table, ["season"], [CURRENT_SEASON], fetcher())
-            log.info("Loaded %s", table)
+            _upsert(conn, table, ["season"], [season], fetcher())
         except Exception as exc:
-            log.warning("Failed %s: %s", table, exc)
+            log.warning("Failed %s season %d: %s", table, season, exc)
 
-    # --- Fixtures ---
-    if full_load:
-        log.info("Full load — fetching entire season %d", CURRENT_SEASON)
-        fixtures = fetch_fixtures(sleep=sleep)
-    else:
-        from_date = (date.today() - timedelta(days=lookback_days)).isoformat()
-        to_date = date.today().isoformat()
-        log.info("Incremental load — %s to %s", from_date, to_date)
-        fixtures = fetch_fixtures(from_date=from_date, to_date=to_date, sleep=sleep)
 
-    load_fixtures(conn, fixtures)
-
-    # --- Reference data (full load only) ---
-    if full_load:
-        log.info("Fetching reference data")
-
-        for table, fetcher, key_col, key_val in (
-            ("api_football__leagues", lambda: fetch_leagues(sleep), "league_id", LEAGUE_ID),
-            ("api_football__teams",   lambda: fetch_teams(sleep),   "season",    CURRENT_SEASON),
-            ("api_football__venues",  lambda: fetch_venues(sleep),  "league_id", LEAGUE_ID),
-            ("api_football__rounds",  lambda: fetch_rounds(sleep),  "season",    CURRENT_SEASON),
-        ):
-            try:
-                _upsert(conn, table, [key_col], [key_val], fetcher())
-                log.info("Loaded %s", table)
-            except Exception as exc:
-                log.warning("Failed %s: %s", table, exc)
-
-        # Players (paginated)
-        try:
-            for page, response in fetch_league_players(sleep):
-                _upsert(conn, "api_football__players", ["season", "page"], [CURRENT_SEASON, page], response)
-            log.info("Loaded api_football__players")
-        except Exception as exc:
-            log.warning("Failed api_football__players: %s", exc)
-
-        # Per-team data — derive team list from what we just loaded
-        teams = conn.execute(
-            "SELECT DISTINCT json_extract_string(raw_json, '$.team.id')::integer AS team_id "
-            "FROM bronze.api_football__teams WHERE season = ?",
-            [CURRENT_SEASON],
-        ).fetchall()
-        team_ids = [row[0] for row in teams if row[0]]
-        log.info("Fetching per-team data for %d teams", len(team_ids))
-
-        for team_id in team_ids:
-            for table, fetcher in (
-                ("api_football__coaches",   lambda tid=team_id: fetch_coaches(tid, sleep)),
-                ("api_football__squads",    lambda tid=team_id: fetch_squads(tid, sleep)),
-                ("api_football__transfers", lambda tid=team_id: fetch_transfers(tid, sleep)),
-                ("api_football__sidelined", lambda tid=team_id: fetch_sidelined(tid, sleep)),
-                ("api_football__trophies",  lambda tid=team_id: fetch_trophies(tid, sleep)),
-            ):
-                try:
-                    _upsert(conn, table, ["team_id"], [team_id], fetcher())
-                except Exception as exc:
-                    log.warning("Failed %s team %d: %s", table, team_id, exc)
-
-            try:
-                _upsert(
-                    conn, "api_football__team_statistics",
-                    ["season", "team_id"], [CURRENT_SEASON, team_id],
-                    fetch_team_statistics(team_id, sleep),
-                )
-            except Exception as exc:
-                log.warning("Failed api_football__team_statistics team %d: %s", team_id, exc)
-
-            log.info("Loaded all data for team %d", team_id)
-
-    # --- Per-fixture details (finished matches) ---
-    finished = [
-        f for f in fixtures
-        if f["fixture"]["status"]["short"] in ("FT", "AET", "PEN")
-    ]
-    log.info("%d finished fixtures — fetching all fixture-level endpoints", len(finished))
+def load_fixture_details(conn, fixtures: list, sleep: float = 0.0) -> None:
+    """Fetch and store all fixture-level endpoints for finished matches."""
+    finished = [f for f in fixtures if f["fixture"]["status"]["short"] in ("FT", "AET", "PEN")]
+    log.info("%d finished fixtures — fetching fixture-level endpoints", len(finished))
 
     for f in finished:
         fixture_id = f["fixture"]["id"]
@@ -444,6 +358,94 @@ def run(lookback_days: int = 2, full_load: bool = False) -> None:
         except Exception as exc:
             log.warning("Failed fixture %d (%s vs %s): %s", fixture_id, home, away, exc)
 
+
+def load_reference_and_team_data(conn, season: int, sleep: float = 0.0) -> None:
+    """Reference and per-team data for a given season. Full load only."""
+    log.info("Season %d: loading reference data", season)
+
+    for table, fetcher, key_col, key_val in (
+        ("api_football__leagues", lambda: fetch_leagues(sleep),        "league_id", LEAGUE_ID),
+        ("api_football__teams",   lambda: fetch_teams(season, sleep),  "season",    season),
+        ("api_football__venues",  lambda: fetch_venues(sleep),         "league_id", LEAGUE_ID),
+        ("api_football__rounds",  lambda: fetch_rounds(season, sleep), "season",    season),
+    ):
+        try:
+            _upsert(conn, table, [key_col], [key_val], fetcher())
+        except Exception as exc:
+            log.warning("Failed %s season %d: %s", table, season, exc)
+
+    try:
+        for page, response in fetch_league_players(season, sleep):
+            _upsert(conn, "api_football__players", ["season", "page"], [season, page], response)
+    except Exception as exc:
+        log.warning("Failed api_football__players season %d: %s", season, exc)
+
+    # Derive team IDs from what we just loaded
+    rows = conn.execute(
+        "SELECT DISTINCT json_extract_string(raw_json, '$.team.id')::integer "
+        "FROM bronze.api_football__teams WHERE season = ?",
+        [season],
+    ).fetchall()
+    team_ids = [r[0] for r in rows if r[0]]
+    log.info("Season %d: loading per-team data for %d teams", season, len(team_ids))
+
+    for team_id in team_ids:
+        for table, fetcher in (
+            ("api_football__coaches",   lambda tid=team_id: fetch_coaches(tid, sleep)),
+            ("api_football__squads",    lambda tid=team_id: fetch_squads(tid, sleep)),
+            ("api_football__transfers", lambda tid=team_id: fetch_transfers(tid, sleep)),
+            ("api_football__sidelined", lambda tid=team_id: fetch_sidelined(tid, sleep)),
+            ("api_football__trophies",  lambda tid=team_id: fetch_trophies(tid, sleep)),
+        ):
+            try:
+                _upsert(conn, table, ["team_id"], [team_id], fetcher())
+            except Exception as exc:
+                log.warning("Failed %s team %d season %d: %s", table, team_id, season, exc)
+
+        try:
+            _upsert(
+                conn, "api_football__team_statistics",
+                ["season", "team_id"], [season, team_id],
+                fetch_team_statistics(team_id, season, sleep),
+            )
+        except Exception as exc:
+            log.warning("Failed team_statistics team %d season %d: %s", team_id, season, exc)
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def run(lookback_days: int = 2, full_load: bool = False) -> None:
+    conn = connect()
+    ensure_schema_and_tables(conn)
+
+    if full_load:
+        sleep   = 6.5
+        seasons = list(range(FIRST_SEASON, CURRENT_SEASON + 1))
+        log.info("Full load — seasons %d to %d", FIRST_SEASON, CURRENT_SEASON)
+
+        for season in seasons:
+            log.info("=== Season %d ===", season)
+            load_season_aggregates(conn, season, sleep)
+            fixtures = fetch_fixtures(season, sleep=sleep)
+            load_fixtures_bulk(conn, fixtures)
+            load_fixture_details(conn, fixtures, sleep)
+            load_reference_and_team_data(conn, season, sleep)
+
+    else:
+        # Daily incremental
+        # 1. Full refresh of current season aggregates
+        load_season_aggregates(conn, CURRENT_SEASON, sleep=0.0)
+
+        # 2. Incremental fixture load for the lookback window
+        from_date = (date.today() - timedelta(days=lookback_days)).isoformat()
+        to_date   = date.today().isoformat()
+        log.info("Incremental fixture load — %s to %s", from_date, to_date)
+        fixtures = fetch_fixtures(CURRENT_SEASON, from_date=from_date, to_date=to_date)
+        load_fixtures_bulk(conn, fixtures)
+        load_fixture_details(conn, fixtures, sleep=0.0)
+
     conn.close()
     log.info("Bronze ingestion complete")
 
@@ -453,6 +455,6 @@ if __name__ == "__main__":
     parser.add_argument("--lookback", type=int, default=2,
                         help="Days to look back for finished fixtures (default: 2)")
     parser.add_argument("--full-load", action="store_true",
-                        help="Fetch entire season + all reference and per-team data")
+                        help="Historical load from %d to %d — requires upgraded API plan" % (FIRST_SEASON, CURRENT_SEASON))
     args = parser.parse_args()
     run(lookback_days=args.lookback, full_load=args.full_load)
