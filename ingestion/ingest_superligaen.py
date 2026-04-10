@@ -62,7 +62,7 @@ log = logging.getLogger(__name__)
 
 API_BASE = "https://v3.football.api-sports.io"
 LEAGUE_ID = 119
-CURRENT_SEASON = 2024
+CURRENT_SEASON = 2025
 
 
 # ---------------------------------------------------------------------------
