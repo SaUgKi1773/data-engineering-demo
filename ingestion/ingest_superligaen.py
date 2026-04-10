@@ -299,31 +299,78 @@ def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
 # Load helpers
 # ---------------------------------------------------------------------------
 
-def _upsert(conn, table: str, key_cols: list, key_vals: list, payload) -> None:
+ALL_BRONZE_TABLES = [
+    "api_football__fixtures",
+    "api_football__fixture_events",
+    "api_football__fixture_statistics",
+    "api_football__fixture_lineups",
+    "api_football__fixture_players",
+    "api_football__fixture_predictions",
+    "api_football__fixture_odds",
+    "api_football__standings",
+    "api_football__topscorers",
+    "api_football__topassists",
+    "api_football__topyellowcards",
+    "api_football__topredcards",
+    "api_football__injuries",
+    "api_football__rounds",
+    "api_football__leagues",
+    "api_football__venues",
+    "api_football__coaches",
+    "api_football__squads",
+    "api_football__transfers",
+    "api_football__sidelined",
+    "api_football__trophies",
+    "api_football__teams",
+    "api_football__team_statistics",
+    "api_football__players",
+]
+
+
+def truncate_all(conn) -> None:
+    for table in ALL_BRONZE_TABLES:
+        conn.execute(f"DELETE FROM bronze.{table}")
+    log.info("Truncated all bronze tables")
+
+
+def _insert(conn, table: str, key_cols: list, key_vals: list, payload) -> None:
     cols         = ", ".join(key_cols) + ", raw_json"
     placeholders = ", ".join(["?"] * len(key_vals)) + ", ?"
     conn.execute(
-        f"INSERT OR REPLACE INTO bronze.{table} ({cols}) VALUES ({placeholders})",
+        f"INSERT INTO bronze.{table} ({cols}) VALUES ({placeholders})",
         key_vals + [json.dumps(payload)],
     )
 
 
-def load_fixtures_bulk(conn, fixtures: list) -> None:
+def _delete_insert(conn, table: str, key_cols: list, key_vals: list, payload) -> None:
+    where = " AND ".join(f"{col} = ?" for col in key_cols)
+    conn.execute(f"DELETE FROM bronze.{table} WHERE {where}", key_vals)
+    _insert(conn, table, key_cols, key_vals, payload)
+
+
+def load_fixtures_bulk(conn, fixtures: list, truncate: bool = False) -> None:
+    if truncate:
+        conn.execute("DELETE FROM bronze.api_football__fixtures")
     rows = [(f["fixture"]["id"], json.dumps(f)) for f in fixtures]
     conn.executemany(
-        "INSERT OR REPLACE INTO bronze.api_football__fixtures (fixture_id, raw_json) VALUES (?, ?)",
+        "INSERT INTO bronze.api_football__fixtures (fixture_id, raw_json) VALUES (?, ?)",
         rows,
     )
-    log.info("Upserted %d rows into bronze.api_football__fixtures", len(rows))
+    log.info("Loaded %d rows into bronze.api_football__fixtures", len(rows))
 
 
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
 
-def load_season_aggregates(conn, season: int, sleep: float = 0.0) -> None:
-    """Full refresh of season-level aggregates. Runs on every daily run and full load."""
+def load_season_aggregates(conn, season: int, sleep: float = 0.0, full_load: bool = False) -> None:
+    """
+    Season-level aggregates.
+    - Full load: plain INSERT (tables already truncated).
+    - Incremental: DELETE by season then INSERT.
+    """
     log.info("Season %d: loading aggregates", season)
+    write = _insert if full_load else _delete_insert
     for table, fetcher in (
         ("api_football__standings",      lambda: fetch_standings(season, sleep)),
         ("api_football__topscorers",     lambda: fetch_topscorers(season, sleep)),
@@ -333,34 +380,39 @@ def load_season_aggregates(conn, season: int, sleep: float = 0.0) -> None:
         ("api_football__injuries",       lambda: fetch_injuries(season, sleep)),
     ):
         try:
-            _upsert(conn, table, ["season"], [season], fetcher())
+            write(conn, table, ["season"], [season], fetcher())
         except Exception as exc:
             log.warning("Failed %s season %d: %s", table, season, exc)
 
 
-def load_fixture_details(conn, fixtures: list, sleep: float = 0.0) -> None:
-    """Fetch and store all fixture-level endpoints for finished matches."""
+def load_fixture_details(conn, fixtures: list, sleep: float = 0.0, full_load: bool = False) -> None:
+    """
+    Fixture-level endpoints for finished matches.
+    - Full load: plain INSERT (tables already truncated).
+    - Incremental: DELETE by fixture_id then INSERT.
+    """
     finished = [f for f in fixtures if f["fixture"]["status"]["short"] in ("FT", "AET", "PEN")]
     log.info("%d finished fixtures — fetching fixture-level endpoints", len(finished))
+    write = _insert if full_load else _delete_insert
 
     for f in finished:
         fixture_id = f["fixture"]["id"]
         home = f["teams"]["home"]["name"]
         away = f["teams"]["away"]["name"]
         try:
-            _upsert(conn, "api_football__fixture_events",      ["fixture_id"], [fixture_id], fetch_events(fixture_id, sleep))
-            _upsert(conn, "api_football__fixture_statistics",  ["fixture_id"], [fixture_id], fetch_statistics(fixture_id, sleep))
-            _upsert(conn, "api_football__fixture_lineups",     ["fixture_id"], [fixture_id], fetch_lineups(fixture_id, sleep))
-            _upsert(conn, "api_football__fixture_players",     ["fixture_id"], [fixture_id], fetch_fixture_players(fixture_id, sleep))
-            _upsert(conn, "api_football__fixture_predictions", ["fixture_id"], [fixture_id], fetch_predictions(fixture_id, sleep))
-            _upsert(conn, "api_football__fixture_odds",        ["fixture_id"], [fixture_id], fetch_odds(fixture_id, sleep))
+            write(conn, "api_football__fixture_events",      ["fixture_id"], [fixture_id], fetch_events(fixture_id, sleep))
+            write(conn, "api_football__fixture_statistics",  ["fixture_id"], [fixture_id], fetch_statistics(fixture_id, sleep))
+            write(conn, "api_football__fixture_lineups",     ["fixture_id"], [fixture_id], fetch_lineups(fixture_id, sleep))
+            write(conn, "api_football__fixture_players",     ["fixture_id"], [fixture_id], fetch_fixture_players(fixture_id, sleep))
+            write(conn, "api_football__fixture_predictions", ["fixture_id"], [fixture_id], fetch_predictions(fixture_id, sleep))
+            write(conn, "api_football__fixture_odds",        ["fixture_id"], [fixture_id], fetch_odds(fixture_id, sleep))
             log.info("Loaded fixture %d: %s vs %s", fixture_id, home, away)
         except Exception as exc:
             log.warning("Failed fixture %d (%s vs %s): %s", fixture_id, home, away, exc)
 
 
 def load_reference_and_team_data(conn, season: int, sleep: float = 0.0) -> None:
-    """Reference and per-team data for a given season. Full load only."""
+    """Reference and per-team data. Full load only — plain INSERT (tables already truncated)."""
     log.info("Season %d: loading reference data", season)
 
     for table, fetcher, key_col, key_val in (
@@ -370,13 +422,13 @@ def load_reference_and_team_data(conn, season: int, sleep: float = 0.0) -> None:
         ("api_football__rounds",  lambda: fetch_rounds(season, sleep), "season",    season),
     ):
         try:
-            _upsert(conn, table, [key_col], [key_val], fetcher())
+            _insert(conn, table, [key_col], [key_val], fetcher())
         except Exception as exc:
             log.warning("Failed %s season %d: %s", table, season, exc)
 
     try:
         for page, response in fetch_league_players(season, sleep):
-            _upsert(conn, "api_football__players", ["season", "page"], [season, page], response)
+            _insert(conn, "api_football__players", ["season", "page"], [season, page], response)
     except Exception as exc:
         log.warning("Failed api_football__players season %d: %s", season, exc)
 
@@ -398,12 +450,12 @@ def load_reference_and_team_data(conn, season: int, sleep: float = 0.0) -> None:
             ("api_football__trophies",  lambda tid=team_id: fetch_trophies(tid, sleep)),
         ):
             try:
-                _upsert(conn, table, ["team_id"], [team_id], fetcher())
+                _insert(conn, table, ["team_id"], [team_id], fetcher())
             except Exception as exc:
                 log.warning("Failed %s team %d season %d: %s", table, team_id, season, exc)
 
         try:
-            _upsert(
+            _insert(
                 conn, "api_football__team_statistics",
                 ["season", "team_id"], [season, team_id],
                 fetch_team_statistics(team_id, season, sleep),
@@ -421,30 +473,40 @@ def run(lookback_days: int = 2, full_load: bool = False, season: int | None = No
     ensure_schema_and_tables(conn)
 
     if full_load:
-        sleep = 6.5
+        sleep   = 6.5
         seasons = [season] if season else list(range(FIRST_SEASON, CURRENT_SEASON + 1))
         log.info("Full load — seasons: %s", seasons)
 
+        # Truncate all bronze tables once before loading
+        truncate_all(conn)
+
         for s in seasons:
             log.info("=== Season %d ===", s)
-            load_season_aggregates(conn, s, sleep)
+            load_season_aggregates(conn, s, sleep, full_load=True)
             fixtures = fetch_fixtures(s, sleep=sleep)
-            load_fixtures_bulk(conn, fixtures)
-            load_fixture_details(conn, fixtures, sleep)
+            load_fixtures_bulk(conn, fixtures, truncate=False)  # already truncated above
+            load_fixture_details(conn, fixtures, sleep, full_load=True)
             load_reference_and_team_data(conn, s, sleep)
 
     else:
         # Daily incremental
-        # 1. Full refresh of current season aggregates
-        load_season_aggregates(conn, CURRENT_SEASON, sleep=0.0)
+        # 1. Delete + insert current season aggregates
+        load_season_aggregates(conn, CURRENT_SEASON, sleep=0.0, full_load=False)
 
-        # 2. Incremental fixture load for the lookback window
+        # 2. Delete + insert fixtures in the lookback window
         from_date = (date.today() - timedelta(days=lookback_days)).isoformat()
         to_date   = date.today().isoformat()
         log.info("Incremental fixture load — %s to %s", from_date, to_date)
         fixtures = fetch_fixtures(CURRENT_SEASON, from_date=from_date, to_date=to_date)
-        load_fixtures_bulk(conn, fixtures)
-        load_fixture_details(conn, fixtures, sleep=0.0)
+        for f in fixtures:
+            fixture_id = f["fixture"]["id"]
+            conn.execute("DELETE FROM bronze.api_football__fixtures WHERE fixture_id = ?", [fixture_id])
+            conn.execute(
+                "INSERT INTO bronze.api_football__fixtures (fixture_id, raw_json) VALUES (?, ?)",
+                [fixture_id, json.dumps(f)],
+            )
+        log.info("Loaded %d rows into bronze.api_football__fixtures", len(fixtures))
+        load_fixture_details(conn, fixtures, sleep=0.0, full_load=False)
 
     conn.close()
     log.info("Bronze ingestion complete")
