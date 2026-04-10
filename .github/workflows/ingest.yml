@@ -6,13 +6,18 @@ on:
   workflow_dispatch:
     inputs:
       full_load:
-        description: "Pass --full-load to fetch entire season"
+        description: "Set to 'true' to run a full historical load"
         required: false
         default: "false"
+      season:
+        description: "Season year for full load (e.g. 2023). Leave empty to load all seasons 2020-2025."
+        required: false
+        default: ""
 
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    timeout-minutes: 360  # 6h max — covers one full season load (~2.3h)
 
     steps:
       - name: Checkout
@@ -26,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run ingestion (incremental)
+      - name: Run ingestion (daily incremental)
         if: ${{ github.event.inputs.full_load != 'true' }}
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
@@ -34,8 +39,16 @@ jobs:
           TARGET_DB: superligaen_dev
         run: python ingestion/ingest_superligaen.py --lookback 2
 
-      - name: Run ingestion (full load)
-        if: ${{ github.event.inputs.full_load == 'true' }}
+      - name: Run ingestion (full load — single season)
+        if: ${{ github.event.inputs.full_load == 'true' && github.event.inputs.season != '' }}
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          TARGET_DB: superligaen_dev
+        run: python ingestion/ingest_superligaen.py --full-load --season ${{ github.event.inputs.season }}
+
+      - name: Run ingestion (full load — all seasons)
+        if: ${{ github.event.inputs.full_load == 'true' && github.event.inputs.season == '' }}
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}

@@ -416,22 +416,22 @@ def load_reference_and_team_data(conn, season: int, sleep: float = 0.0) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
-def run(lookback_days: int = 2, full_load: bool = False) -> None:
+def run(lookback_days: int = 2, full_load: bool = False, season: int | None = None) -> None:
     conn = connect()
     ensure_schema_and_tables(conn)
 
     if full_load:
-        sleep   = 6.5
-        seasons = list(range(FIRST_SEASON, CURRENT_SEASON + 1))
-        log.info("Full load — seasons %d to %d", FIRST_SEASON, CURRENT_SEASON)
+        sleep = 6.5
+        seasons = [season] if season else list(range(FIRST_SEASON, CURRENT_SEASON + 1))
+        log.info("Full load — seasons: %s", seasons)
 
-        for season in seasons:
-            log.info("=== Season %d ===", season)
-            load_season_aggregates(conn, season, sleep)
-            fixtures = fetch_fixtures(season, sleep=sleep)
+        for s in seasons:
+            log.info("=== Season %d ===", s)
+            load_season_aggregates(conn, s, sleep)
+            fixtures = fetch_fixtures(s, sleep=sleep)
             load_fixtures_bulk(conn, fixtures)
             load_fixture_details(conn, fixtures, sleep)
-            load_reference_and_team_data(conn, season, sleep)
+            load_reference_and_team_data(conn, s, sleep)
 
     else:
         # Daily incremental
@@ -455,6 +455,9 @@ if __name__ == "__main__":
     parser.add_argument("--lookback", type=int, default=2,
                         help="Days to look back for finished fixtures (default: 2)")
     parser.add_argument("--full-load", action="store_true",
-                        help="Historical load from %d to %d — requires upgraded API plan" % (FIRST_SEASON, CURRENT_SEASON))
+                        help="Historical load — requires upgraded API plan (~2.3h per season)")
+    parser.add_argument("--season", type=int, default=None,
+                        help="Season year to load (e.g. 2023). Used with --full-load to load "
+                             "one season at a time. Omit to load all seasons %d-%d." % (FIRST_SEASON, CURRENT_SEASON))
     args = parser.parse_args()
-    run(lookback_days=args.lookback, full_load=args.full_load)
+    run(lookback_days=args.lookback, full_load=args.full_load, season=args.season)
