@@ -385,27 +385,49 @@ def load_season_aggregates(conn, season: int, sleep: float = 0.0, full_load: boo
             log.warning("Failed %s season %d: %s", table, season, exc)
 
 
+FIXTURE_DETAIL_TABLES = [
+    "api_football__fixture_events",
+    "api_football__fixture_statistics",
+    "api_football__fixture_lineups",
+    "api_football__fixture_players",
+    "api_football__fixture_predictions",
+    "api_football__fixture_odds",
+]
+
+
+def delete_fixture_details_by_ids(conn, fixture_ids: list[int]) -> None:
+    """Delete all fixture-detail rows for a given list of fixture IDs in one pass."""
+    if not fixture_ids:
+        return
+    placeholders = ", ".join("?" * len(fixture_ids))
+    for table in FIXTURE_DETAIL_TABLES:
+        conn.execute(
+            f"DELETE FROM bronze.{table} WHERE fixture_id IN ({placeholders})",
+            fixture_ids,
+        )
+    log.info("Deleted fixture detail rows for %d fixtures", len(fixture_ids))
+
+
 def load_fixture_details(conn, fixtures: list, sleep: float = 0.0, full_load: bool = False) -> None:
     """
     Fixture-level endpoints for finished matches.
     - Full load: plain INSERT (tables already truncated).
-    - Incremental: DELETE by fixture_id then INSERT.
+    - Incremental: caller must have already deleted the relevant rows by date window.
     """
     finished = [f for f in fixtures if f["fixture"]["status"]["short"] in ("FT", "AET", "PEN")]
     log.info("%d finished fixtures — fetching fixture-level endpoints", len(finished))
-    write = _insert if full_load else _delete_insert
 
     for f in finished:
         fixture_id = f["fixture"]["id"]
         home = f["teams"]["home"]["name"]
         away = f["teams"]["away"]["name"]
         try:
-            write(conn, "api_football__fixture_events",      ["fixture_id"], [fixture_id], fetch_events(fixture_id, sleep))
-            write(conn, "api_football__fixture_statistics",  ["fixture_id"], [fixture_id], fetch_statistics(fixture_id, sleep))
-            write(conn, "api_football__fixture_lineups",     ["fixture_id"], [fixture_id], fetch_lineups(fixture_id, sleep))
-            write(conn, "api_football__fixture_players",     ["fixture_id"], [fixture_id], fetch_fixture_players(fixture_id, sleep))
-            write(conn, "api_football__fixture_predictions", ["fixture_id"], [fixture_id], fetch_predictions(fixture_id, sleep))
-            write(conn, "api_football__fixture_odds",        ["fixture_id"], [fixture_id], fetch_odds(fixture_id, sleep))
+            _insert(conn, "api_football__fixture_events",      ["fixture_id"], [fixture_id], fetch_events(fixture_id, sleep))
+            _insert(conn, "api_football__fixture_statistics",  ["fixture_id"], [fixture_id], fetch_statistics(fixture_id, sleep))
+            _insert(conn, "api_football__fixture_lineups",     ["fixture_id"], [fixture_id], fetch_lineups(fixture_id, sleep))
+            _insert(conn, "api_football__fixture_players",     ["fixture_id"], [fixture_id], fetch_fixture_players(fixture_id, sleep))
+            _insert(conn, "api_football__fixture_predictions", ["fixture_id"], [fixture_id], fetch_predictions(fixture_id, sleep))
+            _insert(conn, "api_football__fixture_odds",        ["fixture_id"], [fixture_id], fetch_odds(fixture_id, sleep))
             log.info("Loaded fixture %d: %s vs %s", fixture_id, home, away)
         except Exception as exc:
             log.warning("Failed fixture %d (%s vs %s): %s", fixture_id, home, away, exc)
@@ -490,23 +512,35 @@ def run(lookback_days: int = 2, full_load: bool = False, season: int | None = No
 
     else:
         # Daily incremental
-        # 1. Delete + insert current season aggregates
-        load_season_aggregates(conn, CURRENT_SEASON, sleep=0.0, full_load=False)
-
-        # 2. Delete + insert fixtures in the lookback window
         from_date = (date.today() - timedelta(days=lookback_days)).isoformat()
         to_date   = date.today().isoformat()
-        log.info("Incremental fixture load — %s to %s", from_date, to_date)
-        fixtures = fetch_fixtures(CURRENT_SEASON, from_date=from_date, to_date=to_date)
-        for f in fixtures:
-            fixture_id = f["fixture"]["id"]
-            conn.execute("DELETE FROM bronze.api_football__fixtures WHERE fixture_id = ?", [fixture_id])
+        log.info("Incremental load — window: %s to %s", from_date, to_date)
+
+        # 1. Full refresh of current season aggregates (delete by season, then insert)
+        load_season_aggregates(conn, CURRENT_SEASON, sleep=0.0, full_load=False)
+
+        # 2. Delete the date window from fixtures and all fixture-detail tables upfront
+        fixture_ids_in_window = [
+            row[0] for row in conn.execute(
+                "SELECT fixture_id FROM bronze.api_football__fixtures "
+                "WHERE json_extract_string(raw_json, '$.fixture.date')::date "
+                "BETWEEN ?::date AND ?::date",
+                [from_date, to_date],
+            ).fetchall()
+        ]
+        if fixture_ids_in_window:
+            placeholders = ", ".join("?" * len(fixture_ids_in_window))
             conn.execute(
-                "INSERT INTO bronze.api_football__fixtures (fixture_id, raw_json) VALUES (?, ?)",
-                [fixture_id, json.dumps(f)],
+                f"DELETE FROM bronze.api_football__fixtures WHERE fixture_id IN ({placeholders})",
+                fixture_ids_in_window,
             )
-        log.info("Loaded %d rows into bronze.api_football__fixtures", len(fixtures))
-        load_fixture_details(conn, fixtures, sleep=0.0, full_load=False)
+            delete_fixture_details_by_ids(conn, fixture_ids_in_window)
+            log.info("Cleared %d fixtures from the date window", len(fixture_ids_in_window))
+
+        # 3. Fetch and bulk insert
+        fixtures = fetch_fixtures(CURRENT_SEASON, from_date=from_date, to_date=to_date)
+        load_fixtures_bulk(conn, fixtures)
+        load_fixture_details(conn, fixtures, sleep=0.0, full_load=True)  # tables already cleared
 
     conn.close()
     log.info("Bronze ingestion complete")
