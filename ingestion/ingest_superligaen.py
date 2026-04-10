@@ -184,7 +184,7 @@ def run(lookback_days: int = 2, full_load: bool = False) -> None:
         except Exception as exc:
             log.warning("Failed fixture %d (%s vs %s): %s", fixture_id, home, away, exc)
 
-        time.sleep(0.2)  # stay within rate limits
+        time.sleep(6.5)  # free tier cap is 10 req/min — 2 calls per fixture needs ~13s/fixture
 
     conn.close()
     log.info("Bronze ingestion complete")
