@@ -2,14 +2,14 @@ danish_football:
   outputs:
     dev:
       type: duckdb
-      path: "md:danish_football?motherduck_token={{ env_var('MOTHERDUCK_TOKEN') }}"
-      schema: dev_danish_football
+      path: "md:superligaen_dev?motherduck_token={{ env_var('MOTHERDUCK_TOKEN') }}"
+      schema: main
       threads: 4
 
     prod:
       type: duckdb
-      path: "md:danish_football?motherduck_token={{ env_var('MOTHERDUCK_TOKEN') }}"
-      schema: danish_football
+      path: "md:superligaen?motherduck_token={{ env_var('MOTHERDUCK_TOKEN') }}"
+      schema: main
       threads: 4
 
   target: dev

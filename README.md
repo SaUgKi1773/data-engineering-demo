@@ -33,8 +33,8 @@ An end-to-end data engineering project for Danish football data, built with:
 
 | Environment | MotherDuck schema | Triggered by |
 |-------------|-------------------|--------------|
-| `dev`       | `dev_danish_football` | Local work / PRs |
-| `prod`      | `danish_football`     | Merge to `main` |
+| `dev`       | MotherDuck `superligaen_dev` | Local work / PRs |
+| `prod`      | MotherDuck `superligaen`     | Merge to `main` |
 
 **Rule**: never commit directly to `main`. Always work on a `dev/<feature>` branch, open a PR, let CI pass, then merge. The `deploy.yml` workflow promotes to prod automatically on merge.
 
