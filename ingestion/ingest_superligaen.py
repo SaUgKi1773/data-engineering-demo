@@ -135,8 +135,8 @@ def fetch_leagues() -> list:
 def fetch_teams(season: int) -> list:
     return api_get("teams", {"league": LEAGUE_ID, "season": season})["response"]
 
-def fetch_venues() -> list:
-    return api_get("venues", {"league": LEAGUE_ID})["response"]
+def fetch_venues(season: int) -> list:
+    return api_get("venues", {"league": LEAGUE_ID, "season": season})["response"]
 
 def fetch_rounds(season: int) -> list:
     return api_get("fixtures/rounds", {"league": LEAGUE_ID, "season": season})["response"]
@@ -486,7 +486,7 @@ def load_reference_and_team_data(conn, season: int) -> None:
     for table, fetcher, key_col, key_val in (
         ("api_football__leagues", fetch_leagues,               "league_id", LEAGUE_ID),
         ("api_football__teams",   lambda: fetch_teams(season), "season",    season),
-        ("api_football__venues",  fetch_venues,                "league_id", LEAGUE_ID),
+        ("api_football__venues",  lambda: fetch_venues(season), "league_id", LEAGUE_ID),
         ("api_football__rounds",  lambda: fetch_rounds(season),"season",    season),
     ):
         try:
