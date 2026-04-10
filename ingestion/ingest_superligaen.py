@@ -19,10 +19,12 @@ Run modes:
                  6-hour limit (~2.5h per season).
 
 Daily incremental — what gets loaded:
-  FULL REFRESH (current season only, always up to date):
-    standings, topscorers, topassists, topyellowcards, topredcards, injuries
+  FULL REFRESH (current season only, delete-insert):
+    standings, topscorers, topassists, topyellowcards, topredcards, injuries,
+    leagues, venues, teams, rounds, players, coaches, squads, transfers,
+    sidelined, trophies, team_statistics
 
-  INCREMENTAL (fixtures in the lookback window):
+  INCREMENTAL (fixtures in the lookback window, delete by fixture_id then insert):
     fixtures, fixture_events, fixture_statistics, fixture_lineups,
     fixture_players, fixture_predictions, fixture_odds
 
@@ -428,22 +430,73 @@ def load_fixture_details(conn, fixtures: list) -> None:
             log.warning("Failed fixture %d (%s vs %s): %s", fixture_id, home, away, exc)
 
 
+def delete_season(conn, season: int) -> None:
+    """Delete all data for a season across every bronze table."""
+    log.info("Season %d: deleting existing data", season)
+
+    # Fixture-keyed tables — delete by fixture_id belonging to this season
+    fixture_ids = [
+        row[0] for row in conn.execute(
+            "SELECT fixture_id FROM bronze.api_football__fixtures "
+            "WHERE json_extract_string(raw_json, '$.league.season')::integer = ?",
+            [season],
+        ).fetchall()
+    ]
+    if fixture_ids:
+        placeholders = ", ".join("?" * len(fixture_ids))
+        conn.execute(
+            f"DELETE FROM bronze.api_football__fixtures WHERE fixture_id IN ({placeholders})",
+            fixture_ids,
+        )
+        for table in FIXTURE_DETAIL_TABLES:
+            conn.execute(
+                f"DELETE FROM bronze.{table} WHERE fixture_id IN ({placeholders})",
+                fixture_ids,
+            )
+
+    # Season-keyed tables
+    for table in (
+        "api_football__standings",
+        "api_football__topscorers",
+        "api_football__topassists",
+        "api_football__topyellowcards",
+        "api_football__topredcards",
+        "api_football__injuries",
+        "api_football__rounds",
+        "api_football__teams",
+        "api_football__players",
+    ):
+        conn.execute(f"DELETE FROM bronze.{table} WHERE season = ?", [season])
+
+    # League/venue — keyed by league_id, shared across seasons; skip to avoid deleting other seasons' data
+    # team_statistics — keyed by (season, team_id)
+    conn.execute("DELETE FROM bronze.api_football__team_statistics WHERE season = ?", [season])
+
+    # Team-keyed tables (coaches, squads, etc.) — keyed only by team_id, not season.
+    # We can't safely delete by season here without risk of removing cross-season data.
+    # These are reloaded per-team below via _delete_insert.
+
+    log.info("Season %d: existing data cleared", season)
+
+
 def load_reference_and_team_data(conn, season: int) -> None:
-    """Reference and per-team data. Full load only — plain INSERT (tables already truncated)."""
+    """Reference and per-team data. Always delete-insert — safe for both full and single-season loads."""
     log.info("Season %d: loading reference data", season)
 
     for table, fetcher, key_col, key_val in (
-        ("api_football__leagues", fetch_leagues,              "league_id", LEAGUE_ID),
-        ("api_football__teams",   lambda: fetch_teams(season),"season",    season),
-        ("api_football__venues",  fetch_venues,               "league_id", LEAGUE_ID),
-        ("api_football__rounds",  lambda: fetch_rounds(season),"season",   season),
+        ("api_football__leagues", fetch_leagues,               "league_id", LEAGUE_ID),
+        ("api_football__teams",   lambda: fetch_teams(season), "season",    season),
+        ("api_football__venues",  fetch_venues,                "league_id", LEAGUE_ID),
+        ("api_football__rounds",  lambda: fetch_rounds(season),"season",    season),
     ):
         try:
-            _insert(conn, table, [key_col], [key_val], fetcher())
+            _delete_insert(conn, table, [key_col], [key_val], fetcher())
         except Exception as exc:
             log.warning("Failed %s season %d: %s", table, season, exc)
 
     try:
+        # Delete all pages for this season first, then re-insert
+        conn.execute("DELETE FROM bronze.api_football__players WHERE season = ?", [season])
         for page, response in fetch_league_players(season):
             _insert(conn, "api_football__players", ["season", "page"], [season, page], response)
     except Exception as exc:
@@ -466,12 +519,12 @@ def load_reference_and_team_data(conn, season: int) -> None:
             ("api_football__trophies",  lambda tid=team_id: fetch_trophies(tid)),
         ):
             try:
-                _insert(conn, table, ["team_id"], [team_id], fetcher())
+                _delete_insert(conn, table, ["team_id"], [team_id], fetcher())
             except Exception as exc:
                 log.warning("Failed %s team %d season %d: %s", table, team_id, season, exc)
 
         try:
-            _insert(
+            _delete_insert(
                 conn, "api_football__team_statistics",
                 ["season", "team_id"], [season, team_id],
                 fetch_team_statistics(team_id, season),
@@ -492,12 +545,16 @@ def run(lookback_days: int = 2, full_load: bool = False, season: int | None = No
         seasons = [season] if season else list(range(FIRST_SEASON, CURRENT_SEASON + 1))
         log.info("Full load — seasons: %s", seasons)
 
-        # Truncate only when loading all seasons — single-season runs append
         if not season:
+            # All seasons: wipe everything and reload from scratch
             truncate_all(conn)
+        # else: single season — delete_season() handles cleanup per season below
 
         for s in seasons:
             log.info("=== Season %d ===", s)
+            if season:
+                # Single-season run: delete what we expect to load first
+                delete_season(conn, s)
             load_season_aggregates(conn, s)
             fixtures = fetch_fixtures(s)
             load_fixtures_bulk(conn, fixtures)
@@ -534,10 +591,13 @@ def run(lookback_days: int = 2, full_load: bool = False, season: int | None = No
                 )
             log.info("Cleared %d fixtures from the date window", len(fixture_ids_in_window))
 
-        # 3. Fetch and insert
+        # 3. Fetch and insert fixtures
         fixtures = fetch_fixtures(CURRENT_SEASON, from_date=from_date, to_date=to_date)
         load_fixtures_bulk(conn, fixtures)
         load_fixture_details(conn, fixtures)
+
+        # 4. Full refresh of current season reference and team data
+        load_reference_and_team_data(conn, CURRENT_SEASON)
 
     conn.close()
     log.info("Bronze ingestion complete")
