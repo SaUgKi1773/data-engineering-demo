@@ -1,0 +1,43 @@
+name: Daily ingestion
+
+on:
+  schedule:
+    - cron: "0 23 * * *"  # 23:00 UTC = midnight Danish time (CET) — after matches finish
+  workflow_dispatch:
+    inputs:
+      full_load:
+        description: "Pass --full-load to fetch entire season"
+        required: false
+        default: "false"
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ingestion (incremental)
+        if: ${{ github.event.inputs.full_load != 'true' }}
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          TARGET_DB: superligaen_dev
+        run: python ingestion/ingest_superligaen.py --lookback 2
+
+      - name: Run ingestion (full load)
+        if: ${{ github.event.inputs.full_load == 'true' }}
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          TARGET_DB: superligaen_dev
+        run: python ingestion/ingest_superligaen.py --full-load
