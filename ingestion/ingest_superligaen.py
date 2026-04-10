@@ -499,8 +499,9 @@ def run(lookback_days: int = 2, full_load: bool = False, season: int | None = No
         seasons = [season] if season else list(range(FIRST_SEASON, CURRENT_SEASON + 1))
         log.info("Full load — seasons: %s", seasons)
 
-        # Truncate all bronze tables once before loading
-        truncate_all(conn)
+        # Truncate only when loading all seasons — single-season runs append to existing data
+        if not season:
+            truncate_all(conn)
 
         for s in seasons:
             log.info("=== Season %d ===", s)
