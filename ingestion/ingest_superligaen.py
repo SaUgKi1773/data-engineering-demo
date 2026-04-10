@@ -6,8 +6,10 @@ schema in MotherDuck. No transformation — that is dbt's job.
 
 Tables written (bronze schema):
   api_football__fixtures            one row per fixture, full API response JSON
-  api_football__fixture_events      one row per fixture, full API response JSON
-  api_football__fixture_statistics  one row per fixture, full API response JSON
+  api_football__fixture_events      one row per fixture, full events array JSON
+  api_football__fixture_statistics  one row per fixture, full statistics array JSON
+  api_football__fixture_lineups     one row per fixture, full lineups array JSON
+  api_football__fixture_players     one row per fixture, full player stats array JSON
 
 Usage:
   python ingestion/ingest_superligaen.py              # last 2 days (daily run)
@@ -47,7 +49,9 @@ def _headers() -> dict:
     return {"x-apisports-key": os.environ["API_FOOTBALL_KEY"]}
 
 
-def api_get(endpoint: str, params: dict) -> dict:
+def api_get(endpoint: str, params: dict, sleep: float = 0.0) -> dict:
+    if sleep:
+        time.sleep(sleep)
     url = f"{API_BASE}/{endpoint}"
     resp = requests.get(url, headers=_headers(), params=params, timeout=30)
     resp.raise_for_status()
@@ -60,23 +64,31 @@ def api_get(endpoint: str, params: dict) -> dict:
     return data
 
 
-def fetch_fixtures(from_date: str | None = None, to_date: str | None = None) -> list[dict]:
+def fetch_fixtures(from_date: str | None = None, to_date: str | None = None, sleep: float = 0.0) -> list[dict]:
     params = {"league": LEAGUE_ID, "season": CURRENT_SEASON}
     if from_date:
         params["from"] = from_date
     if to_date:
         params["to"] = to_date
-    data = api_get("fixtures", params)
+    data = api_get("fixtures", params, sleep=sleep)
     log.info("Fetched %d fixtures", len(data["response"]))
     return data["response"]
 
 
-def fetch_events(fixture_id: int) -> list[dict]:
-    return api_get("fixtures/events", {"fixture": fixture_id})["response"]
+def fetch_events(fixture_id: int, sleep: float = 0.0) -> list[dict]:
+    return api_get("fixtures/events", {"fixture": fixture_id}, sleep=sleep)["response"]
 
 
-def fetch_statistics(fixture_id: int) -> list[dict]:
-    return api_get("fixtures/statistics", {"fixture": fixture_id})["response"]
+def fetch_statistics(fixture_id: int, sleep: float = 0.0) -> list[dict]:
+    return api_get("fixtures/statistics", {"fixture": fixture_id}, sleep=sleep)["response"]
+
+
+def fetch_lineups(fixture_id: int, sleep: float = 0.0) -> list[dict]:
+    return api_get("fixtures/lineups", {"fixture": fixture_id}, sleep=sleep)["response"]
+
+
+def fetch_players(fixture_id: int, sleep: float = 0.0) -> list[dict]:
+    return api_get("fixtures/players", {"fixture": fixture_id}, sleep=sleep)["response"]
 
 
 # ---------------------------------------------------------------------------
@@ -94,29 +106,20 @@ def connect() -> duckdb.DuckDBPyConnection:
 def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS bronze.api_football__fixtures (
-            fixture_id   INTEGER PRIMARY KEY,
-            raw_json     JSON    NOT NULL,
-            ingested_at  TIMESTAMP DEFAULT current_timestamp
-        )
-    """)
-
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS bronze.api_football__fixture_events (
-            fixture_id   INTEGER PRIMARY KEY,
-            raw_json     JSON    NOT NULL,
-            ingested_at  TIMESTAMP DEFAULT current_timestamp
-        )
-    """)
-
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS bronze.api_football__fixture_statistics (
-            fixture_id   INTEGER PRIMARY KEY,
-            raw_json     JSON    NOT NULL,
-            ingested_at  TIMESTAMP DEFAULT current_timestamp
-        )
-    """)
+    for table in (
+        "api_football__fixtures",
+        "api_football__fixture_events",
+        "api_football__fixture_statistics",
+        "api_football__fixture_lineups",
+        "api_football__fixture_players",
+    ):
+        conn.execute(f"""
+            CREATE TABLE IF NOT EXISTS bronze.{table} (
+                fixture_id   INTEGER PRIMARY KEY,
+                raw_json     JSON    NOT NULL,
+                ingested_at  TIMESTAMP DEFAULT current_timestamp
+            )
+        """)
 
     log.info("Bronze schema and tables verified")
 
@@ -125,27 +128,20 @@ def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
 # Load helpers — raw JSON, no transformation
 # ---------------------------------------------------------------------------
 
+def _upsert(conn: duckdb.DuckDBPyConnection, table: str, fixture_id: int, payload) -> None:
+    conn.execute(
+        f"INSERT OR REPLACE INTO bronze.{table} (fixture_id, raw_json) VALUES (?, ?)",
+        [fixture_id, json.dumps(payload)],
+    )
+
+
 def load_fixtures(conn: duckdb.DuckDBPyConnection, fixtures: list[dict]) -> None:
     rows = [(f["fixture"]["id"], json.dumps(f)) for f in fixtures]
-    conn.executemany("""
-        INSERT OR REPLACE INTO bronze.api_football__fixtures (fixture_id, raw_json)
-        VALUES (?, ?)
-    """, rows)
+    conn.executemany(
+        "INSERT OR REPLACE INTO bronze.api_football__fixtures (fixture_id, raw_json) VALUES (?, ?)",
+        rows,
+    )
     log.info("Loaded %d rows into bronze.api_football__fixtures", len(rows))
-
-
-def load_events(conn: duckdb.DuckDBPyConnection, fixture_id: int, events: list[dict]) -> None:
-    conn.execute("""
-        INSERT OR REPLACE INTO bronze.api_football__fixture_events (fixture_id, raw_json)
-        VALUES (?, ?)
-    """, [fixture_id, json.dumps(events)])
-
-
-def load_statistics(conn: duckdb.DuckDBPyConnection, fixture_id: int, statistics: list[dict]) -> None:
-    conn.execute("""
-        INSERT OR REPLACE INTO bronze.api_football__fixture_statistics (fixture_id, raw_json)
-        VALUES (?, ?)
-    """, [fixture_id, json.dumps(statistics)])
 
 
 # ---------------------------------------------------------------------------
@@ -156,9 +152,12 @@ def run(lookback_days: int = 2, full_load: bool = False) -> None:
     conn = connect()
     ensure_schema_and_tables(conn)
 
+    # Full loads respect the 10 req/min free tier limit — daily runs are fast
+    sleep = 6.5 if full_load else 0.0
+
     if full_load:
-        log.info("Full load — fetching entire season %d", CURRENT_SEASON)
-        fixtures = fetch_fixtures()
+        log.info("Full load — fetching entire season %d (rate-limited)", CURRENT_SEASON)
+        fixtures = fetch_fixtures(sleep=sleep)
     else:
         from_date = (date.today() - timedelta(days=lookback_days)).isoformat()
         to_date = date.today().isoformat()
@@ -171,20 +170,20 @@ def run(lookback_days: int = 2, full_load: bool = False) -> None:
         f for f in fixtures
         if f["fixture"]["status"]["short"] in ("FT", "AET", "PEN")
     ]
-    log.info("%d finished fixtures — fetching events and statistics", len(finished))
+    log.info("%d finished fixtures — fetching all detail endpoints", len(finished))
 
     for f in finished:
         fixture_id = f["fixture"]["id"]
         home = f["teams"]["home"]["name"]
         away = f["teams"]["away"]["name"]
         try:
-            load_events(conn, fixture_id, fetch_events(fixture_id))
-            load_statistics(conn, fixture_id, fetch_statistics(fixture_id))
+            _upsert(conn, "api_football__fixture_events",     fixture_id, fetch_events(fixture_id, sleep=sleep))
+            _upsert(conn, "api_football__fixture_statistics", fixture_id, fetch_statistics(fixture_id, sleep=sleep))
+            _upsert(conn, "api_football__fixture_lineups",    fixture_id, fetch_lineups(fixture_id, sleep=sleep))
+            _upsert(conn, "api_football__fixture_players",    fixture_id, fetch_players(fixture_id, sleep=sleep))
             log.info("Loaded fixture %d: %s vs %s", fixture_id, home, away)
         except Exception as exc:
             log.warning("Failed fixture %d (%s vs %s): %s", fixture_id, home, away, exc)
-
-        time.sleep(6.5)  # free tier cap is 10 req/min — 2 calls per fixture needs ~13s/fixture
 
     conn.close()
     log.info("Bronze ingestion complete")
