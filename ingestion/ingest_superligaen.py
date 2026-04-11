@@ -214,9 +214,10 @@ def fetch_odds(fixture_id: int) -> list:
 # MotherDuck
 # ---------------------------------------------------------------------------
 
-def connect() -> duckdb.DuckDBPyConnection:
+def connect(target_db: str | None = None) -> duckdb.DuckDBPyConnection:
     token = os.environ["MOTHERDUCK_TOKEN"]
-    target_db = os.environ.get("TARGET_DB", "superligaen_dev")
+    if target_db is None:
+        target_db = os.environ.get("TARGET_DB", "superligaen_dev")
     conn = duckdb.connect(f"md:{target_db}?motherduck_token={token}")
     log.info("Connected to MotherDuck: %s", target_db)
     return conn
@@ -538,8 +539,8 @@ def load_reference_and_team_data(conn, season: int) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
-def run(lookback_days: int = 2, full_load: bool = False, season: int | None = None) -> None:
-    conn = connect()
+def run(lookback_days: int = 2, full_load: bool = False, season: int | None = None, target_db: str | None = None) -> None:
+    conn = connect(target_db)
     ensure_schema_and_tables(conn)
 
     if full_load:
@@ -613,5 +614,7 @@ if __name__ == "__main__":
     parser.add_argument("--season", type=int, default=None,
                         help="Season year for --full-load (e.g. 2023). "
                              "Omit to load all seasons %d-%d." % (FIRST_SEASON, CURRENT_SEASON))
+    parser.add_argument("--db", dest="target_db", default=None,
+                        help="Target MotherDuck database (default: $TARGET_DB env var or 'superligaen_dev')")
     args = parser.parse_args()
-    run(lookback_days=args.lookback, full_load=args.full_load, season=args.season)
+    run(lookback_days=args.lookback, full_load=args.full_load, season=args.season, target_db=args.target_db)
