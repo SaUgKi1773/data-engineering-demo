@@ -503,8 +503,9 @@ def load_reference_and_team_data(conn, season: int) -> None:
         log.warning("Failed api_football__players season %d: %s", season, exc)
 
     rows = conn.execute(
-        "SELECT DISTINCT json_extract_string(raw_json, '$.team.id')::integer "
-        "FROM bronze.api_football__teams WHERE season = ?",
+        "SELECT DISTINCT json_extract_string(team_row, '$.team.id')::integer "
+        "FROM (SELECT unnest(json_extract(raw_json, '$[*]')) AS team_row "
+        "      FROM bronze.api_football__teams WHERE season = ?) t",
         [season],
     ).fetchall()
     team_ids = [r[0] for r in rows if r[0]]
