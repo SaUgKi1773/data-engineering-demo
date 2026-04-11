@@ -60,16 +60,24 @@ def load_fixtures(conn, league_id: int, season: int,
             log.warning("Failed fixture %d (%s vs %s): %s", fixture_id, home, away, exc)
 
 
-def delete_fixture_window(conn, league_id: int, from_date: str, to_date: str) -> None:
-    """Delete fixtures and all detail rows within the date window for a league."""
-    fixture_ids = [
-        row[0] for row in conn.execute(
+def delete_fixture_window(conn, league_id: int, from_date: str, to_date: str | None = None) -> None:
+    """Delete fixtures and all detail rows from from_date onwards (or within a window if to_date given)."""
+    if to_date:
+        query = (
             f"SELECT fixture_id FROM bronze.{FIXTURE_TABLE} "
             "WHERE json_extract_string(raw_json, '$.league.id')::integer = ? "
-            "AND json_extract_string(raw_json, '$.fixture.date')::date BETWEEN ?::date AND ?::date",
-            [league_id, from_date, to_date],
-        ).fetchall()
-    ]
+            "AND json_extract_string(raw_json, '$.fixture.date')::date BETWEEN ?::date AND ?::date"
+        )
+        params = [league_id, from_date, to_date]
+    else:
+        query = (
+            f"SELECT fixture_id FROM bronze.{FIXTURE_TABLE} "
+            "WHERE json_extract_string(raw_json, '$.league.id')::integer = ? "
+            "AND json_extract_string(raw_json, '$.fixture.date')::date >= ?::date"
+        )
+        params = [league_id, from_date]
+
+    fixture_ids = [row[0] for row in conn.execute(query, params).fetchall()]
     if fixture_ids:
         placeholders = ", ".join("?" * len(fixture_ids))
         for table in [FIXTURE_TABLE] + FIXTURE_DETAIL_TABLES:
