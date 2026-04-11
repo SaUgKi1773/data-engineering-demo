@@ -36,7 +36,7 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          TARGET_DB: superligaen_dev
+          TARGET_DB: superligaen
         run: python ingestion/ingest_superligaen.py --lookback 2
 
       - name: Run ingestion (full load — single season)
@@ -44,7 +44,7 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          TARGET_DB: superligaen_dev
+          TARGET_DB: superligaen
         run: python ingestion/ingest_superligaen.py --full-load --season ${{ github.event.inputs.season }}
 
       - name: Run ingestion (full load — all seasons)
@@ -52,5 +52,5 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          TARGET_DB: superligaen_dev
+          TARGET_DB: superligaen
         run: python ingestion/ingest_superligaen.py --full-load
