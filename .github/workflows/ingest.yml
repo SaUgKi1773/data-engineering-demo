@@ -9,15 +9,19 @@ on:
         description: "Set to 'true' to run a full historical load"
         required: false
         default: "false"
+      league:
+        description: "League ID for full load (e.g. 119). Leave empty to load all leagues."
+        required: false
+        default: ""
       season:
-        description: "Season year for full load (e.g. 2023). Leave empty to load all seasons 2020-2025."
+        description: "Season year for full load (e.g. 2025). Leave empty to load all seasons."
         required: false
         default: ""
 
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 360  # 6h max — covers one full season load (~2.3h)
+    timeout-minutes: 360  # 6h max — covers one full season load
 
     steps:
       - name: Checkout
@@ -37,20 +41,16 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           TARGET_DB: superligaen
-        run: python ingestion/ingest_superligaen.py --lookback 2
+        run: python ingestion/run.py --lookback 2
 
-      - name: Run ingestion (full load — single season)
-        if: ${{ github.event.inputs.full_load == 'true' && github.event.inputs.season != '' }}
+      - name: Run ingestion (full load)
+        if: ${{ github.event.inputs.full_load == 'true' }}
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           TARGET_DB: superligaen
-        run: python ingestion/ingest_superligaen.py --full-load --season ${{ github.event.inputs.season }}
-
-      - name: Run ingestion (full load — all seasons)
-        if: ${{ github.event.inputs.full_load == 'true' && github.event.inputs.season == '' }}
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          TARGET_DB: superligaen
-        run: python ingestion/ingest_superligaen.py --full-load
+        run: |
+          ARGS="--full-load"
+          [ -n "${{ github.event.inputs.league }}" ] && ARGS="$ARGS --league ${{ github.event.inputs.league }}"
+          [ -n "${{ github.event.inputs.season }}" ] && ARGS="$ARGS --season ${{ github.event.inputs.season }}"
+          python ingestion/run.py $ARGS
