@@ -55,6 +55,10 @@ COACH_ENDPOINTS = [
     ("api_football__trophies",  "trophies"),
 ]
 
+# Called with league_id + season (+ optional date range for incremental)
+# Bulk-inserted by fixture_id; detail endpoints below are fetched per fixture_id
+FIXTURE_ENDPOINT = ("api_football__fixtures", "fixtures")
+
 # Called with fixture_id — one row per fixture_id
 FIXTURE_DETAIL_ENDPOINTS = [
     ("api_football__fixture_events",      "fixtures/events"),

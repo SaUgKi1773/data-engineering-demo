@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from config import (
     COACH_ENDPOINTS,
     FIXTURE_DETAIL_ENDPOINTS,
+    FIXTURE_ENDPOINT,
     SEASON_AGGREGATE_ENDPOINTS,
     TEAM_ENDPOINTS,
 )
@@ -23,12 +24,13 @@ load_dotenv()
 log = logging.getLogger(__name__)
 
 # Derived table lists used for schema setup and bulk operations
+FIXTURE_TABLE          = FIXTURE_ENDPOINT[0]
 FIXTURE_DETAIL_TABLES  = [t for t, _ in FIXTURE_DETAIL_ENDPOINTS]
 SEASON_AGGREGATE_TABLES = [t for t, _ in SEASON_AGGREGATE_ENDPOINTS]
 TEAM_TABLES            = ["api_football__coaches"] + [t for t, _ in TEAM_ENDPOINTS + COACH_ENDPOINTS]
 
 ALL_BRONZE_TABLES = (
-    ["api_football__fixtures"]
+    [FIXTURE_TABLE]
     + FIXTURE_DETAIL_TABLES
     + SEASON_AGGREGATE_TABLES
     + ["api_football__leagues", "api_football__venues", "api_football__teams",
@@ -78,7 +80,7 @@ def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
     _migrate_if_needed(conn)
 
     # fixture_id-keyed
-    for table in ["api_football__fixtures"] + FIXTURE_DETAIL_TABLES:
+    for table in [FIXTURE_TABLE] + FIXTURE_DETAIL_TABLES:
         conn.execute(f"""
             CREATE TABLE IF NOT EXISTS bronze.{table} (
                 fixture_id  INTEGER PRIMARY KEY,
@@ -181,7 +183,7 @@ def delete_season(conn, league_id: int, season: int) -> None:
 
     fixture_ids = [
         row[0] for row in conn.execute(
-            "SELECT fixture_id FROM bronze.api_football__fixtures "
+            f"SELECT fixture_id FROM bronze.{FIXTURE_TABLE} "
             "WHERE json_extract_string(raw_json, '$.league.id')::integer = ? "
             "AND json_extract_string(raw_json, '$.league.season')::integer = ?",
             [league_id, season],
@@ -190,7 +192,7 @@ def delete_season(conn, league_id: int, season: int) -> None:
     if fixture_ids:
         placeholders = ", ".join("?" * len(fixture_ids))
         conn.execute(
-            f"DELETE FROM bronze.api_football__fixtures WHERE fixture_id IN ({placeholders})",
+            f"DELETE FROM bronze.{FIXTURE_TABLE} WHERE fixture_id IN ({placeholders})",
             fixture_ids,
         )
         for table in FIXTURE_DETAIL_TABLES:

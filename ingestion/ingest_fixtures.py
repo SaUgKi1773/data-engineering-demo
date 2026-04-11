@@ -13,7 +13,7 @@ import json
 import logging
 
 from api import api_get
-from config import FIXTURE_DETAIL_ENDPOINTS
+from config import FIXTURE_DETAIL_ENDPOINTS, FIXTURE_ENDPOINT
 from db import FIXTURE_DETAIL_TABLES, _insert
 
 log = logging.getLogger(__name__)
@@ -26,15 +26,17 @@ def fetch_fixtures(league_id: int, season: int,
         params["from"] = from_date
     if to_date:
         params["to"] = to_date
-    data = api_get("fixtures", params)
+    _, endpoint = FIXTURE_ENDPOINT
+    data = api_get(endpoint, params)
     log.info("League %d season %d: fetched %d fixtures", league_id, season, len(data["response"]))
     return data["response"]
 
 
 def load_fixtures_bulk(conn, fixtures: list) -> None:
+    table, _ = FIXTURE_ENDPOINT
     rows = [(f["fixture"]["id"], json.dumps(f)) for f in fixtures]
     conn.executemany(
-        "INSERT INTO bronze.api_football__fixtures (fixture_id, raw_json) VALUES (?, ?)",
+        f"INSERT INTO bronze.{table} (fixture_id, raw_json) VALUES (?, ?)",
         rows,
     )
     log.info("Loaded %d rows into bronze.api_football__fixtures", len(rows))
