@@ -152,6 +152,26 @@ def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
 # Write helpers
 # ---------------------------------------------------------------------------
 
+def get_current_season(conn, league_id: int) -> int:
+    """Return the current season year for a league by reading the current=true
+    flag from the already-ingested bronze.api_football__leagues data."""
+    row = conn.execute("""
+        SELECT json_extract_string(season_row, '$.year')::integer
+        FROM (
+            SELECT unnest(json_extract(raw_json, '$[0].seasons[*]')) AS season_row
+            FROM bronze.api_football__leagues
+            WHERE league_id = ?
+        ) t
+        WHERE json_extract_string(season_row, '$.current') = 'true'
+    """, [league_id]).fetchone()
+    if row and row[0]:
+        return row[0]
+    raise RuntimeError(
+        f"Could not determine current season for league {league_id} — "
+        "ensure reference data has been loaded first."
+    )
+
+
 def _insert(conn, table: str, key_cols: list, key_vals: list, payload) -> None:
     cols = ", ".join(key_cols) + ", raw_json"
     placeholders = ", ".join(["?"] * len(key_vals)) + ", ?"
