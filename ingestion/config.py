@@ -19,7 +19,7 @@ FIRST_SEASON = 2020
 # ---------------------------------------------------------------------------
 
 LEAGUES = [
-    {"id": 119, "country": "Denmark"},
+    {"id": 119},
 ]
 
 # ---------------------------------------------------------------------------
@@ -90,12 +90,11 @@ COACH_ENDPOINTS = [
 TEAM_STATISTICS_ENDPOINT = ("api_football__team_statistics", "teams/statistics")
 
 # ---------------------------------------------------------------------------
-# Group 5 — Reference
-# Catch-all for endpoints that don't fit the season or team loop.
-# Each tuple: (table, endpoint, param_key)
-# param_key maps to a field in the league dict (e.g. "country" → league["country"])
+# Group 5 — Country endpoints
+# Filter: country (derived from bronze.api_football__leagues after Group 1 runs)
+# Catch-all for endpoints filtered by country rather than league_id or season.
 # ---------------------------------------------------------------------------
 
-REFERENCE_ENDPOINTS = [
-    ("api_football__venues", "venues", "country"),
+COUNTRY_ENDPOINTS = [
+    ("api_football__venues", "venues"),
 ]

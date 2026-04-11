@@ -22,10 +22,10 @@ import logging
 from datetime import date, timedelta
 
 from config import FIRST_SEASON, LEAGUES
-from db import connect, delete_season, ensure_schema_and_tables, get_current_season, truncate_all
+from db import connect, delete_season, ensure_schema_and_tables, get_current_season, get_league_country, truncate_all
+from ingest_country import load_country
 from ingest_fixtures import delete_fixture_window, load_fixtures
 from ingest_leagues import load_leagues
-from ingest_reference import load_reference
 from ingest_season import load_season
 from ingest_teams import load_teams
 
@@ -58,12 +58,13 @@ def run(
         for league in leagues:
             lid = league["id"]
 
-            # Group 1 — leagues (also determines current season)
+            # Group 1 — leagues (also determines current season and country)
             load_leagues(conn, lid)
             current_season = get_current_season(conn, lid)
+            country = get_league_country(conn, lid)
             seasons = [season] if season else list(range(FIRST_SEASON, current_season + 1))
-            log.info("Full load — league: %d  current season: %d  seasons: %s",
-                     lid, current_season, seasons)
+            log.info("Full load — league: %d  country: %s  current season: %d  seasons: %s",
+                     lid, country, current_season, seasons)
 
             for s in seasons:
                 log.info("=== League %d  Season %d ===", lid, s)
@@ -79,8 +80,8 @@ def run(
                 # Group 4 — per-team data
                 load_teams(conn, lid, s)
 
-            # Group 5 — reference data (not season-scoped)
-            load_reference(conn, league)
+            # Group 5 — country data (not season-scoped)
+            load_country(conn, lid, country)
 
     else:
         from_date = (date.today() - timedelta(days=lookback_days)).isoformat()
@@ -90,10 +91,12 @@ def run(
         for league in leagues:
             lid = league["id"]
 
-            # Group 1 — leagues (also determines current season)
+            # Group 1 — leagues (also determines current season and country)
             load_leagues(conn, lid)
             current_season = get_current_season(conn, lid)
-            log.info("=== League %d  current season: %d ===", lid, current_season)
+            country = get_league_country(conn, lid)
+            log.info("=== League %d  country: %s  current season: %d ===",
+                     lid, country, current_season)
 
             # Group 2 — season data (full refresh of current season)
             load_season(conn, lid, current_season, incremental=True)
@@ -105,8 +108,8 @@ def run(
             # Group 4 — per-team data (current season)
             load_teams(conn, lid, current_season)
 
-            # Group 5 — reference data
-            load_reference(conn, league)
+            # Group 5 — country data
+            load_country(conn, lid, country)
 
     conn.close()
     log.info("Bronze ingestion complete")

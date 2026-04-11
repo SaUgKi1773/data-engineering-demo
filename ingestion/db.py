@@ -17,7 +17,7 @@ from config import (
     FIXTURE_DETAIL_ENDPOINTS,
     FIXTURE_ENDPOINT,
     LEAGUE_ENDPOINT,
-    REFERENCE_ENDPOINTS,
+    COUNTRY_ENDPOINTS,
     SEASON_ENDPOINTS,
     SEASON_PLAYERS_ENDPOINT,
     TEAM_ENDPOINTS,
@@ -36,7 +36,7 @@ FIXTURE_DETAIL_TABLES = [t for t, _ in FIXTURE_DETAIL_ENDPOINTS]   # fixture_id 
 TEAM_TABLES           = [t for t, _ in TEAM_ENDPOINTS]             # team_id keyed
 COACH_TABLES          = [t for t, _ in COACH_ENDPOINTS]            # team_id keyed
 TEAM_STATS_TABLE      = TEAM_STATISTICS_ENDPOINT[0]                # (season, league_id, team_id) keyed
-REFERENCE_TABLES      = [t for t, _, _ in REFERENCE_ENDPOINTS]     # league_id keyed
+COUNTRY_TABLES        = [t for t, _ in COUNTRY_ENDPOINTS]          # league_id keyed
 
 ALL_BRONZE_TABLES = (
     [LEAGUE_TABLE]
@@ -47,7 +47,7 @@ ALL_BRONZE_TABLES = (
     + TEAM_TABLES
     + COACH_TABLES
     + [TEAM_STATS_TABLE]
-    + REFERENCE_TABLES
+    + COUNTRY_TABLES
 )
 
 
@@ -85,8 +85,8 @@ def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
     _migrate_if_needed(conn)
 
-    # league_id-keyed (leagues + reference tables)
-    for table in [LEAGUE_TABLE] + REFERENCE_TABLES:
+    # league_id-keyed (leagues + country tables)
+    for table in [LEAGUE_TABLE] + COUNTRY_TABLES:
         conn.execute(f"""
             CREATE TABLE IF NOT EXISTS bronze.{table} (
                 league_id   INTEGER PRIMARY KEY,
@@ -157,6 +157,21 @@ def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
 # ---------------------------------------------------------------------------
 # Write helpers
 # ---------------------------------------------------------------------------
+
+def get_league_country(conn, league_id: int) -> str:
+    """Read the country name for a league from bronze.api_football__leagues."""
+    row = conn.execute("""
+        SELECT json_extract_string(raw_json, '$[0].country.name')
+        FROM bronze.api_football__leagues
+        WHERE league_id = ?
+    """, [league_id]).fetchone()
+    if row and row[0]:
+        return row[0]
+    raise RuntimeError(
+        f"Could not determine country for league {league_id} — "
+        "ensure leagues data has been loaded first."
+    )
+
 
 def get_current_season(conn, league_id: int) -> int:
     """Read the current season year from the current=true flag in bronze.api_football__leagues."""
