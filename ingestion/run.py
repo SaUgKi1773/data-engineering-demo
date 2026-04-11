@@ -1,27 +1,20 @@
 """
 Master orchestrator — entry point for all ingestion runs.
 
+Load modes:
+  Daily incremental  — refreshes current season data; fixtures loaded
+                       by date window only
+  Seasonal load      — reloads all data for one specific season
+  Initial / full load — loads all seasons from FIRST_SEASON to current
+
 Usage:
-  # Daily incremental (default: 2-day lookback)
-  python ingestion/run.py
-
-  # Daily incremental, custom lookback
-  python ingestion/run.py --lookback 5
-
-  # Full load — all leagues, all seasons
-  python ingestion/run.py --full-load
-
-  # Full load — one league, all seasons
-  python ingestion/run.py --full-load --league 119
-
-  # Full load — one league, one season
+  python ingestion/run.py                                  # daily incremental
+  python ingestion/run.py --lookback 5                     # custom lookback window
+  python ingestion/run.py --full-load                      # all leagues, all seasons
+  python ingestion/run.py --full-load --league 119         # one league, all seasons
+  python ingestion/run.py --full-load --season 2025        # all leagues, one season
   python ingestion/run.py --full-load --league 119 --season 2025
-
-  # Full load — all leagues, one season
-  python ingestion/run.py --full-load --season 2025
-
-  # Target a specific database
-  python ingestion/run.py --db superligaen
+  python ingestion/run.py --db superligaen                 # target prod database
 """
 
 import argparse
@@ -30,9 +23,11 @@ from datetime import date, timedelta
 
 from config import FIRST_SEASON, LEAGUES
 from db import connect, delete_season, ensure_schema_and_tables, get_current_season, truncate_all
-from ingest_fixtures import delete_fixture_window, fetch_fixtures, load_fixture_details, load_fixtures_bulk
-from ingest_league import load_reference_data, load_season_aggregates, load_season_reference
-from ingest_teams import load_team_data
+from ingest_fixtures import delete_fixture_window, load_fixtures
+from ingest_leagues import load_leagues
+from ingest_reference import load_reference
+from ingest_season import load_season
+from ingest_teams import load_teams
 
 logging.basicConfig(
     level=logging.INFO,
@@ -62,7 +57,9 @@ def run(
 
         for league in leagues:
             lid = league["id"]
-            load_reference_data(conn, lid, league["country"])
+
+            # Group 1 — leagues (also determines current season)
+            load_leagues(conn, lid)
             current_season = get_current_season(conn, lid)
             seasons = [season] if season else list(range(FIRST_SEASON, current_season + 1))
             log.info("Full load — league: %d  current season: %d  seasons: %s",
@@ -71,14 +68,19 @@ def run(
             for s in seasons:
                 log.info("=== League %d  Season %d ===", lid, s)
                 if league_id or season:
-                    # Targeted run — clean only what we're about to reload
                     delete_season(conn, lid, s)
-                load_season_aggregates(conn, lid, s)
-                fixtures = fetch_fixtures(lid, s)
-                load_fixtures_bulk(conn, fixtures)
-                load_fixture_details(conn, fixtures)
-                load_season_reference(conn, lid, s)
-                load_team_data(conn, lid, s)
+
+                # Group 2 — season data
+                load_season(conn, lid, s)
+
+                # Group 3 — fixtures + fixture details
+                load_fixtures(conn, lid, s)
+
+                # Group 4 — per-team data
+                load_teams(conn, lid, s)
+
+            # Group 5 — reference data (not season-scoped)
+            load_reference(conn, league)
 
     else:
         from_date = (date.today() - timedelta(days=lookback_days)).isoformat()
@@ -88,23 +90,23 @@ def run(
         for league in leagues:
             lid = league["id"]
 
-            # Reference data first — needed to determine current season
-            load_reference_data(conn, lid, league["country"])
+            # Group 1 — leagues (also determines current season)
+            load_leagues(conn, lid)
             current_season = get_current_season(conn, lid)
             log.info("=== League %d  current season: %d ===", lid, current_season)
 
-            # Season aggregates — full refresh for current season
-            load_season_aggregates(conn, lid, current_season, incremental=True)
+            # Group 2 — season data (full refresh of current season)
+            load_season(conn, lid, current_season, incremental=True)
 
-            # Fixtures — delete date window then reload
+            # Group 3 — fixtures in date window only
             delete_fixture_window(conn, lid, from_date, to_date)
-            fixtures = fetch_fixtures(lid, current_season, from_date=from_date, to_date=to_date)
-            load_fixtures_bulk(conn, fixtures)
-            load_fixture_details(conn, fixtures)
+            load_fixtures(conn, lid, current_season, from_date=from_date, to_date=to_date)
 
-            # Season reference and team data — full refresh for current season
-            load_season_reference(conn, lid, current_season)
-            load_team_data(conn, lid, current_season)
+            # Group 4 — per-team data (current season)
+            load_teams(conn, lid, current_season)
+
+            # Group 5 — reference data
+            load_reference(conn, league)
 
     conn.close()
     log.info("Bronze ingestion complete")

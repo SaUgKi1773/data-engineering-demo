@@ -1,21 +1,19 @@
 """
-Per-team and per-coach ingestion.
+Group 4: Team endpoints.
+Filter: team_id (derived from the teams loaded in Group 2)
 
-For each team in the given league + season:
-  coaches          — fetched first by team_id (needed to get coach IDs below)
-  squads, transfers — fetched by team_id
-  sidelined, trophies — fetched per coach_id, results aggregated and stored per team_id
-  team_statistics  — fetched by league_id + season + team_id
+Coaches are fetched first per team — their IDs are then passed to the
+coach-level endpoints (sidelined, trophies). Results are aggregated
+and stored per team_id. Team statistics also need league_id + season.
 
-Adding a new team-level endpoint: add it to TEAM_ENDPOINTS in config.py.
-Adding a new coach-level endpoint: add it to COACH_ENDPOINTS in config.py.
+Load strategy (all modes): DELETE by team_id + INSERT per team.
 """
 
 import logging
 
 from api import api_get
-from config import COACH_ENDPOINTS, TEAM_ENDPOINTS
-from db import _delete_insert
+from config import COACH_ENDPOINTS, TEAM_ENDPOINTS, TEAM_STATISTICS_ENDPOINT
+from db import TEAM_STATS_TABLE, _delete_insert
 
 log = logging.getLogger(__name__)
 
@@ -30,23 +28,24 @@ def _get_team_ids(conn, league_id: int, season: int) -> list[int]:
     return [r[0] for r in rows if r[0]]
 
 
-def load_team_data(conn, league_id: int, season: int) -> None:
+def load_teams(conn, league_id: int, season: int) -> None:
     team_ids = _get_team_ids(conn, league_id, season)
     log.info("League %d season %d: loading per-team data for %d teams", league_id, season, len(team_ids))
 
     for team_id in team_ids:
 
-        # Coaches must be fetched first — coach IDs are needed for sidelined and trophies
+        # Coaches fetched first — IDs needed for sidelined and trophies
         coaches_data = []
+        coach_table, coach_endpoint = TEAM_ENDPOINTS[0]
         try:
-            coaches_data = api_get("coachs", {"team": team_id})["response"]
-            _delete_insert(conn, "api_football__coaches", ["team_id"], [team_id], coaches_data)
+            coaches_data = api_get(coach_endpoint, {"team": team_id})["response"]
+            _delete_insert(conn, coach_table, ["team_id"], [team_id], coaches_data)
         except Exception as exc:
-            log.warning("Failed api_football__coaches team %d league %d season %d: %s",
-                        team_id, league_id, season, exc)
+            log.warning("Failed %s team %d league %d season %d: %s",
+                        coach_table, team_id, league_id, season, exc)
 
-        # Simple team-keyed endpoints
-        for table, endpoint in TEAM_ENDPOINTS:
+        # Remaining team endpoints
+        for table, endpoint in TEAM_ENDPOINTS[1:]:
             try:
                 data = api_get(endpoint, {"team": team_id})["response"]
                 _delete_insert(conn, table, ["team_id"], [team_id], data)
@@ -54,7 +53,7 @@ def load_team_data(conn, league_id: int, season: int) -> None:
                 log.warning("Failed %s team %d league %d season %d: %s",
                             table, team_id, league_id, season, exc)
 
-        # Coach-keyed endpoints — fetch per coach, aggregate per team
+        # Coach endpoints — fetch per coach_id, aggregate and store per team_id
         coach_ids = [c["id"] for c in coaches_data if isinstance(c, dict) and c.get("id")]
         for table, endpoint in COACH_ENDPOINTS:
             combined = []
@@ -70,12 +69,13 @@ def load_team_data(conn, league_id: int, season: int) -> None:
                 log.warning("Failed %s team %d league %d season %d: %s",
                             table, team_id, league_id, season, exc)
 
-        # Team statistics — needs league + season + team
+        # Team statistics — needs league_id + season + team_id
+        _, stats_endpoint = TEAM_STATISTICS_ENDPOINT
         try:
-            data = api_get("teams/statistics",
+            data = api_get(stats_endpoint,
                            {"league": league_id, "season": season, "team": team_id})["response"]
-            _delete_insert(conn, "api_football__team_statistics",
+            _delete_insert(conn, TEAM_STATS_TABLE,
                            ["season", "league_id", "team_id"], [season, league_id, team_id], data)
         except Exception as exc:
-            log.warning("Failed team_statistics team %d league %d season %d: %s",
-                        team_id, league_id, season, exc)
+            log.warning("Failed %s team %d league %d season %d: %s",
+                        TEAM_STATS_TABLE, team_id, league_id, season, exc)
