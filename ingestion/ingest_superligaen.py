@@ -135,8 +135,8 @@ def fetch_leagues() -> list:
 def fetch_teams(season: int) -> list:
     return api_get("teams", {"league": LEAGUE_ID, "season": season})["response"]
 
-def fetch_venues(season: int) -> list:
-    return api_get("venues", {"league": LEAGUE_ID, "season": season})["response"]
+def fetch_venues() -> list:
+    return api_get("venues", {"country": "Denmark"})["response"]
 
 def fetch_rounds(season: int) -> list:
     return api_get("fixtures/rounds", {"league": LEAGUE_ID, "season": season})["response"]
@@ -170,11 +170,11 @@ def fetch_squads(team_id: int) -> list:
 def fetch_transfers(team_id: int) -> list:
     return api_get("transfers", {"team": team_id})["response"]
 
-def fetch_sidelined(team_id: int) -> list:
-    return api_get("sidelined", {"team": team_id})["response"]
+def fetch_sidelined(coach_id: int) -> list:
+    return api_get("sidelined", {"coach": coach_id})["response"]
 
-def fetch_trophies(team_id: int) -> list:
-    return api_get("trophies", {"team": team_id})["response"]
+def fetch_trophies(coach_id: int) -> list:
+    return api_get("trophies", {"coach": coach_id})["response"]
 
 
 # ---------------------------------------------------------------------------
@@ -487,7 +487,7 @@ def load_reference_and_team_data(conn, season: int) -> None:
     for table, fetcher, key_col, key_val in (
         ("api_football__leagues", fetch_leagues,               "league_id", LEAGUE_ID),
         ("api_football__teams",   lambda: fetch_teams(season), "season",    season),
-        ("api_football__venues",  lambda: fetch_venues(season), "league_id", LEAGUE_ID),
+        ("api_football__venues",  fetch_venues,                "league_id", LEAGUE_ID),
         ("api_football__rounds",  lambda: fetch_rounds(season),"season",    season),
     ):
         try:
@@ -513,15 +513,37 @@ def load_reference_and_team_data(conn, season: int) -> None:
     log.info("Season %d: loading per-team data for %d teams", season, len(team_ids))
 
     for team_id in team_ids:
+        # Fetch coaches first — coach IDs are needed for sidelined and trophies
+        coaches_data = []
+        try:
+            coaches_data = fetch_coaches(team_id)
+            _delete_insert(conn, "api_football__coaches", ["team_id"], [team_id], coaches_data)
+        except Exception as exc:
+            log.warning("Failed api_football__coaches team %d season %d: %s", team_id, season, exc)
+
         for table, fetcher in (
-            ("api_football__coaches",   lambda tid=team_id: fetch_coaches(tid)),
             ("api_football__squads",    lambda tid=team_id: fetch_squads(tid)),
             ("api_football__transfers", lambda tid=team_id: fetch_transfers(tid)),
-            ("api_football__sidelined", lambda tid=team_id: fetch_sidelined(tid)),
-            ("api_football__trophies",  lambda tid=team_id: fetch_trophies(tid)),
         ):
             try:
                 _delete_insert(conn, table, ["team_id"], [team_id], fetcher())
+            except Exception as exc:
+                log.warning("Failed %s team %d season %d: %s", table, team_id, season, exc)
+
+        # Sidelined and trophies are fetched per coach, then aggregated and stored per team
+        coach_ids = [c["id"] for c in coaches_data if isinstance(c, dict) and c.get("id")]
+        for table, fetch_fn in (
+            ("api_football__sidelined", fetch_sidelined),
+            ("api_football__trophies",  fetch_trophies),
+        ):
+            combined = []
+            for coach_id in coach_ids:
+                try:
+                    combined.extend(fetch_fn(coach_id))
+                except Exception as exc:
+                    log.warning("Failed %s coach %d team %d season %d: %s", table, coach_id, team_id, season, exc)
+            try:
+                _delete_insert(conn, table, ["team_id"], [team_id], combined)
             except Exception as exc:
                 log.warning("Failed %s team %d season %d: %s", table, team_id, season, exc)
 
