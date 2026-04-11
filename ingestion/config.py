@@ -6,10 +6,18 @@ To add a new endpoint:  add a tuple to the relevant endpoint list below.
 No other files need to change.
 """
 
-API_BASE       = "https://v3.football.api-sports.io"
-MAX_RETRIES    = 10
-FIRST_SEASON   = 2020
-CURRENT_SEASON = 2025
+from datetime import date as _date
+
+API_BASE    = "https://v3.football.api-sports.io"
+MAX_RETRIES = 10
+FIRST_SEASON = 2020
+
+def _current_season() -> int:
+    """Football seasons start in July. The season year is the year it began."""
+    today = _date.today()
+    return today.year if today.month >= 7 else today.year - 1
+
+CURRENT_SEASON = _current_season()
 
 # ---------------------------------------------------------------------------
 # Leagues to ingest
