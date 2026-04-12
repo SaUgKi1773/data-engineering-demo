@@ -85,7 +85,7 @@ def run(
 
     else:
         from_date = (date.today() - timedelta(days=lookback_days)).isoformat()
-        log.info("Incremental load — from: %s (no end date — includes upcoming fixtures)", from_date)
+        log.info("Incremental load — from: %s (to end of season)", from_date)
 
         for league in leagues:
             lid = league["id"]
@@ -101,8 +101,10 @@ def run(
             load_season(conn, lid, current_season, incremental=True)
 
             # Group 3 — fixtures from lookback date onwards (includes upcoming)
+            # API requires both `from` and `to`; use end of season as upper bound
+            to_date = f"{current_season + 1}-07-31"
             delete_fixture_window(conn, lid, from_date)
-            load_fixtures(conn, lid, current_season, from_date=from_date)
+            load_fixtures(conn, lid, current_season, from_date=from_date, to_date=to_date)
 
             # Group 4 — per-team data (current season)
             load_teams(conn, lid, current_season)
