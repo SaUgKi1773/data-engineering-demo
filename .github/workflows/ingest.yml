@@ -17,6 +17,10 @@ on:
         description: "Season year for full load (e.g. 2025). Leave empty to load all seasons."
         required: false
         default: ""
+      target_db:
+        description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
+        required: false
+        default: ""
 
 jobs:
   ingest:
@@ -40,7 +44,7 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          TARGET_DB: superligaen
+          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
         run: python ingestion/run.py --lookback 2
 
       - name: Run ingestion (full load)
@@ -48,7 +52,7 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          TARGET_DB: superligaen
+          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
         run: |
           ARGS="--full-load"
           [ -n "${{ github.event.inputs.league }}" ] && ARGS="$ARGS --league ${{ github.event.inputs.league }}"
