@@ -177,9 +177,9 @@ def run(
         lid        = league_id or _default_league(conn, db)
         cur_season = _current_season(conn, db, lid)
         from_date  = (date.today() - timedelta(days=lookback_days)).isoformat()
-        to_date    = date.today().isoformat()
+        to_date    = (date.today() + timedelta(weeks=4)).isoformat()
         season_scope  = f"league_id = {lid} AND season = {cur_season}"
-        fixture_scope = f"kick_off >= '{from_date}' AND kick_off < '{to_date}'"
+        fixture_scope = f"kick_off >= '{from_date}' AND kick_off <= '{to_date}'"
         log.info(
             "=== Incremental silver load — %s.silver  league=%d  season=%d  from=%s ===",
             db, lid, cur_season, from_date,
