@@ -46,13 +46,7 @@ SQL_DIR = Path(__file__).parent / "silver"
 # Always full replace (CREATE OR REPLACE TABLE in the SQL file)
 FULL_REPLACE_TABLES = [
     "leagues",        # Group 1
-    "coaches",        # Group 4
-    "squads",
-    "transfers",
-    "sidelined",
-    "trophies",
-    "team_statistics",
-    "venues",         # Group 5
+    "venues",         # Group 4
 ]
 
 # Season-scoped: filter = league_id = X AND season = Y

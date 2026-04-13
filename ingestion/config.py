@@ -4,8 +4,6 @@ Ingestion configuration — single source of truth for leagues and endpoint meta
 To add a new league:              add an entry to LEAGUES.
 To add a new season endpoint:     add a tuple to SEASON_ENDPOINTS.
 To add a new fixture-detail:      add a tuple to FIXTURE_DETAIL_ENDPOINTS.
-To add a new team endpoint:       add a tuple to TEAM_ENDPOINTS.
-To add a new coach endpoint:      add a tuple to COACH_ENDPOINTS.
 To add a new reference endpoint:  add a tuple to REFERENCE_ENDPOINTS.
 No other files need to change.
 """
@@ -73,21 +71,6 @@ FIXTURE_DETAIL_ENDPOINTS = [
 # Coaches are fetched first (team_id filter) so their IDs can be passed
 # to coach-level endpoints. All results stored per team_id.
 # ---------------------------------------------------------------------------
-
-TEAM_ENDPOINTS = [
-    ("api_football__coaches",   "coachs"),
-    ("api_football__squads",    "players/squads"),
-    ("api_football__transfers", "transfers"),
-]
-
-# Fetched per coach_id, aggregated and stored per team_id
-COACH_ENDPOINTS = [
-    ("api_football__sidelined", "sidelined"),
-    ("api_football__trophies",  "trophies"),
-]
-
-# Needs league_id + season + team_id — handled separately in ingest_teams.py
-TEAM_STATISTICS_ENDPOINT = ("api_football__team_statistics", "teams/statistics")
 
 # ---------------------------------------------------------------------------
 # Group 5 — Country endpoints
