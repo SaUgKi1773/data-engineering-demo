@@ -13,15 +13,12 @@ import duckdb
 from dotenv import load_dotenv
 
 from config import (
-    COACH_ENDPOINTS,
     FIXTURE_DETAIL_ENDPOINTS,
     FIXTURE_ENDPOINT,
     LEAGUE_ENDPOINT,
     COUNTRY_ENDPOINTS,
     SEASON_ENDPOINTS,
     SEASON_PLAYERS_ENDPOINT,
-    TEAM_ENDPOINTS,
-    TEAM_STATISTICS_ENDPOINT,
 )
 
 load_dotenv()
@@ -33,9 +30,6 @@ SEASON_TABLES         = [t for t, _ in SEASON_ENDPOINTS]          # (season, lea
 SEASON_PLAYERS_TABLE  = SEASON_PLAYERS_ENDPOINT[0]                 # (season, league_id, page) keyed
 FIXTURE_TABLE         = FIXTURE_ENDPOINT[0]                        # fixture_id keyed
 FIXTURE_DETAIL_TABLES = [t for t, _ in FIXTURE_DETAIL_ENDPOINTS]   # fixture_id keyed
-TEAM_TABLES           = [t for t, _ in TEAM_ENDPOINTS]             # team_id keyed
-COACH_TABLES          = [t for t, _ in COACH_ENDPOINTS]            # team_id keyed
-TEAM_STATS_TABLE      = TEAM_STATISTICS_ENDPOINT[0]                # (season, league_id, team_id) keyed
 COUNTRY_TABLES        = [t for t, _ in COUNTRY_ENDPOINTS]          # league_id keyed
 
 ALL_BRONZE_TABLES = (
@@ -44,9 +38,6 @@ ALL_BRONZE_TABLES = (
     + [SEASON_PLAYERS_TABLE]
     + [FIXTURE_TABLE]
     + FIXTURE_DETAIL_TABLES
-    + TEAM_TABLES
-    + COACH_TABLES
-    + [TEAM_STATS_TABLE]
     + COUNTRY_TABLES
 )
 
@@ -71,7 +62,7 @@ def connect(target_db: str | None = None) -> duckdb.DuckDBPyConnection:
 def _migrate_if_needed(conn: duckdb.DuckDBPyConnection) -> None:
     """Drop tables whose primary key changed from season-only to (season, league_id).
     They are recreated empty by ensure_schema_and_tables on the same run."""
-    for table in SEASON_TABLES + [SEASON_PLAYERS_TABLE, TEAM_STATS_TABLE]:
+    for table in SEASON_TABLES + [SEASON_PLAYERS_TABLE]:
         has_league_id = conn.execute("""
             SELECT COUNT(*) FROM information_schema.columns
             WHERE table_schema = 'bronze' AND table_name = ? AND column_name = 'league_id'
@@ -128,28 +119,6 @@ def ensure_schema_and_tables(conn: duckdb.DuckDBPyConnection) -> None:
                 ingested_at TIMESTAMP DEFAULT current_timestamp
             )
         """)
-
-    # team_id-keyed
-    for table in TEAM_TABLES + COACH_TABLES:
-        conn.execute(f"""
-            CREATE TABLE IF NOT EXISTS bronze.{table} (
-                team_id     INTEGER PRIMARY KEY,
-                raw_json    JSON NOT NULL,
-                ingested_at TIMESTAMP DEFAULT current_timestamp
-            )
-        """)
-
-    # (season, league_id, team_id)-keyed
-    conn.execute(f"""
-        CREATE TABLE IF NOT EXISTS bronze.{TEAM_STATS_TABLE} (
-            season      INTEGER,
-            league_id   INTEGER,
-            team_id     INTEGER,
-            raw_json    JSON NOT NULL,
-            ingested_at TIMESTAMP DEFAULT current_timestamp,
-            PRIMARY KEY (season, league_id, team_id)
-        )
-    """)
 
     log.info("Bronze schema and all %d tables verified", len(ALL_BRONZE_TABLES))
 
@@ -244,11 +213,5 @@ def delete_season(conn, league_id: int, season: int) -> None:
             f"DELETE FROM bronze.{table} WHERE season = ? AND league_id = ?",
             [season, league_id],
         )
-
-    # Team statistics — scoped by season + league
-    conn.execute(
-        f"DELETE FROM bronze.{TEAM_STATS_TABLE} WHERE season = ? AND league_id = ?",
-        [season, league_id],
-    )
 
     log.info("League %d season %d: existing data cleared", league_id, season)

@@ -27,7 +27,6 @@ from ingest_country import load_country
 from ingest_fixtures import delete_fixture_window, load_fixtures
 from ingest_leagues import load_leagues
 from ingest_season import load_season
-from ingest_teams import load_teams
 
 logging.basicConfig(
     level=logging.INFO,
@@ -77,10 +76,7 @@ def run(
                 # Group 3 — fixtures + fixture details
                 load_fixtures(conn, lid, s)
 
-                # Group 4 — per-team data
-                load_teams(conn, lid, s)
-
-            # Group 5 — country data (not season-scoped)
+            # Group 4 — country data (not season-scoped)
             load_country(conn, lid, country)
 
     else:
@@ -105,10 +101,7 @@ def run(
             delete_fixture_window(conn, lid, from_date)
             load_fixtures(conn, lid, current_season, from_date=from_date, to_date=to_date)
 
-            # Group 4 — per-team data (current season)
-            load_teams(conn, lid, current_season)
-
-            # Group 5 — country data
+            # Group 4 — country data
             load_country(conn, lid, country)
 
     conn.close()
