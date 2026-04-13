@@ -1,8 +1,6 @@
 name: Daily ingestion
 
 on:
-  schedule:
-    - cron: "0 23 * * *"  # 23:00 UTC = midnight Danish time (CET) — after matches finish
   workflow_dispatch:
     inputs:
       full_load:
