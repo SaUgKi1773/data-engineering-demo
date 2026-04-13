@@ -1,5 +1,8 @@
 -- Group 4 | refresh: full replace
 -- One row per (team, player) from current squad.
+CREATE SCHEMA IF NOT EXISTS {db}.silver;
+
+CREATE OR REPLACE TABLE {db}.silver.squads AS
 SELECT
     team_id,
     (squad->>'$.team.id')::INTEGER       AS team_id_json,
@@ -14,4 +17,4 @@ SELECT
     ingested_at
 FROM {db}.bronze.api_football__squads,
 UNNEST(raw_json::JSON[]) AS t1(squad),
-UNNEST((squad->'$.players')::JSON[]) AS t2(pl)
+UNNEST((squad->'$.players')::JSON[]) AS t2(pl);

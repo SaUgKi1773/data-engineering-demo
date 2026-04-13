@@ -1,5 +1,8 @@
 -- Group 4 | refresh: full replace
 -- One row per individual transfer record.
+CREATE SCHEMA IF NOT EXISTS {db}.silver;
+
+CREATE OR REPLACE TABLE {db}.silver.transfers AS
 SELECT
     team_id,
     (elem->>'$.player.id')::INTEGER        AS player_id,
@@ -16,4 +19,4 @@ SELECT
     ingested_at
 FROM {db}.bronze.api_football__transfers,
 UNNEST(raw_json::JSON[]) AS t1(elem),
-UNNEST((elem->'$.transfers')::JSON[]) AS t2(tr)
+UNNEST((elem->'$.transfers')::JSON[]) AS t2(tr);

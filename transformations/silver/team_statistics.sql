@@ -1,6 +1,9 @@
 -- Group 4 | refresh: full replace
 -- One row per (season, league_id, team). raw_json is a single object (not array).
 -- Goals by time-bucket and card data kept as JSON; key summary stats flattened.
+CREATE SCHEMA IF NOT EXISTS {db}.silver;
+
+CREATE OR REPLACE TABLE {db}.silver.team_statistics AS
 SELECT
     season,
     league_id,
@@ -15,7 +18,6 @@ SELECT
     raw_json->>'$.team.name'                         AS team_name,
     raw_json->>'$.team.logo'                         AS team_logo,
     raw_json->>'$.form'                              AS form,
-    -- fixtures
     (raw_json->>'$.fixtures.played.home')::INTEGER   AS played_home,
     (raw_json->>'$.fixtures.played.away')::INTEGER   AS played_away,
     (raw_json->>'$.fixtures.played.total')::INTEGER  AS played_total,
@@ -28,21 +30,18 @@ SELECT
     (raw_json->>'$.fixtures.loses.home')::INTEGER    AS losses_home,
     (raw_json->>'$.fixtures.loses.away')::INTEGER    AS losses_away,
     (raw_json->>'$.fixtures.loses.total')::INTEGER   AS losses_total,
-    -- goals for
     (raw_json->>'$.goals.for.total.home')::INTEGER   AS goals_for_home,
     (raw_json->>'$.goals.for.total.away')::INTEGER   AS goals_for_away,
     (raw_json->>'$.goals.for.total.total')::INTEGER  AS goals_for_total,
     raw_json->>'$.goals.for.average.home'            AS goals_for_avg_home,
     raw_json->>'$.goals.for.average.away'            AS goals_for_avg_away,
     raw_json->>'$.goals.for.average.total'           AS goals_for_avg_total,
-    -- goals against
     (raw_json->>'$.goals.against.total.home')::INTEGER  AS goals_against_home,
     (raw_json->>'$.goals.against.total.away')::INTEGER  AS goals_against_away,
     (raw_json->>'$.goals.against.total.total')::INTEGER AS goals_against_total,
     raw_json->>'$.goals.against.average.home'           AS goals_against_avg_home,
     raw_json->>'$.goals.against.average.away'           AS goals_against_avg_away,
     raw_json->>'$.goals.against.average.total'          AS goals_against_avg_total,
-    -- biggest
     (raw_json->>'$.biggest.streak.wins')::INTEGER    AS streak_wins,
     (raw_json->>'$.biggest.streak.draws')::INTEGER   AS streak_draws,
     (raw_json->>'$.biggest.streak.loses')::INTEGER   AS streak_losses,
@@ -50,23 +49,20 @@ SELECT
     raw_json->>'$.biggest.wins.away'                 AS biggest_win_away,
     raw_json->>'$.biggest.loses.home'                AS biggest_loss_home,
     raw_json->>'$.biggest.loses.away'                AS biggest_loss_away,
-    -- clean sheets / failed to score
     (raw_json->>'$.clean_sheet.home')::INTEGER       AS clean_sheet_home,
     (raw_json->>'$.clean_sheet.away')::INTEGER       AS clean_sheet_away,
     (raw_json->>'$.clean_sheet.total')::INTEGER      AS clean_sheet_total,
     (raw_json->>'$.failed_to_score.home')::INTEGER   AS failed_to_score_home,
     (raw_json->>'$.failed_to_score.away')::INTEGER   AS failed_to_score_away,
     (raw_json->>'$.failed_to_score.total')::INTEGER  AS failed_to_score_total,
-    -- penalty
     (raw_json->>'$.penalty.scored.total')::INTEGER   AS penalty_scored,
     raw_json->>'$.penalty.scored.percentage'         AS penalty_scored_pct,
     (raw_json->>'$.penalty.missed.total')::INTEGER   AS penalty_missed,
     raw_json->>'$.penalty.missed.percentage'         AS penalty_missed_pct,
     (raw_json->>'$.penalty.total')::INTEGER          AS penalty_total,
-    -- time-bucketed and lineup detail kept as JSON
     (raw_json->'$.goals.for.minute')                 AS goals_for_by_minute,
     (raw_json->'$.goals.against.minute')             AS goals_against_by_minute,
     (raw_json->'$.lineups')                          AS lineups,
     (raw_json->'$.cards')                            AS cards,
     ingested_at
-FROM {db}.bronze.api_football__team_statistics
+FROM {db}.bronze.api_football__team_statistics;

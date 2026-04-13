@@ -43,19 +43,19 @@ SQL_DIR = Path(__file__).parent / "silver"
 # Table groups — mirror bronze config.py groupings
 # ---------------------------------------------------------------------------
 
-# Full replace on every run
+# Always full replace (CREATE OR REPLACE TABLE in the SQL file)
 FULL_REPLACE_TABLES = [
-    "leagues",       # Group 1
-    "coaches",       # Group 4
+    "leagues",        # Group 1
+    "coaches",        # Group 4
     "squads",
     "transfers",
     "sidelined",
     "trophies",
     "team_statistics",
-    "venues",        # Group 5
+    "venues",         # Group 5
 ]
 
-# Season-scoped: DELETE WHERE league_id + season, then INSERT for that window
+# Season-scoped: filter = league_id = X AND season = Y
 SEASON_TABLES = [
     "standings",
     "topscorers",
@@ -68,7 +68,7 @@ SEASON_TABLES = [
     "players",
 ]
 
-# Date-windowed: DELETE WHERE kick_off BETWEEN dates, then INSERT for that window
+# Date-windowed (incremental) or season-scoped: filter varies by mode
 FIXTURE_TABLES = [
     "fixtures",
     "fixture_events",
@@ -79,101 +79,71 @@ FIXTURE_TABLES = [
     "fixture_odds",
 ]
 
-ALL_TABLES = FULL_REPLACE_TABLES + SEASON_TABLES + FIXTURE_TABLES
 
+# ---------------------------------------------------------------------------
+# Core execution helpers
+# ---------------------------------------------------------------------------
 
-def _connect(target_db: str | None) -> duckdb.DuckDBPyConnection:
+def _connect(target_db: str | None) -> tuple[duckdb.DuckDBPyConnection, str]:
     db = target_db or os.getenv("TARGET_DB", "superligaen_dev")
-    token = os.getenv("MOTHERDUCK_TOKEN")
-    if not token:
-        raise RuntimeError("MOTHERDUCK_TOKEN environment variable is not set")
+    token = os.environ["MOTHERDUCK_TOKEN"]
     conn = duckdb.connect(f"md:{db}?motherduck_token={token}")
-    conn.execute(f"CREATE SCHEMA IF NOT EXISTS {db}.silver")
+    log.info("Connected to MotherDuck: %s", db)
     return conn, db
 
 
-def _read_sql(table: str, db: str) -> str:
-    path = SQL_DIR / f"{table}.sql"
-    return path.read_text().format(db=db)
+def _run_sql(conn: duckdb.DuckDBPyConnection, db: str, table: str,
+             delete_filter: str = "TRUE", insert_filter: str = "TRUE") -> None:
+    """Read a SQL file, substitute placeholders, execute each statement."""
+    sql = (SQL_DIR / f"{table}.sql").read_text().format(
+        db=db,
+        delete_filter=delete_filter,
+        insert_filter=insert_filter,
+    )
+    # Strip single-line comments then split on statement boundaries
+    stripped = "\n".join(
+        line for line in sql.splitlines() if not line.strip().startswith("--")
+    )
+    for stmt in stripped.split(";"):
+        stmt = stmt.strip()
+        if stmt:
+            conn.execute(stmt)
+    log.info("  %-30s  filter: %s", f"{db}.silver.{table}", insert_filter)
 
 
-def _full_replace(conn: duckdb.DuckDBPyConnection, db: str, table: str) -> None:
-    sql = _read_sql(table, db)
-    log.info("  [full replace] %s.silver.%s", db, table)
-    conn.execute(f"CREATE OR REPLACE TABLE {db}.silver.{table} AS ({sql})")
+# ---------------------------------------------------------------------------
+# Helpers to derive league / season from bronze
+# ---------------------------------------------------------------------------
+
+def _default_league(conn: duckdb.DuckDBPyConnection, db: str) -> int:
+    row = conn.execute(
+        f"SELECT league_id FROM {db}.bronze.api_football__leagues LIMIT 1"
+    ).fetchone()
+    if not row:
+        raise RuntimeError("No leagues in bronze — run ingestion first")
+    return row[0]
 
 
-def _season_replace(
-    conn: duckdb.DuckDBPyConnection,
-    db: str,
-    table: str,
-    league_id: int,
-    season: int,
-) -> None:
-    sql = _read_sql(table, db)
-    log.info("  [season replace] %s.silver.%s  league=%d season=%d", db, table, league_id, season)
-    conn.execute(
-        f"CREATE TABLE IF NOT EXISTS {db}.silver.{table} AS "
-        f"SELECT * FROM ({sql}) _t WHERE 1=0"
-    )
-    conn.execute(
-        f"DELETE FROM {db}.silver.{table} "
-        f"WHERE league_id = {league_id} AND season = {season}"
-    )
-    conn.execute(
-        f"INSERT INTO {db}.silver.{table} "
-        f"SELECT * FROM ({sql}) _t "
-        f"WHERE league_id = {league_id} AND season = {season}"
-    )
+def _current_season(conn: duckdb.DuckDBPyConnection, db: str, league_id: int) -> int:
+    row = conn.execute(
+        f"""
+        SELECT (s->>'$.year')::INTEGER
+        FROM {db}.bronze.api_football__leagues,
+        UNNEST(raw_json::JSON[]) AS t1(elem),
+        UNNEST((elem->'$.seasons')::JSON[]) AS t2(s)
+        WHERE league_id = {league_id}
+          AND (s->>'$.current')::BOOLEAN = true
+        LIMIT 1
+        """
+    ).fetchone()
+    if not row:
+        raise RuntimeError(f"Cannot determine current season for league {league_id}")
+    return row[0]
 
 
-def _fixture_replace(
-    conn: duckdb.DuckDBPyConnection,
-    db: str,
-    table: str,
-    from_date: str,
-    to_date: str,
-) -> None:
-    sql = _read_sql(table, db)
-    log.info("  [fixture window] %s.silver.%s  %s → %s", db, table, from_date, to_date)
-    conn.execute(
-        f"CREATE TABLE IF NOT EXISTS {db}.silver.{table} AS "
-        f"SELECT * FROM ({sql}) _t WHERE 1=0"
-    )
-    conn.execute(
-        f"DELETE FROM {db}.silver.{table} "
-        f"WHERE kick_off >= '{from_date}' AND kick_off < '{to_date}'"
-    )
-    conn.execute(
-        f"INSERT INTO {db}.silver.{table} "
-        f"SELECT * FROM ({sql}) _t "
-        f"WHERE kick_off >= '{from_date}' AND kick_off < '{to_date}'"
-    )
-
-
-def _fixture_season_replace(
-    conn: duckdb.DuckDBPyConnection,
-    db: str,
-    table: str,
-    league_id: int,
-    season: int,
-) -> None:
-    sql = _read_sql(table, db)
-    log.info("  [fixture season replace] %s.silver.%s  league=%d season=%d", db, table, league_id, season)
-    conn.execute(
-        f"CREATE TABLE IF NOT EXISTS {db}.silver.{table} AS "
-        f"SELECT * FROM ({sql}) _t WHERE 1=0"
-    )
-    conn.execute(
-        f"DELETE FROM {db}.silver.{table} "
-        f"WHERE league_id = {league_id} AND season = {season}"
-    )
-    conn.execute(
-        f"INSERT INTO {db}.silver.{table} "
-        f"SELECT * FROM ({sql}) _t "
-        f"WHERE league_id = {league_id} AND season = {season}"
-    )
-
+# ---------------------------------------------------------------------------
+# Main run logic
+# ---------------------------------------------------------------------------
 
 def run(
     lookback_days: int = 2,
@@ -184,83 +154,52 @@ def run(
 ) -> None:
     conn, db = _connect(target_db)
 
-    if full_load and not league_id and not season:
-        # ---------------------------------------------------------------
-        # Full replace — wipe and rebuild every silver table from scratch
-        # ---------------------------------------------------------------
-        log.info("=== Full silver load — replacing all tables in %s.silver ===", db)
-        for table in ALL_TABLES:
-            _full_replace(conn, db, table)
+    if full_load and not season:
+        # ------------------------------------------------------------------
+        # Full load — pass TRUE so every SQL file does a complete replace
+        # ------------------------------------------------------------------
+        log.info("=== Full silver load — %s.silver ===", db)
+        for table in FULL_REPLACE_TABLES + SEASON_TABLES + FIXTURE_TABLES:
+            _run_sql(conn, db, table)
 
     elif full_load and season:
-        # ---------------------------------------------------------------
-        # Seasonal load — full replace for reference tables,
-        #                 season-scoped replace for Groups 2 & 3
-        # ---------------------------------------------------------------
-        lid = league_id or _get_default_league(conn, db)
-        log.info("=== Seasonal silver load — %s.silver  league=%s  season=%d ===", db, lid, season)
+        # ------------------------------------------------------------------
+        # Seasonal load — reference tables full replace; Groups 2 & 3 scoped
+        # ------------------------------------------------------------------
+        lid = league_id or _default_league(conn, db)
+        scope = f"league_id = {lid} AND season = {season}"
+        log.info("=== Seasonal silver load — %s.silver  league=%d  season=%d ===", db, lid, season)
 
         for table in FULL_REPLACE_TABLES:
-            _full_replace(conn, db, table)
-
-        for table in SEASON_TABLES:
-            _season_replace(conn, db, table, lid, season)
-
-        for table in FIXTURE_TABLES:
-            _fixture_season_replace(conn, db, table, lid, season)
+            _run_sql(conn, db, table)
+        for table in SEASON_TABLES + FIXTURE_TABLES:
+            _run_sql(conn, db, table, delete_filter=scope, insert_filter=scope)
 
     else:
-        # ---------------------------------------------------------------
-        # Daily incremental — full replace for reference tables,
-        #                     current-season replace for Group 2,
-        #                     lookback window for Group 3
-        # ---------------------------------------------------------------
-        from_date = (date.today() - timedelta(days=lookback_days)).isoformat()
-        to_date   = date.today().isoformat()
-        lid       = league_id or _get_default_league(conn, db)
-        cur_season = _get_current_season(conn, db, lid)
+        # ------------------------------------------------------------------
+        # Daily incremental — reference tables full replace; season tables
+        # scoped to current season; fixture tables scoped to lookback window
+        # ------------------------------------------------------------------
+        lid        = league_id or _default_league(conn, db)
+        cur_season = _current_season(conn, db, lid)
+        from_date  = (date.today() - timedelta(days=lookback_days)).isoformat()
+        to_date    = date.today().isoformat()
+        season_scope  = f"league_id = {lid} AND season = {cur_season}"
+        fixture_scope = f"kick_off >= '{from_date}' AND kick_off < '{to_date}'"
         log.info(
             "=== Incremental silver load — %s.silver  league=%d  season=%d  from=%s ===",
             db, lid, cur_season, from_date,
         )
 
         for table in FULL_REPLACE_TABLES:
-            _full_replace(conn, db, table)
-
+            _run_sql(conn, db, table)
         for table in SEASON_TABLES:
-            _season_replace(conn, db, table, lid, cur_season)
-
+            _run_sql(conn, db, table, delete_filter=season_scope, insert_filter=season_scope)
         for table in FIXTURE_TABLES:
-            _fixture_replace(conn, db, table, from_date, to_date)
+            _run_sql(conn, db, table, delete_filter=fixture_scope, insert_filter=fixture_scope)
 
     conn.close()
     log.info("Silver transformation complete")
-
-
-def _get_default_league(conn: duckdb.DuckDBPyConnection, db: str) -> int:
-    """Return the first league_id found in the bronze leagues table."""
-    row = conn.execute(f"SELECT league_id FROM {db}.bronze.api_football__leagues LIMIT 1").fetchone()
-    if not row:
-        raise RuntimeError("No leagues found in bronze — run ingestion first")
-    return row[0]
-
-
-def _get_current_season(conn: duckdb.DuckDBPyConnection, db: str, league_id: int) -> int:
-    """Return the current season for the given league from bronze."""
-    row = conn.execute(
-        f"""
-        SELECT (unnested->>'$.year')::INTEGER AS year
-        FROM {db}.bronze.api_football__leagues,
-        UNNEST(raw_json::JSON[]) AS t1(elem),
-        UNNEST((elem->'$.seasons')::JSON[]) AS t2(unnested)
-        WHERE league_id = {league_id}
-          AND (unnested->>'$.current')::BOOLEAN = true
-        LIMIT 1
-        """
-    ).fetchone()
-    if not row:
-        raise RuntimeError(f"Could not determine current season for league {league_id}")
-    return row[0]
 
 
 if __name__ == "__main__":

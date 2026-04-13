@@ -1,5 +1,8 @@
 -- Group 5 | refresh: full replace
--- One row per venue. Source is filtered by country; league_id carried for traceability.
+-- One row per venue.
+CREATE SCHEMA IF NOT EXISTS {db}.silver;
+
+CREATE OR REPLACE TABLE {db}.silver.venues AS
 SELECT
     league_id,
     (elem->>'$.id')::INTEGER       AS venue_id,
@@ -12,4 +15,4 @@ SELECT
     elem->>'$.image'               AS image,
     ingested_at
 FROM {db}.bronze.api_football__venues,
-UNNEST(raw_json::JSON[]) AS t(elem)
+UNNEST(raw_json::JSON[]) AS t(elem);

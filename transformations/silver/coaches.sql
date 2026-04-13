@@ -1,5 +1,8 @@
 -- Group 4 | refresh: full replace
 -- One row per coach. Career history kept as JSON array column.
+CREATE SCHEMA IF NOT EXISTS {db}.silver;
+
+CREATE OR REPLACE TABLE {db}.silver.coaches AS
 SELECT
     team_id,
     (elem->>'$.id')::INTEGER         AS coach_id,
@@ -20,4 +23,4 @@ SELECT
     (elem->'$.career')               AS career,
     ingested_at
 FROM {db}.bronze.api_football__coaches,
-UNNEST(raw_json::JSON[]) AS t(elem)
+UNNEST(raw_json::JSON[]) AS t(elem);
