@@ -4,7 +4,7 @@ CREATE SCHEMA IF NOT EXISTS {db}.gold;
 
 CREATE OR REPLACE TABLE {db}.gold.dim_league AS
 SELECT
-    league_id    AS league_sk,
+    ROW_NUMBER() OVER (ORDER BY league_id)::INTEGER AS league_sk,
     league_id,
     league_name,
     league_type,

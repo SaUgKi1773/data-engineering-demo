@@ -5,7 +5,7 @@ CREATE SCHEMA IF NOT EXISTS {db}.gold;
 
 CREATE OR REPLACE TABLE {db}.gold.dim_venue AS
 SELECT
-    venue_id     AS venue_sk,
+    ROW_NUMBER() OVER (ORDER BY venue_id)::INTEGER AS venue_sk,
     venue_id,
     venue_name,
     address,

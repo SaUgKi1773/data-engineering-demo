@@ -102,10 +102,10 @@ SELECT
 FROM fixture_teams ft
 JOIN      {db}.gold.dim_date     d   ON d.full_date      = ft.match_date
 JOIN      {db}.gold.dim_time     t   ON t.time_sk        = ft.kick_off_hour
-JOIN      {db}.gold.dim_team     tm  ON tm.team_sk       = ft.team_id
-JOIN      {db}.gold.dim_team     opp ON opp.team_sk      = ft.opponent_id
-JOIN      {db}.gold.dim_league   l   ON l.league_sk      = ft.league_id
-LEFT JOIN {db}.gold.dim_venue    v   ON v.venue_sk       = ft.venue_id
+JOIN      {db}.gold.dim_team     tm  ON tm.team_id       = ft.team_id
+JOIN      {db}.gold.dim_team     opp ON opp.team_id      = ft.opponent_id
+JOIN      {db}.gold.dim_league   l   ON l.league_id      = ft.league_id
+LEFT JOIN {db}.gold.dim_venue    v   ON v.venue_id       = ft.venue_id
 LEFT JOIN {db}.gold.dim_referee  ref ON ref.referee_name = ft.referee
 LEFT JOIN {db}.gold.dim_round    rnd ON rnd.league_id    = ft.league_id
                                     AND rnd.season       = ft.season
