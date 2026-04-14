@@ -98,12 +98,16 @@ SELECT * FROM (
         ft.match_role_sk,
         CASE
             WHEN ft.status_short IN ('FT', 'AET', 'PEN')
-                 AND ft.goals_scored  > ft.goals_conceded THEN 1
+                 AND ft.goals_scored  > ft.goals_conceded THEN 1   -- Win
             WHEN ft.status_short IN ('FT', 'AET', 'PEN')
-                 AND ft.goals_scored  = ft.goals_conceded THEN 2
+                 AND ft.goals_scored  = ft.goals_conceded THEN 2   -- Draw
             WHEN ft.status_short IN ('FT', 'AET', 'PEN')
-                 AND ft.goals_scored  < ft.goals_conceded THEN 3
-            ELSE 4
+                 AND ft.goals_scored  < ft.goals_conceded THEN 3   -- Loss
+            WHEN ft.status_short IN ('NS', 'TBD', '1H', 'HT', '2H', 'ET', 'BT', 'P', 'LIVE')
+                                                              THEN 4   -- Pending
+            WHEN ft.status_short IN ('PST', 'CANC', 'ABD', 'AWD', 'WO', 'SUSP', 'INT')
+                                                              THEN -2  -- Not Applicable
+            ELSE -1                                                    -- Unknown
         END                                                                  AS result_sk,
         ft.fixture_id,
         CASE

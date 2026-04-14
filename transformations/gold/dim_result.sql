@@ -1,6 +1,9 @@
 -- Dimension: match result (from the perspective of the team row)
--- Static 4-row dimension. 'Pending' covers fixtures not yet played,
--- in progress, postponed, or cancelled.
+-- Static dimension. Known status_short mappings:
+--   Win/Draw/Loss  : FT, AET, PEN  (decided by goals comparison)
+--   Pending        : NS, TBD, 1H, HT, 2H, ET, BT, P, LIVE
+--   Not Applicable : PST, CANC, ABD, AWD, WO, SUSP, INT
+--   Unknown        : any status not listed above (SK = -1)
 -- Full replace every run.
 CREATE SCHEMA IF NOT EXISTS {db}.gold;
 
