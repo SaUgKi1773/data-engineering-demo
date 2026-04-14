@@ -1,0 +1,15 @@
+-- Dimension: league
+-- One row per league. Full replace every run.
+CREATE SCHEMA IF NOT EXISTS {db}.gold;
+
+CREATE OR REPLACE TABLE {db}.gold.dim_league AS
+SELECT
+    league_id    AS league_sk,
+    league_id,
+    league_name,
+    league_type,
+    league_logo,
+    country_name,
+    country_code,
+    country_flag
+FROM {db}.silver.leagues;

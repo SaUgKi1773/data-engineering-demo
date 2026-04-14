@@ -101,3 +101,28 @@ jobs:
           [ -n "${{ github.event.inputs.league }}" ] && ARGS="$ARGS --league ${{ github.event.inputs.league }}"
           [ -n "${{ github.event.inputs.season }}" ] && ARGS="$ARGS --season ${{ github.event.inputs.season }}"
           python transformations/run_silver.py $ARGS
+
+  # ---------------------------------------------------------------------------
+  # Gold — build Kimball dimensional model
+  # ---------------------------------------------------------------------------
+  gold:
+    name: Gold transformation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: transform  # only runs if silver succeeds
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build gold dimensional model
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
+        run: python transformations/run_gold.py
