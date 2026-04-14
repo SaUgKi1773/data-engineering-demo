@@ -15,6 +15,6 @@ SELECT
     surface
 FROM {db}.silver.venues
 UNION ALL
-SELECT -1, NULL, 'Unknown',        NULL, NULL, NULL, NULL, NULL
+SELECT -1, NULL, 'Unknown Venue',        NULL, NULL, NULL, NULL, NULL
 UNION ALL
-SELECT -2, NULL, 'Not Applicable', NULL, NULL, NULL, NULL, NULL;
+SELECT -2, NULL, 'Not Applicable Venue', NULL, NULL, NULL, NULL, NULL;

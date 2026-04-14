@@ -14,6 +14,6 @@ SELECT
     END           AS period_of_day
 FROM generate_series(0, 23) t(hour)
 UNION ALL
-SELECT -1, NULL, 'Unknown'
+SELECT -1, NULL, 'Unknown Time'
 UNION ALL
-SELECT -2, NULL, 'Not Applicable';
+SELECT -2, NULL, 'Not Applicable Time';
