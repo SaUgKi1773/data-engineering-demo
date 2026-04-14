@@ -121,8 +121,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Build gold dimensional model
+      - name: Build gold (incremental)
+        if: ${{ github.event.inputs.full_load != 'true' }}
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: python transformations/run_gold.py
+        run: python transformations/run_gold.py --lookback ${{ github.event.inputs.lookback || '2' }}
+
+      - name: Build gold (full load)
+        if: ${{ github.event.inputs.full_load == 'true' }}
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
+        run: python transformations/run_gold.py --full-load

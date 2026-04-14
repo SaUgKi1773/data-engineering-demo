@@ -3,6 +3,14 @@ name: Gold transformation
 on:
   workflow_dispatch:
     inputs:
+      full_load:
+        description: "Set to 'true' to fully rebuild the fact table from current silver"
+        required: false
+        default: "false"
+      lookback:
+        description: "Days to look back for incremental fact window (default: 2)"
+        required: false
+        default: "2"
       target_db:
         description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
         required: false
@@ -25,8 +33,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Build gold dimensional model
+      - name: Build gold (incremental)
+        if: ${{ github.event.inputs.full_load != 'true' }}
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: python transformations/run_gold.py
+        run: python transformations/run_gold.py --lookback ${{ github.event.inputs.lookback || '2' }}
+
+      - name: Build gold (full load)
+        if: ${{ github.event.inputs.full_load == 'true' }}
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
+        run: python transformations/run_gold.py --full-load
