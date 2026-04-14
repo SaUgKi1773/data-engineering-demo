@@ -8,15 +8,23 @@
 CREATE SCHEMA IF NOT EXISTS {db}.gold;
 
 CREATE OR REPLACE TABLE {db}.gold.dim_round AS
+WITH rounds_raw AS (
+    SELECT
+        league_id,
+        season,
+        round_name,
+        TRY_CAST(regexp_extract(round_name, '(\d+)$', 1) AS INTEGER) AS round_number
+    FROM {db}.silver.rounds
+)
 SELECT
     ROW_NUMBER() OVER (
         ORDER BY league_id, season, round_number NULLS LAST, round_name
-    )::INTEGER                                                       AS round_sk,
+    )::INTEGER AS round_sk,
     league_id,
     season,
     round_name,
-    TRY_CAST(regexp_extract(round_name, '(\d+)$', 1) AS INTEGER)    AS round_number
-FROM {db}.silver.rounds
+    round_number
+FROM rounds_raw
 UNION ALL
 SELECT -1, NULL, NULL, 'Unknown Round',        NULL
 UNION ALL
