@@ -16,4 +16,6 @@ FROM (
     WHERE referee IS NOT NULL AND referee <> ''
 )
 UNION ALL
-SELECT 0, 'Unknown';
+SELECT -1, 'Unknown'
+UNION ALL
+SELECT -2, 'Not Applicable';

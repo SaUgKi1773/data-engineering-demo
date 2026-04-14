@@ -12,4 +12,8 @@ SELECT
         WHEN hour BETWEEN 18 AND 23 THEN 'Evening'
         ELSE 'Night'
     END           AS period_of_day
-FROM generate_series(0, 23) t(hour);
+FROM generate_series(0, 23) t(hour)
+UNION ALL
+SELECT -1, NULL, 'Unknown'
+UNION ALL
+SELECT -2, NULL, 'Not Applicable';

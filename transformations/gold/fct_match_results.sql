@@ -54,9 +54,9 @@ SELECT * FROM (
         tm.team_sk,
         opp.team_sk                                                          AS opponent_sk,
         l.league_sk,
-        COALESCE(v.venue_sk,     0)                                          AS venue_sk,
-        COALESCE(ref.referee_sk, 0)                                          AS referee_sk,
-        COALESCE(rnd.round_sk,   0)                                          AS round_sk,
+        COALESCE(v.venue_sk,     -1)                                         AS venue_sk,
+        COALESCE(ref.referee_sk, -1)                                         AS referee_sk,
+        COALESCE(rnd.round_sk,   -1)                                         AS round_sk,
         ft.match_role_sk,
         CASE
             WHEN ft.status_short IN ('FT', 'AET', 'PEN')
@@ -163,9 +163,9 @@ SELECT * FROM (
         tm.team_sk,
         opp.team_sk                                                          AS opponent_sk,
         l.league_sk,
-        COALESCE(v.venue_sk,     0)                                          AS venue_sk,
-        COALESCE(ref.referee_sk, 0)                                          AS referee_sk,
-        COALESCE(rnd.round_sk,   0)                                          AS round_sk,
+        COALESCE(v.venue_sk,     -1)                                         AS venue_sk,
+        COALESCE(ref.referee_sk, -1)                                         AS referee_sk,
+        COALESCE(rnd.round_sk,   -1)                                         AS round_sk,
         ft.match_role_sk,
         CASE
             WHEN ft.status_short IN ('FT', 'AET', 'PEN')

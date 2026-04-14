@@ -18,4 +18,6 @@ SELECT
     TRY_CAST(regexp_extract(round_name, '(\d+)$', 1) AS INTEGER)    AS round_number
 FROM {db}.silver.rounds
 UNION ALL
-SELECT 0, NULL, NULL, 'Unknown', NULL;
+SELECT -1, NULL, NULL, 'Unknown',        NULL
+UNION ALL
+SELECT -2, NULL, NULL, 'Not Applicable', NULL;

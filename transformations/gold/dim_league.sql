@@ -12,4 +12,8 @@ SELECT
     country_name,
     country_code,
     country_flag
-FROM {db}.silver.leagues;
+FROM {db}.silver.leagues
+UNION ALL
+SELECT -1, NULL, 'Unknown',        NULL, NULL, NULL, NULL, NULL
+UNION ALL
+SELECT -2, NULL, 'Not Applicable', NULL, NULL, NULL, NULL, NULL;

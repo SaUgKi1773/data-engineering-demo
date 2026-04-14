@@ -4,6 +4,7 @@
 CREATE SCHEMA IF NOT EXISTS {db}.gold;
 
 CREATE OR REPLACE TABLE {db}.gold.dim_match_role AS
-SELECT 1 AS match_role_sk, 'Home' AS match_role
-UNION ALL
-SELECT 2, 'Away';
+SELECT  1 AS match_role_sk, 'Home'           AS match_role
+UNION ALL SELECT  2, 'Away'
+UNION ALL SELECT -1, 'Unknown'
+UNION ALL SELECT -2, 'Not Applicable';

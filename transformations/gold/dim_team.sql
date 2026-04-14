@@ -16,4 +16,8 @@ FROM (
         team_id, team_name, team_code, team_country, team_founded, team_logo
     FROM {db}.silver.teams
     ORDER BY team_id, season DESC
-);
+)
+UNION ALL
+SELECT -1, NULL, 'Unknown',        NULL, NULL, NULL, NULL
+UNION ALL
+SELECT -2, NULL, 'Not Applicable', NULL, NULL, NULL, NULL;
