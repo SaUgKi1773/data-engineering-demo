@@ -40,11 +40,11 @@ DIMENSIONS = [
     "dim_time",
     "dim_team",
     "dim_league",
-    "dim_venue",
+    "dim_stadium",
     "dim_referee",
-    "dim_round",
-    "dim_match_role",
-    "dim_result",
+    "dim_match_round",
+    "dim_side",
+    "dim_match_result",
 ]
 
 FACTS = [

@@ -1,5 +1,5 @@
 -- Fact: match results
--- Grain: one row per team per fixture (each match produces 2 rows).
+-- Grain: one row per team per match (each match produces 2 rows).
 -- Dimensions must be built before this table.
 --
 -- {delete_filter} / {insert_filter} examples:
@@ -13,12 +13,12 @@ CREATE TABLE IF NOT EXISTS {db}.gold.fct_match_results (
     team_sk             INTEGER       NOT NULL,
     opponent_sk         INTEGER       NOT NULL,
     league_sk           INTEGER       NOT NULL,
-    venue_sk            INTEGER       NOT NULL,
+    stadium_sk          INTEGER       NOT NULL,
     referee_sk          INTEGER       NOT NULL,
-    round_sk            INTEGER       NOT NULL,
-    match_role_sk       INTEGER       NOT NULL,
-    result_sk           INTEGER       NOT NULL,
-    fixture_id          INTEGER       NOT NULL,
+    match_round_sk      INTEGER       NOT NULL,
+    side_sk             INTEGER       NOT NULL,
+    match_result_sk     INTEGER       NOT NULL,
+    match_id            INTEGER       NOT NULL,
     points_earned       INTEGER,
     goals_scored        INTEGER,
     goals_conceded      INTEGER,
@@ -59,7 +59,7 @@ SELECT * FROM (
             f.venue_id,
             f.home_team_id                            AS team_id,
             f.away_team_id                            AS opponent_id,
-            1                                         AS match_role_sk,
+            1                                         AS side_sk,
             f.goals_home                              AS goals_scored,
             f.goals_away                              AS goals_conceded,
             f.score_ht_home                           AS goals_ht_scored,
@@ -88,14 +88,14 @@ SELECT * FROM (
     )
     SELECT
         d.date_sk,
-        COALESCE(t.time_sk,      -1)                                         AS time_sk,
-        COALESCE(tm.team_sk,     -1)                                         AS team_sk,
-        COALESCE(opp.team_sk,    -1)                                         AS opponent_sk,
-        COALESCE(l.league_sk,    -1)                                         AS league_sk,
-        COALESCE(v.venue_sk,     -1)                                         AS venue_sk,
-        COALESCE(ref.referee_sk, -1)                                         AS referee_sk,
-        COALESCE(rnd.round_sk,   -1)                                         AS round_sk,
-        ft.match_role_sk,
+        COALESCE(t.time_sk,          -1)                                     AS time_sk,
+        COALESCE(tm.team_sk,         -1)                                     AS team_sk,
+        COALESCE(opp.team_sk,        -1)                                     AS opponent_sk,
+        COALESCE(l.league_sk,        -1)                                     AS league_sk,
+        COALESCE(st.stadium_sk,      -1)                                     AS stadium_sk,
+        COALESCE(ref.referee_sk,     -1)                                     AS referee_sk,
+        COALESCE(rnd.match_round_sk, -1)                                     AS match_round_sk,
+        ft.side_sk,
         CASE
             WHEN ft.status_short IN ('FT', 'AET', 'PEN')
                  AND ft.goals_scored  > ft.goals_conceded THEN 1   -- Win
@@ -108,8 +108,8 @@ SELECT * FROM (
             WHEN ft.status_short IN ('PST', 'CANC', 'ABD', 'AWD', 'WO', 'SUSP', 'INT')
                                                               THEN -2  -- Not Applicable
             ELSE -1                                                    -- Unknown
-        END                                                                  AS result_sk,
-        ft.fixture_id,
+        END                                                                  AS match_result_sk,
+        ft.fixture_id                                                        AS match_id,
         CASE
             WHEN ft.status_short IN ('FT', 'AET', 'PEN')
                  AND ft.goals_scored  > ft.goals_conceded THEN 3
@@ -141,17 +141,17 @@ SELECT * FROM (
         s.goalkeeper_saves,
         s.expected_goals
     FROM fixture_teams ft
-    JOIN      {db}.gold.dim_date     d   ON d.full_date      = ft.match_date
-    LEFT JOIN {db}.gold.dim_time     t   ON t.time_sk        = ft.kick_off_hour
-    LEFT JOIN {db}.gold.dim_team     tm  ON tm.team_id       = ft.team_id
-    LEFT JOIN {db}.gold.dim_team     opp ON opp.team_id      = ft.opponent_id
-    LEFT JOIN {db}.gold.dim_league   l   ON l.league_id      = ft.league_id
-    LEFT JOIN {db}.gold.dim_venue    v   ON v.venue_id       = ft.venue_id
-    LEFT JOIN {db}.gold.dim_referee  ref ON ref.referee_name = ft.referee
-    LEFT JOIN {db}.gold.dim_round    rnd ON rnd.league_id    = ft.league_id
-                                        AND rnd.season       = ft.season
-                                        AND rnd.round_name   = ft.league_round
+    JOIN      {db}.gold.dim_date         d   ON d.full_date        = ft.match_date
+    LEFT JOIN {db}.gold.dim_time         t   ON t.time_sk          = ft.kick_off_hour
+    LEFT JOIN {db}.gold.dim_team         tm  ON tm.team_id         = ft.team_id
+    LEFT JOIN {db}.gold.dim_team         opp ON opp.team_id        = ft.opponent_id
+    LEFT JOIN {db}.gold.dim_league       l   ON l.league_id        = ft.league_id
+    LEFT JOIN {db}.gold.dim_stadium      st  ON st.stadium_id      = ft.venue_id
+    LEFT JOIN {db}.gold.dim_referee      ref ON ref.referee_name   = ft.referee
+    LEFT JOIN {db}.gold.dim_match_round  rnd ON rnd.league_id      = ft.league_id
+                                            AND rnd.season         = ft.season
+                                            AND rnd.round_name     = ft.league_round
     LEFT JOIN {db}.silver.fixture_statistics s
-                                            ON s.fixture_id  = ft.fixture_id
-                                           AND s.team_id     = ft.team_id
+                                                ON s.fixture_id    = ft.fixture_id
+                                               AND s.team_id       = ft.team_id
 ) _src WHERE {insert_filter};

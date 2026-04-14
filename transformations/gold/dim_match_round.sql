@@ -1,4 +1,4 @@
--- Dimension: round
+-- Dimension: match round
 -- One row per league/season/round combination, plus sentinel rows.
 -- round_number is extracted from the trailing integer in round_name
 -- (e.g. 'Regular Season - 12' -> 12).
@@ -10,7 +10,7 @@
 -- Full replace every run.
 CREATE SCHEMA IF NOT EXISTS {db}.gold;
 
-CREATE OR REPLACE TABLE {db}.gold.dim_round AS
+CREATE OR REPLACE TABLE {db}.gold.dim_match_round AS
 WITH rounds_raw AS (
     SELECT
         league_id,
@@ -22,13 +22,13 @@ WITH rounds_raw AS (
 SELECT
     ROW_NUMBER() OVER (
         ORDER BY league_id, season, round_number NULLS LAST, round_name
-    )::INTEGER AS round_sk,
+    )::INTEGER AS match_round_sk,
     league_id,
     season,
     round_name,
     round_number
 FROM rounds_raw
 UNION ALL
-SELECT -1, NULL, NULL, 'Unknown Round',        NULL
+SELECT -1, NULL, NULL, 'Unknown Match Round',        NULL
 UNION ALL
-SELECT -2, NULL, NULL, 'Not Applicable Round', NULL;
+SELECT -2, NULL, NULL, 'Not Applicable Match Round', NULL;
