@@ -88,10 +88,10 @@ SELECT * FROM (
     )
     SELECT
         d.date_sk,
-        t.time_sk,
-        tm.team_sk,
-        opp.team_sk                                                          AS opponent_sk,
-        l.league_sk,
+        COALESCE(t.time_sk,      -1)                                         AS time_sk,
+        COALESCE(tm.team_sk,     -1)                                         AS team_sk,
+        COALESCE(opp.team_sk,    -1)                                         AS opponent_sk,
+        COALESCE(l.league_sk,    -1)                                         AS league_sk,
         COALESCE(v.venue_sk,     -1)                                         AS venue_sk,
         COALESCE(ref.referee_sk, -1)                                         AS referee_sk,
         COALESCE(rnd.round_sk,   -1)                                         AS round_sk,
@@ -142,10 +142,10 @@ SELECT * FROM (
         s.expected_goals
     FROM fixture_teams ft
     JOIN      {db}.gold.dim_date     d   ON d.full_date      = ft.match_date
-    JOIN      {db}.gold.dim_time     t   ON t.time_sk        = ft.kick_off_hour
-    JOIN      {db}.gold.dim_team     tm  ON tm.team_id       = ft.team_id
-    JOIN      {db}.gold.dim_team     opp ON opp.team_id      = ft.opponent_id
-    JOIN      {db}.gold.dim_league   l   ON l.league_id      = ft.league_id
+    LEFT JOIN {db}.gold.dim_time     t   ON t.time_sk        = ft.kick_off_hour
+    LEFT JOIN {db}.gold.dim_team     tm  ON tm.team_id       = ft.team_id
+    LEFT JOIN {db}.gold.dim_team     opp ON opp.team_id      = ft.opponent_id
+    LEFT JOIN {db}.gold.dim_league   l   ON l.league_id      = ft.league_id
     LEFT JOIN {db}.gold.dim_venue    v   ON v.venue_id       = ft.venue_id
     LEFT JOIN {db}.gold.dim_referee  ref ON ref.referee_name = ft.referee
     LEFT JOIN {db}.gold.dim_round    rnd ON rnd.league_id    = ft.league_id
