@@ -1,6 +1,6 @@
 # Danish Football Data Engineering Demo
 
-An end-to-end data engineering project for Danish football data, built on a fully custom Python + SQL stack — no dbt.
+An end-to-end data engineering project for Danish football data, built on a fully custom Python + SQL stack.
 
 ## Tech stack
 
