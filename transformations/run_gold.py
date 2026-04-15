@@ -39,6 +39,7 @@ DIMENSIONS = [
     "dim_date",
     "dim_time",
     "dim_team",
+    "dim_opponent_team",
     "dim_league",
     "dim_stadium",
     "dim_referee",
