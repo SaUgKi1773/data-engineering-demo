@@ -3,7 +3,7 @@ select
     m.match_round_name           as round,
     m.season,
     t.team_name,
-    ot.team_name                 as opponent,
+    ot.opponent_team_name        as opponent,
     ts.team_side                 as side,
     f.goals_scored               as gf,
     f.goals_conceded             as ga,
@@ -12,7 +12,7 @@ select
     st.stadium_name              as stadium
 from gold.fct_match_results f
 join gold.dim_team          t   on t.team_sk            = f.team_sk
-join gold.dim_team          ot  on ot.team_sk           = f.opponent_sk
+join gold.dim_opponent_team ot  on ot.opponent_team_sk   = f.opponent_team_sk
 join gold.dim_date          d   on d.date_sk            = f.date_sk
 join gold.dim_match         m   on m.match_sk           = f.match_sk
 join gold.dim_match_result  r   on r.match_result_sk    = f.match_result_sk
