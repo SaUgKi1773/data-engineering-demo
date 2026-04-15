@@ -15,10 +15,9 @@ CREATE TABLE IF NOT EXISTS {db}.gold.fct_match_results (
     league_sk           INTEGER       NOT NULL,
     stadium_sk          INTEGER       NOT NULL,
     referee_sk          INTEGER       NOT NULL,
-    match_round_sk      INTEGER       NOT NULL,
+    match_sk            INTEGER       NOT NULL,
     team_side_sk        INTEGER       NOT NULL,
     match_result_sk     INTEGER       NOT NULL,
-    match_id            INTEGER       NOT NULL,
     points_earned       INTEGER,
     goals_scored        INTEGER,
     goals_conceded      INTEGER,
@@ -52,8 +51,6 @@ SELECT * FROM (
             f.kick_off::DATE                         AS match_date,
             EXTRACT(hour FROM f.kick_off)::INTEGER    AS kick_off_hour,
             f.league_id,
-            f.season,
-            f.league_round,
             f.referee,
             f.venue_id,
             f.home_team_id                            AS team_id,
@@ -71,8 +68,6 @@ SELECT * FROM (
             f.kick_off::DATE,
             EXTRACT(hour FROM f.kick_off)::INTEGER,
             f.league_id,
-            f.season,
-            f.league_round,
             f.referee,
             f.venue_id,
             f.away_team_id,
@@ -93,7 +88,7 @@ SELECT * FROM (
         COALESCE(l.league_sk,        -1)                                     AS league_sk,
         COALESCE(st.stadium_sk,      -1)                                     AS stadium_sk,
         COALESCE(ref.referee_sk,     -1)                                     AS referee_sk,
-        COALESCE(rnd.match_round_sk, -1)                                     AS match_round_sk,
+        COALESCE(m.match_sk,          -1)                                     AS match_sk,
         ft.side_sk AS team_side_sk,
         CASE
             WHEN ft.status_short IN ('FT', 'AET', 'PEN')
@@ -108,7 +103,6 @@ SELECT * FROM (
                                                               THEN -2  -- Not Applicable
             ELSE -1                                                    -- Unknown
         END                                                                  AS match_result_sk,
-        ft.fixture_id                                                        AS match_id,
         CASE
             WHEN ft.status_short IN ('FT', 'AET', 'PEN')
                  AND ft.goals_scored  > ft.goals_conceded THEN 3
@@ -146,9 +140,7 @@ SELECT * FROM (
     LEFT JOIN {db}.gold.dim_league       l   ON l.league_id        = ft.league_id
     LEFT JOIN {db}.gold.dim_stadium      st  ON st.stadium_id      = ft.venue_id
     LEFT JOIN {db}.gold.dim_referee      ref ON ref.referee_name   = ft.referee
-    LEFT JOIN {db}.gold.dim_match_round  rnd ON rnd.league_id      = ft.league_id
-                                            AND rnd.season         = ft.season
-                                            AND rnd.round_name     = ft.league_round
+    LEFT JOIN {db}.gold.dim_match        m   ON m.match_id         = ft.fixture_id
     LEFT JOIN {db}.silver.fixture_statistics s
                                                 ON s.fixture_id    = ft.fixture_id
                                                AND s.team_id       = ft.team_id
