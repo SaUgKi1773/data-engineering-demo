@@ -43,7 +43,7 @@ DIMENSIONS = [
     "dim_stadium",
     "dim_referee",
     "dim_match_round",
-    "dim_side",
+    "dim_team_side",
     "dim_match_result",
 ]
 

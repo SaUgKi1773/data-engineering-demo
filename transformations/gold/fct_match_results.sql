@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS {db}.gold.fct_match_results (
     stadium_sk          INTEGER       NOT NULL,
     referee_sk          INTEGER       NOT NULL,
     match_round_sk      INTEGER       NOT NULL,
-    side_sk             INTEGER       NOT NULL,
+    team_side_sk        INTEGER       NOT NULL,
     match_result_sk     INTEGER       NOT NULL,
     match_id            INTEGER       NOT NULL,
     points_earned       INTEGER,
@@ -33,7 +33,6 @@ CREATE TABLE IF NOT EXISTS {db}.gold.fct_match_results (
     ball_possession_pct DECIMAL(5,2),
     total_passes        INTEGER,
     passes_accurate     INTEGER,
-    passes_pct          DECIMAL(5,2),
     fouls               INTEGER,
     corner_kicks        INTEGER,
     offsides            INTEGER,
@@ -95,7 +94,7 @@ SELECT * FROM (
         COALESCE(st.stadium_sk,      -1)                                     AS stadium_sk,
         COALESCE(ref.referee_sk,     -1)                                     AS referee_sk,
         COALESCE(rnd.match_round_sk, -1)                                     AS match_round_sk,
-        ft.side_sk,
+        ft.side_sk AS team_side_sk,
         CASE
             WHEN ft.status_short IN ('FT', 'AET', 'PEN')
                  AND ft.goals_scored  > ft.goals_conceded THEN 1   -- Win
@@ -132,7 +131,6 @@ SELECT * FROM (
         s.ball_possession_pct,
         s.total_passes,
         s.passes_accurate,
-        s.passes_pct,
         s.fouls,
         s.corner_kicks,
         s.offsides,

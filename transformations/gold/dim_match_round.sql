@@ -32,3 +32,4 @@ UNION ALL
 SELECT -1, NULL, NULL, 'Unknown Match Round',        NULL
 UNION ALL
 SELECT -2, NULL, NULL, 'Not Applicable Match Round', NULL;
+
