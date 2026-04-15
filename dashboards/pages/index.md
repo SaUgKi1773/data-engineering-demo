@@ -34,9 +34,9 @@ where round_group = 'Relegation Group'
 ```
 
 ```sql regular
-select team, gp, w, d, l, gf, ga, gd, pts
-from ${standings}
-where round_group = 'Regular Season'
+select team_name as team, gp, w, d, l, gf, ga, gd, pts
+from superligaen.team_regular_season_stats
+where season = ${inputs.season.value}
 ```
 
 ## {inputs.season.value} Season Standings
