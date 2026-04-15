@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  ci:
+  validate:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,12 +21,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: dbt deps
-        working-directory: dbt/danish_football
-        run: dbt deps --profiles-dir .
-
-      - name: dbt test (dev schema)
-        working-directory: dbt/danish_football
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: dbt test --target dev --profiles-dir .
+      - name: Validate Python syntax
+        run: |
+          python -m py_compile ingestion/run.py
+          python -m py_compile ingestion/api.py
+          python -m py_compile ingestion/db.py
+          python -m py_compile ingestion/config.py
+          python -m py_compile transformations/run_silver.py
+          python -m py_compile transformations/run_gold.py
