@@ -1,0 +1,4 @@
+name: superligaen
+type: motherduck
+options:
+  database: superligaen
