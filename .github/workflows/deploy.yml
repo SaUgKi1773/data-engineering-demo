@@ -7,7 +7,9 @@ on:
 
 jobs:
   deploy:
+    name: Silver + Gold full load (prod)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -21,12 +23,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: dbt deps
-        working-directory: dbt/danish_football
-        run: dbt deps --profiles-dir .
-
-      - name: dbt run (prod)
-        working-directory: dbt/danish_football
+      - name: Run silver (full load)
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: dbt run --target prod --profiles-dir .
+          TARGET_DB: superligaen
+        run: python transformations/run_silver.py --full-load
+
+      - name: Run gold (full load)
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          TARGET_DB: superligaen
+        run: python transformations/run_gold.py --full-load
