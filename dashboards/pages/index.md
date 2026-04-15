@@ -41,6 +41,8 @@ where round_group = 'Regular Season'
 
 ## {inputs.season.value} Season Standings
 
+{#if championship.length > 0}
+
 ### Championship Group
 
 <DataTable data={championship} rows=20>
@@ -55,6 +57,10 @@ where round_group = 'Regular Season'
     <Column id=pts title="Pts" contentType=colorscale colorScale=positive/>
 </DataTable>
 
+{/if}
+
+{#if relegation.length > 0}
+
 ### Relegation Group
 
 <DataTable data={relegation} rows=20>
@@ -68,6 +74,8 @@ where round_group = 'Regular Season'
     <Column id=gd  title="GD"/>
     <Column id=pts title="Pts" contentType=colorscale colorScale=positive/>
 </DataTable>
+
+{/if}
 
 {#if regular.length > 0}
 
