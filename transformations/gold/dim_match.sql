@@ -43,7 +43,7 @@ SELECT
     SPLIT_PART(src.league_round, ' - ', 1)                     AS match_round_type,
     src.status_long                                             AS match_status,
     src.home_team_name || ' - ' || src.away_team_name           AS match_name,
-    COALESCE(ht.team_code, src.home_team_name) || ' - ' || COALESCE(at.team_code, src.away_team_name) AS match_short_name,
+    COALESCE(ht.team_code, src.home_team_name) || ' - ' || COALESCE(awt.team_code, src.away_team_name) AS match_short_name,
     CASE
         WHEN src.status_short IN ('FT', 'AET', 'PEN')
         THEN src.goals_home::VARCHAR || ' - ' || src.goals_away::VARCHAR
@@ -58,7 +58,7 @@ LEFT JOIN (
     SELECT DISTINCT ON (team_id) team_id, team_code
     FROM {db}.silver.teams
     ORDER BY team_id, season DESC
-) at ON at.team_id = src.away_team_id
+) awt ON awt.team_id = src.away_team_id
 WHERE src.fixture_id NOT IN (
     SELECT match_id FROM {db}.gold.dim_match WHERE match_id IS NOT NULL
 );
@@ -67,7 +67,7 @@ WHERE src.fixture_id NOT IN (
 UPDATE {db}.gold.dim_match tgt
 SET
     match_status     = src.status_long,
-    match_short_name = COALESCE(ht.team_code, src.home_team_name) || ' - ' || COALESCE(at.team_code, src.away_team_name),
+    match_short_name = COALESCE(ht.team_code, src.home_team_name) || ' - ' || COALESCE(awt.team_code, src.away_team_name),
     match_result     = CASE
                            WHEN src.status_short IN ('FT', 'AET', 'PEN')
                            THEN src.goals_home::VARCHAR || ' - ' || src.goals_away::VARCHAR
@@ -82,5 +82,5 @@ LEFT JOIN (
     SELECT DISTINCT ON (team_id) team_id, team_code
     FROM {db}.silver.teams
     ORDER BY team_id, season DESC
-) at ON at.team_id = src.away_team_id
+) awt ON awt.team_id = src.away_team_id
 WHERE tgt.match_id = src.fixture_id;
