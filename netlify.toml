@@ -1,0 +1,7 @@
+[build]
+  base    = "dashboards"
+  command = "npm run build"
+  publish = "dashboards/build"
+
+[build.environment]
+  NODE_VERSION = "20"
