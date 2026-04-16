@@ -66,7 +66,9 @@ WHERE src.fixture_id NOT IN (
 -- Update mutable fields for existing matches
 UPDATE {db}.gold.dim_match tgt
 SET
+    match_round_type = SPLIT_PART(src.league_round, ' - ', 1),
     match_status     = src.status_long,
+    match_name       = src.home_team_name || ' - ' || src.away_team_name,
     match_short_name = COALESCE(ht.team_code, src.home_team_name) || ' - ' || COALESCE(awt.team_code, src.away_team_name),
     match_result     = CASE
                            WHEN src.status_short IN ('FT', 'AET', 'PEN')
