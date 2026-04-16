@@ -2,6 +2,8 @@
 title: Match Results
 ---
 
+<a href="/" class="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white no-underline mb-6 transition-colors">← Back to Home</a>
+
 ```sql seasons
 select distinct season from superligaen.match_results
 order by season desc
