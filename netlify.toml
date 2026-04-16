@@ -1,6 +1,6 @@
 [build]
   base    = "dashboards"
-  command = "echo \"token: $MOTHERDUCK_TOKEN\" > sources/superligaen/connection.options.yaml && npm run build"
+  command = "echo \"token: $MOTHERDUCK_TOKEN\" > sources/superligaen/connection.options.yaml && npm run sources && npm run build"
   publish = "build"
 
 [build.environment]
