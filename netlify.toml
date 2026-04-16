@@ -1,14 +1,7 @@
 [build]
   base    = "dashboards"
-  command = "printf 'token: \"%s\"\\n' \"$MOTHERDUCK_TOKEN\" > sources/superligaen/connection.options.yaml && npm run sources && npm run build"
+  command = "npm run build"
   publish = "build"
 
 [build.environment]
   NODE_VERSION = "20"
-
-# DuckDB-WASM requires SharedArrayBuffer which needs these headers
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Cross-Origin-Opener-Policy   = "same-origin"
-    Cross-Origin-Embedder-Policy = "require-corp"
