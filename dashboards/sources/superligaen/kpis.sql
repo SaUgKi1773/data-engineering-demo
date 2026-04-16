@@ -6,9 +6,9 @@ select
         1
     )                                                                           as avg_shots_per_match,
     max(m.season)                                                               as season
-from gold.fct_match_results f
-join gold.dim_match        m on m.match_sk        = f.match_sk
-join gold.dim_match_result r on r.match_result_sk = f.match_result_sk
-where m.season = (select max(season) from gold.dim_match where season is not null)
+from superligaen.gold.fct_match_results f
+join superligaen.gold.dim_match        m on m.match_sk        = f.match_sk
+join superligaen.gold.dim_match_result r on r.match_result_sk = f.match_result_sk
+where m.season = (select max(season) from superligaen.gold.dim_match where season is not null)
   and r.match_result in ('Win', 'Draw', 'Loss')
   and f.total_shots is not null
