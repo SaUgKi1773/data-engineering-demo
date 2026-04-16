@@ -2,7 +2,7 @@
 title: Standings
 ---
 
-<a href="/" class="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white no-underline mb-6 transition-colors">← Back to Home</a>
+<a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
 
 ```sql seasons
 select distinct season from superligaen.team_season_stats
@@ -15,6 +15,7 @@ order by season desc
 
 ```sql standings
 select
+    row_number() over (partition by round_group order by pts desc, gd desc, gf desc) as rank,
     team_name   as team,
     gp, w, d, l, gf, ga, gd, pts,
     round_group
@@ -24,85 +25,111 @@ order by round_group, pts desc, gd desc, gf desc
 ```
 
 ```sql championship
-select team, gp, w, d, l, gf, ga, gd, pts
+select rank, team, gp, w, d, l, gf, ga, gd, pts
 from ${standings}
 where round_group = 'Championship Group'
 ```
 
 ```sql relegation
-select team, gp, w, d, l, gf, ga, gd, pts
+select rank, team, gp, w, d, l, gf, ga, gd, pts
 from ${standings}
 where round_group = 'Relegation Group'
 ```
 
 ```sql regular
-select team_name as team, gp, w, d, l, gf, ga, gd, pts
+select
+    row_number() over (order by pts desc, gd desc, gf desc) as rank,
+    team_name as team, gp, w, d, l, gf, ga, gd, pts
 from superligaen.team_regular_season_stats
 where season = ${inputs.season.value}
+```
+
+```sql all_teams
+select team, pts, gf, ga, round_group from ${standings}
+order by round_group, pts desc
 ```
 
 ## {inputs.season.value} Season Standings
 
 {#if championship.length > 0}
 
-### Championship Group
+### 🏆 Championship Group
 
 <DataTable data={championship} rows=20>
-    <Column id=team/>
-    <Column id=gp  title="GP"/>
-    <Column id=w   title="W"/>
-    <Column id=d   title="D"/>
-    <Column id=l   title="L"/>
-    <Column id=gf  title="GF"/>
-    <Column id=ga  title="GA"/>
-    <Column id=gd  title="GD"/>
-    <Column id=pts title="Pts" contentType=colorscale colorScale=positive/>
+    <Column id=rank title="#"   align=center />
+    <Column id=team title="Team"             />
+    <Column id=gp   title="GP"  align=center />
+    <Column id=w    title="W"   align=center />
+    <Column id=d    title="D"   align=center />
+    <Column id=l    title="L"   align=center />
+    <Column id=gf   title="GF"  align=center />
+    <Column id=ga   title="GA"  align=center />
+    <Column id=gd   title="GD"  align=center />
+    <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
 
 {/if}
 
 {#if relegation.length > 0}
 
-### Relegation Group
+### ⬇️ Relegation Group
 
 <DataTable data={relegation} rows=20>
-    <Column id=team/>
-    <Column id=gp  title="GP"/>
-    <Column id=w   title="W"/>
-    <Column id=d   title="D"/>
-    <Column id=l   title="L"/>
-    <Column id=gf  title="GF"/>
-    <Column id=ga  title="GA"/>
-    <Column id=gd  title="GD"/>
-    <Column id=pts title="Pts" contentType=colorscale colorScale=positive/>
+    <Column id=rank title="#"   align=center />
+    <Column id=team title="Team"             />
+    <Column id=gp   title="GP"  align=center />
+    <Column id=w    title="W"   align=center />
+    <Column id=d    title="D"   align=center />
+    <Column id=l    title="L"   align=center />
+    <Column id=gf   title="GF"  align=center />
+    <Column id=ga   title="GA"  align=center />
+    <Column id=gd   title="GD"  align=center />
+    <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
 
 {/if}
 
 {#if regular.length > 0}
 
-### Regular Season
+### 📋 Regular Season
 
 <DataTable data={regular} rows=20>
-    <Column id=team/>
-    <Column id=gp  title="GP"/>
-    <Column id=w   title="W"/>
-    <Column id=d   title="D"/>
-    <Column id=l   title="L"/>
-    <Column id=gf  title="GF"/>
-    <Column id=ga  title="GA"/>
-    <Column id=gd  title="GD"/>
-    <Column id=pts title="Pts" contentType=colorscale colorScale=positive/>
+    <Column id=rank title="#"   align=center />
+    <Column id=team title="Team"             />
+    <Column id=gp   title="GP"  align=center />
+    <Column id=w    title="W"   align=center />
+    <Column id=d    title="D"   align=center />
+    <Column id=l    title="L"   align=center />
+    <Column id=gf   title="GF"  align=center />
+    <Column id=ga   title="GA"  align=center />
+    <Column id=gd   title="GD"  align=center />
+    <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
 
 {/if}
 
+---
+
 <BarChart
-    data={standings}
+    data={all_teams}
     x=team
     y=pts
-    title="Points — {inputs.season.value}"
+    series=round_group
+    title="Points by Team — {inputs.season.value}"
     yAxisTitle="Points"
     xAxisTitle="Team"
     sort=false
+    swapXY=true
+/>
+
+<BarChart
+    data={all_teams}
+    x=team
+    y={['gf','ga']}
+    title="Goals For vs Goals Against — {inputs.season.value}"
+    yAxisTitle="Goals"
+    xAxisTitle="Team"
+    sort=false
+    swapXY=true
+    colorPalette={['#22c55e','#ef4444']}
 />
