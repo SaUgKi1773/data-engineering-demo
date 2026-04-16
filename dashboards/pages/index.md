@@ -1,106 +1,50 @@
 ---
-title: Superligaen Dashboard
+title: Superligaen
 ---
 
-```sql seasons
-select distinct season from superligaen.team_season_stats
-order by season desc
+```sql league
+select * from superligaen.league_info
 ```
 
-<Dropdown data={seasons} name=season value=season label=season>
-    <DropdownOption value=2025 valueLabel="2025"/>
-</Dropdown>
-
-```sql standings
-select
-    team_name   as team,
-    gp, w, d, l, gf, ga, gd, pts,
-    round_group
-from superligaen.team_season_stats
-where season = ${inputs.season.value}
-order by round_group, pts desc, gd desc, gf desc
+```sql kpis
+select * from superligaen.kpis
 ```
 
-```sql championship
-select team, gp, w, d, l, gf, ga, gd, pts
-from ${standings}
-where round_group = 'Championship Group'
+```sql leader
+select * from superligaen.current_leader
 ```
 
-```sql relegation
-select team, gp, w, d, l, gf, ga, gd, pts
-from ${standings}
-where round_group = 'Relegation Group'
-```
+<div class="flex items-center justify-center gap-6 my-8 flex-wrap">
+  <img src="{league[0].league_country_flag}" alt="Denmark" class="h-8 rounded shadow-md" />
+  <img src="{league[0].league_logo}" alt="Superligaen" class="h-16" />
+  <div class="text-center">
+    <div class="text-4xl font-extrabold tracking-tight">Superligaen</div>
+    <div class="text-gray-400 text-sm mt-1">Danish Football Premier League &middot; {kpis[0].season} Season</div>
+  </div>
+  <img src="{league[0].league_country_flag}" alt="Denmark" class="h-8 rounded shadow-md" />
+</div>
 
-```sql regular
-select team_name as team, gp, w, d, l, gf, ga, gd, pts
-from superligaen.team_regular_season_stats
-where season = ${inputs.season.value}
-```
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  <BigValue data={kpis}   value=total_goals        title="Goals Scored"      />
+  <BigValue data={leader} value=team_name           title="Current Leader"    />
+  <BigValue data={kpis}   value=total_red_cards     title="Red Cards"         />
+  <BigValue data={kpis}   value=avg_shots_per_match title="Avg Shots / Match" />
+</div>
 
-## {inputs.season.value} Season Standings
+---
 
-{#if championship.length > 0}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
 
-### Championship Group
+<a href="/standings" class="block no-underline rounded-xl border border-gray-700 bg-gray-900 p-6 hover:border-blue-500 hover:shadow-lg hover:bg-gray-800 transition-all duration-200 group">
+  <div class="text-4xl">🏆</div>
+  <div class="text-lg font-bold mt-3 mb-1 group-hover:text-blue-400 transition-colors">Standings</div>
+  <div class="text-gray-400 text-sm">Championship, Relegation &amp; Regular Season tables</div>
+</a>
 
-<DataTable data={championship} rows=20>
-    <Column id=team/>
-    <Column id=gp  title="GP"/>
-    <Column id=w   title="W"/>
-    <Column id=d   title="D"/>
-    <Column id=l   title="L"/>
-    <Column id=gf  title="GF"/>
-    <Column id=ga  title="GA"/>
-    <Column id=gd  title="GD"/>
-    <Column id=pts title="Pts" contentType=colorscale colorScale=positive/>
-</DataTable>
+<a href="/match-results" class="block no-underline rounded-xl border border-gray-700 bg-gray-900 p-6 hover:border-blue-500 hover:shadow-lg hover:bg-gray-800 transition-all duration-200 group">
+  <div class="text-4xl">⚽</div>
+  <div class="text-lg font-bold mt-3 mb-1 group-hover:text-blue-400 transition-colors">Match Results</div>
+  <div class="text-gray-400 text-sm">Full match history, results and scorelines by team</div>
+</a>
 
-{/if}
-
-{#if relegation.length > 0}
-
-### Relegation Group
-
-<DataTable data={relegation} rows=20>
-    <Column id=team/>
-    <Column id=gp  title="GP"/>
-    <Column id=w   title="W"/>
-    <Column id=d   title="D"/>
-    <Column id=l   title="L"/>
-    <Column id=gf  title="GF"/>
-    <Column id=ga  title="GA"/>
-    <Column id=gd  title="GD"/>
-    <Column id=pts title="Pts" contentType=colorscale colorScale=positive/>
-</DataTable>
-
-{/if}
-
-{#if regular.length > 0}
-
-### Regular Season
-
-<DataTable data={regular} rows=20>
-    <Column id=team/>
-    <Column id=gp  title="GP"/>
-    <Column id=w   title="W"/>
-    <Column id=d   title="D"/>
-    <Column id=l   title="L"/>
-    <Column id=gf  title="GF"/>
-    <Column id=ga  title="GA"/>
-    <Column id=gd  title="GD"/>
-    <Column id=pts title="Pts" contentType=colorscale colorScale=positive/>
-</DataTable>
-
-{/if}
-
-<BarChart
-    data={standings}
-    x=team
-    y=pts
-    title="Points — {inputs.season.value}"
-    yAxisTitle="Points"
-    xAxisTitle="Team"
-    sort=false
-/>
+</div>
