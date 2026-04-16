@@ -118,6 +118,20 @@ def _default_league(conn: duckdb.DuckDBPyConnection, db: str) -> int:
     return row[0]
 
 
+def _all_seasons(conn: duckdb.DuckDBPyConnection, db: str, league_id: int) -> list[int]:
+    rows = conn.execute(
+        f"""
+        SELECT DISTINCT (raw_json->>'$.league.season')::INTEGER AS season
+        FROM {db}.bronze.api_football__fixtures
+        WHERE (raw_json->>'$.league.id')::INTEGER = {league_id}
+        ORDER BY season
+        """
+    ).fetchall()
+    if not rows:
+        raise RuntimeError(f"No seasons found in bronze for league {league_id}")
+    return [r[0] for r in rows]
+
+
 def _current_season(conn: duckdb.DuckDBPyConnection, db: str, league_id: int) -> int:
     row = conn.execute(
         f"""
@@ -150,11 +164,20 @@ def run(
 
     if full_load and not season:
         # ------------------------------------------------------------------
-        # Full load — pass TRUE so every SQL file does a complete replace
+        # Full load — reference tables once, then season-by-season to avoid OOM
         # ------------------------------------------------------------------
-        log.info("=== Full silver load — %s.silver ===", db)
-        for table in FULL_REPLACE_TABLES + SEASON_TABLES + FIXTURE_TABLES:
+        lid     = league_id or _default_league(conn, db)
+        seasons = _all_seasons(conn, db, lid)
+        log.info("=== Full silver load — %s.silver  league=%d  seasons=%s ===", db, lid, seasons)
+
+        for table in FULL_REPLACE_TABLES:
             _run_sql(conn, db, table)
+
+        for s in seasons:
+            scope = f"league_id = {lid} AND season = {s}"
+            log.info("--- Season %d ---", s)
+            for table in SEASON_TABLES + FIXTURE_TABLES:
+                _run_sql(conn, db, table, delete_filter=scope, insert_filter=scope)
 
     elif full_load and season:
         # ------------------------------------------------------------------
