@@ -52,16 +52,51 @@ CREATE TABLE IF NOT EXISTS {db}.silver.fixtures (
 DELETE FROM {db}.silver.fixtures WHERE {delete_filter};
 
 INSERT INTO {db}.silver.fixtures
+WITH venue_lookup AS (
+    -- Build a name -> id map from bronze venues to backfill nulls in fixture API responses
+    SELECT
+        (elem->>'$.name')::VARCHAR    AS venue_name,
+        MIN((elem->>'$.id')::INTEGER) AS venue_id
+    FROM {db}.bronze.api_football__venues v,
+    UNNEST(v.raw_json::JSON[]) AS t(elem)
+    WHERE elem->>'$.id' IS NOT NULL
+    GROUP BY (elem->>'$.name')::VARCHAR
+)
 SELECT * FROM (
     SELECT
         (raw_json->>'$.fixture.id')::INTEGER          AS fixture_id,
-        raw_json->>'$.fixture.referee'                AS referee,
+        CASE TRIM(SPLIT_PART(raw_json->>'$.fixture.referee', ',', 1))
+            WHEN 'A. Uslu'                THEN 'Aydin Uslu'
+            WHEN 'C. Theouli'             THEN 'Chrysovalantis Theouli'
+            WHEN 'F. Svendsen'            THEN 'Frederik Svendsen'
+            WHEN 'J. A. Sundberg'         THEN 'Jacob A. Sundberg'
+            WHEN 'J. Sundberg'            THEN 'Jacob A. Sundberg'
+            WHEN 'J. Burchardt'           THEN 'Jorgen Daugbjerg Burchardt'
+            WHEN 'J. Hansen'              THEN 'Jonas Hansen'
+            WHEN 'J. Karlsen'             THEN 'Jacob Karlsen'
+            WHEN 'J. Kehlet'              THEN 'Jakob Kehlet'
+            WHEN 'J. Maae'                THEN 'Jens Maae'
+            WHEN 'K. Athanasiou'          THEN 'Kyriakos Athanasiou'
+            WHEN 'L. Graagaard'           THEN 'Lasse Laebel Graagaard'
+            WHEN 'M. Antoniou'            THEN 'Menelaos Antoniou'
+            WHEN 'M. Kristoffersen'       THEN 'Mads Kristoffer Kristoffersen'
+            WHEN 'M. Krogh'               THEN 'Morten Krogh'
+            WHEN 'M. Redder'              THEN 'Mikkel Redder'
+            WHEN 'M. Tykgaard'            THEN 'Michael Tykgaard'
+            WHEN 'P. Kjærsgaard-Andersen' THEN 'Peter Kjaersgaard-Andersen'
+            WHEN 'S. Putros'              THEN 'Sandi Putros'
+            WHEN 'S. Rasmussen'           THEN 'Simon Duerland Rasmussen'
+            ELSE TRIM(SPLIT_PART(raw_json->>'$.fixture.referee', ',', 1))
+        END                                           AS referee,
         raw_json->>'$.fixture.timezone'               AS timezone,
         (raw_json->>'$.fixture.date')::TIMESTAMPTZ    AS kick_off,
         (raw_json->>'$.fixture.timestamp')::BIGINT    AS kick_off_ts,
         (raw_json->>'$.fixture.periods.first')::INTEGER  AS period_first,
         (raw_json->>'$.fixture.periods.second')::INTEGER AS period_second,
-        (raw_json->>'$.fixture.venue.id')::INTEGER    AS venue_id,
+        COALESCE(
+            (raw_json->>'$.fixture.venue.id')::INTEGER,
+            vl.venue_id
+        )                                             AS venue_id,
         raw_json->>'$.fixture.venue.name'             AS venue_name,
         raw_json->>'$.fixture.venue.city'             AS venue_city,
         raw_json->>'$.fixture.status.long'            AS status_long,
@@ -96,4 +131,5 @@ SELECT * FROM (
         (raw_json->>'$.score.penalty.away')::INTEGER   AS score_pen_away,
         ingested_at
     FROM {db}.bronze.api_football__fixtures
+    LEFT JOIN venue_lookup vl ON vl.venue_name = (raw_json->>'$.fixture.venue.name')::VARCHAR
 ) _src WHERE {insert_filter};
