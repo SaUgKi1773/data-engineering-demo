@@ -2,6 +2,8 @@
 -- One row per fixture. Captures round, season, and current match status.
 -- SK is stable: new matches get the next available SK; existing matches keep theirs.
 -- match_status, match_result, and match_short_name are updated on every run.
+-- match_round_number removed: regex extraction was inconsistent across phases.
+-- Use match_date (dim_date) for ordering; match_round_name for display.
 CREATE SCHEMA IF NOT EXISTS {db}.gold;
 
 CREATE TABLE IF NOT EXISTS {db}.gold.dim_match (
@@ -9,7 +11,6 @@ CREATE TABLE IF NOT EXISTS {db}.gold.dim_match (
     match_id           INTEGER,
     season             INTEGER,
     match_round_name   VARCHAR,
-    match_round_number INTEGER,
     match_round_type   VARCHAR,
     match_status       VARCHAR,
     match_name         VARCHAR,
@@ -26,9 +27,9 @@ ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_result      VARCH
 -- Sentinels (idempotent)
 INSERT INTO {db}.gold.dim_match
 SELECT * FROM (VALUES
-    (-1, NULL::INTEGER, NULL::INTEGER, 'Unknown Match',        NULL::INTEGER, 'Unknown',       'Unknown Match',        'Unknown Match',        'Unknown',        NULL::VARCHAR),
-    (-2, NULL::INTEGER, NULL::INTEGER, 'Not Applicable Match', NULL::INTEGER, 'Not Applicable','Not Applicable Match', 'Not Applicable Match', 'Not Applicable', NULL::VARCHAR)
-) t(match_sk, match_id, season, round_name, round_number, round_type, match_status, match_name, match_short_name, match_result)
+    (-1, NULL::INTEGER, NULL::INTEGER, 'Unknown Match',        'Unknown',       'Unknown Match',        'Unknown Match',        'Unknown',        NULL::VARCHAR),
+    (-2, NULL::INTEGER, NULL::INTEGER, 'Not Applicable Match', 'Not Applicable','Not Applicable Match', 'Not Applicable Match', 'Not Applicable', NULL::VARCHAR)
+) t(match_sk, match_id, season, round_name, round_type, match_status, match_name, match_short_name, match_result)
 WHERE t.match_sk NOT IN (SELECT match_sk FROM {db}.gold.dim_match);
 
 -- Insert new matches not yet in the dim
@@ -39,7 +40,6 @@ SELECT
     src.fixture_id                                              AS match_id,
     src.season,
     src.league_round                                            AS match_round_name,
-    TRY_CAST(regexp_extract(src.league_round, '(\d+)$', 1) AS INTEGER) AS match_round_number,
     SPLIT_PART(src.league_round, ' - ', 1)                     AS match_round_type,
     src.status_long                                             AS match_status,
     src.home_team_name || ' - ' || src.away_team_name           AS match_name,

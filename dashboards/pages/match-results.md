@@ -15,7 +15,7 @@ order by season desc
 
 ```sql results
 select
-    match_date, round, match_round_number, match_name, score,
+    match_date, round, match_name, score,
     total_goals, total_shots_on_goal, total_xg,
     total_yellow_cards, total_red_cards, total_corners
 from superligaen.match_results_by_match
@@ -38,12 +38,12 @@ where season = ${inputs.season.value}
 
 ```sql goals_by_round
 select
-    match_round_number  as round,
-    sum(total_goals)    as goals
+    match_date,
+    sum(total_goals) as goals
 from superligaen.match_results_by_match
 where season = ${inputs.season.value}
-group by match_round_number
-order by round asc
+group by match_date
+order by match_date asc
 ```
 
 ---
