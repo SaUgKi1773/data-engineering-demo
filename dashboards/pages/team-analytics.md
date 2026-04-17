@@ -141,7 +141,6 @@ limit 10
     xAxisTitle="Date"
     yAxisTitle="Goals"
     colorPalette={['#22c55e']}
-    xFmt="%b %d"
 />
 
 <BarChart
@@ -152,7 +151,6 @@ limit 10
     xAxisTitle="Date"
     yAxisTitle="xG"
     colorPalette={['#3b82f6']}
-    xFmt="%b %d"
 />
 
 ```sql shot_location
@@ -193,7 +191,6 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
     xAxisTitle="Date"
     yAxisTitle="Goals Conceded"
     colorPalette={['#ef4444']}
-    xFmt="%b %d"
 />
 
 <BarChart
@@ -204,7 +201,6 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
     xAxisTitle="Date"
     yAxisTitle="Saves"
     colorPalette={['#6366f1']}
-    xFmt="%b %d"
 />
 
 ---
@@ -226,7 +222,6 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
     xAxisTitle="Date"
     yAxisTitle="Possession %"
     colorPalette={['#14b8a6']}
-    xFmt="%b %d"
 />
 
 <BarChart
@@ -237,7 +232,6 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
     xAxisTitle="Date"
     yAxisTitle="Pass Accuracy %"
     colorPalette={['#8b5cf6']}
-    xFmt="%b %d"
 />
 
 ---
@@ -259,7 +253,6 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
     xAxisTitle="Date"
     yAxisTitle="Fouls"
     colorPalette={['#f97316']}
-    xFmt="%b %d"
 />
 
 <BarChart
@@ -270,7 +263,6 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
     xAxisTitle="Date"
     yAxisTitle="Cards"
     colorPalette={['#eab308', '#dc2626']}
-    xFmt="%b %d"
 />
 
 ---
