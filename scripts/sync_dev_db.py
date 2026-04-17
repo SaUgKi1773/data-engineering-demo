@@ -31,10 +31,10 @@ def main():
 
     # Discover all base tables in prod
     prod_tables = con.execute(f"""
-        SELECT table_schema, table_name
-        FROM {PROD_DB}.information_schema.tables
-        WHERE table_type = 'BASE TABLE'
-        ORDER BY table_schema, table_name
+        SELECT schema_name, table_name
+        FROM duckdb_tables()
+        WHERE database_name = '{PROD_DB}'
+        ORDER BY schema_name, table_name
     """).fetchall()
 
     if not prod_tables:
@@ -43,12 +43,12 @@ def main():
 
     log.info("Found %d tables in %s", len(prod_tables), PROD_DB)
 
-    # Drop existing tables in dev (in reverse to respect any dependencies)
+    # Drop existing tables in dev
     dev_tables = con.execute(f"""
-        SELECT table_schema, table_name
-        FROM {DEV_DB}.information_schema.tables
-        WHERE table_type = 'BASE TABLE'
-        ORDER BY table_schema, table_name DESC
+        SELECT schema_name, table_name
+        FROM duckdb_tables()
+        WHERE database_name = '{DEV_DB}'
+        ORDER BY schema_name, table_name DESC
     """).fetchall()
 
     for schema, table in dev_tables:
