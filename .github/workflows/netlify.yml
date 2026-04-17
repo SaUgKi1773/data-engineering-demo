@@ -1,4 +1,4 @@
-name: Trigger Netlify deploy
+name: Deploy to Netlify
 
 on:
   workflow_dispatch:
@@ -6,8 +6,36 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - name: Trigger Netlify deploy hook
-        run: |
-          curl --fail -s -X POST "${{ secrets.NETLIFY_DEPLOY_HOOK }}"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: dashboards
+        run: npm install
+
+      - name: Build sources
+        working-directory: dashboards
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: npm run sources
+
+      - name: Build dashboard
+        working-directory: dashboards
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: npm run build
+
+      - name: Deploy to Netlify
+        working-directory: dashboards
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: npx netlify-cli deploy --dir=build --prod
