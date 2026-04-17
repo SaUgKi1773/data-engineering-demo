@@ -69,4 +69,11 @@ select * from superligaen.current_leader
   <div class="text-gray-400 text-sm">Deep-dive KPIs, form, shooting accuracy &amp; discipline</div>
 </a>
 
+<a href="/upcoming-matches" class="block no-underline rounded-xl border border-gray-300 bg-gray-100 p-6 hover:border-blue-500 hover:shadow-lg hover:bg-gray-200 transition-all duration-200 group">
+  <div class="text-4xl">📅</div>
+  <div class="text-lg font-bold mt-3 mb-1 group-hover:text-blue-400 transition-colors">Upcoming Fixtures</div>
+  <div class="text-gray-400 text-sm">Head-to-head history &amp; form guide for upcoming matches</div>
+</a>
+
 </div>
+

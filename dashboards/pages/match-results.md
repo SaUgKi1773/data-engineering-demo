@@ -92,20 +92,3 @@ order by match_date asc
     <Column id=total_corners       title="Corners"        contentType=colorscale colorPalette={['white','#a855f7']} align=center />
 </DataTable>
 
----
-
-## Upcoming Matches
-
-```sql upcoming
-select match_date, round, match_name, stadium
-from superligaen.upcoming_matches
-where season = ${inputs.season.value}
-order by match_date asc
-```
-
-<DataTable data={upcoming} rows=20>
-    <Column id=match_date title="Date"     />
-    <Column id=round      title="Round"    />
-    <Column id=match_name title="Match"    wrap=true />
-    <Column id=stadium    title="Stadium"  />
-</DataTable>
