@@ -9,12 +9,11 @@ select
     sum(f.corner_kicks)                             as total_corners,
     round(sum(f.expected_goals::double), 2)         as total_xg,
     sum(f.goals_scored)                             as total_goals,
-    m.match_round_number,
     m.season
 from superligaen.gold.fct_match_results f
 join superligaen.gold.dim_match        m on m.match_sk        = f.match_sk
 join superligaen.gold.dim_date         d on d.date_sk         = f.date_sk
 join superligaen.gold.dim_match_result r on r.match_result_sk = f.match_result_sk
 where r.match_result in ('Win', 'Draw', 'Loss')
-group by d.full_date, m.match_round_name, m.match_round_number, m.match_name, m.match_result, m.season
+group by d.full_date, m.match_round_name, m.match_name, m.match_result, m.season
 order by d.full_date desc

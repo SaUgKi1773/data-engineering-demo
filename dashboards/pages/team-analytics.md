@@ -32,7 +32,7 @@ where team_name = '${inputs.team.value}'
 select * from superligaen.team_analytics_form
 where team_name = '${inputs.team.value}'
   and season = ${inputs.season.value}
-order by match_date asc, match_round_number asc
+order by match_date asc
 ```
 
 ```sql home_away
@@ -73,19 +73,19 @@ order by side desc
 ## Points Progression
 
 ```sql points_trend
-select match_round_number as round, cumulative_points, result, opponent, gf, ga
+select match_date, cumulative_points, result, opponent, gf, ga
 from superligaen.team_analytics_form
 where team_name = '${inputs.team.value}'
   and season = ${inputs.season.value}
-order by round asc
+order by match_date asc
 ```
 
 <LineChart
     data={points_trend}
-    x=round
+    x=match_date
     y=cumulative_points
-    title="Cumulative Points by Round"
-    xAxisTitle="Round"
+    title="Cumulative Points over Time"
+    xAxisTitle="Date"
     yAxisTitle="Points"
     lineColor="#3b82f6"
 />
@@ -135,7 +135,7 @@ limit 10
 
 <BarChart
     data={form}
-    x=match_round_number
+    x=match_date
     y=gf
     title="Goals Scored by Round"
     xAxisTitle="Round"
@@ -145,7 +145,7 @@ limit 10
 
 <BarChart
     data={form}
-    x=match_round_number
+    x=match_date
     y=xg
     title="xG by Round"
     xAxisTitle="Round"
@@ -185,7 +185,7 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_round_number
+    x=match_date
     y=ga
     title="Goals Conceded by Round"
     xAxisTitle="Round"
@@ -195,7 +195,7 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_round_number
+    x=match_date
     y=saves
     title="Goalkeeper Saves by Round"
     xAxisTitle="Round"
@@ -216,7 +216,7 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_round_number
+    x=match_date
     y=possession
     title="Possession % by Round"
     xAxisTitle="Round"
@@ -226,7 +226,7 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_round_number
+    x=match_date
     y=pass_accuracy
     title="Pass Accuracy % by Round"
     xAxisTitle="Round"
@@ -247,7 +247,7 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_round_number
+    x=match_date
     y=fouls
     title="Fouls by Round"
     xAxisTitle="Round"
@@ -257,7 +257,7 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_round_number
+    x=match_date
     y={['yellow_cards', 'red_cards']}
     title="Cards by Round"
     xAxisTitle="Round"
