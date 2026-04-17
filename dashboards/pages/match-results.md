@@ -38,13 +38,13 @@ where season = ${inputs.season.value}
 
 ```sql goals_over_time
 select
-    match_date,
+    match_round_number,
     sum(total_goals) as goals,
     round(sum(total_xg::double), 2) as xg
 from superligaen.match_results_by_match
 where season = ${inputs.season.value}
-group by match_date
-order by match_date asc
+group by match_round_number
+order by match_round_number asc
 ```
 
 ---
@@ -67,10 +67,10 @@ order by match_date asc
 
 <LineChart
     data={goals_over_time}
-    x=match_date
+    x=match_round_number
     y={['goals','xg']}
     title="Goals vs xG — {inputs.season.value}"
-    xAxisTitle="Date"
+    xAxisTitle="Round"
     yAxisTitle="Goals"
     colorPalette={['#22c55e','#3b82f6']}
 />
