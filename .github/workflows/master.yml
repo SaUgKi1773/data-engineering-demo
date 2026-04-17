@@ -160,7 +160,8 @@ jobs:
         working-directory: dashboards
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: printf 'token: "%s"\n' "$MOTHERDUCK_TOKEN" > sources/superligaen/connection.options.yaml
+        run: |
+          printf 'token: "%s"\n' "$MOTHERDUCK_TOKEN" > sources/superligaen/connection.options.yaml
 
       - name: Build sources
         working-directory: dashboards
