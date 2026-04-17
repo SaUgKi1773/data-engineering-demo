@@ -26,7 +26,7 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          printf 'token: "%s"\n' "$MOTHERDUCK_TOKEN" > sources/superligaen/connection.options.yaml
+          echo "token: $(echo -n "$MOTHERDUCK_TOKEN" | base64 -w 0)" > sources/superligaen/connection.options.yaml
 
       - name: Build sources
         working-directory: dashboards
