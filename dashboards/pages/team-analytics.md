@@ -73,7 +73,7 @@ order by side desc
 ## Points Progression
 
 ```sql points_trend
-select match_date, cumulative_points, result, opponent, gf, ga
+select match_date, round, match_round_number, cumulative_points, result, opponent, gf, ga
 from superligaen.team_analytics_form
 where team_name = '${inputs.team.value}'
   and season = ${inputs.season.value}
@@ -82,10 +82,10 @@ order by match_date asc
 
 <LineChart
     data={points_trend}
-    x=match_date
+    x=match_round_number
     y=cumulative_points
     title="Cumulative Points over Time"
-    xAxisTitle="Date"
+    xAxisTitle="Round"
     yAxisTitle="Points"
     lineColor="#3b82f6"
 />
@@ -135,9 +135,9 @@ limit 10
 
 <BarChart
     data={form}
-    x=match_date
+    x=match_round_number
     y=gf
-    title="Goals Scored by Round"
+    title="Goals Scored per Match"
     xAxisTitle="Round"
     yAxisTitle="Goals"
     colorPalette={['#22c55e']}
@@ -145,9 +145,9 @@ limit 10
 
 <BarChart
     data={form}
-    x=match_date
+    x=match_round_number
     y=xg
-    title="xG by Round"
+    title="xG per Match"
     xAxisTitle="Round"
     yAxisTitle="xG"
     colorPalette={['#3b82f6']}
@@ -185,9 +185,9 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_date
+    x=match_round_number
     y=ga
-    title="Goals Conceded by Round"
+    title="Goals Conceded per Match"
     xAxisTitle="Round"
     yAxisTitle="Goals Conceded"
     colorPalette={['#ef4444']}
@@ -195,9 +195,9 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_date
+    x=match_round_number
     y=saves
-    title="Goalkeeper Saves by Round"
+    title="Goalkeeper Saves per Match"
     xAxisTitle="Round"
     yAxisTitle="Saves"
     colorPalette={['#6366f1']}
@@ -216,9 +216,9 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_date
+    x=match_round_number
     y=possession
-    title="Possession % by Round"
+    title="Possession % per Match"
     xAxisTitle="Round"
     yAxisTitle="Possession %"
     colorPalette={['#14b8a6']}
@@ -226,9 +226,9 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_date
+    x=match_round_number
     y=pass_accuracy
-    title="Pass Accuracy % by Round"
+    title="Pass Accuracy % per Match"
     xAxisTitle="Round"
     yAxisTitle="Pass Accuracy %"
     colorPalette={['#8b5cf6']}
@@ -247,9 +247,9 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_date
+    x=match_round_number
     y=fouls
-    title="Fouls by Round"
+    title="Fouls per Match"
     xAxisTitle="Round"
     yAxisTitle="Fouls"
     colorPalette={['#f97316']}
@@ -257,9 +257,9 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_date
+    x=match_round_number
     y={['yellow_cards', 'red_cards']}
-    title="Cards by Round"
+    title="Cards per Match"
     xAxisTitle="Round"
     yAxisTitle="Cards"
     colorPalette={['#eab308', '#dc2626']}
