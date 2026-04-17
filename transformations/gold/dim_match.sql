@@ -40,7 +40,13 @@ SELECT
     src.fixture_id                                              AS match_id,
     src.season,
     src.league_round                                            AS match_round_name,
-    SPLIT_PART(src.league_round, ' - ', 1)                     AS match_round_type,
+    CASE SPLIT_PART(src.league_round, ' - ', 1)
+        WHEN 'Championship Group' THEN 'Championship'
+        WHEN 'Championship Round' THEN 'Championship'
+        WHEN 'Relegation Group'   THEN 'Relegation'
+        WHEN 'Relegation Round'   THEN 'Relegation'
+        ELSE SPLIT_PART(src.league_round, ' - ', 1)
+    END                                                         AS match_round_type,
     src.status_long                                             AS match_status,
     src.home_team_name || ' - ' || src.away_team_name           AS match_name,
     COALESCE(ht.team_code, src.home_team_name) || ' - ' || COALESCE(awt.team_code, src.away_team_name) AS match_short_name,
@@ -66,7 +72,13 @@ WHERE src.fixture_id NOT IN (
 -- Update mutable fields for existing matches
 UPDATE {db}.gold.dim_match tgt
 SET
-    match_round_type = SPLIT_PART(src.league_round, ' - ', 1),
+    match_round_type = CASE SPLIT_PART(src.league_round, ' - ', 1)
+                           WHEN 'Championship Group' THEN 'Championship'
+                           WHEN 'Championship Round' THEN 'Championship'
+                           WHEN 'Relegation Group'   THEN 'Relegation'
+                           WHEN 'Relegation Round'   THEN 'Relegation'
+                           ELSE SPLIT_PART(src.league_round, ' - ', 1)
+                       END,
     match_status     = src.status_long,
     match_name       = src.home_team_name || ' - ' || src.away_team_name,
     match_short_name = COALESCE(ht.team_code, src.home_team_name) || ' - ' || COALESCE(awt.team_code, src.away_team_name),
