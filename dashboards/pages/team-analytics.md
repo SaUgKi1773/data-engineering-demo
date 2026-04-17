@@ -29,10 +29,7 @@ where team_name = '${inputs.team.value}'
 ```
 
 ```sql form
-select
-    *,
-    strftime(match_date, '%b %d') as match_label
-from superligaen.team_analytics_form
+select * from superligaen.team_analytics_form
 where team_name = '${inputs.team.value}'
   and season = ${inputs.season.value}
 order by match_date asc
@@ -138,22 +135,24 @@ limit 10
 
 <BarChart
     data={form}
-    x=match_label
+    x=match_date
     y=gf
     title="Goals Scored per Match"
     xAxisTitle="Date"
     yAxisTitle="Goals"
     colorPalette={['#22c55e']}
+    xFmt="%b %d"
 />
 
 <BarChart
     data={form}
-    x=match_label
+    x=match_date
     y=xg
     title="xG per Match"
     xAxisTitle="Date"
     yAxisTitle="xG"
     colorPalette={['#3b82f6']}
+    xFmt="%b %d"
 />
 
 ```sql shot_location
@@ -188,22 +187,24 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_label
+    x=match_date
     y=ga
     title="Goals Conceded per Match"
     xAxisTitle="Date"
     yAxisTitle="Goals Conceded"
     colorPalette={['#ef4444']}
+    xFmt="%b %d"
 />
 
 <BarChart
     data={form}
-    x=match_label
+    x=match_date
     y=saves
     title="Goalkeeper Saves per Match"
     xAxisTitle="Date"
     yAxisTitle="Saves"
     colorPalette={['#6366f1']}
+    xFmt="%b %d"
 />
 
 ---
@@ -219,22 +220,24 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_label
+    x=match_date
     y=possession
     title="Possession % per Match"
     xAxisTitle="Date"
     yAxisTitle="Possession %"
     colorPalette={['#14b8a6']}
+    xFmt="%b %d"
 />
 
 <BarChart
     data={form}
-    x=match_label
+    x=match_date
     y=pass_accuracy
     title="Pass Accuracy % per Match"
     xAxisTitle="Date"
     yAxisTitle="Pass Accuracy %"
     colorPalette={['#8b5cf6']}
+    xFmt="%b %d"
 />
 
 ---
@@ -250,22 +253,24 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 
 <BarChart
     data={form}
-    x=match_label
+    x=match_date
     y=fouls
     title="Fouls per Match"
     xAxisTitle="Date"
     yAxisTitle="Fouls"
     colorPalette={['#f97316']}
+    xFmt="%b %d"
 />
 
 <BarChart
     data={form}
-    x=match_label
+    x=match_date
     y={['yellow_cards', 'red_cards']}
     title="Cards per Match"
     xAxisTitle="Date"
     yAxisTitle="Cards"
     colorPalette={['#eab308', '#dc2626']}
+    xFmt="%b %d"
 />
 
 ---
