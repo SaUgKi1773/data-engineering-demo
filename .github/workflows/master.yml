@@ -156,6 +156,12 @@ jobs:
         working-directory: dashboards
         run: npm install
 
+      - name: Write MotherDuck token
+        working-directory: dashboards
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: printf 'token: "%s"\n' "$MOTHERDUCK_TOKEN" > sources/superligaen/connection.options.yaml
+
       - name: Build sources
         working-directory: dashboards
         env:
