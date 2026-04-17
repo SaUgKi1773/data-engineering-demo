@@ -18,9 +18,9 @@ on:
         required: false
         default: ""
       lookback:
-        description: "Days to look back for incremental runs (default: 2)"
+        description: "Days to look back for incremental runs (default: 5)"
         required: false
-        default: "2"
+        default: "5"
       target_db:
         description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
         required: false
@@ -51,7 +51,7 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: python ingestion/run.py --lookback ${{ github.event.inputs.lookback || '2' }}
+        run: python ingestion/run.py --lookback ${{ github.event.inputs.lookback || '5' }}
 
       - name: Run ingestion (full load)
         if: ${{ github.event.inputs.full_load == 'true' }}
@@ -89,7 +89,7 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: python transformations/run_silver.py --lookback ${{ github.event.inputs.lookback || '2' }}
+        run: python transformations/run_silver.py --lookback ${{ github.event.inputs.lookback || '5' }}
 
       - name: Run silver transformation (full / seasonal load)
         if: ${{ github.event.inputs.full_load == 'true' }}
@@ -126,7 +126,7 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: python transformations/run_gold.py --lookback ${{ github.event.inputs.lookback || '2' }}
+        run: python transformations/run_gold.py --lookback ${{ github.event.inputs.lookback || '5' }}
 
       - name: Build gold (full load)
         if: ${{ github.event.inputs.full_load == 'true' }}
