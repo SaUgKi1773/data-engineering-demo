@@ -136,48 +136,13 @@ jobs:
         run: python transformations/run_gold.py --full-load
 
   # ---------------------------------------------------------------------------
-  # Dashboard — build and deploy to Netlify after gold is fresh
+  # Dashboard — trigger Cloudflare Pages rebuild after gold is fresh
   # ---------------------------------------------------------------------------
   publish:
-    name: Publish dashboard (Netlify)
+    name: Publish dashboard (Cloudflare)
     runs-on: ubuntu-latest
     needs: gold
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install dependencies
-        working-directory: dashboards
-        run: npm install
-
-      - name: Write MotherDuck token
-        working-directory: dashboards
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          echo "token: $(echo -n "$MOTHERDUCK_TOKEN" | base64 -w 0)" > sources/superligaen/connection.options.yaml
-
-      - name: Build sources
-        working-directory: dashboards
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: npm run sources
-
-      - name: Build dashboard
-        working-directory: dashboards
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: npm run build
-
-      - name: Deploy to Netlify
-        working-directory: dashboards
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: npx netlify-cli deploy --dir=build --prod
+      - name: Trigger Cloudflare Pages deployment
+        run: curl -X POST "${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}"
