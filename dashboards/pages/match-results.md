@@ -36,14 +36,15 @@ from superligaen.match_results_by_match
 where season = ${inputs.season.value}
 ```
 
-```sql goals_by_round
+```sql goals_over_time
 select
-    round,
-    sum(total_goals) as goals
+    match_date,
+    sum(total_goals) as goals,
+    round(sum(total_xg::double), 2) as xg
 from superligaen.match_results_by_match
 where season = ${inputs.season.value}
-group by round
-order by min(match_date) asc
+group by match_date
+order by match_date asc
 ```
 
 ---
@@ -62,17 +63,16 @@ order by min(match_date) asc
 
 ---
 
-## Goals by Round
+## Goals & xG Over the Season
 
-<BarChart
-    data={goals_by_round}
-    x=round
-    y=goals
-    title="Total Goals by Round — {inputs.season.value}"
-    xAxisTitle="Round"
+<LineChart
+    data={goals_over_time}
+    x=match_date
+    y={['goals','xg']}
+    title="Goals vs xG — {inputs.season.value}"
+    xAxisTitle="Date"
     yAxisTitle="Goals"
-    colorPalette={['#22c55e']}
-    swapXY=true
+    colorPalette={['#22c55e','#3b82f6']}
 />
 
 ---
