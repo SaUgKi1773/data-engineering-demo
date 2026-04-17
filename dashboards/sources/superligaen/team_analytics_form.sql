@@ -2,6 +2,7 @@ select
     t.team_name,
     d.full_date                                                             as match_date,
     m.match_round_name                                                      as round,
+    m.match_round_number,
     ot.opponent_team_name                                                   as opponent,
     ts.team_side                                                            as side,
     f.goals_scored                                                          as gf,
