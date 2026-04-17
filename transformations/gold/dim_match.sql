@@ -2,7 +2,8 @@
 -- One row per fixture. Captures round, season, and current match status.
 -- SK is stable: new matches get the next available SK; existing matches keep theirs.
 -- match_status, match_result, and match_short_name are updated on every run.
--- match_round_number: DENSE_RANK by season+league+date — game week number, no string parsing.
+-- match_round_number: ROW_NUMBER per (season, league, team) ordered by kick_off from
+--   fixture_statistics; MIN() across both teams gives one number per match.
 CREATE SCHEMA IF NOT EXISTS {db}.gold;
 
 CREATE TABLE IF NOT EXISTS {db}.gold.dim_match (
@@ -35,11 +36,18 @@ WHERE t.match_sk NOT IN (SELECT match_sk FROM {db}.gold.dim_match);
 
 -- Insert new matches not yet in the dim
 INSERT INTO {db}.gold.dim_match
-WITH round_first_date AS (
-    SELECT season, league_id, league_round,
-           MIN(kick_off::DATE) AS first_date
-    FROM {db}.silver.fixtures
-    GROUP BY season, league_id, league_round
+WITH team_round_base AS (
+    SELECT fixture_id,
+           ROW_NUMBER() OVER (
+               PARTITION BY season, league_id, team_id
+               ORDER BY kick_off
+           ) AS round_number
+    FROM {db}.silver.fixture_statistics
+),
+team_round AS (
+    SELECT fixture_id, MIN(round_number) AS round_number
+    FROM team_round_base
+    GROUP BY fixture_id
 )
 SELECT
     (SELECT COALESCE(MAX(match_sk), 0) FROM {db}.gold.dim_match WHERE match_sk > 0)
@@ -54,10 +62,7 @@ SELECT
         WHEN 'Relegation Round'   THEN 'Relegation'
         ELSE SPLIT_PART(src.league_round, ' - ', 1)
     END                                                                       AS match_round_type,
-    DENSE_RANK() OVER (
-        PARTITION BY src.season, src.league_id
-        ORDER BY rfd.first_date
-    )                                                                         AS match_round_number,
+    tr.round_number                                                           AS match_round_number,
     src.status_long                                                           AS match_status,
     src.home_team_name || ' - ' || src.away_team_name                        AS match_name,
     COALESCE(ht.team_code, src.home_team_name) || ' - ' || COALESCE(awt.team_code, src.away_team_name) AS match_short_name,
@@ -66,8 +71,7 @@ SELECT
         THEN src.goals_home::VARCHAR || ' - ' || src.goals_away::VARCHAR
     END                                                                       AS match_result
 FROM {db}.silver.fixtures src
-JOIN round_first_date rfd
-    ON rfd.season = src.season AND rfd.league_id = src.league_id AND rfd.league_round = src.league_round
+LEFT JOIN team_round tr ON tr.fixture_id = src.fixture_id
 LEFT JOIN (
     SELECT DISTINCT ON (team_id) team_id, team_code
     FROM {db}.silver.teams
@@ -92,11 +96,18 @@ SET
     match_short_name   = ranked.match_short_name,
     match_result       = ranked.match_result
 FROM (
-    WITH round_first_date AS (
-        SELECT season, league_id, league_round,
-               MIN(kick_off::DATE) AS first_date
-        FROM {db}.silver.fixtures
-        GROUP BY season, league_id, league_round
+    WITH team_round_base AS (
+        SELECT fixture_id,
+               ROW_NUMBER() OVER (
+                   PARTITION BY season, league_id, team_id
+                   ORDER BY kick_off
+               ) AS round_number
+        FROM {db}.silver.fixture_statistics
+    ),
+    team_round AS (
+        SELECT fixture_id, MIN(round_number) AS round_number
+        FROM team_round_base
+        GROUP BY fixture_id
     )
     SELECT
         src.fixture_id,
@@ -107,10 +118,7 @@ FROM (
             WHEN 'Relegation Round'   THEN 'Relegation'
             ELSE SPLIT_PART(src.league_round, ' - ', 1)
         END                                                                   AS match_round_type,
-        DENSE_RANK() OVER (
-            PARTITION BY src.season, src.league_id
-            ORDER BY rfd.first_date
-        )                                                                     AS match_round_number,
+        tr.round_number                                                       AS match_round_number,
         src.status_long,
         src.home_team_name || ' - ' || src.away_team_name                    AS match_name,
         COALESCE(ht.team_code, src.home_team_name) || ' - ' || COALESCE(awt.team_code, src.away_team_name) AS match_short_name,
@@ -119,8 +127,7 @@ FROM (
             THEN src.goals_home::VARCHAR || ' - ' || src.goals_away::VARCHAR
         END                                                                   AS match_result
     FROM {db}.silver.fixtures src
-    JOIN round_first_date rfd
-        ON rfd.season = src.season AND rfd.league_id = src.league_id AND rfd.league_round = src.league_round
+    LEFT JOIN team_round tr ON tr.fixture_id = src.fixture_id
     LEFT JOIN (
         SELECT DISTINCT ON (team_id) team_id, team_code
         FROM {db}.silver.teams
