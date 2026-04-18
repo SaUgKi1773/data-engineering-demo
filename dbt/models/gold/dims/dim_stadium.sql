@@ -5,7 +5,7 @@
         unique_key='stadium_id',
         merge_update_columns=['stadium_name', 'stadium_address', 'stadium_city', 'stadium_country', 'stadium_capacity', 'stadium_surface'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Stadium', 'Unknown Stadium', 'Unknown Stadium', 'Unknown Stadium', NULL::INTEGER, 'Unknown Stadium'), (-2, NULL::INTEGER, 'Not Applicable Stadium', 'Not Applicable Stadium', 'Not Applicable Stadium', 'Not Applicable Stadium', NULL::INTEGER, 'Not Applicable Stadium')) t(stadium_sk, stadium_id, stadium_name, stadium_address, stadium_city, stadium_country, stadium_capacity, stadium_surface) WHERE t.stadium_sk NOT IN (SELECT stadium_sk FROM {{ this }})"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Stadium Name', 'Unknown Stadium Address', 'Unknown Stadium City', 'Unknown Stadium Country', NULL::INTEGER, 'Unknown Stadium Surface'), (-2, NULL::INTEGER, 'Not Applicable Stadium Name', 'Not Applicable Stadium Address', 'Not Applicable Stadium City', 'Not Applicable Stadium Country', NULL::INTEGER, 'Not Applicable Stadium Surface')) t(stadium_sk, stadium_id, stadium_name, stadium_address, stadium_city, stadium_country, stadium_capacity, stadium_surface) WHERE t.stadium_sk NOT IN (SELECT stadium_sk FROM {{ this }})"
         ]
     )
 }}

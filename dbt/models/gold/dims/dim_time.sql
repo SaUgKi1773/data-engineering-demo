@@ -15,6 +15,6 @@ SELECT hour::INTEGER AS time_sk,
        END           AS period_of_day
 FROM generate_series(0, 23) t(hour)
 UNION ALL
-SELECT -1, NULL, 'Unknown Time'
+SELECT -1, NULL, 'Unknown Period Of Day'
 UNION ALL
-SELECT -2, NULL, 'Not Applicable Time'
+SELECT -2, NULL, 'Not Applicable Period Of Day'

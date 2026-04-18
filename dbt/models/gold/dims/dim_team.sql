@@ -5,7 +5,7 @@
         unique_key='team_id',
         merge_update_columns=['team_name', 'team_code', 'team_country', 'team_founded_year', 'team_logo'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Team', 'Unknown Team', 'Unknown Team', NULL::INTEGER, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Team', 'Not Applicable Team', 'Not Applicable Team', NULL::INTEGER, NULL::VARCHAR)) t(team_sk, team_id, team_name, team_code, team_country, team_founded_year, team_logo) WHERE t.team_sk NOT IN (SELECT team_sk FROM {{ this }})"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Team Name', 'Unknown Team Code', 'Unknown Team Country', NULL::INTEGER, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Team Name', 'Not Applicable Team Code', 'Not Applicable Team Country', NULL::INTEGER, NULL::VARCHAR)) t(team_sk, team_id, team_name, team_code, team_country, team_founded_year, team_logo) WHERE t.team_sk NOT IN (SELECT team_sk FROM {{ this }})"
         ]
     )
 }}
