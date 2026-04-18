@@ -7,20 +7,16 @@ on:
         description: "Set to 'true' to fully replace all silver tables from current bronze"
         required: false
         default: "false"
-      league:
-        description: "League ID (e.g. 119). Leave empty to use default."
-        required: false
-        default: ""
       season:
-        description: "Season year for seasonal load (e.g. 2025). Leave empty to load all seasons."
+        description: "Season year for seasonal load (e.g. 2025). Leave empty to use rolling window."
         required: false
         default: ""
       lookback:
-        description: "Days to look back for incremental fixture window (default: 2)"
+        description: "Days to look back for incremental window (default: 2)"
         required: false
         default: "2"
       target_db:
-        description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
+        description: "Target MotherDuck database (superligaen or superligaen_dev). Default: superligaen."
         required: false
         default: ""
 
@@ -30,33 +26,44 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run silver transformation (incremental)
-        if: ${{ github.event.inputs.full_load != 'true' }}
+      - name: dbt deps
+        working-directory: dbt
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: |
-          python transformations/run_silver.py \
-            --lookback ${{ github.event.inputs.lookback || '2' }}
+        run: dbt deps
 
-      - name: Run silver transformation (full / seasonal load)
-        if: ${{ github.event.inputs.full_load == 'true' }}
+      - name: Run silver (incremental)
+        if: ${{ github.event.inputs.full_load != 'true' }}
+        working-directory: dbt
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
         run: |
-          ARGS="--full-load"
-          [ -n "${{ github.event.inputs.league }}" ] && ARGS="$ARGS --league ${{ github.event.inputs.league }}"
-          [ -n "${{ github.event.inputs.season }}" ] && ARGS="$ARGS --season ${{ github.event.inputs.season }}"
-          python transformations/run_silver.py $ARGS
+          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          dbt run --select 'silver.*' --target $TARGET --vars '{"lookback_days": ${{ github.event.inputs.lookback || '2' }}}'
+
+      - name: Run silver (seasonal load)
+        if: ${{ github.event.inputs.full_load == 'true' && github.event.inputs.season != '' }}
+        working-directory: dbt
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          dbt run --select 'silver.*' --target $TARGET --vars '{"season": ${{ github.event.inputs.season }}}'
+
+      - name: Run silver (full refresh)
+        if: ${{ github.event.inputs.full_load == 'true' && github.event.inputs.season == '' }}
+        working-directory: dbt
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          dbt run --select 'silver.*' --target $TARGET --full-refresh
