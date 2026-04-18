@@ -15,7 +15,8 @@ select
     (select count(distinct team_name)
      from superligaen.team_analytics_form
      where season = (select max(season) from superligaen.match_results_by_match)) as total_teams,
-    max(season)                                                           as season
+    max(season)                                                           as season,
+    max(season_name)                                                      as season_name
 from superligaen.match_results_by_match
 where season = (select max(season) from superligaen.match_results_by_match)
 ```

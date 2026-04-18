@@ -22,7 +22,7 @@ select
     gp, w, d, l, gf, ga, gd, pts,
     round_group
 from superligaen.team_season_stats
-where season = ${inputs.season.value}
+where season = ${inputs.season.label}
 order by round_group, pts desc, gd desc, gf desc
 ```
 
@@ -43,7 +43,7 @@ select
     row_number() over (order by pts desc, gd desc, gf desc) as rank,
     team_name as team, gp, w, d, l, gf, ga, gd, pts
 from superligaen.team_regular_season_stats
-where season = ${inputs.season.value}
+where season = ${inputs.season.label}
 ```
 
 ```sql all_teams
@@ -51,7 +51,7 @@ select team, pts, gf, ga, round_group from ${standings}
 order by round_group, pts desc
 ```
 
-## {inputs.season.value} Season Standings
+## {inputs.season.label} Season Standings
 
 {#if championship.length > 0}
 
@@ -117,7 +117,7 @@ order by round_group, pts desc
     x=team
     y=pts
     series=round_group
-    title="Points by Team — {inputs.season.value}"
+    title="Points by Team — {inputs.season.label}"
     yAxisTitle="Points"
     xAxisTitle="Team"
     sort=false
@@ -128,7 +128,7 @@ order by round_group, pts desc
     data={all_teams}
     x=team
     y={['gf','ga']}
-    title="Goals For vs Goals Against — {inputs.season.value}"
+    title="Goals For vs Goals Against — {inputs.season.label}"
     yAxisTitle="Goals"
     xAxisTitle="Team"
     sort=false
