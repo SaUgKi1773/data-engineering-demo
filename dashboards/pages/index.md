@@ -24,20 +24,20 @@ where season = (select max(season) from superligaen.match_results_by_match)
 select * from superligaen.current_leader
 ```
 
-<div class="relative rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-10 mb-6 shadow-xl">
+<div class="relative rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 md:p-10 mb-6 shadow-xl">
   <div class="absolute top-4 right-4 bg-white/10 rounded-xl p-2 backdrop-blur">
-    <img src="{league[0].league_logo}" alt="Superligaen" class="h-12" />
+    <img src="{league[0].league_logo}" alt="Superligaen" class="h-8 md:h-12" />
   </div>
-  <div class="flex items-center justify-center gap-6">
-    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-10 rounded-lg shadow-lg opacity-90" />
+  <div class="flex items-center justify-center gap-4 md:gap-6">
+    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-7 md:h-10 rounded-lg shadow-lg opacity-90" />
     <div class="text-center">
-      <div class="text-5xl font-extrabold tracking-tight text-white">Superligaen</div>
-      <div class="text-gray-400 text-sm mt-3 uppercase tracking-widest">Danish Football Premier League</div>
+      <div class="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Superligaen</div>
+      <div class="text-gray-400 text-xs md:text-sm mt-2 md:mt-3 uppercase tracking-widest">Danish Football Premier League</div>
       <div class="inline-block mt-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-sm font-semibold">
         Current Season: {kpis[0].season}
       </div>
     </div>
-    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-10 rounded-lg shadow-lg opacity-90" />
+    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-7 md:h-10 rounded-lg shadow-lg opacity-90" />
   </div>
 </div>
 
