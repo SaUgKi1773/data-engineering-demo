@@ -1,8 +1,8 @@
 # Superligaen Data Engineering Demo
 
-An end-to-end data engineering project for Danish premier football league (Superligaen) — from raw API ingestion to a live analytics dashboard. Built on a fully custom Python + SQL stack.
+An end-to-end data engineering project focusing on the Danish premier football league (Superligaen) — from raw API ingestion to a live analytics dashboard. Built on a fully custom Python + SQL stack.
 
-**Live dashboard →** [superligaen.pages.dev](https://superligaen.pages.dev)
+**Live dashboard →** [superligaens.pages.dev](https://superligaens.pages.dev)
 
 ---
 
