@@ -106,16 +106,16 @@ order by match_date desc
 limit 5
 ```
 
-<div class="rounded-2xl border border-gray-200 bg-gray-50 p-6 mb-6 text-center">
+<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 md:p-6 mb-6 text-center">
   <div class="text-xs text-gray-400 uppercase tracking-widest mb-3">{match_info[0].round} &middot; {match_info[0].match_date} &middot; {match_info[0].stadium}</div>
-  <div class="flex items-center justify-center gap-6">
-    <div>
-      <div class="text-xl font-bold text-gray-800">{match_info[0].home_team}</div>
+  <div class="flex items-center justify-center gap-4 md:gap-6">
+    <div class="flex-1 min-w-0">
+      <div class="text-base md:text-xl font-bold text-gray-800 truncate">{match_info[0].home_team}</div>
       <div class="text-xs text-blue-400 font-semibold uppercase tracking-widest mt-1">Home</div>
     </div>
-    <div class="text-2xl font-black text-gray-300">vs</div>
-    <div>
-      <div class="text-xl font-bold text-gray-800">{match_info[0].away_team}</div>
+    <div class="text-xl md:text-2xl font-black text-gray-300 shrink-0">vs</div>
+    <div class="flex-1 min-w-0">
+      <div class="text-base md:text-xl font-bold text-gray-800 truncate">{match_info[0].away_team}</div>
       <div class="text-xs text-red-400 font-semibold uppercase tracking-widest mt-1">Away</div>
     </div>
   </div>
