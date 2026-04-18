@@ -52,7 +52,7 @@ limit 1
 
 ```sql h2h
 select
-    season_name             as season,
+    season,
     match_date,
     round,
     match_short_name    as match,
