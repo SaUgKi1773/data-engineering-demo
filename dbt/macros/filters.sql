@@ -25,7 +25,7 @@
             and
             (select max(date_sk) from {{ ref('dim_date') }} where year = {{ var('season') + 1 }})
     {% else %}
-        date_sk >= cast(to_char(current_date - interval '{{ var("lookback_days", 5) }}' day, 'YYYYMMDD') as integer)
-        and date_sk <= cast(to_char(current_date + interval '28' day, 'YYYYMMDD') as integer)
+        date_sk >= cast(strftime('%Y%m%d', current_date - interval '{{ var("lookback_days", 5) }}' day) as integer)
+        and date_sk <= cast(strftime('%Y%m%d', current_date + interval '28' day) as integer)
     {% endif %}
 {% endmacro %}
