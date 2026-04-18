@@ -1,4 +1,6 @@
 ---
+sidebar: never
+hide_toc: true
 title: Team Analytics
 ---
 
@@ -47,25 +49,25 @@ order by side desc
 ## {inputs.team.value} — Season Overview
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=total_points     title="Points"          /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=wins             title="Wins"            /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=draws            title="Draws"           /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=losses           title="Losses"          /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=goals_for        title="Goals Scored"    /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=goals_against    title="Goals Conceded"  /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=goal_difference  title="Goal Difference" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=win_rate_pct     title="Win Rate"        fmt=pct0 /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=total_points     title="Points"          /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=wins             title="Wins"            /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=draws            title="Draws"           /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=losses           title="Losses"          /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=goals_for        title="Goals Scored"    /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=goals_against    title="Goals Conceded"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=goal_difference  title="Goal Difference" /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=win_rate_pct     title="Win Rate"        fmt=pct0 /></div>
 </div>
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_possession       title="Avg Possession"    fmt=pct0 /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_pass_accuracy    title="Pass Accuracy"     fmt=pct0 /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=shot_conversion_pct  title="Shot Conversion"   fmt=pct0 /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=on_target_conversion_pct title="On-Target Conv." fmt=pct0 /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=total_xg             title="Total xG"          /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=xg_overperformance   title="xG Overperformance" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=aggression_index     title="Aggression Index"  /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_saves            title="Avg Saves/Match"   /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_possession       title="Avg Possession"    fmt=pct0 /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_pass_accuracy    title="Pass Accuracy"     fmt=pct0 /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=shot_conversion_pct  title="Shot Conversion"   fmt=pct0 /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=on_target_conversion_pct title="On-Target Conv." fmt=pct0 /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=total_xg             title="Total xG"          /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=xg_overperformance   title="xG Overperformance" /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=aggression_index     title="Aggression Index"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_saves            title="Avg Saves/Match"   /></div>
 </div>
 
 ---
@@ -127,10 +129,10 @@ limit 10
 ## Attack
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_xg_per_match      title="xG per Match"        /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_shots_on_goal     title="Shots on Goal/Match" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_goals_scored      title="Goals Scored/Match"  /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=shot_conversion_pct   title="Shot Conversion %"   fmt=pct0 /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_xg_per_match      title="xG per Match"        /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_shots_on_goal     title="Shots on Goal/Match" /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_goals_scored      title="Goals Scored/Match"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=shot_conversion_pct   title="Shot Conversion %"   fmt=pct0 /></div>
 </div>
 
 <BarChart
@@ -179,8 +181,8 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 ## Defence
 
 <div class="grid grid-cols-2 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_goals_conceded title="Goals Conceded/Match" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_saves          title="Saves/Match"          /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_goals_conceded title="Goals Conceded/Match" /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_saves          title="Saves/Match"          /></div>
 </div>
 
 <BarChart
@@ -208,10 +210,10 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 ## Passing & Possession
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_possession     title="Avg Possession %"  fmt=pct0 /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_pass_accuracy  title="Avg Pass Accuracy" fmt=pct0 /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_corners        title="Corners/Match"               /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_offsides       title="Offsides/Match"              /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_possession     title="Avg Possession %"  fmt=pct0 /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_pass_accuracy  title="Avg Pass Accuracy" fmt=pct0 /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_corners        title="Corners/Match"               /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_offsides       title="Offsides/Match"              /></div>
 </div>
 
 <BarChart
@@ -239,10 +241,10 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 ## Discipline
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=avg_fouls        title="Fouls/Match"      /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=yellow_cards     title="Yellow Cards"     /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=red_cards        title="Red Cards"        /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={kpis} value=aggression_index title="Aggression Index" /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_fouls        title="Fouls/Match"      /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=yellow_cards     title="Yellow Cards"     /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=red_cards        title="Red Cards"        /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=aggression_index title="Aggression Index" /></div>
 </div>
 
 <BarChart

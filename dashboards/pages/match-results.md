@@ -1,4 +1,6 @@
 ---
+sidebar: never
+hide_toc: true
 title: Match Results
 ---
 
@@ -52,13 +54,13 @@ order by match_round_number asc
 ## Season {inputs.season.value} at a Glance
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={season_kpis} value=total_matches       title="Matches Played"    /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={season_kpis} value=total_goals          title="Goals Scored"      /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={season_kpis} value=avg_goals_per_match  title="Avg Goals / Match" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={season_kpis} value=avg_xg_per_match     title="Avg xG / Match"    /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={season_kpis} value=avg_shots_on_goal    title="Avg Shots on Goal" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={season_kpis} value=total_yellow_cards   title="Yellow Cards"      /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={season_kpis} value=total_red_cards      title="Red Cards"         /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=total_matches       title="Matches Played"    /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=total_goals          title="Goals Scored"      /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=avg_goals_per_match  title="Avg Goals / Match" /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=avg_xg_per_match     title="Avg xG / Match"    /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=avg_shots_on_goal    title="Avg Shots on Goal" /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=total_yellow_cards   title="Yellow Cards"      /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=total_red_cards      title="Red Cards"         /></div>
 </div>
 
 ---
