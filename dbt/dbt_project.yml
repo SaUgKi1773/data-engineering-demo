@@ -18,9 +18,3 @@ models:
       +incremental_strategy: delete+insert
     gold:
       +schema: gold
-      dims:
-        +materialized: incremental
-        +incremental_strategy: merge
-      fct_match_results:
-        +materialized: incremental
-        +incremental_strategy: delete+insert
