@@ -12,9 +12,9 @@ on:
         required: false
         default: ""
       lookback:
-        description: "Days to look back for incremental window (default: 2)"
+        description: "Days to look back for incremental window (default: 5)"
         required: false
-        default: "2"
+        default: "5"
       target_db:
         description: "Target MotherDuck database (superligaen or superligaen_dev). Default: superligaen."
         required: false
@@ -22,13 +22,16 @@ on:
 
 jobs:
   transform:
+    name: Silver transformation
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -48,7 +51,7 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
-          dbt run --select 'silver.*' --target $TARGET --vars '{"lookback_days": ${{ github.event.inputs.lookback || '2' }}}'
+          dbt run --select 'silver.*' --target $TARGET --vars '{"lookback_days": ${{ github.event.inputs.lookback || '5' }}}'
 
       - name: Run silver (seasonal load)
         if: ${{ github.event.inputs.full_load == 'true' && github.event.inputs.season != '' }}
