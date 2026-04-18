@@ -7,7 +7,7 @@ title: Team Analytics
 <a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
 
 ```sql seasons
-select distinct season, season_name from superligaen.team_analytics_kpis
+select distinct season from superligaen.team_analytics_kpis
 order by season desc
 ```
 
@@ -16,8 +16,8 @@ select distinct team_name as team from superligaen.team_analytics_kpis
 order by team_name
 ```
 
-<Dropdown data={seasons} name=season value=season label=season_name>
-    <DropdownOption value=2025 valueLabel="2025/26"/>
+<Dropdown data={seasons} name=season value=season label=season>
+    <DropdownOption value="2025/26" valueLabel="2025/26"/>
 </Dropdown>
 
 <Dropdown data={teams} name=team value=team label=team>
@@ -27,20 +27,20 @@ order by team_name
 ```sql kpis
 select * from superligaen.team_analytics_kpis
 where team_name = '${inputs.team.value}'
-  and season = ${inputs.season.value}
+  and season = '${inputs.season.value}'
 ```
 
 ```sql form
 select * from superligaen.team_analytics_form
 where team_name = '${inputs.team.value}'
-  and season = ${inputs.season.value}
+  and season = '${inputs.season.value}'
 order by match_date asc
 ```
 
 ```sql home_away
 select * from superligaen.team_analytics_home_away
 where team_name = '${inputs.team.value}'
-  and season = ${inputs.season.value}
+  and season = '${inputs.season.value}'
 order by side desc
 ```
 
@@ -78,7 +78,7 @@ order by side desc
 select match_date, round, match_round_number, cumulative_points, result, opponent, gf, ga
 from superligaen.team_analytics_form
 where team_name = '${inputs.team.value}'
-  and season = ${inputs.season.value}
+  and season = '${inputs.season.value}'
 order by match_date asc
 ```
 
@@ -103,7 +103,7 @@ select
     yellow_cards, red_cards
 from superligaen.team_analytics_form
 where team_name = '${inputs.team.value}'
-  and season = ${inputs.season.value}
+  and season = '${inputs.season.value}'
 order by match_date desc
 limit 10
 ```
@@ -158,11 +158,11 @@ limit 10
 ```sql shot_location
 select 'Inside Box' as location, shots_insidebox as shots
 from superligaen.team_analytics_kpis
-where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
+where team_name = '${inputs.team.value}' and season = '${inputs.season.value}'
 union all
 select 'Outside Box', shots_outsidebox
 from superligaen.team_analytics_kpis
-where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
+where team_name = '${inputs.team.value}' and season = '${inputs.season.value}'
 ```
 
 <BarChart
@@ -293,7 +293,7 @@ where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
 ```sql home_away_chart
 select side, avg_shots_on_goal as "Shots on Goal", avg_xg as "xG", avg_possession / 10 as "Possession / 10", win_rate_pct / 10 as "Win Rate / 10"
 from superligaen.team_analytics_home_away
-where team_name = '${inputs.team.value}' and season = ${inputs.season.value}
+where team_name = '${inputs.team.value}' and season = '${inputs.season.value}'
 ```
 
 <BarChart

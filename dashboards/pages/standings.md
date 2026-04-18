@@ -7,12 +7,12 @@ title: Standings
 <a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
 
 ```sql seasons
-select distinct season, season_name from superligaen.team_season_stats
+select distinct season from superligaen.team_season_stats
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season label=season_name>
-    <DropdownOption value=2025 valueLabel="2025/26"/>
+<Dropdown data={seasons} name=season value=season label=season>
+    <DropdownOption value="2025/26" valueLabel="2025/26"/>
 </Dropdown>
 
 ```sql standings
@@ -22,7 +22,7 @@ select
     gp, w, d, l, gf, ga, gd, pts,
     round_group
 from superligaen.team_season_stats
-where season = ${inputs.season.value}
+where season = '${inputs.season.value}'
 order by round_group, pts desc, gd desc, gf desc
 ```
 
@@ -43,7 +43,7 @@ select
     row_number() over (order by pts desc, gd desc, gf desc) as rank,
     team_name as team, gp, w, d, l, gf, ga, gd, pts
 from superligaen.team_regular_season_stats
-where season = ${inputs.season.value}
+where season = '${inputs.season.value}'
 ```
 
 ```sql all_teams

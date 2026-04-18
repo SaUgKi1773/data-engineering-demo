@@ -7,12 +7,12 @@ title: Match Results
 <a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
 
 ```sql seasons
-select distinct season, season_name from superligaen.match_results_by_match
+select distinct season from superligaen.match_results_by_match
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season label=season_name>
-    <DropdownOption value=2025 valueLabel="2025/26"/>
+<Dropdown data={seasons} name=season value=season label=season>
+    <DropdownOption value="2025/26" valueLabel="2025/26"/>
 </Dropdown>
 
 ```sql results
@@ -21,7 +21,7 @@ select
     total_goals, total_shots_on_goal, total_xg,
     total_yellow_cards, total_red_cards, total_corners
 from superligaen.match_results_by_match
-where season = ${inputs.season.value}
+where season = '${inputs.season.value}'
 order by match_date desc
 ```
 
@@ -35,7 +35,7 @@ select
     sum(total_red_cards)                as total_red_cards,
     round(avg(total_shots_on_goal), 1)  as avg_shots_on_goal
 from superligaen.match_results_by_match
-where season = ${inputs.season.value}
+where season = '${inputs.season.value}'
 ```
 
 ```sql goals_over_time
@@ -44,7 +44,7 @@ select
     sum(total_goals) as goals,
     round(sum(total_xg::double), 2) as xg
 from superligaen.match_results_by_match
-where season = ${inputs.season.value}
+where season = '${inputs.season.value}'
 group by match_round_number
 order by match_round_number asc
 ```
