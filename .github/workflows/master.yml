@@ -66,7 +66,7 @@ jobs:
           python ingestion/run.py $ARGS
 
   # ---------------------------------------------------------------------------
-  # Silver — transform bronze JSON into structured tables
+  # Silver — transform bronze JSON into structured tables (dbt)
   # ---------------------------------------------------------------------------
   transform:
     name: Silver transformation
@@ -84,26 +84,36 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run silver transformation (incremental)
-        if: ${{ github.event.inputs.full_load != 'true' }}
+      - name: dbt deps
+        working-directory: dbt
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: python transformations/run_silver.py --lookback ${{ github.event.inputs.lookback || '5' }}
+        run: dbt deps
 
-      - name: Run silver transformation (full / seasonal load)
-        if: ${{ github.event.inputs.full_load == 'true' }}
+      - name: Run silver (incremental)
+        if: ${{ github.event.inputs.full_load != 'true' }}
+        working-directory: dbt
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
         run: |
-          ARGS="--full-load"
-          [ -n "${{ github.event.inputs.league }}" ] && ARGS="$ARGS --league ${{ github.event.inputs.league }}"
-          [ -n "${{ github.event.inputs.season }}" ] && ARGS="$ARGS --season ${{ github.event.inputs.season }}"
-          python transformations/run_silver.py $ARGS
+          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          dbt run --select silver.* --target $TARGET --vars '{"lookback_days": ${{ github.event.inputs.lookback || '5' }}}'
+
+      - name: Run silver (full load)
+        if: ${{ github.event.inputs.full_load == 'true' }}
+        working-directory: dbt
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          if [ -n "${{ github.event.inputs.season }}" ]; then
+            dbt run --select silver.* --target $TARGET --vars '{"season": ${{ github.event.inputs.season }}}'
+          else
+            dbt run --select silver.* --target $TARGET --full-refresh
+          fi
 
   # ---------------------------------------------------------------------------
-  # Gold — build Kimball dimensional model
+  # Gold — build Kimball dimensional model (dbt)
   # ---------------------------------------------------------------------------
   gold:
     name: Gold transformation
@@ -123,17 +133,25 @@ jobs:
 
       - name: Build gold (incremental)
         if: ${{ github.event.inputs.full_load != 'true' }}
+        working-directory: dbt
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: python transformations/run_gold.py --lookback ${{ github.event.inputs.lookback || '5' }}
+        run: |
+          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          dbt run --select gold.* --target $TARGET --vars '{"lookback_days": ${{ github.event.inputs.lookback || '5' }}}'
 
       - name: Build gold (full load)
         if: ${{ github.event.inputs.full_load == 'true' }}
+        working-directory: dbt
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: python transformations/run_gold.py --full-load
+        run: |
+          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          if [ -n "${{ github.event.inputs.season }}" ]; then
+            dbt run --select gold.* --target $TARGET --vars '{"season": ${{ github.event.inputs.season }}}'
+          else
+            dbt run --select gold.* --target $TARGET --full-refresh
+          fi
 
   # ---------------------------------------------------------------------------
   # Dashboard — push to publish_dashboard/vercel to trigger Vercel rebuild
