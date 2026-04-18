@@ -24,12 +24,12 @@ where season = (select max(season) from superligaen.match_results_by_match)
 select * from superligaen.current_leader
 ```
 
-<div class="rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-10 mb-6 shadow-xl">
-  <div class="flex items-center justify-center gap-8 flex-wrap">
-    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-12 rounded-lg shadow-lg opacity-90" />
-    <div class="bg-white/10 rounded-2xl p-3 shadow-lg backdrop-blur">
-      <img src="{league[0].league_logo}" alt="Superligaen" class="h-20" />
-    </div>
+<div class="relative rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-10 mb-6 shadow-xl">
+  <div class="absolute top-4 right-4 bg-white/10 rounded-xl p-2 backdrop-blur">
+    <img src="{league[0].league_logo}" alt="Superligaen" class="h-12" />
+  </div>
+  <div class="flex items-center justify-center gap-6">
+    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-10 rounded-lg shadow-lg opacity-90" />
     <div class="text-center">
       <div class="text-5xl font-extrabold tracking-tight text-white">Superligaen</div>
       <div class="text-gray-400 text-sm mt-3 uppercase tracking-widest">Danish Football Premier League</div>
@@ -37,15 +37,15 @@ select * from superligaen.current_leader
         Current Season: {kpis[0].season}
       </div>
     </div>
-    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-12 rounded-lg shadow-lg opacity-90" />
+    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-10 rounded-lg shadow-lg opacity-90" />
   </div>
 </div>
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4"><BigValue data={leader}  value=team_name      title="Current Leader"  /></div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4"><BigValue data={kpis}    value=total_teams    title="Teams"           /></div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4"><BigValue data={kpis}    value=total_matches  title="Matches Played"  /></div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4"><BigValue data={kpis}    value=total_goals    title="Goals Scored"    /></div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center"><BigValue data={leader}  value=team_name      title="Current Leader"  /></div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center"><BigValue data={kpis}    value=total_teams    title="Teams"           /></div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center"><BigValue data={kpis}    value=total_matches  title="Matches Played"  /></div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center"><BigValue data={kpis}    value=total_goals    title="Goals Scored"    /></div>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
