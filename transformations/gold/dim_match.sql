@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS {db}.gold.dim_match (
     match_sk             INTEGER NOT NULL,
     match_id             INTEGER,
     season               INTEGER,
+    season_name          VARCHAR,
     match_round_name     VARCHAR,
     match_round_type     VARCHAR,
     match_round_number   INTEGER,
@@ -20,18 +21,19 @@ CREATE TABLE IF NOT EXISTS {db}.gold.dim_match (
 );
 
 -- Add new columns to existing tables (idempotent)
-ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_round_type    VARCHAR;
-ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_round_number  INTEGER;
-ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_name          VARCHAR;
-ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_short_name    VARCHAR;
-ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_result        VARCHAR;
+ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS season_name        VARCHAR;
+ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_round_type   VARCHAR;
+ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_round_number INTEGER;
+ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_name         VARCHAR;
+ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_short_name   VARCHAR;
+ALTER TABLE {db}.gold.dim_match ADD COLUMN IF NOT EXISTS match_result       VARCHAR;
 
 -- Sentinels (idempotent)
 INSERT INTO {db}.gold.dim_match
 SELECT * FROM (VALUES
-    (-1, NULL::INTEGER, NULL::INTEGER, 'Unknown Match',        'Unknown',       NULL::INTEGER, 'Unknown Match',        'Unknown Match',        'Unknown',        NULL::VARCHAR),
-    (-2, NULL::INTEGER, NULL::INTEGER, 'Not Applicable Match', 'Not Applicable',NULL::INTEGER, 'Not Applicable Match', 'Not Applicable Match', 'Not Applicable', NULL::VARCHAR)
-) t(match_sk, match_id, season, round_name, round_type, round_number, match_status, match_name, match_short_name, match_result)
+    (-1, NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Unknown Match',        'Unknown',       NULL::INTEGER, 'Unknown Match',        'Unknown Match',        'Unknown',        NULL::VARCHAR),
+    (-2, NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Match', 'Not Applicable',NULL::INTEGER, 'Not Applicable Match', 'Not Applicable Match', 'Not Applicable', NULL::VARCHAR)
+) t(match_sk, match_id, season, season_name, round_name, round_type, round_number, match_status, match_name, match_short_name, match_result)
 WHERE t.match_sk NOT IN (SELECT match_sk FROM {db}.gold.dim_match);
 
 -- Insert new matches not yet in the dim
@@ -54,6 +56,7 @@ SELECT
         + ROW_NUMBER() OVER (ORDER BY src.fixture_id)                        AS match_sk,
     src.fixture_id                                                            AS match_id,
     src.season,
+    src.season::VARCHAR || '/' || RIGHT((src.season + 1)::VARCHAR, 2)        AS season_name,
     src.league_round                                                          AS match_round_name,
     CASE SPLIT_PART(src.league_round, ' - ', 1)
         WHEN 'Championship Group' THEN 'Championship'
@@ -89,6 +92,7 @@ WHERE src.fixture_id NOT IN (
 -- Update mutable fields for existing matches
 UPDATE {db}.gold.dim_match tgt
 SET
+    season_name        = ranked.season_name,
     match_round_type   = ranked.match_round_type,
     match_round_number = ranked.match_round_number,
     match_status       = ranked.status_long,
@@ -111,6 +115,7 @@ FROM (
     )
     SELECT
         src.fixture_id,
+        src.season::VARCHAR || '/' || RIGHT((src.season + 1)::VARCHAR, 2)     AS season_name,
         CASE SPLIT_PART(src.league_round, ' - ', 1)
             WHEN 'Championship Group' THEN 'Championship'
             WHEN 'Championship Round' THEN 'Championship'

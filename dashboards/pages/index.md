@@ -15,7 +15,8 @@ select
     (select count(distinct team_name)
      from superligaen.team_analytics_form
      where season = (select max(season) from superligaen.match_results_by_match)) as total_teams,
-    max(season)                                                           as season
+    max(season)                                                           as season,
+    max(season_name)                                                      as season_name
 from superligaen.match_results_by_match
 where season = (select max(season) from superligaen.match_results_by_match)
 ```
@@ -34,7 +35,7 @@ select * from superligaen.current_leader
       <div class="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Superligaen</div>
       <div class="text-gray-400 text-xs md:text-sm mt-2 md:mt-3 uppercase tracking-widest">Danish Football Premier League</div>
       <div class="inline-block mt-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-sm font-semibold">
-        Current Season: {kpis[0].season}
+        Current Season: {kpis[0].season_name}
       </div>
     </div>
     <img src="{league[0].league_country_flag}" alt="Denmark" class="h-7 md:h-10 rounded-lg shadow-lg opacity-90" />

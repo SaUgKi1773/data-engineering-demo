@@ -7,12 +7,12 @@ title: Standings
 <a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
 
 ```sql seasons
-select distinct season from superligaen.team_season_stats
+select distinct season, season_name from superligaen.team_season_stats
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season label=season>
-    <DropdownOption value=2025 valueLabel="2025"/>
+<Dropdown data={seasons} name=season value=season label=season_name>
+    <DropdownOption value=2025 valueLabel="2025/26"/>
 </Dropdown>
 
 ```sql standings
@@ -51,7 +51,7 @@ select team, pts, gf, ga, round_group from ${standings}
 order by round_group, pts desc
 ```
 
-## {inputs.season.value} Season Standings
+## {inputs.season.label} Season Standings
 
 {#if championship.length > 0}
 
@@ -117,7 +117,7 @@ order by round_group, pts desc
     x=team
     y=pts
     series=round_group
-    title="Points by Team — {inputs.season.value}"
+    title="Points by Team — {inputs.season.label}"
     yAxisTitle="Points"
     xAxisTitle="Team"
     sort=false
@@ -128,7 +128,7 @@ order by round_group, pts desc
     data={all_teams}
     x=team
     y={['gf','ga']}
-    title="Goals For vs Goals Against — {inputs.season.value}"
+    title="Goals For vs Goals Against — {inputs.season.label}"
     yAxisTitle="Goals"
     xAxisTitle="Team"
     sort=false

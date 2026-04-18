@@ -7,12 +7,12 @@ title: Match Results
 <a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
 
 ```sql seasons
-select distinct season from superligaen.match_results_by_match
+select distinct season, season_name from superligaen.match_results_by_match
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season label=season>
-    <DropdownOption value=2025 valueLabel="2025"/>
+<Dropdown data={seasons} name=season value=season label=season_name>
+    <DropdownOption value=2025 valueLabel="2025/26"/>
 </Dropdown>
 
 ```sql results
@@ -51,7 +51,7 @@ order by match_round_number asc
 
 ---
 
-## Season {inputs.season.value} at a Glance
+## Season {inputs.season.label} at a Glance
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=total_matches       title="Matches Played"    /></div>
@@ -71,7 +71,7 @@ order by match_round_number asc
     data={goals_over_time}
     x=match_round_number
     y={['goals','xg']}
-    title="Goals vs xG — {inputs.season.value}"
+    title="Goals vs xG — {inputs.season.label}"
     xAxisTitle="Round"
     yAxisTitle="Goals"
     colorPalette={['#22c55e','#3b82f6']}
@@ -79,7 +79,7 @@ order by match_round_number asc
 
 ---
 
-## Match Results — {inputs.season.value}
+## Match Results — {inputs.season.label}
 
 <DataTable data={results} rows=20 search=true>
     <Column id=match_date          title="Date"           />
