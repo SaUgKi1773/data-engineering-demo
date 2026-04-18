@@ -93,7 +93,7 @@ joined AS (
         s.goalkeeper_saves,
         s.expected_goals
     FROM fixture_teams ft
-    JOIN      {{ ref('dim_date')    }} d   ON d.full_date      = ft.match_date
+    JOIN      {{ ref('dim_date')    }} d   ON d.date           = ft.match_date
     LEFT JOIN {{ ref('dim_time')    }} t   ON t.time_sk        = ft.kick_off_hour
     LEFT JOIN {{ ref('dim_team')    }} tm  ON tm.team_id       = ft.team_id
     LEFT JOIN {{ ref('dim_team')    }} opp ON opp.team_id      = ft.opponent_id

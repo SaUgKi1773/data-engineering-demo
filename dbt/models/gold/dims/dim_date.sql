@@ -7,9 +7,9 @@
 
 SELECT
     strftime('%Y%m%d', d)::INTEGER           AS date_sk,
-    d::DATE                                  AS full_date,
+    d::DATE                                  AS date,
     EXTRACT(year    FROM d)::INTEGER         AS year,
-    EXTRACT(quarter FROM d)::INTEGER         AS quarter,
+    'Q' || EXTRACT(quarter FROM d)::INTEGER  AS quarter,
     EXTRACT(month   FROM d)::INTEGER         AS month,
     monthname(d)                             AS month_name,
     weekofyear(d)::INTEGER                   AS week_number,

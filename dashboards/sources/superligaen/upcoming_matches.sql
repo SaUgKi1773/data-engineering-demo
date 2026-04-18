@@ -1,5 +1,5 @@
 select
-    d.full_date                                                               as match_date,
+    d.date                                                               as match_date,
     m.match_round_name                                                        as round,
     m.match_name,
     MAX(CASE WHEN ts.team_side = 'Home' THEN t.team_name END)                as home_team,
@@ -17,5 +17,5 @@ join superligaen.gold.dim_match_result r  on r.match_result_sk = f.match_result_
 join superligaen.gold.dim_team         t  on t.team_sk        = f.team_sk
 join superligaen.gold.dim_team_side    ts on ts.team_side_sk  = f.team_side_sk
 where r.match_result = 'Pending'
-group by d.full_date, m.match_round_name, m.match_name, st.stadium_name, m.season
-order by d.full_date asc
+group by d.date, m.match_round_name, m.match_name, st.stadium_name, m.season
+order by d.date asc

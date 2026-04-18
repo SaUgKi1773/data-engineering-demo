@@ -1,5 +1,5 @@
 select
-    d.full_date                  as match_date,
+    d.date                  as match_date,
     m.match_round_name           as round,
     m.season,
     t.team_name,
@@ -19,4 +19,4 @@ join superligaen.gold.dim_match_result  r   on r.match_result_sk    = f.match_re
 join superligaen.gold.dim_team_side     ts  on ts.team_side_sk      = f.team_side_sk
 join superligaen.gold.dim_stadium       st  on st.stadium_sk        = f.stadium_sk
 where r.match_result in ('Win', 'Draw', 'Loss')
-order by d.full_date desc
+order by d.date desc
