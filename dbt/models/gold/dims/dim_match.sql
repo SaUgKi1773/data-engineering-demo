@@ -3,9 +3,9 @@
         materialized='incremental',
         incremental_strategy='merge',
         unique_key='match_id',
-        merge_update_columns=['season_name', 'match_round_type', 'match_round_number', 'match_status', 'match_name', 'match_short_name', 'match_result'],
+        merge_update_columns=['season', 'match_round_type', 'match_round_number', 'match_status', 'match_name', 'match_short_name', 'match_result'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Unknown Match Round Name', 'Unknown Match Round Type', NULL::INTEGER, 'Unknown Match Status', 'Unknown Match Name', 'Unknown Match Short Name', NULL::VARCHAR), (-2, NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Match Round Name', 'Not Applicable Match Round Type', NULL::INTEGER, 'Not Applicable Match Status', 'Not Applicable Match Name', 'Not Applicable Match Short Name', NULL::VARCHAR)) t(match_sk, match_id, season, season_name, match_round_name, match_round_type, match_round_number, match_status, match_name, match_short_name, match_result) WHERE t.match_sk NOT IN (SELECT match_sk FROM {{ this }})"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, NULL::VARCHAR, 'Unknown Match Round Name', 'Unknown Match Round Type', NULL::INTEGER, 'Unknown Match Status', 'Unknown Match Name', 'Unknown Match Short Name', NULL::VARCHAR), (-2, NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Match Round Name', 'Not Applicable Match Round Type', NULL::INTEGER, 'Not Applicable Match Status', 'Not Applicable Match Name', 'Not Applicable Match Short Name', NULL::VARCHAR)) t(match_sk, match_id, season, match_round_name, match_round_type, match_round_number, match_status, match_name, match_short_name, match_result) WHERE t.match_sk NOT IN (SELECT match_sk FROM {{ this }})"
         ]
     )
 }}
@@ -26,8 +26,7 @@ team_round AS (
 src AS (
     SELECT
         f.fixture_id,
-        f.season,
-        f.season::VARCHAR || '/' || RIGHT((f.season + 1)::VARCHAR, 2)        AS season_name,
+        f.season::VARCHAR || '/' || RIGHT((f.season + 1)::VARCHAR, 2)        AS season,
         f.league_round                                                         AS match_round_name,
         CASE SPLIT_PART(f.league_round, ' - ', 1)
             WHEN 'Championship Group' THEN 'Championship'
@@ -69,7 +68,6 @@ SELECT
     {% endif %}
     src.fixture_id   AS match_id,
     src.season,
-    src.season_name,
     src.match_round_name,
     src.match_round_type,
     src.match_round_number,
