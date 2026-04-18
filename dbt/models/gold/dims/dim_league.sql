@@ -5,7 +5,7 @@
         unique_key='league_id',
         merge_update_columns=['league_name', 'league_type', 'league_logo', 'league_country', 'league_country_code', 'league_country_flag'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown League', 'Unknown League', NULL::VARCHAR, 'Unknown League', 'Unknown League', NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable League', 'Not Applicable League', NULL::VARCHAR, 'Not Applicable League', 'Not Applicable League', NULL::VARCHAR)) t(league_sk, league_id, league_name, league_type, league_logo, league_country, league_country_code, league_country_flag) WHERE t.league_sk NOT IN (SELECT league_sk FROM {{ this }})"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown League Name', 'Unknown League Type', NULL::VARCHAR, 'Unknown League Country', 'Unknown League Country Code', NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable League Name', 'Not Applicable League Type', NULL::VARCHAR, 'Not Applicable League Country', 'Not Applicable League Country Code', NULL::VARCHAR)) t(league_sk, league_id, league_name, league_type, league_logo, league_country, league_country_code, league_country_flag) WHERE t.league_sk NOT IN (SELECT league_sk FROM {{ this }})"
         ]
     )
 }}
