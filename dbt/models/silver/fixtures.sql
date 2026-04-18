@@ -15,6 +15,12 @@ WITH venue_lookup AS (
     WHERE elem->>'$.id' IS NOT NULL
     GROUP BY (elem->>'$.name')::VARCHAR
 ),
+home_team_venue AS (
+    SELECT DISTINCT ON (team_id) team_id, venue_id
+    FROM {{ ref('teams') }}
+    WHERE venue_id IS NOT NULL
+    ORDER BY team_id, season DESC
+),
 src AS (
     SELECT
         (raw_json->>'$.fixture.id')::INTEGER          AS fixture_id,
@@ -48,7 +54,8 @@ src AS (
         (raw_json->>'$.fixture.periods.second')::INTEGER AS period_second,
         COALESCE(
             (raw_json->>'$.fixture.venue.id')::INTEGER,
-            vl.venue_id
+            vl.venue_id,
+            htv.venue_id
         )                                             AS venue_id,
         raw_json->>'$.fixture.venue.name'             AS venue_name,
         raw_json->>'$.fixture.venue.city'             AS venue_city,
@@ -84,7 +91,8 @@ src AS (
         (raw_json->>'$.score.penalty.away')::INTEGER   AS score_pen_away,
         ingested_at
     FROM {{ source('bronze', 'api_football__fixtures') }}
-    LEFT JOIN venue_lookup vl ON vl.venue_name = (raw_json->>'$.fixture.venue.name')::VARCHAR
+    LEFT JOIN venue_lookup vl  ON vl.venue_name = (raw_json->>'$.fixture.venue.name')::VARCHAR
+    LEFT JOIN home_team_venue htv ON htv.team_id = (raw_json->>'$.teams.home.id')::INTEGER
 )
 SELECT * FROM src
 {% if is_incremental() %}
