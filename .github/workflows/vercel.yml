@@ -17,6 +17,6 @@ jobs:
         run: |
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
-          git checkout -B vercel-deploy-only origin/main
+          git checkout -B publish_dashboard/vercel origin/main
           git commit --allow-empty -m "chore: manual deploy $(date -u '+%Y-%m-%d %H:%M UTC')"
-          git push origin vercel-deploy-only --force
+          git push origin publish_dashboard/vercel --force
