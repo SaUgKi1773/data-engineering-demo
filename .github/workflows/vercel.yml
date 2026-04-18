@@ -9,4 +9,6 @@ jobs:
 
     steps:
       - name: Trigger Vercel deployment
-        run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+        run: |
+          response=$(curl -sf -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}")
+          echo "Response: $response"
