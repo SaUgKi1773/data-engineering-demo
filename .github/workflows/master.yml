@@ -131,6 +131,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: dbt deps
+        working-directory: dbt
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: dbt deps
+
       - name: Build gold (incremental)
         if: ${{ github.event.inputs.full_load != 'true' }}
         working-directory: dbt
