@@ -22,7 +22,7 @@ select
     gp, w, d, l, gf, ga, gd, pts,
     round_group
 from superligaen.team_season_stats
-where season = ${inputs.season.label}
+where season = ${inputs.season.value}
 order by round_group, pts desc, gd desc, gf desc
 ```
 
@@ -43,7 +43,7 @@ select
     row_number() over (order by pts desc, gd desc, gf desc) as rank,
     team_name as team, gp, w, d, l, gf, ga, gd, pts
 from superligaen.team_regular_season_stats
-where season = ${inputs.season.label}
+where season = ${inputs.season.value}
 ```
 
 ```sql all_teams
