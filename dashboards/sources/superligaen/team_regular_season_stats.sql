@@ -1,7 +1,6 @@
 select
     t.team_name,
     m.season,
-    m.season_name,
     count(*)                                                            as gp,
     sum(case when f.match_result_sk = 1 then 1 else 0 end)             as w,
     sum(case when f.match_result_sk = 2 then 1 else 0 end)             as d,
@@ -15,5 +14,5 @@ join superligaen.gold.dim_team t   on t.team_sk  = f.team_sk
 join superligaen.gold.dim_match m  on m.match_sk = f.match_sk
 where f.match_result_sk in (1, 2, 3)
   and m.match_round_name like 'Regular Season%'
-group by t.team_name, m.season, m.season_name
+group by t.team_name, m.season
 order by m.season desc, pts desc, gd desc, gf desc

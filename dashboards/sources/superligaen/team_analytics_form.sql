@@ -27,8 +27,7 @@ select
         order by d.full_date
         rows between unbounded preceding and current row
     )                                                                       as cumulative_points,
-    m.season,
-    m.season_name
+    m.season
 from superligaen.gold.fct_match_results f
 join superligaen.gold.dim_team          t   on t.team_sk          = f.team_sk
 join superligaen.gold.dim_opponent_team ot  on ot.opponent_team_sk = f.opponent_team_sk
