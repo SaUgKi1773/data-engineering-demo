@@ -8,8 +8,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Trigger Vercel deployment
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to Vercel deploy branch
         run: |
-          echo "Calling hook..."
-          curl -v -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}" 2>&1
-          echo "Exit code: $?"
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git checkout -B vercel-deploy-only origin/main
+          git commit --allow-empty -m "chore: manual deploy $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push origin vercel-deploy-only --force
