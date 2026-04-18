@@ -1,4 +1,4 @@
-name: Daily ingestion
+name: Ingestion
 
 on:
   workflow_dispatch:
@@ -15,6 +15,10 @@ on:
         description: "Season year for full load (e.g. 2025). Leave empty to load all seasons."
         required: false
         default: ""
+      lookback:
+        description: "Days to look back for incremental run (default: 5)"
+        required: false
+        default: "5"
       target_db:
         description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
         required: false
@@ -22,6 +26,7 @@ on:
 
 jobs:
   ingest:
+    name: Bronze ingestion
     runs-on: ubuntu-latest
     timeout-minutes: 360  # 6h max — covers one full season load
 
@@ -37,13 +42,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run ingestion (daily incremental)
+      - name: Run ingestion (incremental)
         if: ${{ github.event.inputs.full_load != 'true' }}
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: python ingestion/run.py --lookback 2
+        run: python ingestion/run.py --lookback ${{ github.event.inputs.lookback || '5' }}
 
       - name: Run ingestion (full load)
         if: ${{ github.event.inputs.full_load == 'true' }}
