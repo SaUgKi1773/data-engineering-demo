@@ -2,6 +2,9 @@ appearance:
   default: system
   switcher: true
 
+layout:
+  sidebar: false
+
 theme:
   colorPalettes:
     default:

@@ -1,21 +1,21 @@
 ---
-title: Superligaen
+sidebar: never
+hide_toc: true
+title: " "
 ---
 
 ```sql league
 select * from superligaen.league_info
 ```
 
-```sql extended_kpis
+```sql kpis
 select
-    count(*)                            as total_matches,
-    sum(total_goals)                    as total_goals,
-    round(avg(total_goals), 2)          as avg_goals_per_match,
-    round(avg(total_xg), 2)             as avg_xg_per_match,
-    sum(total_yellow_cards)             as total_yellow_cards,
-    sum(total_red_cards)                as total_red_cards,
-    round(avg(total_shots_on_goal), 1)  as avg_shots_on_goal,
-    max(season)                         as season
+    count(*)                                                              as total_matches,
+    sum(total_goals)                                                      as total_goals,
+    (select count(distinct team_name)
+     from superligaen.team_analytics_form
+     where season = (select max(season) from superligaen.match_results_by_match)) as total_teams,
+    max(season)                                                           as season
 from superligaen.match_results_by_match
 where season = (select max(season) from superligaen.match_results_by_match)
 ```
@@ -24,56 +24,70 @@ where season = (select max(season) from superligaen.match_results_by_match)
 select * from superligaen.current_leader
 ```
 
-<div class="rounded-2xl border border-gray-300 bg-gray-100 p-8 mb-6">
-  <div class="flex items-center justify-center gap-6 flex-wrap">
-    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-10 rounded shadow-lg" />
-    <div class="bg-white rounded-2xl p-3 shadow-lg">
-      <img src="{league[0].league_logo}" alt="Superligaen" class="h-16" />
+<div class="rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-10 mb-6 shadow-xl">
+  <div class="flex items-center justify-center gap-8 flex-wrap">
+    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-12 rounded-lg shadow-lg opacity-90" />
+    <div class="bg-white/10 rounded-2xl p-3 shadow-lg backdrop-blur">
+      <img src="{league[0].league_logo}" alt="Superligaen" class="h-20" />
     </div>
     <div class="text-center">
-      <div class="text-5xl font-extrabold tracking-tight text-gray-800">Superligaen</div>
-      <div class="text-gray-500 text-base mt-2">Danish Football Premier League &middot; {extended_kpis[0].season} Season</div>
+      <div class="text-5xl font-extrabold tracking-tight text-white">Superligaen</div>
+      <div class="text-gray-400 text-sm mt-3 uppercase tracking-widest">Danish Football Premier League</div>
+      <div class="inline-block mt-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-sm font-semibold">
+        Current Season: {kpis[0].season}
+      </div>
     </div>
-    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-10 rounded shadow-lg" />
+    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-12 rounded-lg shadow-lg opacity-90" />
   </div>
 </div>
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={extended_kpis} value=total_matches       title="Matches Played"    /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={extended_kpis} value=total_goals         title="Goals Scored"      /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={extended_kpis} value=avg_goals_per_match title="Avg Goals / Match" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={leader}        value=team_name           title="Current Leader"    /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={extended_kpis} value=avg_xg_per_match    title="Avg xG / Match"    /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={extended_kpis} value=avg_shots_on_goal   title="Avg Shots on Goal" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={extended_kpis} value=total_yellow_cards  title="Yellow Cards"      /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4"><BigValue data={extended_kpis} value=total_red_cards     title="Red Cards"         /></div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4"><BigValue data={leader}  value=team_name      title="Current Leader"  /></div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4"><BigValue data={kpis}    value=total_teams    title="Teams"           /></div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4"><BigValue data={kpis}    value=total_matches  title="Matches Played"  /></div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4"><BigValue data={kpis}    value=total_goals    title="Goals Scored"    /></div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-<a href="/standings" class="block no-underline rounded-xl border border-gray-300 bg-gray-100 p-6 hover:border-blue-500 hover:shadow-lg hover:bg-gray-200 transition-all duration-200 group">
-  <div class="text-4xl">🏆</div>
-  <div class="text-lg font-bold mt-3 mb-1 group-hover:text-blue-400 transition-colors">Standings</div>
-  <div class="text-gray-400 text-sm">Championship, Relegation &amp; Regular Season tables</div>
+<a href="/standings" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+  <div class="flex items-start gap-4">
+    <div class="text-3xl">🏆</div>
+    <div>
+      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Standings</div>
+      <div class="text-gray-400 text-sm mt-1">Championship, Relegation &amp; Regular Season tables</div>
+    </div>
+  </div>
 </a>
 
-<a href="/match-results" class="block no-underline rounded-xl border border-gray-300 bg-gray-100 p-6 hover:border-blue-500 hover:shadow-lg hover:bg-gray-200 transition-all duration-200 group">
-  <div class="text-4xl">⚽</div>
-  <div class="text-lg font-bold mt-3 mb-1 group-hover:text-blue-400 transition-colors">Match Results</div>
-  <div class="text-gray-400 text-sm">Full match history, scorelines and analytics by round</div>
+<a href="/match-results" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+  <div class="flex items-start gap-4">
+    <div class="text-3xl">⚽</div>
+    <div>
+      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Match Results</div>
+      <div class="text-gray-400 text-sm mt-1">Full match history, scorelines and analytics by round</div>
+    </div>
+  </div>
 </a>
 
-<a href="/team-analytics" class="block no-underline rounded-xl border border-gray-300 bg-gray-100 p-6 hover:border-blue-500 hover:shadow-lg hover:bg-gray-200 transition-all duration-200 group">
-  <div class="text-4xl">📊</div>
-  <div class="text-lg font-bold mt-3 mb-1 group-hover:text-blue-400 transition-colors">Team Analytics</div>
-  <div class="text-gray-400 text-sm">Deep-dive KPIs, form, shooting accuracy &amp; discipline</div>
+<a href="/team-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+  <div class="flex items-start gap-4">
+    <div class="text-3xl">📊</div>
+    <div>
+      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Team Analytics</div>
+      <div class="text-gray-400 text-sm mt-1">Deep-dive KPIs, form, shooting accuracy &amp; discipline</div>
+    </div>
+  </div>
 </a>
 
-<a href="/upcoming-matches" class="block no-underline rounded-xl border border-gray-300 bg-gray-100 p-6 hover:border-blue-500 hover:shadow-lg hover:bg-gray-200 transition-all duration-200 group">
-  <div class="text-4xl">📅</div>
-  <div class="text-lg font-bold mt-3 mb-1 group-hover:text-blue-400 transition-colors">Upcoming Fixtures</div>
-  <div class="text-gray-400 text-sm">Head-to-head history &amp; form guide for upcoming matches</div>
+<a href="/upcoming-matches" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+  <div class="flex items-start gap-4">
+    <div class="text-3xl">📅</div>
+    <div>
+      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Upcoming Fixtures</div>
+      <div class="text-gray-400 text-sm mt-1">Head-to-head history &amp; form guide for upcoming matches</div>
+    </div>
+  </div>
 </a>
 
 </div>
-

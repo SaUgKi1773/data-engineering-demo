@@ -1,4 +1,6 @@
 ---
+sidebar: never
+hide_toc: true
 title: Upcoming Fixtures
 ---
 
