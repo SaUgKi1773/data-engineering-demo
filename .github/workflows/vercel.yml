@@ -9,4 +9,7 @@ jobs:
 
     steps:
       - name: Trigger Vercel deployment
-        run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+        run: |
+          echo "Calling hook..."
+          curl -v -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}" 2>&1
+          echo "Exit code: $?"
