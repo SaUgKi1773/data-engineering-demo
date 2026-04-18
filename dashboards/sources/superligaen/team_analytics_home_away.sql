@@ -2,6 +2,7 @@ select
     t.team_name,
     ts.team_side                                                                    as side,
     m.season,
+    m.season_name,
     count(*)                                                                        as matches,
     sum(f.points_earned)                                                            as points,
     count(*) filter (where r.match_result = 'Win')                                  as wins,
@@ -24,5 +25,5 @@ join superligaen.gold.dim_match         m   on m.match_sk         = f.match_sk
 join superligaen.gold.dim_match_result  r   on r.match_result_sk  = f.match_result_sk
 join superligaen.gold.dim_team_side     ts  on ts.team_side_sk    = f.team_side_sk
 where r.match_result in ('Win', 'Draw', 'Loss')
-group by t.team_name, ts.team_side, m.season
+group by t.team_name, ts.team_side, m.season, m.season_name
 order by t.team_name, m.season, ts.team_side

@@ -5,7 +5,8 @@ select
         sum(f.total_shots)::decimal / nullif(count(distinct f.match_sk), 0),
         1
     )                                                                           as avg_shots_per_match,
-    max(m.season)                                                               as season
+    max(m.season)                                                               as season,
+    max(m.season_name)                                                          as season_name
 from superligaen.gold.fct_match_results f
 join superligaen.gold.dim_match        m on m.match_sk        = f.match_sk
 join superligaen.gold.dim_match_result r on r.match_result_sk = f.match_result_sk

@@ -7,12 +7,12 @@ title: Standings
 <a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
 
 ```sql seasons
-select distinct season from superligaen.team_season_stats
+select distinct season, season_name from superligaen.team_season_stats
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season label=season>
-    <DropdownOption value=2025 valueLabel="2025"/>
+<Dropdown data={seasons} name=season value=season label=season_name>
+    <DropdownOption value=2025 valueLabel="2025/26"/>
 </Dropdown>
 
 ```sql standings
