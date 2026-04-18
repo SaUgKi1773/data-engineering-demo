@@ -5,6 +5,7 @@
         unique_key='referee_name',
         merge_update_columns=['referee_name'],
         post_hook=[
+            "DELETE FROM {{ this }} WHERE referee_name LIKE '%, %' OR regexp_matches(referee_name, '^[A-Z]\\. ')",
             "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, 'Unknown Referee'), (-2, 'Not Applicable Referee')) t(referee_sk, referee_name) WHERE t.referee_sk NOT IN (SELECT referee_sk FROM {{ this }})"
         ]
     )
