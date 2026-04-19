@@ -1,8 +1,8 @@
-# Superligaen Data Engineering Demo
+# Superligaen Analytics
 
-An end-to-end data engineering project focusing on the Danish premier football league (Superligaen) — from raw API ingestion to a live analytics dashboard. Built on a fully custom Python + SQL stack.
+An end-to-end data engineering project tracking the Danish premier football league (Superligaen) — from raw API ingestion to a live analytics dashboard.
 
-**Live dashboard →** [superligaens.pages.dev](https://superligaens.pages.dev)
+**Live dashboard →** [superligaanalytics.vercel.app](https://superligaanalytics.vercel.app/)
 
 ---
 
@@ -15,17 +15,17 @@ api-football.com
   Bronze layer        Raw JSON stored in MotherDuck (one table per endpoint)
        │
        ▼
-  Silver layer        Cleaned, typed, structured relational tables
+  Silver layer        Cleaned, typed, structured relational tables  (dbt)
        │
        ▼
   Gold layer          Kimball star schema  ─────────────────────────────┐
-                      (dims + fct_match_results)                         │
-                                                                         ▼
-                                                              Evidence.dev dashboard
-                                                              deployed on Cloudflare Pages
+                      (dims + fct_match_results)        (dbt)           │
+                                                                        ▼
+                                                             Evidence.dev dashboard
+                                                             deployed on Vercel
 ```
 
-The nightly GitHub Actions pipeline runs all three layers sequentially, then triggers a Cloudflare Pages rebuild so the dashboard always reflects last night's data.
+The nightly GitHub Actions pipeline runs all three layers sequentially, then triggers a Vercel rebuild so the dashboard always reflects last night's data.
 
 ---
 
@@ -35,10 +35,10 @@ The nightly GitHub Actions pipeline runs all three layers sequentially, then tri
 |---|---|
 | Data warehouse | MotherDuck (DuckDB cloud) |
 | Ingestion | Python (`ingestion/`) |
-| Transformations | Pure SQL + Python runners (`transformations/`) |
+| Transformations | dbt-duckdb (`dbt/`) |
 | Orchestration | GitHub Actions (nightly + manual triggers) |
 | BI / Dashboard | Evidence.dev |
-| Hosting | Cloudflare Pages |
+| Hosting | Vercel |
 
 ---
 
@@ -80,7 +80,7 @@ erDiagram
 
     dim_date {
         int date_sk PK
-        date full_date
+        date date
         int year
         int month
         varchar month_name
@@ -192,8 +192,10 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 | **Home** | Season KPIs, current leader, navigation |
 | **Standings** | Championship, Relegation & Regular Season tables |
 | **Match Results** | Full match history, scorelines, Goals vs xG by round |
-| **Team Analytics** | Deep-dive per-team KPIs, form, shooting, possession, discipline |
 | **Upcoming Fixtures** | Next fixtures with head-to-head history and last-5 form guide |
+| **League Analytics** | Cross-team benchmarks, rankings and league-wide trends |
+| **Team Analytics** | Deep-dive per-team KPIs, form, shooting, possession, discipline |
+| **Referee Analytics** | Cards, fouls, team exposure and match logs by referee |
 
 ---
 
@@ -208,22 +210,31 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 │   ├── config.py               # Config and env vars
 │   └── ingest_*.py             # Per-entity ingestion scripts
 │
-├── transformations/
-│   ├── run_silver.py           # Silver runner
-│   ├── run_gold.py             # Gold runner
-│   ├── silver/                 # Silver SQL — one file per entity
-│   └── gold/                   # Gold SQL — dims and fact table
+├── dbt/                        # Silver + Gold transformations (dbt-duckdb)
+│   ├── models/
+│   │   ├── silver/             # 18 models: bronze JSON → structured tables
+│   │   └── gold/
+│   │       ├── dims/           # 10 dim_* models (Kimball dims)
+│   │       └── fct_match_results.sql
+│   ├── macros/                 # fixture_filter(), season_filter(), generate_schema_name()
+│   └── dbt_project.yml
 │
 ├── dashboards/                 # Evidence.dev BI app
 │   ├── pages/                  # One .md file per dashboard page
-│   └── sources/superligaen/    # SQL sources compiled to parquet
+│   └── sources/superligaen/    # SQL sources queried at build time
+│
+├── scripts/
+│   └── sync_dev_db.py          # Copies superligaen → superligaen_dev
 │
 ├── .github/workflows/
-│   ├── master.yml              # Nightly: bronze → silver → gold → deploy
-│   ├── cloudflare.yml          # Manual deploy trigger
+│   ├── master.yml              # Nightly: bronze → silver (dbt) → gold (dbt) → deploy
+│   ├── ci.yml                  # PR validation: Python syntax + dbt compile
 │   ├── ingest.yml              # Manual bronze-only run
-│   ├── transform.yml           # Manual silver-only run
-│   └── gold.yml                # Manual gold-only run
+│   ├── transform.yml           # Manual silver-only run (dbt)
+│   ├── gold.yml                # Manual gold-only run (dbt)
+│   ├── deploy.yml              # Manual gold full-refresh on prod
+│   ├── vercel.yml              # Manual Vercel deploy trigger
+│   └── sync-dev-db.yml         # Manual prod → dev database sync
 │
 └── requirements.txt
 ```
@@ -232,10 +243,10 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 
 ## Environments
 
-| Environment | MotherDuck database | Triggered by |
-|---|---|---|
-| Dev | `superligaen_dev` | Local / feature branches |
-| Prod | `superligaen` | GitHub Actions (`main`) |
+| Environment | MotherDuck database | dbt target | Triggered by |
+|---|---|---|---|
+| Dev | `superligaen_dev` | `dev` | Local / feature branches |
+| Prod | `superligaen` | `prod` | GitHub Actions (`main`) |
 
 ---
 
@@ -257,11 +268,12 @@ cp .env.example .env
 
 # 4. Run layers against dev
 python ingestion/run.py
-python transformations/run_silver.py
-python transformations/run_gold.py
+cd dbt
+dbt run --select silver.* --target dev
+dbt run --select gold.* --target dev
 
 # 5. Run the dashboard locally
-cd dashboards
+cd ../dashboards
 # Write the MotherDuck token for Evidence
 echo "token: $(echo -n "$MOTHERDUCK_TOKEN" | base64)" > sources/superligaen/connection.options.yaml
 npm install
@@ -277,6 +289,5 @@ npm run dev
 | Secret | Description |
 |---|---|
 | `MOTHERDUCK_TOKEN` | MotherDuck service token (read-write) |
-| `MOTHERDUCK_TOKEN_READONLY` | MotherDuck read-only token (dashboard) |
+| `MOTHERDUCK_TOKEN_READONLY` | MotherDuck read-only token (dashboard build) |
 | `API_FOOTBALL_KEY` | api-football.com API key |
-| `CLOUDFLARE_DEPLOY_HOOK` | Cloudflare Pages deploy hook URL |
