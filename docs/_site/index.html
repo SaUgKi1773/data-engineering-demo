@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Building Superligaen Analytics | A data engineer’s diary — from raw API calls to a live football dashboard. Everything that went wrong, and how we fixed it.</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Building Superligaen Analytics" />
+<meta name="author" content="Salih Ugur Kımıllı" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A data engineer’s diary — from raw API calls to a live football dashboard. Everything that went wrong, and how we fixed it." />
+<meta property="og:description" content="A data engineer’s diary — from raw API calls to a live football dashboard. Everything that went wrong, and how we fixed it." />
+<link rel="canonical" href="http://localhost:4000/" />
+<meta property="og:url" content="http://localhost:4000/" />
+<meta property="og:site_name" content="Building Superligaen Analytics" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Building Superligaen Analytics" />
+<script type="application/ld+json">
+{"description":"A data engineer’s diary — from raw API calls to a live football dashboard. Everything that went wrong, and how we fixed it.","name":"Building Superligaen Analytics","author":{"@type":"Person","name":"Salih Ugur Kımıllı"},"@type":"WebSite","url":"http://localhost:4000/","headline":"Building Superligaen Analytics","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Building Superligaen Analytics" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Building Superligaen Analytics</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/">Building Superligaen Analytics</a><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <div class="home"><h1 class="page-heading">Building Superligaen Analytics</h1><p>This blog documents the end-to-end journey of building <a href="https://superligaanalytics.vercel.app/">Superligaen Analytics</a> — a live data engineering project that ingests football data from the Danish premier league, transforms it through a medallion architecture, and serves it on a public dashboard.</p>
+
+<p>The project was built in roughly <strong>10 days</strong> in April 2026, and almost nothing went according to the original plan. Every major tool choice had to be revisited at least once. This is the honest account of what happened, why, and what I’d do differently.</p>
+
+<hr />
+
+<p><strong>Posts in order:</strong></p>
+
+<ol>
+  <li><a href="/2026/04/09/the-idea.html">The Idea — Why I Built This</a></li>
+  <li><a href="/2026/04/10/choosing-the-data-source.html">Choosing a Data Source</a></li>
+  <li><a href="/2026/04/11/building-the-bronze-layer.html">Building the Bronze Layer — Raw Ingestion</a></li>
+  <li><a href="/2026/04/14/silver-and-gold-layers.html">Silver and Gold — Transforming Data into a Star Schema</a></li>
+  <li><a href="/2026/04/16/building-the-dashboard.html">The Dashboard — Discovering Evidence.dev</a></li>
+  <li><a href="/2026/04/18/deployment-saga.html">The Deployment Saga — Netlify, Cloudflare, and Finally Vercel</a></li>
+  <li><a href="/2026/04/18/dbt-migration.html">Migrating to dbt — When Raw SQL Isn’t Enough</a></li>
+  <li><a href="/2026/04/19/launch-and-analytics.html">Adding Web Analytics — Vercel and Cloudflare</a></li>
+  <li><a href="/2026/04/19/global-launch.html">Global Launch — A Conclusion</a></li>
+</ol>
+
+<hr />
+
+<p><strong>Live dashboard:</strong> <a href="https://superligaanalytics.vercel.app/">superligaanalytics.vercel.app</a><br />
+<strong>Source code:</strong> <a href="https://github.com/SaUgKi1773/data-engineering-demo">github.com/SaUgKi1773/data-engineering-demo</a></p>
+<h2 class="post-list-heading">Posts</h2>
+    <ul class="post-list"><li><span class="post-meta">Apr 19, 2026</span>
+        <h3>
+          <a class="post-link" href="/2026/04/19/launch-and-analytics.html">
+            Adding Web Analytics — Vercel and Cloudflare
+          </a>
+        </h3><p>Once the dashboard was live, the natural question was: is anyone visiting it? We needed analytics.</p>
+</li><li><span class="post-meta">Apr 19, 2026</span>
+        <h3>
+          <a class="post-link" href="/2026/04/19/global-launch.html">
+            Global Launch — A Conclusion
+          </a>
+        </h3><p>By April 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, and the nightly job was running cleanly. It was time to call it launched.</p>
+</li><li><span class="post-meta">Apr 18, 2026</span>
+        <h3>
+          <a class="post-link" href="/2026/04/18/deployment-saga.html">
+            The Deployment Saga — Netlify, Cloudflare, and Finally Vercel
+          </a>
+        </h3><p>This is the chapter I wish someone had written before I started. The deployment story is not a story about bad tools — Netlify, Cloudflare Pages, and Vercel are all good products. It is a story about free tier constraints that are easy to overlook until you hit them, and about how a project with an unusual build profile (large data files, Node.js compilation, MotherDuck token handling) does not fit neatly into the assumptions any of these platforms make.</p>
+</li><li><span class="post-meta">Apr 18, 2026</span>
+        <h3>
+          <a class="post-link" href="/2026/04/18/dbt-migration.html">
+            Migrating to dbt — When Raw SQL Isn&#39;t Enough
+          </a>
+        </h3><p>When the silver and gold layers were first built, they ran as plain SQL files executed by Python runner scripts — <code class="language-plaintext highlighter-rouge">run_silver.py</code> and <code class="language-plaintext highlighter-rouge">run_gold.py</code>. Each script would read a directory of <code class="language-plaintext highlighter-rouge">.sql</code> files, connect to MotherDuck, and execute them in a specific order. It worked. The data was correct. But as the number of models grew and the logic became more complex, the cracks in the approach started to show.</p>
+</li><li><span class="post-meta">Apr 16, 2026</span>
+        <h3>
+          <a class="post-link" href="/2026/04/16/building-the-dashboard.html">
+            The Dashboard — Discovering Evidence.dev
+          </a>
+        </h3><p>I knew from the start that I wanted a live public dashboard, not a static report or a screenshot. The question was which tool to use.</p>
+</li><li><span class="post-meta">Apr 14, 2026</span>
+        <h3>
+          <a class="post-link" href="/2026/04/14/silver-and-gold-layers.html">
+            Silver and Gold — Transforming Data into a Star Schema
+          </a>
+        </h3><p>With 21 tables of raw JSON sitting in MotherDuck, the next step was to make the data actually usable. That meant two more layers: silver (clean, structured tables) and gold (a Kimball dimensional model designed for analytics).</p>
+</li><li><span class="post-meta">Apr 11, 2026</span>
+        <h3>
+          <a class="post-link" href="/2026/04/11/building-the-bronze-layer.html">
+            Building the Bronze Layer — Raw Ingestion
+          </a>
+        </h3><p>The bronze layer has one job: pull data from the API and store it in the warehouse exactly as it arrived. No transformation, no business logic. If the API gives you a nested JSON blob, you store a nested JSON blob. The philosophy is that raw data is irreplaceable — once you transform it, you lose the original, and if your transformation logic turns out to be wrong you have nothing to go back to.</p>
+</li><li><span class="post-meta">Apr 10, 2026</span>
+        <h3>
+          <a class="post-link" href="/2026/04/10/choosing-the-data-source.html">
+            Choosing a Data Source
+          </a>
+        </h3><h2 id="choosing-the-data-source">Choosing the Data Source</h2>
+</li><li><span class="post-meta">Apr 9, 2026</span>
+        <h3>
+          <a class="post-link" href="/2026/04/09/the-idea.html">
+            The Idea — Why I Built This
+          </a>
+        </h3><p>Every project starts somewhere. This one started with two things that happened to collide at the right moment.</p>
+</li></ul>
+
+    <p class="rss-subscribe">subscribe <a href="/feed.xml">via RSS</a></p></div>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Building Superligaen Analytics</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Salih Ugur Kımıllı</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>A data engineer&#39;s diary — from raw API calls to a live football dashboard. Everything that went wrong, and how we fixed it.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
