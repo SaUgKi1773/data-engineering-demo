@@ -8,6 +8,7 @@ select
         || '|||'
         || MAX(CASE WHEN ts.team_side = 'Away' THEN t.team_name END)         as match_key,
     st.stadium_name                                                           as stadium,
+    m.kick_off_time,
     m.season
 from superligaen.gold.fct_match_results f
 join superligaen.gold.dim_match        m  on m.match_sk       = f.match_sk
@@ -17,5 +18,5 @@ join superligaen.gold.dim_match_result r  on r.match_result_sk = f.match_result_
 join superligaen.gold.dim_team         t  on t.team_sk        = f.team_sk
 join superligaen.gold.dim_team_side    ts on ts.team_side_sk  = f.team_side_sk
 where r.match_result = 'Pending'
-group by d.date, m.match_round_name, m.match_name, st.stadium_name, m.season
+group by d.date, m.match_round_name, m.match_name, st.stadium_name, m.kick_off_time, m.season
 order by d.date asc

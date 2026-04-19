@@ -15,6 +15,18 @@ order by season desc
     <DropdownOption value="2025/26" valueLabel="2025/26"/>
 </Dropdown>
 
+```sql rounds
+select
+    round,
+    max(match_date) as last_date
+from superligaen.match_results_by_match
+where season = '${inputs.season.value}'
+group by round
+order by last_date desc
+```
+
+<Dropdown data={rounds} name=round value=round label=round multiple=true defaultValue={rounds[0].round} />
+
 ```sql results
 select
     match_date, round, match_name, score,
@@ -22,66 +34,31 @@ select
     total_yellow_cards, total_red_cards, total_corners
 from superligaen.match_results_by_match
 where season = '${inputs.season.value}'
+  and round in ${inputs.round.value}
 order by match_date desc
 ```
 
-```sql season_kpis
+```sql round_kpis
 select
-    count(*)                            as total_matches,
     sum(total_goals)                    as total_goals,
     round(avg(total_goals), 2)          as avg_goals_per_match,
-    round(avg(total_xg), 2)             as avg_xg_per_match,
-    sum(total_yellow_cards)             as total_yellow_cards,
-    sum(total_red_cards)                as total_red_cards,
-    round(avg(total_shots_on_goal), 1)  as avg_shots_on_goal
+    round(avg(total_shots_on_goal), 1)  as avg_shots_on_goal,
+    round(sum(total_xg::double), 2)     as total_xg
 from superligaen.match_results_by_match
 where season = '${inputs.season.value}'
+  and round in ${inputs.round.value}
 ```
 
-```sql goals_over_time
-select
-    match_round_number,
-    sum(total_goals) as goals,
-    round(sum(total_xg::double), 2) as xg
-from superligaen.match_results_by_match
-where season = '${inputs.season.value}'
-group by match_round_number
-order by match_round_number asc
-```
+## Match Results — {inputs.season.value} — {inputs.round.label}
 
----
-
-## Season {inputs.season.label} at a Glance
-
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=total_matches       title="Matches Played"    /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=total_goals          title="Goals Scored"      /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=avg_goals_per_match  title="Avg Goals / Match" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=avg_xg_per_match     title="Avg xG / Match"    /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=avg_shots_on_goal    title="Avg Shots on Goal" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=total_yellow_cards   title="Yellow Cards"      /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_kpis} value=total_red_cards      title="Red Cards"         /></div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=total_goals         title="Goals Scored"       /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=avg_goals_per_match  title="Avg Goals / Match"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=avg_shots_on_goal    title="Avg Shots on Goal"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=total_xg             title="Total xG"           /></div>
 </div>
 
----
-
-## Goals & xG Over the Season
-
-<LineChart
-    data={goals_over_time}
-    x=match_round_number
-    y={['goals','xg']}
-    title="Goals vs xG — {inputs.season.label}"
-    xAxisTitle="Round"
-    yAxisTitle="Goals"
-    colorPalette={['#22c55e','#3b82f6']}
-/>
-
----
-
-## Match Results — {inputs.season.label}
-
-<DataTable data={results} rows=20 search=true>
+<DataTable data={results} rows=20>
     <Column id=match_date          title="Date"           />
     <Column id=round               title="Round"          />
     <Column id=match_name          title="Match"          wrap=true />
@@ -93,4 +70,3 @@ order by match_round_number asc
     <Column id=total_red_cards     title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
     <Column id=total_corners       title="Corners"        contentType=colorscale colorPalette={['white','#a855f7']} align=center />
 </DataTable>
-

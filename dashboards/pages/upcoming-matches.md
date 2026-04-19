@@ -14,6 +14,7 @@ select
     home_team,
     away_team,
     match_key,
+    kick_off_time,
     CASE WHEN stadium LIKE '%Unknown%' OR stadium LIKE '%Applicable%'
          THEN 'TBD' ELSE stadium END                                               as stadium,
     season
@@ -24,11 +25,11 @@ order by match_date asc
 ## Upcoming Fixtures
 
 <DataTable data={upcoming} rows=10>
-    <Column id=match_date  title="Date"    />
-    <Column id=round       title="Round"   />
-    <Column id=home_team   title="Home"    />
-    <Column id=away_team   title="Away"    />
-    <Column id=stadium     title="Stadium" />
+    <Column id=match_date    title="Date"    />
+    <Column id=kick_off_time title="KO"      />
+    <Column id=round         title="Round"   />
+    <Column id=match_name    title="Match"   wrap=true />
+    <Column id=stadium       title="Stadium" />
 </DataTable>
 
 ---
@@ -43,6 +44,7 @@ select
     away_team,
     strftime(match_date, '%d %b %Y')                          as match_date,
     round,
+    kick_off_time,
     CASE WHEN stadium LIKE '%Unknown%' OR stadium LIKE '%Applicable%'
          THEN 'TBD' ELSE stadium END                          as stadium
 from superligaen.upcoming_matches
@@ -84,30 +86,32 @@ where side = 'Home'
 
 ```sql home_form
 select
-    strftime(match_date, '%Y-%m-%d') as match_date,
-    match_name                       as match,
-    score
-from superligaen.match_results_by_match
-where match_name LIKE SPLIT_PART('${inputs.match.value}', '|||', 1) || ' - %'
-   or match_name LIKE '% - ' || SPLIT_PART('${inputs.match.value}', '|||', 1)
+    strftime(match_date, '%d %b') as match_date,
+    opponent,
+    gf,
+    ga,
+    result
+from superligaen.team_analytics_form
+where team_name = SPLIT_PART('${inputs.match.value}', '|||', 1)
 order by match_date desc
 limit 5
 ```
 
 ```sql away_form
 select
-    strftime(match_date, '%Y-%m-%d') as match_date,
-    match_name                       as match,
-    score
-from superligaen.match_results_by_match
-where match_name LIKE SPLIT_PART('${inputs.match.value}', '|||', 2) || ' - %'
-   or match_name LIKE '% - ' || SPLIT_PART('${inputs.match.value}', '|||', 2)
+    strftime(match_date, '%d %b') as match_date,
+    opponent,
+    gf,
+    ga,
+    result
+from superligaen.team_analytics_form
+where team_name = SPLIT_PART('${inputs.match.value}', '|||', 2)
 order by match_date desc
 limit 5
 ```
 
 <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 md:p-6 mb-6 text-center">
-  <div class="text-xs text-gray-400 uppercase tracking-widest mb-3">{match_info[0].round} &middot; {match_info[0].match_date} &middot; {match_info[0].stadium}</div>
+  <div class="text-xs text-gray-400 uppercase tracking-widest mb-3">{match_info[0].round} &middot; {match_info[0].match_date} &middot; {match_info[0].kick_off_time} &middot; {match_info[0].stadium}</div>
   <div class="flex items-center justify-center gap-4 md:gap-6">
     <div class="flex-1 min-w-0">
       <div class="text-base md:text-xl font-bold text-gray-800 truncate">{match_info[0].home_team}</div>
@@ -159,20 +163,46 @@ limit 5
 
 <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
   <div class="text-base font-bold text-gray-700 mb-3">{match_info[0].home_team}</div>
-  <DataTable data={home_form} rows=5>
-      <Column id=match_date  title="Date"  />
-      <Column id=match       title="Match" />
-      <Column id=score       title="Score" align=center />
-  </DataTable>
+  <div class="flex flex-col gap-2">
+    {#each home_form as m}
+      <div class="flex items-center justify-between rounded-lg bg-white border border-gray-100 px-3 py-2">
+        <div class="text-xs text-gray-400 w-14 shrink-0">{m.match_date}</div>
+        <div class="text-xs text-gray-600 flex-1 px-2 truncate">vs {m.opponent}</div>
+        <div class="text-sm font-bold text-gray-700 w-10 text-center shrink-0">{m.gf}–{m.ga}</div>
+        <div class="ml-2 shrink-0">
+          {#if m.result === 'Win'}
+            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-green-500 text-white">W</span>
+          {:else if m.result === 'Draw'}
+            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-yellow-400 text-white">D</span>
+          {:else}
+            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-red-500 text-white">L</span>
+          {/if}
+        </div>
+      </div>
+    {/each}
+  </div>
 </div>
 
 <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
   <div class="text-base font-bold text-gray-700 mb-3">{match_info[0].away_team}</div>
-  <DataTable data={away_form} rows=5>
-      <Column id=match_date  title="Date"  />
-      <Column id=match       title="Match" />
-      <Column id=score       title="Score" align=center />
-  </DataTable>
+  <div class="flex flex-col gap-2">
+    {#each away_form as m}
+      <div class="flex items-center justify-between rounded-lg bg-white border border-gray-100 px-3 py-2">
+        <div class="text-xs text-gray-400 w-14 shrink-0">{m.match_date}</div>
+        <div class="text-xs text-gray-600 flex-1 px-2 truncate">vs {m.opponent}</div>
+        <div class="text-sm font-bold text-gray-700 w-10 text-center shrink-0">{m.gf}–{m.ga}</div>
+        <div class="ml-2 shrink-0">
+          {#if m.result === 'Win'}
+            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-green-500 text-white">W</span>
+          {:else if m.result === 'Draw'}
+            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-yellow-400 text-white">D</span>
+          {:else}
+            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-red-500 text-white">L</span>
+          {/if}
+        </div>
+      </div>
+    {/each}
+  </div>
 </div>
 
 </div>
