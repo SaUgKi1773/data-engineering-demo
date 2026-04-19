@@ -1,8 +1,9 @@
-{% macro fixture_filter(date_col='ingested_at') %}
+{% macro fixture_filter(date_col='kick_off') %}
     {% if var('season', none) is not none %}
         season = {{ var('season') }}
     {% else %}
-        {{ date_col }} >= current_timestamp - interval '{{ var("lookback_days", 5) }}' day
+        {{ date_col }}::DATE >= current_date - interval '{{ var("lookback_days", 5) }}' day
+        and {{ date_col }}::DATE <= current_date + interval '28' day
     {% endif %}
 {% endmacro %}
 
