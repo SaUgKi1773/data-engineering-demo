@@ -1,13 +1,9 @@
 ---
 layout: post
-title: "The Idea and Choosing a Data Source"
+title: "Choosing a Data Source"
 date: 2026-04-10
 categories: [data-engineering, architecture]
 ---
-
-Every project starts with a domain question. Mine was: why is there almost no publicly available analytics for the Danish premier football league? Superligaen has been running since 1991, has 14 clubs, and plays a unique split-season format with a championship round and a relegation round — yet you can barely find structured data about it online. That gap felt like a good enough reason to build something.
-
-The goal was clear from day one: an end-to-end data engineering project with a live public dashboard. Not a notebook, not a CSV file — a real pipeline with scheduled ingestion, a data warehouse, transformation layers, and a frontend that anyone could visit.
 
 ## Choosing the Data Source
 

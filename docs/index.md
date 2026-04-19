@@ -12,7 +12,7 @@ The project was built in roughly **10 days** in April 2026, and almost nothing w
 **Posts in order:**
 
 1. [The Idea — Why I Built This]({% post_url 2026-04-09-the-idea %})
-2. [The Idea and Choosing a Data Source]({% post_url 2026-04-10-choosing-the-data-source %})
+2. [Choosing a Data Source]({% post_url 2026-04-10-choosing-the-data-source %})
 3. [Building the Bronze Layer — Raw Ingestion]({% post_url 2026-04-11-building-the-bronze-layer %})
 4. [Silver and Gold — Transforming Data into a Star Schema]({% post_url 2026-04-14-silver-and-gold-layers %})
 5. [The Dashboard — Discovering Evidence.dev]({% post_url 2026-04-16-building-the-dashboard %})
