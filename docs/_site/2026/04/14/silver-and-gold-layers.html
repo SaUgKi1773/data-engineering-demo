@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Silver and Gold — Transforming Data into a Star Schema | Building Superligaen Analytics</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Silver and Gold — Transforming Data into a Star Schema" />
+<meta name="author" content="Salih Ugur Kımıllı" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="With 21 tables of raw JSON sitting in MotherDuck, the next step was to make the data actually usable. That meant two more layers: silver (clean, structured tables) and gold (a Kimball dimensional model designed for analytics)." />
+<meta property="og:description" content="With 21 tables of raw JSON sitting in MotherDuck, the next step was to make the data actually usable. That meant two more layers: silver (clean, structured tables) and gold (a Kimball dimensional model designed for analytics)." />
+<link rel="canonical" href="https://saugki1773.github.io/data-engineering-demo/2026/04/14/silver-and-gold-layers.html" />
+<meta property="og:url" content="https://saugki1773.github.io/data-engineering-demo/2026/04/14/silver-and-gold-layers.html" />
+<meta property="og:site_name" content="Building Superligaen Analytics" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-04-14T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Silver and Gold — Transforming Data into a Star Schema" />
+<script type="application/ld+json">
+{"description":"With 21 tables of raw JSON sitting in MotherDuck, the next step was to make the data actually usable. That meant two more layers: silver (clean, structured tables) and gold (a Kimball dimensional model designed for analytics).","headline":"Silver and Gold — Transforming Data into a Star Schema","dateModified":"2026-04-14T00:00:00+02:00","datePublished":"2026-04-14T00:00:00+02:00","@type":"BlogPosting","author":{"@type":"Person","name":"Salih Ugur Kımıllı"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://saugki1773.github.io/data-engineering-demo/2026/04/14/silver-and-gold-layers.html"},"url":"https://saugki1773.github.io/data-engineering-demo/2026/04/14/silver-and-gold-layers.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/data-engineering-demo/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://saugki1773.github.io/data-engineering-demo/feed.xml" title="Building Superligaen Analytics" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/data-engineering-demo/">Building Superligaen Analytics</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/data-engineering-demo/">Building Superligaen Analytics</a><a class="page-link" href="/data-engineering-demo/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Silver and Gold — Transforming Data into a Star Schema</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2026-04-14T00:00:00+02:00" itemprop="datePublished">Apr 14, 2026
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>With 21 tables of raw JSON sitting in MotherDuck, the next step was to make the data actually usable. That meant two more layers: silver (clean, structured tables) and gold (a Kimball dimensional model designed for analytics).</p>
+
+<h2 id="silver-flattening-the-json">Silver: Flattening the JSON</h2>
+
+<p>The silver layer’s job is to take each bronze table and turn it into a proper relational table — extract columns from the JSON, cast types, handle nulls, and normalise nested structures. Every bronze endpoint gets a corresponding silver model.</p>
+
+<p>DuckDB’s JSON handling is one of its best features. You can navigate nested JSON using arrow operators and the <code class="language-plaintext highlighter-rouge">-&gt;&gt;</code> syntax, and <code class="language-plaintext highlighter-rouge">UNNEST</code> is available for arrays. For a fixture statistics row that looks like this in bronze:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"fixture"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">},</span><span class="w">
+  </span><span class="nl">"statistics"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Shots on Goal"</span><span class="p">,</span><span class="w"> </span><span class="nl">"value"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Ball Possession"</span><span class="p">,</span><span class="w"> </span><span class="nl">"value"</span><span class="p">:</span><span class="w"> </span><span class="s2">"55%"</span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The silver transformation pivots this into a proper row with typed columns — <code class="language-plaintext highlighter-rouge">shots_on_goal INTEGER</code>, <code class="language-plaintext highlighter-rouge">ball_possession_pct DECIMAL</code>, and so on.</p>
+
+<p>One rule we followed throughout: <strong>keep all columns in silver</strong>. When in doubt, keep it. Storage is cheap and you can always choose not to expose a column in gold or in the dashboard, but you cannot recreate data you threw away. Silver models kept logos, flags, URLs, internal IDs, everything — even things that looked useless at the time.</p>
+
+<h2 id="the-motherduck-memory-limit">The MotherDuck Memory Limit</h2>
+
+<p>The fixture_players silver model was the most complex one to write. Each fixture returns a deeply nested JSON structure: a list of teams, each containing a list of players, each containing a list of statistics. Getting all of that into a flat table required multiple levels of <code class="language-plaintext highlighter-rouge">UNNEST</code>.</p>
+
+<p>The initial version used nested UNNESTs — unnesting teams, then unnesting players within the same query, then unnesting statistics:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="p">...</span>
+<span class="k">FROM</span> <span class="n">bronze</span><span class="p">.</span><span class="n">fixture_players</span><span class="p">,</span>
+<span class="k">UNNEST</span><span class="p">(</span><span class="n">response</span><span class="o">-&gt;</span><span class="s1">'response'</span><span class="p">)</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">team</span><span class="p">),</span>
+<span class="k">UNNEST</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">team</span><span class="o">-&gt;</span><span class="s1">'players'</span><span class="p">)</span> <span class="k">AS</span> <span class="n">p</span><span class="p">(</span><span class="n">player</span><span class="p">),</span>
+<span class="k">UNNEST</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">player</span><span class="o">-&gt;</span><span class="s1">'statistics'</span><span class="p">)</span> <span class="k">AS</span> <span class="n">s</span><span class="p">(</span><span class="n">stat</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>This worked fine in development on a local DuckDB instance with no memory constraints. When we ran it in production on MotherDuck’s free tier, it hit the <strong>953 MB memory cap</strong> on the Pulse compute plan and crashed.</p>
+
+<p>The fix was to stop doing all the unnesting in a single query and instead use <strong>sequential CTEs</strong> — unpack one level per CTE, materialise it, then unpack the next level from that:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">teams</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="n">fixture_id</span><span class="p">,</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">response</span><span class="o">-&gt;</span><span class="s1">'response'</span><span class="p">)</span> <span class="k">AS</span> <span class="n">team</span>
+    <span class="k">FROM</span> <span class="n">bronze</span><span class="p">.</span><span class="n">fixture_players</span>
+<span class="p">),</span>
+<span class="n">players</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="n">fixture_id</span><span class="p">,</span> <span class="n">team</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span> <span class="k">AS</span> <span class="n">team_id</span><span class="p">,</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">team</span><span class="o">-&gt;</span><span class="s1">'players'</span><span class="p">)</span> <span class="k">AS</span> <span class="n">player</span>
+    <span class="k">FROM</span> <span class="n">teams</span>
+<span class="p">),</span>
+<span class="n">stats</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="n">fixture_id</span><span class="p">,</span> <span class="n">team_id</span><span class="p">,</span> <span class="n">player</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span> <span class="k">AS</span> <span class="n">player_id</span><span class="p">,</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">player</span><span class="o">-&gt;</span><span class="s1">'statistics'</span><span class="p">)</span> <span class="k">AS</span> <span class="n">stat</span>
+    <span class="k">FROM</span> <span class="n">players</span>
+<span class="p">)</span>
+<span class="k">SELECT</span> <span class="p">...</span>
+<span class="k">FROM</span> <span class="n">stats</span>
+</code></pre></div></div>
+
+<p>Each CTE processes a smaller set of intermediate results rather than holding the entire explosion in memory at once. After this refactor the query ran cleanly within the memory budget.</p>
+
+<p>This was one of the more interesting problems in the whole project — not because the fix was complicated, but because the failure mode was invisible in development. Local DuckDB has no memory cap. The bug only appeared in production, and the error message (<code class="language-plaintext highlighter-rouge">Out of Memory: cannot allocate</code>) was not immediately helpful in pointing to nested UNNESTs as the culprit.</p>
+
+<h2 id="gold-kimball-dimensional-modelling">Gold: Kimball Dimensional Modelling</h2>
+
+<p>Once silver tables were clean and stable, I built the gold layer as a <strong>Kimball star schema</strong>. The fact grain is one row per team per match — meaning each fixture produces two rows in the fact table, one for the home team and one for the away team. This grain was chosen because most analytical questions in football are team-centric: how many goals has this team scored? What is their xG differential at home?</p>
+
+<p>The fact table, <code class="language-plaintext highlighter-rouge">fct_match_results</code>, contains all the measurable numeric values — goals, shots, possession, passes, fouls, cards, expected goals, and points earned. Everything else is pushed into dimensions.</p>
+
+<p>We ended up with 10 dimension tables:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Dimension</th>
+      <th>What it represents</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dim_date</code></td>
+      <td>Calendar attributes of the match date</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dim_time</code></td>
+      <td>Hour of kick-off and period of day (Morning / Afternoon / Evening / Night)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dim_team</code></td>
+      <td>Club identity — name, code, country, logo</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dim_opponent_team</code></td>
+      <td>Role-playing dimension — same structure as <code class="language-plaintext highlighter-rouge">dim_team</code>, aliased to represent the opposing club</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dim_match</code></td>
+      <td>Match metadata — round, season, names, status</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dim_league</code></td>
+      <td>League identity — name, country, logo, flag</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dim_stadium</code></td>
+      <td>Venue — name, city, capacity, surface</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dim_referee</code></td>
+      <td>Referee name</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dim_team_side</code></td>
+      <td>Home or Away</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">dim_match_result</code></td>
+      <td>Win, Draw, or Loss</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Having <code class="language-plaintext highlighter-rouge">dim_team</code> and <code class="language-plaintext highlighter-rouge">dim_opponent_team</code> as separate dimensions makes self-join queries much cleaner. A query like “show me all home results where the opponent was a top-four side” is a simple join rather than a correlated subquery.</p>
+
+<h2 id="surrogate-keys-and-sentinel-rows">Surrogate Keys and Sentinel Rows</h2>
+
+<p>Every dimension uses an integer <strong>surrogate key</strong> as its primary key — <code class="language-plaintext highlighter-rouge">team_sk</code>, <code class="language-plaintext highlighter-rouge">match_sk</code>, and so on. These are stable across runs: when a new referee appears, they get a new SK, and existing referees keep theirs. This is the standard Kimball pattern.</p>
+
+<p>Each dimension also has two <strong>sentinel rows</strong>:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">-1 Unknown [Attribute]</code> — for records where the value exists but is genuinely unknown</li>
+  <li><code class="language-plaintext highlighter-rouge">-2 Not Applicable [Attribute]</code> — for records where the dimension does not apply</li>
+</ul>
+
+<p>These sentinel rows mean the fact table can always have a valid foreign key, even for fixtures that have no referee assigned yet (common for upcoming matches) or for venues that are listed as TBD. Dashboard queries never need a <code class="language-plaintext highlighter-rouge">LEFT JOIN</code> or a null check — every fact row joins cleanly.</p>
+
+<p>One early version of the sentinel rows had generic labels like <code class="language-plaintext highlighter-rouge">-1 Unknown</code> and <code class="language-plaintext highlighter-rouge">-2 Not Applicable</code>. We later updated them to be attribute-specific: <code class="language-plaintext highlighter-rouge">-1 Unknown Referee</code>, <code class="language-plaintext highlighter-rouge">-2 Not Applicable Stadium</code>, and so on. This makes them instantly readable in query results without having to check which dimension you are looking at.</p>
+
+<h2 id="the-data-model">The Data Model</h2>
+
+<p>The star schema centres on a single fact table joined to ten dimensions. The grain is one row per team per match — each fixture produces two rows, one for the home team and one for the away team.</p>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+</script>
+
+<pre class="mermaid">
+erDiagram
+    fct_match_results {
+        int date_sk FK
+        int time_sk FK
+        int team_sk FK
+        int opponent_team_sk FK
+        int league_sk FK
+        int stadium_sk FK
+        int referee_sk FK
+        int match_sk FK
+        int team_side_sk FK
+        int match_result_sk FK
+        int points_earned
+        int goals_scored
+        int goals_conceded
+        int goals_ht_scored
+        int goals_ht_conceded
+        int shots_on_goal
+        int shots_off_goal
+        int total_shots
+        int blocked_shots
+        int shots_insidebox
+        int shots_outsidebox
+        decimal ball_possession_pct
+        int total_passes
+        int passes_accurate
+        int fouls
+        int corner_kicks
+        int offsides
+        int yellow_cards
+        int red_cards
+        int goalkeeper_saves
+        decimal expected_goals
+    }
+    dim_date {
+        int date_sk PK
+        date date
+        int year
+        varchar quarter
+        int month
+        varchar month_name
+        int week_number
+        int day_of_week
+        varchar day_name
+        varchar is_weekend
+    }
+    dim_time {
+        int time_sk PK
+        int hour
+        varchar period_of_day
+    }
+    dim_team {
+        int team_sk PK
+        int team_id
+        varchar team_name
+        varchar team_code
+        varchar team_country
+        int team_founded_year
+        varchar team_logo
+    }
+    dim_match {
+        int match_sk PK
+        int match_id
+        varchar season
+        varchar match_round_name
+        varchar match_round_type
+        int match_round_number
+        varchar match_status
+        varchar match_name
+        varchar match_short_name
+        varchar match_result
+        varchar kick_off_time
+    }
+    dim_league {
+        int league_sk PK
+        int league_id
+        varchar league_name
+        varchar league_type
+        varchar league_logo
+        varchar league_country
+        varchar league_country_code
+        varchar league_country_flag
+    }
+    dim_stadium {
+        int stadium_sk PK
+        int stadium_id
+        varchar stadium_name
+        varchar stadium_address
+        varchar stadium_city
+        varchar stadium_country
+        int stadium_capacity
+        varchar stadium_surface
+    }
+    dim_referee {
+        int referee_sk PK
+        varchar referee_name
+    }
+    dim_team_side {
+        int team_side_sk PK
+        varchar team_side
+    }
+    dim_match_result {
+        int match_result_sk PK
+        varchar match_result
+    }
+
+    fct_match_results }|--|| dim_date : "date_sk"
+    fct_match_results }|--|| dim_time : "time_sk"
+    fct_match_results }|--|| dim_team : "team_sk"
+    fct_match_results }|--|| dim_team : "opponent_team_sk"
+    fct_match_results }|--|| dim_match : "match_sk"
+    fct_match_results }|--|| dim_league : "league_sk"
+    fct_match_results }|--|| dim_stadium : "stadium_sk"
+    fct_match_results }|--|| dim_referee : "referee_sk"
+    fct_match_results }|--|| dim_team_side : "team_side_sk"
+    fct_match_results }|--|| dim_match_result : "match_result_sk"
+</pre>
+
+<p>Next: building the dashboard on top of this model.</p>
+
+  </div><a class="u-url" href="/data-engineering-demo/2026/04/14/silver-and-gold-layers.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/data-engineering-demo/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Building Superligaen Analytics</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Salih Ugur Kımıllı</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>A data engineer&#39;s diary — from raw API calls to a live football dashboard. Everything that went wrong, and how we fixed it.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

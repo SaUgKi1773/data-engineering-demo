@@ -106,57 +106,128 @@ One early version of the sentinel rows had generic labels like `-1 Unknown` and 
 
 The star schema centres on a single fact table joined to ten dimensions. The grain is one row per team per match — each fixture produces two rows, one for the home team and one for the away team.
 
-```
-                    dim_date         dim_time
-                       │                │
-         dim_referee ──┤                ├── dim_team_side
-                       │                │
-dim_match ─────────────┤  fct_match  ├──────── dim_team
-                       │   _results  │
-dim_league ────────────┤                ├── dim_opponent_team
-                       │                │
-         dim_stadium ──┤                ├── dim_match_result
-```
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+</script>
 
-**`fct_match_results` — foreign keys**
+<pre class="mermaid">
+erDiagram
+    fct_match_results {
+        int date_sk FK
+        int time_sk FK
+        int team_sk FK
+        int opponent_team_sk FK
+        int league_sk FK
+        int stadium_sk FK
+        int referee_sk FK
+        int match_sk FK
+        int team_side_sk FK
+        int match_result_sk FK
+        int points_earned
+        int goals_scored
+        int goals_conceded
+        int goals_ht_scored
+        int goals_ht_conceded
+        int shots_on_goal
+        int shots_off_goal
+        int total_shots
+        int blocked_shots
+        int shots_insidebox
+        int shots_outsidebox
+        decimal ball_possession_pct
+        int total_passes
+        int passes_accurate
+        int fouls
+        int corner_kicks
+        int offsides
+        int yellow_cards
+        int red_cards
+        int goalkeeper_saves
+        decimal expected_goals
+    }
+    dim_date {
+        int date_sk PK
+        date date
+        int year
+        varchar quarter
+        int month
+        varchar month_name
+        int week_number
+        int day_of_week
+        varchar day_name
+        varchar is_weekend
+    }
+    dim_time {
+        int time_sk PK
+        int hour
+        varchar period_of_day
+    }
+    dim_team {
+        int team_sk PK
+        int team_id
+        varchar team_name
+        varchar team_code
+        varchar team_country
+        int team_founded_year
+        varchar team_logo
+    }
+    dim_match {
+        int match_sk PK
+        int match_id
+        varchar season
+        varchar match_round_name
+        varchar match_round_type
+        int match_round_number
+        varchar match_status
+        varchar match_name
+        varchar match_short_name
+        varchar match_result
+        varchar kick_off_time
+    }
+    dim_league {
+        int league_sk PK
+        int league_id
+        varchar league_name
+        varchar league_type
+        varchar league_logo
+        varchar league_country
+        varchar league_country_code
+        varchar league_country_flag
+    }
+    dim_stadium {
+        int stadium_sk PK
+        int stadium_id
+        varchar stadium_name
+        varchar stadium_address
+        varchar stadium_city
+        varchar stadium_country
+        int stadium_capacity
+        varchar stadium_surface
+    }
+    dim_referee {
+        int referee_sk PK
+        varchar referee_name
+    }
+    dim_team_side {
+        int team_side_sk PK
+        varchar team_side
+    }
+    dim_match_result {
+        int match_result_sk PK
+        varchar match_result
+    }
 
-| Column | References |
-|---|---|
-| `date_sk` | `dim_date` |
-| `time_sk` | `dim_time` |
-| `team_sk` | `dim_team` |
-| `opponent_team_sk` | `dim_team` (role-playing as opponent) |
-| `league_sk` | `dim_league` |
-| `stadium_sk` | `dim_stadium` |
-| `referee_sk` | `dim_referee` |
-| `match_sk` | `dim_match` |
-| `team_side_sk` | `dim_team_side` |
-| `match_result_sk` | `dim_match_result` |
-
-**`fct_match_results` — measures**
-
-| Measure | Description |
-|---|---|
-| `points_earned` | 3 (win), 1 (draw), 0 (loss), NULL (not finished) |
-| `goals_scored` | Goals scored by this team |
-| `goals_conceded` | Goals conceded by this team |
-| `goals_ht_scored` | Half-time goals scored |
-| `goals_ht_conceded` | Half-time goals conceded |
-| `shots_on_goal` | Shots on target |
-| `shots_off_goal` | Shots off target |
-| `total_shots` | All shots attempted |
-| `blocked_shots` | Shots blocked |
-| `shots_insidebox` | Shots from inside the box |
-| `shots_outsidebox` | Shots from outside the box |
-| `ball_possession_pct` | Ball possession percentage |
-| `total_passes` | Total passes attempted |
-| `passes_accurate` | Accurate passes |
-| `fouls` | Fouls committed |
-| `corner_kicks` | Corner kicks |
-| `offsides` | Offsides |
-| `yellow_cards` | Yellow cards received |
-| `red_cards` | Red cards received |
-| `goalkeeper_saves` | Saves by the goalkeeper |
-| `expected_goals` | xG (where available from the API) |
+    fct_match_results }|--|| dim_date : "date_sk"
+    fct_match_results }|--|| dim_time : "time_sk"
+    fct_match_results }|--|| dim_team : "team_sk"
+    fct_match_results }|--|| dim_team : "opponent_team_sk"
+    fct_match_results }|--|| dim_match : "match_sk"
+    fct_match_results }|--|| dim_league : "league_sk"
+    fct_match_results }|--|| dim_stadium : "stadium_sk"
+    fct_match_results }|--|| dim_referee : "referee_sk"
+    fct_match_results }|--|| dim_team_side : "team_side_sk"
+    fct_match_results }|--|| dim_match_result : "match_result_sk"
+</pre>
 
 Next: building the dashboard on top of this model.

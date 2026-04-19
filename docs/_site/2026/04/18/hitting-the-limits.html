@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Hitting the Limits — API Quotas and MotherDuck Memory | Building Superligaen Analytics</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Hitting the Limits — API Quotas and MotherDuck Memory" />
+<meta name="author" content="Salih Ugur Kımıllı" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Every free tier has a ceiling. This project hit several of them in ways that were interesting enough to document separately. Some limits shaped the architecture from the start. Others appeared unexpectedly in production. All of them taught something useful." />
+<meta property="og:description" content="Every free tier has a ceiling. This project hit several of them in ways that were interesting enough to document separately. Some limits shaped the architecture from the start. Others appeared unexpectedly in production. All of them taught something useful." />
+<link rel="canonical" href="https://saugki1773.github.io/data-engineering-demo/2026/04/18/hitting-the-limits.html" />
+<meta property="og:url" content="https://saugki1773.github.io/data-engineering-demo/2026/04/18/hitting-the-limits.html" />
+<meta property="og:site_name" content="Building Superligaen Analytics" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-04-18T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Hitting the Limits — API Quotas and MotherDuck Memory" />
+<script type="application/ld+json">
+{"description":"Every free tier has a ceiling. This project hit several of them in ways that were interesting enough to document separately. Some limits shaped the architecture from the start. Others appeared unexpectedly in production. All of them taught something useful.","headline":"Hitting the Limits — API Quotas and MotherDuck Memory","dateModified":"2026-04-18T00:00:00+02:00","datePublished":"2026-04-18T00:00:00+02:00","@type":"BlogPosting","author":{"@type":"Person","name":"Salih Ugur Kımıllı"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://saugki1773.github.io/data-engineering-demo/2026/04/18/hitting-the-limits.html"},"url":"https://saugki1773.github.io/data-engineering-demo/2026/04/18/hitting-the-limits.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/data-engineering-demo/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://saugki1773.github.io/data-engineering-demo/feed.xml" title="Building Superligaen Analytics" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/data-engineering-demo/">Building Superligaen Analytics</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/data-engineering-demo/">Building Superligaen Analytics</a><a class="page-link" href="/data-engineering-demo/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Hitting the Limits — API Quotas and MotherDuck Memory</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2026-04-18T00:00:00+02:00" itemprop="datePublished">Apr 18, 2026
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Every free tier has a ceiling. This project hit several of them in ways that were interesting enough to document separately. Some limits shaped the architecture from the start. Others appeared unexpectedly in production. All of them taught something useful.</p>
+
+<h2 id="the-100-call-per-day-api-limit">The 100-Call-Per-Day API Limit</h2>
+
+<p>api-football.com’s free tier allows 100 API calls per day. This number sounds arbitrary until you start counting what a single nightly pipeline actually needs.</p>
+
+<p>The incremental run fetches data for the last 5 days. Across those 5 days there might be 4 to 8 Superligaen fixtures. For each fixture, we fetch: fixture metadata (1 call), statistics (1 call), events (1 call), lineups (1 call), player stats (1 call), predictions (1 call). That is 6 calls per fixture. For 6 fixtures that is 36 calls. Then add standings (1 call), top scorers (1 call), rounds (1 call), injury data (1-2 calls). A typical incremental run consumes 40 to 50 calls.</p>
+
+<p>That leaves 50 to 60 calls before the daily limit. Enough headroom for one-off corrections and the occasional full fixture reload, but not much more.</p>
+
+<p>The limit has a direct architectural consequence: <strong>the system is designed for one league</strong>. The ingestion framework is genuinely generic — adding Turkish Süper Lig, the Danish Cup, or any other competition is a configuration change. The pipeline would handle it. The API quota would not. Adding a second league would roughly double the daily call count, leaving almost no margin for reruns.</p>
+
+<p>This is a frustrating constraint because the data model and pipeline are ready to scale. The bottleneck is entirely external.</p>
+
+<h2 id="duckdb-version-pinning">DuckDB Version Pinning</h2>
+
+<p>Early in the project, the CI workflow started failing with a cryptic incompatibility error between the Python <code class="language-plaintext highlighter-rouge">duckdb</code> package and MotherDuck’s server. The root cause: the duckdb package version was unpinned in <code class="language-plaintext highlighter-rouge">requirements.txt</code>, so the latest release was being installed, and the latest duckdb client was ahead of the MotherDuck server version.</p>
+
+<p>MotherDuck runs a specific version of DuckDB on its cloud compute. If your local client is a newer version, the connection protocol can differ. The fix was to pin <code class="language-plaintext highlighter-rouge">duckdb==1.5.1</code> in <code class="language-plaintext highlighter-rouge">requirements.txt</code> and update it only deliberately when MotherDuck announces a server upgrade. This is standard practice for any client/server system with versioned protocols but easy to forget when you are just writing Python.</p>
+
+<h2 id="the-motherduck-memory-limit">The MotherDuck Memory Limit</h2>
+
+<p>The most technically interesting limit was the <strong>953 MB memory cap</strong> on MotherDuck’s free Pulse compute tier. This was described in detail in the silver/gold post, but it is worth restating here in the context of free tier constraints.</p>
+
+<p>The failure mode was specifically in the <code class="language-plaintext highlighter-rouge">fixture_players</code> model, which processes deeply nested JSON — teams containing players containing statistics. The natural DuckDB way to flatten this is nested <code class="language-plaintext highlighter-rouge">UNNEST</code> calls. In a single query with three levels of UNNEST, DuckDB needs to hold the intermediate explosion of records in memory. For a full season’s worth of fixture player data, that intermediate explosion was larger than 953 MB.</p>
+
+<p>What made this hard to catch in development: local DuckDB has no memory cap. The query ran fine locally and in CI (which runs <code class="language-plaintext highlighter-rouge">dbt compile</code>, not <code class="language-plaintext highlighter-rouge">dbt run</code>). It only failed in production, during a full-refresh run.</p>
+
+<p>The solution — sequential CTEs that unpack one layer at a time — reduced peak memory usage dramatically because each CTE materialises its output before the next level is processed. The query took a bit longer to write but solved the problem completely.</p>
+
+<p>This is a good example of a class of bugs that only appear at production scale: logic that is correct but makes assumptions about available resources that do not hold in the target environment.</p>
+
+<h2 id="what-the-architecture-was-designed-for--and-what-it-is-not">What the Architecture Was Designed For — and What It Is Not</h2>
+
+<p>Stepping back, the constraints above define the honest shape of this project:</p>
+
+<p><strong>What it is:</strong> A single-league, nightly-refresh analytics pipeline for Danish Superligaen, running entirely on free tiers.</p>
+
+<p><strong>What it is not:</strong> A multi-league, real-time, or high-volume data platform.</p>
+
+<p>The medallion architecture, Kimball dimensional model, dbt models, and CI validation are all genuinely production-grade practices. The free tier constraints mean they are applied to a smaller domain than they could support. The code is ready to scale; the quotas are not.</p>
+
+<p>If the API quota were lifted, adding more leagues would take hours. If MotherDuck memory were increased, the sequential CTE workaround could be simplified back to nested UNNESTs. If Vercel builds cost nothing to scale, the pipeline could run on match-day triggers rather than nightly. The architecture was designed with these extensions in mind, even if the current implementation is constrained.</p>
+
+<h2 id="motherduck-the-overall-experience">MotherDuck: The Overall Experience</h2>
+
+<p>It is worth reflecting on MotherDuck specifically because it was the part of the stack that gave the least friction throughout the project.</p>
+
+<p>The onboarding is genuinely minutes. Create an account, get a token, replace the connection string with <code class="language-plaintext highlighter-rouge">md:</code> and the token, and your existing DuckDB queries run against the cloud. There is no schema migration to run, no IAM role to configure, no service account JSON to rotate. The web UI is clean and lets you run queries and browse tables interactively.</p>
+
+<p>10 GB of storage on the free tier is more than enough for a Superligaen dataset — even with all the bronze JSON blobs, the database is well under 1 GB. The compute constraints (953 MB memory) are real but navigable with the right query structure.</p>
+
+<p>If I were recommending a data warehouse for a side project or a prototype, MotherDuck would be my first suggestion. BigQuery is more powerful and cheaper at scale, but MotherDuck wins on time-to-first-query by a significant margin.</p>
+
+<p>Next: the final chapter — launching the project publicly and adding visitor analytics.</p>
+
+  </div><a class="u-url" href="/data-engineering-demo/2026/04/18/hitting-the-limits.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/data-engineering-demo/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Building Superligaen Analytics</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Salih Ugur Kımıllı</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>A data engineer&#39;s diary — from raw API calls to a live football dashboard. Everything that went wrong, and how we fixed it.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

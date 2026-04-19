@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Global Launch and Adding Analytics | Building Superligaen Analytics</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Global Launch and Adding Analytics" />
+<meta name="author" content="Salih Ugur Kımıllı" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="By April 19th, 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, the README was updated to reflect the current architecture, and the nightly job was running cleanly. It was time to call it launched." />
+<meta property="og:description" content="By April 19th, 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, the README was updated to reflect the current architecture, and the nightly job was running cleanly. It was time to call it launched." />
+<link rel="canonical" href="https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html" />
+<meta property="og:url" content="https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html" />
+<meta property="og:site_name" content="Building Superligaen Analytics" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-04-19T00:00:00+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Global Launch and Adding Analytics" />
+<script type="application/ld+json">
+{"description":"By April 19th, 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, the README was updated to reflect the current architecture, and the nightly job was running cleanly. It was time to call it launched.","headline":"Global Launch and Adding Analytics","dateModified":"2026-04-19T00:00:00+02:00","datePublished":"2026-04-19T00:00:00+02:00","@type":"BlogPosting","author":{"@type":"Person","name":"Salih Ugur Kımıllı"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html"},"url":"https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/data-engineering-demo/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://saugki1773.github.io/data-engineering-demo/feed.xml" title="Building Superligaen Analytics" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/data-engineering-demo/">Building Superligaen Analytics</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/data-engineering-demo/">Building Superligaen Analytics</a><a class="page-link" href="/data-engineering-demo/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Global Launch and Adding Analytics</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2026-04-19T00:00:00+02:00" itemprop="datePublished">Apr 19, 2026
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>By April 19th, 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, the README was updated to reflect the current architecture, and the nightly job was running cleanly. It was time to call it launched.</p>
+
+<p>The live dashboard is at <a href="https://superligaanalytics.vercel.app/">superligaanalytics.vercel.app</a>.</p>
+
+<h2 id="what-shipped-at-launch">What Shipped at Launch</h2>
+
+<p>The final state of the project at launch:</p>
+
+<ul>
+  <li><strong>Bronze layer</strong> — 21 endpoints ingested nightly from api-football.com into MotherDuck</li>
+  <li><strong>Silver layer</strong> — 18 dbt models that flatten and type-cast the raw JSON</li>
+  <li><strong>Gold layer</strong> — Kimball star schema: 10 dimension tables and <code class="language-plaintext highlighter-rouge">fct_match_results</code></li>
+  <li><strong>Dashboard</strong> — 7 Evidence.dev pages: Home, Standings, Match Results, Upcoming Fixtures, League Analytics, Team Analytics, Referee Analytics</li>
+  <li><strong>Orchestration</strong> — GitHub Actions nightly pipeline: bronze → silver → gold → Vercel deploy</li>
+  <li><strong>CI</strong> — dbt compile on every pull request to main</li>
+  <li><strong>Dev/prod separation</strong> — <code class="language-plaintext highlighter-rouge">superligaen_dev</code> and <code class="language-plaintext highlighter-rouge">superligaen</code> databases, <code class="language-plaintext highlighter-rouge">dev</code> and <code class="language-plaintext highlighter-rouge">prod</code> dbt targets</li>
+  <li><strong>112 pull requests merged</strong> across the development sprint</li>
+</ul>
+
+<p>The one final polish item before launch: the home page navigation grid had cards in an order that did not feel right. Upcoming Fixtures should come before Team Analysis. League Analysis should come before Team Analysis too. Two one-line changes, merged, deployed.</p>
+
+<h2 id="adding-visitor-analytics">Adding Visitor Analytics</h2>
+
+<p>Once the site was live, the natural question was: is anyone visiting it? We needed analytics.</p>
+
+<p>The options were straightforward: Vercel Analytics (built into the hosting platform), Cloudflare Web Analytics (a separate free service), or Google Analytics (the industry default but heavier and requiring a cookie consent banner under GDPR).</p>
+
+<p>Google Analytics was ruled out immediately. GDPR cookie banners are user-hostile and unnecessary for a project where we genuinely do not need detailed personal data — we just want page view counts and visitor numbers.</p>
+
+<p>Both Vercel Analytics and Cloudflare Web Analytics are <strong>cookieless and privacy-first</strong>. They count visits using aggregated signals rather than tracking individuals. No consent banner required.</p>
+
+<p>We decided to use both — not because we needed redundancy, but because each gives you a slightly different view of traffic data, and running both costs nothing.</p>
+
+<h2 id="the-first-analytics-attempt-and-how-it-broke-everything">The First Analytics Attempt (And How It Broke Everything)</h2>
+
+<p>Adding Vercel Analytics was not as simple as enabling a toggle in the Vercel dashboard. For SvelteKit apps (which Evidence.dev is built on), you need to install the <code class="language-plaintext highlighter-rouge">@vercel/analytics</code> npm package and call <code class="language-plaintext highlighter-rouge">inject()</code> somewhere in your app.</p>
+
+<p>The natural place for a call that should run on every page is a layout component. Evidence.dev (SvelteKit) supports a <code class="language-plaintext highlighter-rouge">pages/+layout.svelte</code> file. I created one:</p>
+
+<pre><code class="language-svelte">&lt;script&gt;
+  import { onMount } from 'svelte';
+  import { inject } from '@vercel/analytics';
+  onMount(() =&gt; inject());
+&lt;/script&gt;
+
+&lt;slot /&gt;
+</code></pre>
+
+<p>This broke the site completely. Every page lost its navigation, sidebar, theming, and layout chrome.</p>
+
+<p>The reason: Evidence.dev has its own built-in <code class="language-plaintext highlighter-rouge">+layout.svelte</code> that imports its stylesheet, loads its default layout component (<code class="language-plaintext highlighter-rouge">EvidenceDefaultLayout</code>), and handles the app shell. When you create a <code class="language-plaintext highlighter-rouge">pages/+layout.svelte</code>, Evidence copies your file into its template directory, <strong>overwriting its own layout</strong>. My file only had <code class="language-plaintext highlighter-rouge">&lt;slot /&gt;</code> — which rendered the page content but none of Evidence’s surrounding UI.</p>
+
+<p>The fix required knowing what Evidence’s own layout looked like. Once that was clear, the correct version wraps Evidence’s layout rather than replacing it:</p>
+
+<pre><code class="language-svelte">&lt;script&gt;
+  import '@evidence-dev/tailwind/fonts.css';
+  import '../app.css';
+  import { EvidenceDefaultLayout } from '@evidence-dev/core-components';
+  import { onMount } from 'svelte';
+  import { inject } from '@vercel/analytics';
+
+  export let data;
+
+  onMount(() =&gt; inject());
+&lt;/script&gt;
+
+&lt;EvidenceDefaultLayout {data}&gt;
+  &lt;slot slot="content" /&gt;
+&lt;/EvidenceDefaultLayout&gt;
+</code></pre>
+
+<p>This correctly extends Evidence’s layout rather than replacing it.</p>
+
+<h2 id="adding-cloudflare-web-analytics">Adding Cloudflare Web Analytics</h2>
+
+<p>Adding the Cloudflare beacon alongside Vercel Analytics required one more trick. The Cloudflare script tag looks like this in standard HTML:</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;script </span><span class="na">defer</span> <span class="na">src=</span><span class="s">"https://static.cloudflareinsights.com/beacon.min.js"</span>
+  <span class="na">data-cf-beacon=</span><span class="s">'{"token": "your-token"}'</span><span class="nt">&gt;&lt;/script&gt;</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">{</code> and <code class="language-plaintext highlighter-rouge">}</code> characters in the <code class="language-plaintext highlighter-rouge">data-cf-beacon</code> attribute value are Svelte template delimiters. If you put this tag inside a <code class="language-plaintext highlighter-rouge">&lt;svelte:head&gt;</code> block, Svelte’s compiler tries to parse <code class="language-plaintext highlighter-rouge">{"token": "..."}</code> as a template expression and fails with a parse error.</p>
+
+<p>The workaround: inject the script using <code class="language-plaintext highlighter-rouge">document.createElement</code> inside the <code class="language-plaintext highlighter-rouge">onMount</code> callback, where Svelte’s template compiler does not process the string:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">onMount</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">inject</span><span class="p">();</span> <span class="c1">// Vercel Analytics</span>
+
+  <span class="kd">const</span> <span class="nx">script</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="dl">'</span><span class="s1">script</span><span class="dl">'</span><span class="p">);</span>
+  <span class="nx">script</span><span class="p">.</span><span class="nx">defer</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+  <span class="nx">script</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">https://static.cloudflareinsights.com/beacon.min.js</span><span class="dl">'</span><span class="p">;</span>
+  <span class="nx">script</span><span class="p">.</span><span class="nx">dataset</span><span class="p">.</span><span class="nx">cfBeacon</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span> <span class="na">token</span><span class="p">:</span> <span class="dl">'</span><span class="s1">your-token</span><span class="dl">'</span> <span class="p">});</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">head</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">script</span><span class="p">);</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>This is less elegant than a <code class="language-plaintext highlighter-rouge">&lt;script&gt;</code> tag in the HTML but works correctly and is straightforward to understand.</p>
+
+<h2 id="reflections-on-ten-days">Reflections on Ten Days</h2>
+
+<p>This project went from initial commit to live dashboard in approximately ten days of active development. That is fast enough that almost every architectural choice was made under time pressure, with incomplete information, and revised at least once.</p>
+
+<p>The tools that delivered exactly what they promised: MotherDuck, DuckDB, dbt, GitHub Actions. No surprises, no unexplained failures, no time spent on yak-shaving.</p>
+
+<p>The tools that required more navigation: Netlify (build limits), Cloudflare Pages (file size limits), Vercel (deploy hook unreliability), Evidence.dev (some underdocumented behaviour around layouts and template syntax).</p>
+
+<p>The choices I would make the same way: MotherDuck as the warehouse, dbt for transformations, Evidence.dev for the dashboard, Vercel for hosting, the Kimball star schema, the dev/prod database separation, the delete-before-insert idempotency pattern.</p>
+
+<p>The choices I would make differently: evaluate hosting platforms against build frequency and output size before committing; add dbt tests from the beginning rather than deferring them; set up dbt documentation from the start.</p>
+
+<p>The ambitions that did not make it in: multi-league support (blocked by API quota), dbt tests, dbt documentation, real-time match events (requires a paid API tier), mobile app version of the dashboard.</p>
+
+<p>The project is now in maintenance mode. The nightly pipeline runs, the data updates, and the dashboard reflects last night’s results every morning. For a project built entirely on free tiers in ten days, that is a good place to be.</p>
+
+  </div><a class="u-url" href="/data-engineering-demo/2026/04/19/launch-and-analytics.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/data-engineering-demo/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Building Superligaen Analytics</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Salih Ugur Kımıllı</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>A data engineer&#39;s diary — from raw API calls to a live football dashboard. Everything that went wrong, and how we fixed it.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
