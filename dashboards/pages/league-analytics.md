@@ -109,7 +109,7 @@ order by goals_for desc
 
 ## {inputs.season.value} — League Analysis
 
-<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_goals           title="Goals Scored"       /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=avg_goals_per_match   title="Avg Goals / Match"  /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=avg_shot_conversion   title="Shot Conversion %"  /></div>
@@ -123,7 +123,7 @@ order by goals_for desc
 
 <DataTable data={league_table} rows=20>
     <Column id=pos              title="#"            align=center />
-    <Column id=team_name        title="Team"         />
+    <Column id=team_name        title="Team"         wrap=true />
     <Column id=mp               title="MP"           align=center />
     <Column id=w                title="W"            align=center />
     <Column id=d                title="D"            align=center />

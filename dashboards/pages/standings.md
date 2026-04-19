@@ -59,7 +59,7 @@ order by round_group, pts desc
 
 <DataTable data={championship} rows=20>
     <Column id=rank title="#"   align=center />
-    <Column id=team title="Team"             />
+    <Column id=team title="Team" wrap=true   />
     <Column id=gp   title="GP"  align=center />
     <Column id=w    title="W"   align=center />
     <Column id=d    title="D"   align=center />
@@ -78,7 +78,7 @@ order by round_group, pts desc
 
 <DataTable data={relegation} rows=20>
     <Column id=rank title="#"   align=center />
-    <Column id=team title="Team"             />
+    <Column id=team title="Team" wrap=true   />
     <Column id=gp   title="GP"  align=center />
     <Column id=w    title="W"   align=center />
     <Column id=d    title="D"   align=center />
@@ -97,7 +97,7 @@ order by round_group, pts desc
 
 <DataTable data={regular} rows=20>
     <Column id=rank title="#"   align=center />
-    <Column id=team title="Team"             />
+    <Column id=team title="Team" wrap=true   />
     <Column id=gp   title="GP"  align=center />
     <Column id=w    title="W"   align=center />
     <Column id=d    title="D"   align=center />
