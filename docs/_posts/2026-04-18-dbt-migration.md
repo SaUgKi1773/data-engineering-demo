@@ -27,7 +27,7 @@ dbt (data build tool) is a transformation framework that sits on top of your dat
 
 The key features we needed:
 
-**Dependency resolution** — dbt builds a DAG (directed acyclic graph) of your models by analysing which model references which. You write `{{ ref('silver_fixtures') }}` instead of a table name, and dbt knows to run `silver_fixtures` before whatever model references it.
+**Dependency resolution** — dbt builds a DAG (directed acyclic graph) of your models by analysing which model references which. You write `{% raw %}{{ ref('silver_fixtures') }}{% endraw %}` instead of a table name, and dbt knows to run `silver_fixtures` before whatever model references it.
 
 **Incremental models** — dbt's `incremental` materialisation allows a model to process only new or updated records on each run, using a configurable filter. For silver models that process fixture data, this means a nightly run that touches only the last 5 days of records rather than reprocessing all 200+ fixtures from every season.
 
@@ -43,7 +43,7 @@ The migration itself took one day. The process:
 
 1. Create the `dbt/` directory with `dbt_project.yml` and `profiles.yml`.
 2. Port each SQL file to a dbt model by wrapping it in the appropriate dbt configuration block.
-3. Replace hardcoded table names with `{{ ref() }}` calls where models depend on each other.
+3. Replace hardcoded table names with `{% raw %}{{ ref() }}{% endraw %}` calls where models depend on each other.
 4. Extract the date window and season filters into macros.
 5. Update the GitHub Actions workflows to run `dbt run --select silver.*` and `dbt run --select gold.*` instead of `python run_silver.py`.
 6. Delete the old Python runner scripts and raw SQL files.
