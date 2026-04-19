@@ -96,5 +96,5 @@ src AS (
 )
 SELECT * FROM src
 {% if is_incremental() %}
-WHERE {{ fixture_filter('kick_off') }}
+WHERE {{ fixture_filter('ingested_at') }}
 {% endif %}
