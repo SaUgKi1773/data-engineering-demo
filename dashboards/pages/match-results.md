@@ -11,21 +11,20 @@ select distinct season from superligaen.match_results_by_match
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season label=season>
+<Dropdown data={seasons} name=season value=season label=season order="season desc">
     <DropdownOption value="2025/26" valueLabel="2025/26"/>
 </Dropdown>
 
 ```sql rounds
-select
-    round,
-    max(match_date) as last_date
+select distinct CAST(match_round_number AS INTEGER) as round_number
 from superligaen.match_results_by_match
-where season = '${inputs.season.value}'
-group by round
-order by last_date desc
+where season = (select max(season) from superligaen.match_results_by_match)
+order by 1 desc
 ```
 
-<Dropdown data={rounds} name=round value=round label=round multiple=true defaultValue={rounds[0].round} />
+{#key rounds[0]?.round_number}
+<Dropdown data={rounds} name=round value=round_number label=round_number multiple=true defaultValue={[rounds[0]?.round_number]} order="round_number desc" />
+{/key}
 
 ```sql results
 select
@@ -34,7 +33,7 @@ select
     total_yellow_cards, total_red_cards, total_corners
 from superligaen.match_results_by_match
 where season = '${inputs.season.value}'
-  and round in ${inputs.round.value}
+  and CAST(match_round_number AS INTEGER) in ${inputs.round.value}
 order by match_date desc
 ```
 
@@ -46,10 +45,10 @@ select
     round(sum(total_xg::double), 2)     as total_xg
 from superligaen.match_results_by_match
 where season = '${inputs.season.value}'
-  and round in ${inputs.round.value}
+  and CAST(match_round_number AS INTEGER) in ${inputs.round.value}
 ```
 
-## Match Results — {inputs.season.value} — {inputs.round.label}
+## Match Results — {inputs.season.value}
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=total_goals         title="Goals Scored"       /></div>

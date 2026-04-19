@@ -10,6 +10,7 @@ title: Upcoming Fixtures
 select
     strftime(match_date, '%Y-%m-%d')                                              as match_date,
     round,
+    match_round_number,
     match_name,
     home_team,
     away_team,
@@ -25,18 +26,18 @@ order by match_date asc
 ## Upcoming Fixtures
 
 <DataTable data={upcoming} rows=10>
-    <Column id=match_date    title="Date"    />
-    <Column id=kick_off_time title="KO"      />
-    <Column id=round         title="Round"   />
-    <Column id=match_name    title="Match"   wrap=true />
-    <Column id=stadium       title="Stadium" />
+    <Column id=match_date    title="Date"        />
+    <Column id=round         title="Round"       />
+    <Column id=match_name    title="Match"       wrap=true />
+    <Column id=stadium       title="Stadium"     />
+    <Column id=kick_off_time title="Kick-Off Time" />
 </DataTable>
 
 ---
 
 ## Match Analysis
 
-<Dropdown data={upcoming} name=match value=match_key label=match_name />
+<Dropdown data={upcoming} name=match value=match_key label=match_name order="match_round_number desc, match_date asc" />
 
 ```sql match_info
 select
@@ -93,7 +94,7 @@ select
     result
 from superligaen.team_analytics_form
 where team_name = SPLIT_PART('${inputs.match.value}', '|||', 1)
-order by match_date desc
+order by epoch(match_date) desc
 limit 5
 ```
 
@@ -106,7 +107,7 @@ select
     result
 from superligaen.team_analytics_form
 where team_name = SPLIT_PART('${inputs.match.value}', '|||', 2)
-order by match_date desc
+order by epoch(match_date) desc
 limit 5
 ```
 
@@ -168,14 +169,14 @@ limit 5
       <div class="flex items-center justify-between rounded-lg bg-white border border-gray-100 px-3 py-2">
         <div class="text-xs text-gray-400 w-14 shrink-0">{m.match_date}</div>
         <div class="text-xs text-gray-600 flex-1 px-2 truncate">vs {m.opponent}</div>
-        <div class="text-sm font-bold text-gray-700 w-10 text-center shrink-0">{m.gf}–{m.ga}</div>
-        <div class="ml-2 shrink-0">
+        <div class="text-sm font-bold text-gray-700 w-12 text-center shrink-0">{m.gf}–{m.ga}</div>
+        <div class="w-8 text-center shrink-0">
           {#if m.result === 'Win'}
-            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-green-500 text-white">W</span>
+            <span class="inline-flex items-center justify-center w-6 h-5 text-xs font-bold rounded bg-green-500 text-white">W</span>
           {:else if m.result === 'Draw'}
-            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-yellow-400 text-white">D</span>
+            <span class="inline-flex items-center justify-center w-6 h-5 text-xs font-bold rounded bg-yellow-400 text-white">D</span>
           {:else}
-            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-red-500 text-white">L</span>
+            <span class="inline-flex items-center justify-center w-6 h-5 text-xs font-bold rounded bg-red-500 text-white">L</span>
           {/if}
         </div>
       </div>
@@ -190,14 +191,14 @@ limit 5
       <div class="flex items-center justify-between rounded-lg bg-white border border-gray-100 px-3 py-2">
         <div class="text-xs text-gray-400 w-14 shrink-0">{m.match_date}</div>
         <div class="text-xs text-gray-600 flex-1 px-2 truncate">vs {m.opponent}</div>
-        <div class="text-sm font-bold text-gray-700 w-10 text-center shrink-0">{m.gf}–{m.ga}</div>
-        <div class="ml-2 shrink-0">
+        <div class="text-sm font-bold text-gray-700 w-12 text-center shrink-0">{m.gf}–{m.ga}</div>
+        <div class="w-8 text-center shrink-0">
           {#if m.result === 'Win'}
-            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-green-500 text-white">W</span>
+            <span class="inline-flex items-center justify-center w-6 h-5 text-xs font-bold rounded bg-green-500 text-white">W</span>
           {:else if m.result === 'Draw'}
-            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-yellow-400 text-white">D</span>
+            <span class="inline-flex items-center justify-center w-6 h-5 text-xs font-bold rounded bg-yellow-400 text-white">D</span>
           {:else}
-            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-red-500 text-white">L</span>
+            <span class="inline-flex items-center justify-center w-6 h-5 text-xs font-bold rounded bg-red-500 text-white">L</span>
           {/if}
         </div>
       </div>

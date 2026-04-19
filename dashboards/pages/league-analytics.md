@@ -1,7 +1,7 @@
 ---
 sidebar: never
 hide_toc: true
-title: Season Analytics
+title: League Analysis
 ---
 
 <a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
@@ -11,7 +11,7 @@ select distinct season from superligaen.team_analytics_kpis
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season label=season>
+<Dropdown data={seasons} name=season value=season label=season order="season desc">
     <DropdownOption value="2025/26" valueLabel="2025/26"/>
 </Dropdown>
 
@@ -37,15 +37,11 @@ order by pos
 
 ```sql league_kpis
 select
-    sum(goals_for)                              as total_goals,
-    round(avg(avg_goals_scored + avg_goals_conceded) / 2, 2) as avg_goals_per_match,
-    max(goals_for)                              as most_goals_scored,
-    min(goals_against)                          as fewest_conceded,
-    round(avg(avg_possession), 1)               as avg_possession,
-    round(avg(shot_conversion_pct), 1)          as avg_shot_conversion,
-    round(sum(total_xg), 2)                     as total_xg,
-    sum(yellow_cards)                           as total_yellow_cards,
-    sum(red_cards)                              as total_red_cards
+    sum(goals_for)                                                          as total_goals,
+    round(sum(goals_for)::double / (sum(matches_played) / 2), 2)           as avg_goals_per_match,
+    round(avg(shot_conversion_pct), 1)                                     as avg_shot_conversion,
+    sum(yellow_cards)                                                       as total_yellow_cards,
+    sum(red_cards)                                                          as total_red_cards
 from superligaen.team_analytics_kpis
 where season = '${inputs.season.value}'
 ```
@@ -68,11 +64,12 @@ order by goals_for desc
 select
     team_name,
     goals_against,
+    clean_sheets,
     avg_saves,
     avg_goals_conceded
 from superligaen.team_analytics_kpis
 where season = '${inputs.season.value}'
-order by goals_against asc
+order by clean_sheets desc
 ```
 
 ```sql possession_rankings
@@ -110,23 +107,14 @@ where season = '${inputs.season.value}'
 order by goals_for desc
 ```
 
-```sql points_vs_xg
-select
-    team_name,
-    total_points,
-    round(total_xg, 2) as total_xg
-from superligaen.team_analytics_kpis
-where season = '${inputs.season.value}'
-order by total_points desc
-```
+## {inputs.season.value} — League Analysis
 
-## {inputs.season.value} — League Overview
-
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_goals          title="Goals Scored"       /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_xg             title="Total xG"           /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_yellow_cards   title="Yellow Cards"       /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_red_cards      title="Red Cards"          /></div>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_goals           title="Goals Scored"       /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=avg_goals_per_match   title="Avg Goals / Match"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=avg_shot_conversion   title="Shot Conversion %"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_yellow_cards    title="Yellow Cards"       /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_red_cards       title="Red Cards"          /></div>
 </div>
 
 ---
@@ -211,11 +199,11 @@ order by total_points desc
 <BarChart
     data={defence_rankings}
     x=team_name
-    y=goals_against
-    title="Goals Conceded"
+    y=clean_sheets
+    title="Clean Sheets"
     xAxisTitle="Team"
-    yAxisTitle="Goals Conceded"
-    colorPalette={['#ef4444']}
+    yAxisTitle="Clean Sheets"
+    colorPalette={['#14b8a6']}
     swapXY=true
 />
 
@@ -226,11 +214,11 @@ order by total_points desc
 <BarChart
     data={defence_rankings}
     x=team_name
-    y=avg_saves
-    title="Avg Saves per Match"
+    y=goals_against
+    title="Goals Conceded"
     xAxisTitle="Team"
-    yAxisTitle="Saves"
-    colorPalette={['#14b8a6']}
+    yAxisTitle="Goals Conceded"
+    colorPalette={['#ef4444']}
     swapXY=true
 />
 
@@ -278,7 +266,7 @@ order by total_points desc
 
 ---
 
-## Discipline Index
+## Discipline
 
 <BarChart
     data={discipline_rankings}
@@ -324,19 +312,3 @@ order by total_points desc
 </div>
 
 </div>
-
----
-
-## Full Team Benchmark
-
-<DataTable data={league_table} rows=20>
-    <Column id=pos                  title="#"             align=center />
-    <Column id=team_name            title="Team"          />
-    <Column id=pts                  title="Pts"           contentType=colorscale colorPalette={['white','#3b82f6']} align=center />
-    <Column id=gf                   title="GF"            align=center />
-    <Column id=ga                   title="GA"            align=center />
-    <Column id=gd                   title="GD"            contentType=delta align=center />
-    <Column id=total_xg             title="xG"            contentType=colorscale colorPalette={['white','#6366f1']} />
-    <Column id=xg_overperformance   title="xG OP"         contentType=delta />
-    <Column id=win_rate_pct         title="Win %"         contentType=colorscale colorPalette={['white','#22c55e']} fmt='0.0"%"' />
-</DataTable>

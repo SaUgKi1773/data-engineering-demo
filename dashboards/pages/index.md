@@ -74,7 +74,7 @@ select * from superligaen.current_leader
   <div class="flex items-start gap-4">
     <div class="text-3xl">📊</div>
     <div>
-      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Team Analytics</div>
+      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Team Analysis</div>
       <div class="text-gray-400 text-sm mt-1">Deep-dive KPIs, form, shooting accuracy &amp; discipline</div>
     </div>
   </div>
@@ -90,11 +90,11 @@ select * from superligaen.current_leader
   </div>
 </a>
 
-<a href="/season-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/league-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
   <div class="flex items-start gap-4">
     <div class="text-3xl">🌍</div>
     <div>
-      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Season Analytics</div>
+      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">League Analysis</div>
       <div class="text-gray-400 text-sm mt-1">Cross-team benchmarks, rankings and league-wide trends</div>
     </div>
   </div>
@@ -104,7 +104,7 @@ select * from superligaen.current_leader
   <div class="flex items-start gap-4">
     <div class="text-3xl">🟨</div>
     <div>
-      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Referee Analytics</div>
+      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Referee Analysis</div>
       <div class="text-gray-400 text-sm mt-1">Cards, fouls, team exposure and match logs by referee</div>
     </div>
   </div>

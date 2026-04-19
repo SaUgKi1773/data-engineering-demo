@@ -1,7 +1,7 @@
 ---
 sidebar: never
 hide_toc: true
-title: Referee Analytics
+title: Referee Analysis
 ---
 
 <a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
@@ -11,7 +11,7 @@ select distinct season from superligaen.referee_analytics
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season label=season>
+<Dropdown data={seasons} name=season value=season label=season order="season desc">
     <DropdownOption value="2025/26" valueLabel="2025/26"/>
 </Dropdown>
 
@@ -32,7 +32,7 @@ from superligaen.referee_analytics
 where season = '${inputs.season.value}'
 ```
 
-## Referee Analytics — {inputs.season.value}
+## Referee Analysis — {inputs.season.value}
 
 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_totals} value=total_referees      title="Referees Active"    /></div>
@@ -94,40 +94,19 @@ where season = '${inputs.season.value}'
 <Dropdown data={season_stats} name=referee value=referee_name label=referee_name />
 
 ```sql referee_team_exposure
-select
-    t.team_name,
-    count(distinct m.match_sk)  as matches
-from superligaen.gold.fct_match_results f
-join superligaen.gold.dim_referee      ref on ref.referee_sk     = f.referee_sk
-join superligaen.gold.dim_match        m   on m.match_sk         = f.match_sk
-join superligaen.gold.dim_match_result r   on r.match_result_sk = f.match_result_sk
-join superligaen.gold.dim_team         t   on t.team_sk          = f.team_sk
-where r.match_result in ('Win', 'Draw', 'Loss')
-  and ref.referee_name = '${inputs.referee.value}'
-  and m.season = '${inputs.season.value}'
-group by t.team_name
+select team_name, matches
+from superligaen.referee_team_exposure
+where referee_name = '${inputs.referee.value}'
+  and season = '${inputs.season.value}'
 order by matches desc
 ```
 
 ```sql referee_match_log
-select
-    strftime(d.date, '%Y-%m-%d')   as match_date,
-    m.match_round_name              as round,
-    m.match_name,
-    m.match_result                  as score,
-    sum(f.yellow_cards)             as yellow_cards,
-    sum(f.red_cards)                as red_cards,
-    sum(f.fouls)                    as total_fouls
-from superligaen.gold.fct_match_results f
-join superligaen.gold.dim_referee      ref on ref.referee_sk     = f.referee_sk
-join superligaen.gold.dim_match        m   on m.match_sk         = f.match_sk
-join superligaen.gold.dim_match_result r   on r.match_result_sk = f.match_result_sk
-join superligaen.gold.dim_date         d   on d.date_sk          = f.date_sk
-where r.match_result in ('Win', 'Draw', 'Loss')
-  and ref.referee_name = '${inputs.referee.value}'
-  and m.season = '${inputs.season.value}'
-group by d.date, m.match_round_name, m.match_name, m.match_result
-order by d.date desc
+select match_date, round, match_name, score, yellow_cards, red_cards, total_fouls
+from superligaen.referee_match_log
+where referee_name = '${inputs.referee.value}'
+  and season = '${inputs.season.value}'
+order by match_date desc
 ```
 
 ```sql referee_kpis
