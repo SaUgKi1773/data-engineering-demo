@@ -172,6 +172,15 @@ erDiagram
         int team_founded_year
         varchar team_logo
     }
+    dim_opponent_team {
+        int team_sk PK
+        int team_id
+        varchar team_name
+        varchar team_code
+        varchar team_country
+        int team_founded_year
+        varchar team_logo
+    }
     dim_match {
         int match_sk PK
         int match_id
@@ -218,16 +227,16 @@ erDiagram
         varchar match_result
     }
 
-    fct_match_results }|--|| dim_date : "date_sk"
-    fct_match_results }|--|| dim_time : "time_sk"
-    fct_match_results }|--|| dim_team : "team_sk"
-    fct_match_results }|--|| dim_team : "opponent_team_sk"
-    fct_match_results }|--|| dim_match : "match_sk"
-    fct_match_results }|--|| dim_league : "league_sk"
-    fct_match_results }|--|| dim_stadium : "stadium_sk"
-    fct_match_results }|--|| dim_referee : "referee_sk"
-    fct_match_results }|--|| dim_team_side : "team_side_sk"
-    fct_match_results }|--|| dim_match_result : "match_result_sk"
+    dim_date           ||--|{ fct_match_results : "date_sk"
+    dim_team           ||--|{ fct_match_results : "team_sk"
+    dim_match          ||--|{ fct_match_results : "match_sk"
+    dim_league         ||--|{ fct_match_results : "league_sk"
+    dim_stadium        ||--|{ fct_match_results : "stadium_sk"
+    fct_match_results  }|--|| dim_opponent_team  : "opponent_team_sk"
+    fct_match_results  }|--|| dim_referee        : "referee_sk"
+    fct_match_results  }|--|| dim_time           : "time_sk"
+    fct_match_results  }|--|| dim_team_side      : "team_side_sk"
+    fct_match_results  }|--|| dim_match_result   : "match_result_sk"
 </div>
 
 Next: building the dashboard on top of this model.
