@@ -1,7 +1,7 @@
 ---
 sidebar: never
 hide_toc: true
-title: Team Analytics
+title: Team Analysis
 ---
 
 <a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
@@ -16,7 +16,7 @@ select distinct team_name as team from superligaen.team_analytics_kpis
 order by team_name
 ```
 
-<Dropdown data={seasons} name=season value=season label=season>
+<Dropdown data={seasons} name=season value=season label=season order="season desc">
     <DropdownOption value="2025/26" valueLabel="2025/26"/>
 </Dropdown>
 

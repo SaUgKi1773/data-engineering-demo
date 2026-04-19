@@ -33,7 +33,8 @@ select
     round(
         (sum(f.fouls) + sum(f.yellow_cards) * 5 + sum(f.red_cards) * 15)
         ::double / count(*), 1
-    )                                                                               as aggression_index
+    )                                                                               as aggression_index,
+    count(*) filter (where f.goals_conceded = 0)                                    as clean_sheets
 from superligaen.gold.fct_match_results f
 join superligaen.gold.dim_team         t  on t.team_sk          = f.team_sk
 join superligaen.gold.dim_match        m  on m.match_sk         = f.match_sk

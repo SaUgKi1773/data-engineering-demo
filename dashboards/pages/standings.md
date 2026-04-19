@@ -11,7 +11,7 @@ select distinct season from superligaen.team_season_stats
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season label=season>
+<Dropdown data={seasons} name=season value=season label=season order="season desc">
     <DropdownOption value="2025/26" valueLabel="2025/26"/>
 </Dropdown>
 
