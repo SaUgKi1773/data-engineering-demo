@@ -2,8 +2,8 @@
     {% if var('season', none) is not none %}
         season = {{ var('season') }}
     {% else %}
-        {{ date_col }} >= current_date - interval '{{ var("lookback_days", 5) }}' day
-        and {{ date_col }} <= current_date + interval '28' day
+        {{ date_col }}::DATE >= current_date - interval '{{ var("lookback_days", 5) }}' day
+        and {{ date_col }}::DATE <= current_date + interval '28' day
     {% endif %}
 {% endmacro %}
 
