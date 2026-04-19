@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: bronze
-    database: "{{ env_var('DBT_DATABASE', 'superligaen_dev') }}"
+    database: "{{ 'superligaen' if target.name == 'prod' else 'superligaen_dev' }}"
     schema: bronze
     tables:
       - name: api_football__fixtures

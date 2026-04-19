@@ -49,7 +49,6 @@ jobs:
         working-directory: dbt
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          DBT_DATABASE: ${{ github.event.inputs.target_db || 'superligaen' }}
         run: |
           TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
           dbt run --select 'silver.*' --target $TARGET --vars '{"lookback_days": ${{ github.event.inputs.lookback || '5' }}}'
@@ -59,7 +58,6 @@ jobs:
         working-directory: dbt
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          DBT_DATABASE: ${{ github.event.inputs.target_db || 'superligaen' }}
         run: |
           TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
           dbt run --select 'silver.*' --target $TARGET --vars '{"season": ${{ github.event.inputs.season }}}'
@@ -69,7 +67,6 @@ jobs:
         working-directory: dbt
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          DBT_DATABASE: ${{ github.event.inputs.target_db || 'superligaen' }}
         run: |
           TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
           dbt run --select 'silver.*' --target $TARGET --full-refresh
