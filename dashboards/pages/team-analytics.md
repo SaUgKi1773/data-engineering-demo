@@ -271,6 +271,7 @@ where team_name = '${inputs.team.value}' and season = '${inputs.season.value}'
 
 ## Home vs Away
 
+<div class="overflow-x-auto">
 <DataTable data={home_away}>
     <Column id=side               title="Side"             />
     <Column id=matches            title="MP"               />
@@ -289,6 +290,7 @@ where team_name = '${inputs.team.value}' and season = '${inputs.season.value}'
     <Column id=red_cards          title="RC"               />
     <Column id=avg_saves          title="Avg Saves"        />
 </DataTable>
+</div>
 
 ```sql home_away_chart
 select side, avg_shots_on_goal as "Shots on Goal", avg_xg as "xG", avg_possession / 10 as "Possession / 10", win_rate_pct / 10 as "Win Rate / 10"

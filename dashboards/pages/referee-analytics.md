@@ -34,7 +34,7 @@ where season = '${inputs.season.value}'
 
 ## Referee Analysis — {inputs.season.value}
 
-<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_totals} value=total_referees      title="Referees Active"    /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_totals} value=league_avg_yellows  title="Avg YC / Match"     /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={season_totals} value=league_avg_reds     title="Avg RC / Match"     /></div>
@@ -46,7 +46,7 @@ where season = '${inputs.season.value}'
 ## Season Leaderboard
 
 <DataTable data={season_stats} rows=20>
-    <Column id=referee_name         title="Referee"             />
+    <Column id=referee_name         title="Referee"             wrap=true />
     <Column id=matches_managed      title="Games"               contentType=colorscale colorPalette={['white','#3b82f6']} align=center />
     <Column id=total_yellow_cards   title="Yellow Cards"        contentType=colorscale colorPalette={['white','#eab308']} align=center />
     <Column id=total_red_cards      title="Red Cards"           contentType=colorscale colorPalette={['white','#ef4444']} align=center />
