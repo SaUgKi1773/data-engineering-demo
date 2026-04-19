@@ -19,7 +19,7 @@ The project was built in roughly **10 days** in April 2026, and almost nothing w
 6. [The Deployment Saga — Netlify, Cloudflare, and Finally Vercel]({% post_url 2026-04-18-deployment-saga %})
 7. [Migrating to dbt — When Raw SQL Isn't Enough]({% post_url 2026-04-18-dbt-migration %})
 8. [Hitting the Limits — API Quotas and MotherDuck Memory]({% post_url 2026-04-18-hitting-the-limits %})
-9. [Global Launch and Adding Analytics]({% post_url 2026-04-19-launch-and-analytics %})
+9. [Adding Web Analytics — Vercel and Cloudflare]({% post_url 2026-04-19-launch-and-analytics %})
 
 ---
 

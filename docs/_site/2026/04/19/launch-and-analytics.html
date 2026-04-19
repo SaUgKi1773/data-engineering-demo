@@ -3,22 +3,22 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
-<title>Global Launch and Adding Analytics | Building Superligaen Analytics</title>
+<title>Adding Web Analytics — Vercel and Cloudflare | Building Superligaen Analytics</title>
 <meta name="generator" content="Jekyll v4.4.1" />
-<meta property="og:title" content="Global Launch and Adding Analytics" />
+<meta property="og:title" content="Adding Web Analytics — Vercel and Cloudflare" />
 <meta name="author" content="Salih Ugur Kımıllı" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="By April 19th, 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, the README was updated to reflect the current architecture, and the nightly job was running cleanly. It was time to call it launched." />
-<meta property="og:description" content="By April 19th, 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, the README was updated to reflect the current architecture, and the nightly job was running cleanly. It was time to call it launched." />
+<meta name="description" content="Once the dashboard was live, the natural question was: is anyone visiting it? We needed analytics." />
+<meta property="og:description" content="Once the dashboard was live, the natural question was: is anyone visiting it? We needed analytics." />
 <link rel="canonical" href="https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html" />
 <meta property="og:url" content="https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html" />
 <meta property="og:site_name" content="Building Superligaen Analytics" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2026-04-19T00:00:00+02:00" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Global Launch and Adding Analytics" />
+<meta property="twitter:title" content="Adding Web Analytics — Vercel and Cloudflare" />
 <script type="application/ld+json">
-{"description":"By April 19th, 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, the README was updated to reflect the current architecture, and the nightly job was running cleanly. It was time to call it launched.","headline":"Global Launch and Adding Analytics","dateModified":"2026-04-19T00:00:00+02:00","datePublished":"2026-04-19T00:00:00+02:00","@type":"BlogPosting","author":{"@type":"Person","name":"Salih Ugur Kımıllı"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html"},"url":"https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html","@context":"https://schema.org"}</script>
+{"description":"Once the dashboard was live, the natural question was: is anyone visiting it? We needed analytics.","headline":"Adding Web Analytics — Vercel and Cloudflare","dateModified":"2026-04-19T00:00:00+02:00","datePublished":"2026-04-19T00:00:00+02:00","@type":"BlogPosting","author":{"@type":"Person","name":"Salih Ugur Kımıllı"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html"},"url":"https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/data-engineering-demo/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://saugki1773.github.io/data-engineering-demo/feed.xml" title="Building Superligaen Analytics" /></head>
 <body><header class="site-header" role="banner">
@@ -41,37 +41,14 @@
         <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
   <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">Global Launch and Adding Analytics</h1>
+    <h1 class="post-title p-name" itemprop="name headline">Adding Web Analytics — Vercel and Cloudflare</h1>
     <p class="post-meta">
       <time class="dt-published" datetime="2026-04-19T00:00:00+02:00" itemprop="datePublished">Apr 19, 2026
       </time></p>
   </header>
 
   <div class="post-content e-content" itemprop="articleBody">
-    <p>By April 19th, 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, the README was updated to reflect the current architecture, and the nightly job was running cleanly. It was time to call it launched.</p>
-
-<p>The live dashboard is at <a href="https://superligaanalytics.vercel.app/">superligaanalytics.vercel.app</a>.</p>
-
-<h2 id="what-shipped-at-launch">What Shipped at Launch</h2>
-
-<p>The final state of the project at launch:</p>
-
-<ul>
-  <li><strong>Bronze layer</strong> — 21 endpoints ingested nightly from api-football.com into MotherDuck</li>
-  <li><strong>Silver layer</strong> — 18 dbt models that flatten and type-cast the raw JSON</li>
-  <li><strong>Gold layer</strong> — Kimball star schema: 10 dimension tables and <code class="language-plaintext highlighter-rouge">fct_match_results</code></li>
-  <li><strong>Dashboard</strong> — 7 Evidence.dev pages: Home, Standings, Match Results, Upcoming Fixtures, League Analytics, Team Analytics, Referee Analytics</li>
-  <li><strong>Orchestration</strong> — GitHub Actions nightly pipeline: bronze → silver → gold → Vercel deploy</li>
-  <li><strong>CI</strong> — dbt compile on every pull request to main</li>
-  <li><strong>Dev/prod separation</strong> — <code class="language-plaintext highlighter-rouge">superligaen_dev</code> and <code class="language-plaintext highlighter-rouge">superligaen</code> databases, <code class="language-plaintext highlighter-rouge">dev</code> and <code class="language-plaintext highlighter-rouge">prod</code> dbt targets</li>
-  <li><strong>112 pull requests merged</strong> across the development sprint</li>
-</ul>
-
-<p>The one final polish item before launch: the home page navigation grid had cards in an order that did not feel right. Upcoming Fixtures should come before Team Analysis. League Analysis should come before Team Analysis too. Two one-line changes, merged, deployed.</p>
-
-<h2 id="adding-visitor-analytics">Adding Visitor Analytics</h2>
-
-<p>Once the site was live, the natural question was: is anyone visiting it? We needed analytics.</p>
+    <p>Once the dashboard was live, the natural question was: is anyone visiting it? We needed analytics.</p>
 
 <p>The options were straightforward: Vercel Analytics (built into the hosting platform), Cloudflare Web Analytics (a separate free service), or Google Analytics (the industry default but heavier and requiring a cookie consent banner under GDPR).</p>
 
@@ -81,11 +58,11 @@
 
 <p>We decided to use both — not because we needed redundancy, but because each gives you a slightly different view of traffic data, and running both costs nothing.</p>
 
-<h2 id="the-first-analytics-attempt-and-how-it-broke-everything">The First Analytics Attempt (And How It Broke Everything)</h2>
+<h2 id="the-first-attempt-and-how-it-broke-everything">The First Attempt (And How It Broke Everything)</h2>
 
 <p>Adding Vercel Analytics was not as simple as enabling a toggle in the Vercel dashboard. For SvelteKit apps (which Evidence.dev is built on), you need to install the <code class="language-plaintext highlighter-rouge">@vercel/analytics</code> npm package and call <code class="language-plaintext highlighter-rouge">inject()</code> somewhere in your app.</p>
 
-<p>The natural place for a call that should run on every page is a layout component. Evidence.dev (SvelteKit) supports a <code class="language-plaintext highlighter-rouge">pages/+layout.svelte</code> file. I created one:</p>
+<p>The natural place for a call that should run on every page is a layout component. Evidence.dev supports a <code class="language-plaintext highlighter-rouge">pages/+layout.svelte</code> file. I created one:</p>
 
 <pre><code class="language-svelte">&lt;script&gt;
   import { onMount } from 'svelte';
@@ -145,22 +122,6 @@
 </code></pre></div></div>
 
 <p>This is less elegant than a <code class="language-plaintext highlighter-rouge">&lt;script&gt;</code> tag in the HTML but works correctly and is straightforward to understand.</p>
-
-<h2 id="reflections-on-ten-days">Reflections on Ten Days</h2>
-
-<p>This project went from initial commit to live dashboard in approximately ten days of active development. That is fast enough that almost every architectural choice was made under time pressure, with incomplete information, and revised at least once.</p>
-
-<p>The tools that delivered exactly what they promised: MotherDuck, DuckDB, dbt, GitHub Actions. No surprises, no unexplained failures, no time spent on yak-shaving.</p>
-
-<p>The tools that required more navigation: Netlify (build limits), Cloudflare Pages (file size limits), Vercel (deploy hook unreliability), Evidence.dev (some underdocumented behaviour around layouts and template syntax).</p>
-
-<p>The choices I would make the same way: MotherDuck as the warehouse, dbt for transformations, Evidence.dev for the dashboard, Vercel for hosting, the Kimball star schema, the dev/prod database separation, the delete-before-insert idempotency pattern.</p>
-
-<p>The choices I would make differently: evaluate hosting platforms against build frequency and output size before committing; add dbt tests from the beginning rather than deferring them; set up dbt documentation from the start.</p>
-
-<p>The ambitions that did not make it in: multi-league support (blocked by API quota), dbt tests, dbt documentation, real-time match events (requires a paid API tier), mobile app version of the dashboard.</p>
-
-<p>The project is now in maintenance mode. The nightly pipeline runs, the data updates, and the dashboard reflects last night’s results every morning. For a project built entirely on free tiers in ten days, that is a good place to be.</p>
 
   </div><a class="u-url" href="/data-engineering-demo/2026/04/19/launch-and-analytics.html" hidden></a>
 </article>

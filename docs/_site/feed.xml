@@ -1,27 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="https://saugki1773.github.io/data-engineering-demo/feed.xml" rel="self" type="application/atom+xml" /><link href="https://saugki1773.github.io/data-engineering-demo/" rel="alternate" type="text/html" /><updated>2026-04-19T20:21:50+02:00</updated><id>https://saugki1773.github.io/data-engineering-demo/feed.xml</id><title type="html">Building Superligaen Analytics</title><subtitle>A data engineer&apos;s diary — from raw API calls to a live football dashboard. Everything that went wrong, and how we fixed it.</subtitle><author><name>Salih Ugur Kımıllı</name></author><entry><title type="html">Global Launch and Adding Analytics</title><link href="https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html" rel="alternate" type="text/html" title="Global Launch and Adding Analytics" /><published>2026-04-19T00:00:00+02:00</published><updated>2026-04-19T00:00:00+02:00</updated><id>https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics</id><content type="html" xml:base="https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html">&lt;p&gt;By April 19th, 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, the README was updated to reflect the current architecture, and the nightly job was running cleanly. It was time to call it launched.&lt;/p&gt;
-
-&lt;p&gt;The live dashboard is at &lt;a href=&quot;https://superligaanalytics.vercel.app/&quot;&gt;superligaanalytics.vercel.app&lt;/a&gt;.&lt;/p&gt;
-
-&lt;h2 id=&quot;what-shipped-at-launch&quot;&gt;What Shipped at Launch&lt;/h2&gt;
-
-&lt;p&gt;The final state of the project at launch:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;Bronze layer&lt;/strong&gt; — 21 endpoints ingested nightly from api-football.com into MotherDuck&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Silver layer&lt;/strong&gt; — 18 dbt models that flatten and type-cast the raw JSON&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Gold layer&lt;/strong&gt; — Kimball star schema: 10 dimension tables and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fct_match_results&lt;/code&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Dashboard&lt;/strong&gt; — 7 Evidence.dev pages: Home, Standings, Match Results, Upcoming Fixtures, League Analytics, Team Analytics, Referee Analytics&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Orchestration&lt;/strong&gt; — GitHub Actions nightly pipeline: bronze → silver → gold → Vercel deploy&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;CI&lt;/strong&gt; — dbt compile on every pull request to main&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Dev/prod separation&lt;/strong&gt; — &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;superligaen_dev&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;superligaen&lt;/code&gt; databases, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;dev&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;prod&lt;/code&gt; dbt targets&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;112 pull requests merged&lt;/strong&gt; across the development sprint&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;The one final polish item before launch: the home page navigation grid had cards in an order that did not feel right. Upcoming Fixtures should come before Team Analysis. League Analysis should come before Team Analysis too. Two one-line changes, merged, deployed.&lt;/p&gt;
-
-&lt;h2 id=&quot;adding-visitor-analytics&quot;&gt;Adding Visitor Analytics&lt;/h2&gt;
-
-&lt;p&gt;Once the site was live, the natural question was: is anyone visiting it? We needed analytics.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="https://saugki1773.github.io/data-engineering-demo/feed.xml" rel="self" type="application/atom+xml" /><link href="https://saugki1773.github.io/data-engineering-demo/" rel="alternate" type="text/html" /><updated>2026-04-19T20:51:00+02:00</updated><id>https://saugki1773.github.io/data-engineering-demo/feed.xml</id><title type="html">Building Superligaen Analytics</title><subtitle>A data engineer&apos;s diary — from raw API calls to a live football dashboard. Everything that went wrong, and how we fixed it.</subtitle><author><name>Salih Ugur Kımıllı</name></author><entry><title type="html">Adding Web Analytics — Vercel and Cloudflare</title><link href="https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html" rel="alternate" type="text/html" title="Adding Web Analytics — Vercel and Cloudflare" /><published>2026-04-19T00:00:00+02:00</published><updated>2026-04-19T00:00:00+02:00</updated><id>https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics</id><content type="html" xml:base="https://saugki1773.github.io/data-engineering-demo/2026/04/19/launch-and-analytics.html">&lt;p&gt;Once the dashboard was live, the natural question was: is anyone visiting it? We needed analytics.&lt;/p&gt;
 
 &lt;p&gt;The options were straightforward: Vercel Analytics (built into the hosting platform), Cloudflare Web Analytics (a separate free service), or Google Analytics (the industry default but heavier and requiring a cookie consent banner under GDPR).&lt;/p&gt;
 
@@ -31,11 +8,11 @@
 
 &lt;p&gt;We decided to use both — not because we needed redundancy, but because each gives you a slightly different view of traffic data, and running both costs nothing.&lt;/p&gt;
 
-&lt;h2 id=&quot;the-first-analytics-attempt-and-how-it-broke-everything&quot;&gt;The First Analytics Attempt (And How It Broke Everything)&lt;/h2&gt;
+&lt;h2 id=&quot;the-first-attempt-and-how-it-broke-everything&quot;&gt;The First Attempt (And How It Broke Everything)&lt;/h2&gt;
 
 &lt;p&gt;Adding Vercel Analytics was not as simple as enabling a toggle in the Vercel dashboard. For SvelteKit apps (which Evidence.dev is built on), you need to install the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@vercel/analytics&lt;/code&gt; npm package and call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;inject()&lt;/code&gt; somewhere in your app.&lt;/p&gt;
 
-&lt;p&gt;The natural place for a call that should run on every page is a layout component. Evidence.dev (SvelteKit) supports a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pages/+layout.svelte&lt;/code&gt; file. I created one:&lt;/p&gt;
+&lt;p&gt;The natural place for a call that should run on every page is a layout component. Evidence.dev supports a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pages/+layout.svelte&lt;/code&gt; file. I created one:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&quot;language-svelte&quot;&gt;&amp;lt;script&amp;gt;
   import { onMount } from &apos;svelte&apos;;
@@ -94,23 +71,7 @@
 &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;This is less elegant than a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;script&amp;gt;&lt;/code&gt; tag in the HTML but works correctly and is straightforward to understand.&lt;/p&gt;
-
-&lt;h2 id=&quot;reflections-on-ten-days&quot;&gt;Reflections on Ten Days&lt;/h2&gt;
-
-&lt;p&gt;This project went from initial commit to live dashboard in approximately ten days of active development. That is fast enough that almost every architectural choice was made under time pressure, with incomplete information, and revised at least once.&lt;/p&gt;
-
-&lt;p&gt;The tools that delivered exactly what they promised: MotherDuck, DuckDB, dbt, GitHub Actions. No surprises, no unexplained failures, no time spent on yak-shaving.&lt;/p&gt;
-
-&lt;p&gt;The tools that required more navigation: Netlify (build limits), Cloudflare Pages (file size limits), Vercel (deploy hook unreliability), Evidence.dev (some underdocumented behaviour around layouts and template syntax).&lt;/p&gt;
-
-&lt;p&gt;The choices I would make the same way: MotherDuck as the warehouse, dbt for transformations, Evidence.dev for the dashboard, Vercel for hosting, the Kimball star schema, the dev/prod database separation, the delete-before-insert idempotency pattern.&lt;/p&gt;
-
-&lt;p&gt;The choices I would make differently: evaluate hosting platforms against build frequency and output size before committing; add dbt tests from the beginning rather than deferring them; set up dbt documentation from the start.&lt;/p&gt;
-
-&lt;p&gt;The ambitions that did not make it in: multi-league support (blocked by API quota), dbt tests, dbt documentation, real-time match events (requires a paid API tier), mobile app version of the dashboard.&lt;/p&gt;
-
-&lt;p&gt;The project is now in maintenance mode. The nightly pipeline runs, the data updates, and the dashboard reflects last night’s results every morning. For a project built entirely on free tiers in ten days, that is a good place to be.&lt;/p&gt;</content><author><name>Salih Ugur Kımıllı</name></author><category term="data-engineering" /><category term="analytics" /><category term="deployment" /><summary type="html">By April 19th, 2026 — roughly ten days after the first real commit — the pipeline was stable, the dashboard had seven pages, the README was updated to reflect the current architecture, and the nightly job was running cleanly. It was time to call it launched.</summary></entry><entry><title type="html">Hitting the Limits — API Quotas and MotherDuck Memory</title><link href="https://saugki1773.github.io/data-engineering-demo/2026/04/18/hitting-the-limits.html" rel="alternate" type="text/html" title="Hitting the Limits — API Quotas and MotherDuck Memory" /><published>2026-04-18T00:00:00+02:00</published><updated>2026-04-18T00:00:00+02:00</updated><id>https://saugki1773.github.io/data-engineering-demo/2026/04/18/hitting-the-limits</id><content type="html" xml:base="https://saugki1773.github.io/data-engineering-demo/2026/04/18/hitting-the-limits.html">&lt;p&gt;Every free tier has a ceiling. This project hit several of them in ways that were interesting enough to document separately. Some limits shaped the architecture from the start. Others appeared unexpectedly in production. All of them taught something useful.&lt;/p&gt;
+&lt;p&gt;This is less elegant than a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;script&amp;gt;&lt;/code&gt; tag in the HTML but works correctly and is straightforward to understand.&lt;/p&gt;</content><author><name>Salih Ugur Kımıllı</name></author><category term="data-engineering" /><category term="analytics" /><category term="deployment" /><summary type="html">Once the dashboard was live, the natural question was: is anyone visiting it? We needed analytics.</summary></entry><entry><title type="html">Hitting the Limits — API Quotas and MotherDuck Memory</title><link href="https://saugki1773.github.io/data-engineering-demo/2026/04/18/hitting-the-limits.html" rel="alternate" type="text/html" title="Hitting the Limits — API Quotas and MotherDuck Memory" /><published>2026-04-18T00:00:00+02:00</published><updated>2026-04-18T00:00:00+02:00</updated><id>https://saugki1773.github.io/data-engineering-demo/2026/04/18/hitting-the-limits</id><content type="html" xml:base="https://saugki1773.github.io/data-engineering-demo/2026/04/18/hitting-the-limits.html">&lt;p&gt;Every free tier has a ceiling. This project hit several of them in ways that were interesting enough to document separately. Some limits shaped the architecture from the start. Others appeared unexpectedly in production. All of them taught something useful.&lt;/p&gt;
 
 &lt;h2 id=&quot;the-100-call-per-day-api-limit&quot;&gt;The 100-Call-Per-Day API Limit&lt;/h2&gt;
 
@@ -348,6 +309,8 @@
 
 &lt;p&gt;dbt also has documentation generation (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;dbt docs generate&lt;/code&gt;) that produces a browsable data catalog with descriptions, lineage graphs, and column-level documentation. Another thing worth adding.&lt;/p&gt;
 
+&lt;p&gt;The third item on the list is the &lt;strong&gt;dbt semantic layer&lt;/strong&gt;. Rather than defining metrics like “goals per game” or “win rate” directly in dashboard SQL queries, the semantic layer lets you define them once in dbt and expose them as reusable, consistent metrics across any downstream tool. For a project where the same aggregations appear in multiple dashboard pages, this would eliminate duplication and make the numbers trustworthy by construction.&lt;/p&gt;
+
 &lt;p&gt;Next: a look at the API limits and infrastructure constraints that shape what this project can and cannot become.&lt;/p&gt;</content><author><name>Salih Ugur Kımıllı</name></author><category term="data-engineering" /><category term="dbt" /><category term="transformation" /><summary type="html">When the silver and gold layers were first built, they ran as plain SQL files executed by Python runner scripts — run_silver.py and run_gold.py. Each script would read a directory of .sql files, connect to MotherDuck, and execute them in a specific order. It worked. The data was correct. But as the number of models grew and the logic became more complex, the cracks in the approach started to show.</summary></entry><entry><title type="html">The Dashboard — Discovering Evidence.dev</title><link href="https://saugki1773.github.io/data-engineering-demo/2026/04/16/building-the-dashboard.html" rel="alternate" type="text/html" title="The Dashboard — Discovering Evidence.dev" /><published>2026-04-16T00:00:00+02:00</published><updated>2026-04-16T00:00:00+02:00</updated><id>https://saugki1773.github.io/data-engineering-demo/2026/04/16/building-the-dashboard</id><content type="html" xml:base="https://saugki1773.github.io/data-engineering-demo/2026/04/16/building-the-dashboard.html">&lt;p&gt;I knew from the start that I wanted a live public dashboard, not a static report or a screenshot. The question was which tool to use.&lt;/p&gt;
 
 &lt;h2 id=&quot;why-not-the-obvious-choices&quot;&gt;Why Not the Obvious Choices&lt;/h2&gt;
@@ -559,7 +522,7 @@ limit 10
   mermaid.initialize({ startOnLoad: true, theme: &apos;dark&apos; });
 &lt;/script&gt;
 
-&lt;pre class=&quot;mermaid&quot;&gt;
+&lt;div class=&quot;mermaid&quot;&gt;
 erDiagram
     fct_match_results {
         int date_sk FK
@@ -620,6 +583,15 @@ erDiagram
         int team_founded_year
         varchar team_logo
     }
+    dim_opponent_team {
+        int team_sk PK
+        int team_id
+        varchar team_name
+        varchar team_code
+        varchar team_country
+        int team_founded_year
+        varchar team_logo
+    }
     dim_match {
         int match_sk PK
         int match_id
@@ -666,17 +638,17 @@ erDiagram
         varchar match_result
     }
 
-    fct_match_results }|--|| dim_date : &quot;date_sk&quot;
-    fct_match_results }|--|| dim_time : &quot;time_sk&quot;
-    fct_match_results }|--|| dim_team : &quot;team_sk&quot;
-    fct_match_results }|--|| dim_team : &quot;opponent_team_sk&quot;
-    fct_match_results }|--|| dim_match : &quot;match_sk&quot;
-    fct_match_results }|--|| dim_league : &quot;league_sk&quot;
-    fct_match_results }|--|| dim_stadium : &quot;stadium_sk&quot;
-    fct_match_results }|--|| dim_referee : &quot;referee_sk&quot;
-    fct_match_results }|--|| dim_team_side : &quot;team_side_sk&quot;
-    fct_match_results }|--|| dim_match_result : &quot;match_result_sk&quot;
-&lt;/pre&gt;
+    dim_date           ||--|{ fct_match_results : &quot;date_sk&quot;
+    dim_team           ||--|{ fct_match_results : &quot;team_sk&quot;
+    dim_match          ||--|{ fct_match_results : &quot;match_sk&quot;
+    dim_league         ||--|{ fct_match_results : &quot;league_sk&quot;
+    dim_stadium        ||--|{ fct_match_results : &quot;stadium_sk&quot;
+    fct_match_results  }|--|| dim_opponent_team  : &quot;opponent_team_sk&quot;
+    fct_match_results  }|--|| dim_referee        : &quot;referee_sk&quot;
+    fct_match_results  }|--|| dim_time           : &quot;time_sk&quot;
+    fct_match_results  }|--|| dim_team_side      : &quot;team_side_sk&quot;
+    fct_match_results  }|--|| dim_match_result   : &quot;match_result_sk&quot;
+&lt;/div&gt;
 
 &lt;p&gt;Next: building the dashboard on top of this model.&lt;/p&gt;</content><author><name>Salih Ugur Kımıllı</name></author><category term="data-engineering" /><category term="transformation" /><category term="data-modeling" /><summary type="html">With 21 tables of raw JSON sitting in MotherDuck, the next step was to make the data actually usable. That meant two more layers: silver (clean, structured tables) and gold (a Kimball dimensional model designed for analytics).</summary></entry><entry><title type="html">Building the Bronze Layer — Raw Ingestion</title><link href="https://saugki1773.github.io/data-engineering-demo/2026/04/11/building-the-bronze-layer.html" rel="alternate" type="text/html" title="Building the Bronze Layer — Raw Ingestion" /><published>2026-04-11T00:00:00+02:00</published><updated>2026-04-11T00:00:00+02:00</updated><id>https://saugki1773.github.io/data-engineering-demo/2026/04/11/building-the-bronze-layer</id><content type="html" xml:base="https://saugki1773.github.io/data-engineering-demo/2026/04/11/building-the-bronze-layer.html">&lt;p&gt;The bronze layer has one job: pull data from the API and store it in the warehouse exactly as it arrived. No transformation, no business logic. If the API gives you a nested JSON blob, you store a nested JSON blob. The philosophy is that raw data is irreplaceable — once you transform it, you lose the original, and if your transformation logic turns out to be wrong you have nothing to go back to.&lt;/p&gt;
 

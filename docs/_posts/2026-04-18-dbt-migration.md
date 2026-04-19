@@ -69,4 +69,6 @@ dbt has a testing framework (`dbt test`) that lets you define assertions about y
 
 dbt also has documentation generation (`dbt docs generate`) that produces a browsable data catalog with descriptions, lineage graphs, and column-level documentation. Another thing worth adding.
 
+The third item on the list is the **dbt semantic layer**. Rather than defining metrics like "goals per game" or "win rate" directly in dashboard SQL queries, the semantic layer lets you define them once in dbt and expose them as reusable, consistent metrics across any downstream tool. For a project where the same aggregations appear in multiple dashboard pages, this would eliminate duplication and make the numbers trustworthy by construction.
+
 Next: a look at the API limits and infrastructure constraints that shape what this project can and cannot become.
