@@ -49,7 +49,9 @@ ALL_BRONZE_TABLES = (
 def connect(target_db: str | None = None) -> duckdb.DuckDBPyConnection:
     token = os.environ["MOTHERDUCK_TOKEN"]
     if target_db is None:
-        target_db = os.environ.get("TARGET_DB", "superligaen_dev")
+        target_db = os.environ.get("TARGET_DB")
+    if not target_db:
+        raise RuntimeError("TARGET_DB env var is required — set it to 'superligaen' or 'superligaen_dev'")
     conn = duckdb.connect(f"md:{target_db}?motherduck_token={token}")
     log.info("Connected to MotherDuck: %s", target_db)
     return conn
