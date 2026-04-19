@@ -77,7 +77,7 @@ We ended up with 10 dimension tables:
 | Dimension | What it represents |
 |---|---|
 | `dim_date` | Calendar attributes of the match date |
-| `dim_time` | Hour and minute of kick-off |
+| `dim_time` | Hour of kick-off and period of day (Morning / Afternoon / Evening / Night) |
 | `dim_team` | Club identity — name, code, country, logo |
 | `dim_opponent_team` | Separate dim for the opposing club (same structure) |
 | `dim_match` | Match metadata — round, season, names, status |
