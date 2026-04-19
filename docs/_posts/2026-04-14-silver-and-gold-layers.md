@@ -111,7 +111,7 @@ The star schema centres on a single fact table joined to ten dimensions. The gra
   mermaid.initialize({ startOnLoad: true, theme: 'dark' });
 </script>
 
-<pre class="mermaid">
+<div class="mermaid">
 erDiagram
     fct_match_results {
         int date_sk FK
@@ -228,6 +228,6 @@ erDiagram
     fct_match_results }|--|| dim_referee : "referee_sk"
     fct_match_results }|--|| dim_team_side : "team_side_sk"
     fct_match_results }|--|| dim_match_result : "match_result_sk"
-</pre>
+</div>
 
 Next: building the dashboard on top of this model.

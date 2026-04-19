@@ -18,7 +18,7 @@
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Silver and Gold — Transforming Data into a Star Schema" />
 <script type="application/ld+json">
-{"description":"With 21 tables of raw JSON sitting in MotherDuck, the next step was to make the data actually usable. That meant two more layers: silver (clean, structured tables) and gold (a Kimball dimensional model designed for analytics).","headline":"Silver and Gold — Transforming Data into a Star Schema","dateModified":"2026-04-14T00:00:00+02:00","datePublished":"2026-04-14T00:00:00+02:00","@type":"BlogPosting","author":{"@type":"Person","name":"Salih Ugur Kımıllı"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://saugki1773.github.io/data-engineering-demo/2026/04/14/silver-and-gold-layers.html"},"url":"https://saugki1773.github.io/data-engineering-demo/2026/04/14/silver-and-gold-layers.html","@context":"https://schema.org"}</script>
+{"datePublished":"2026-04-14T00:00:00+02:00","description":"With 21 tables of raw JSON sitting in MotherDuck, the next step was to make the data actually usable. That meant two more layers: silver (clean, structured tables) and gold (a Kimball dimensional model designed for analytics).","mainEntityOfPage":{"@type":"WebPage","@id":"https://saugki1773.github.io/data-engineering-demo/2026/04/14/silver-and-gold-layers.html"},"author":{"@type":"Person","name":"Salih Ugur Kımıllı"},"@type":"BlogPosting","url":"https://saugki1773.github.io/data-engineering-demo/2026/04/14/silver-and-gold-layers.html","headline":"Silver and Gold — Transforming Data into a Star Schema","dateModified":"2026-04-14T00:00:00+02:00","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/data-engineering-demo/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://saugki1773.github.io/data-engineering-demo/feed.xml" title="Building Superligaen Analytics" /></head>
 <body><header class="site-header" role="banner">
@@ -191,7 +191,7 @@
   mermaid.initialize({ startOnLoad: true, theme: 'dark' });
 </script>
 
-<pre class="mermaid">
+<div class="mermaid">
 erDiagram
     fct_match_results {
         int date_sk FK
@@ -308,7 +308,7 @@ erDiagram
     fct_match_results }|--|| dim_referee : "referee_sk"
     fct_match_results }|--|| dim_team_side : "team_side_sk"
     fct_match_results }|--|| dim_match_result : "match_result_sk"
-</pre>
+</div>
 
 <p>Next: building the dashboard on top of this model.</p>
 
