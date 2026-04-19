@@ -20,7 +20,7 @@ select
          THEN 'TBD' ELSE stadium END                                               as stadium,
     season
 from superligaen.upcoming_matches
-order by match_date asc
+order by match_date asc, kick_off_time asc
 ```
 
 ## Upcoming Fixtures

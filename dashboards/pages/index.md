@@ -70,22 +70,22 @@ select * from superligaen.current_leader
   </div>
 </a>
 
-<a href="/team-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
-  <div class="flex items-start gap-4">
-    <div class="text-3xl">📊</div>
-    <div>
-      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Team Analysis</div>
-      <div class="text-gray-400 text-sm mt-1">Deep-dive KPIs, form, shooting accuracy &amp; discipline</div>
-    </div>
-  </div>
-</a>
-
 <a href="/upcoming-matches" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
   <div class="flex items-start gap-4">
     <div class="text-3xl">📅</div>
     <div>
       <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Upcoming Fixtures</div>
       <div class="text-gray-400 text-sm mt-1">Head-to-head history &amp; form guide for upcoming matches</div>
+    </div>
+  </div>
+</a>
+
+<a href="/team-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+  <div class="flex items-start gap-4">
+    <div class="text-3xl">📊</div>
+    <div>
+      <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Team Analysis</div>
+      <div class="text-gray-400 text-sm mt-1">Deep-dive KPIs, form, shooting accuracy &amp; discipline</div>
     </div>
   </div>
 </a>
