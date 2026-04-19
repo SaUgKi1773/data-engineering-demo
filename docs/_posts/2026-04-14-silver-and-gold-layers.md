@@ -102,18 +102,61 @@ These sentinel rows mean the fact table can always have a valid foreign key, eve
 
 One early version of the sentinel rows had generic labels like `-1 Unknown` and `-2 Not Applicable`. We later updated them to be attribute-specific: `-1 Unknown Referee`, `-2 Not Applicable Stadium`, and so on. This makes them instantly readable in query results without having to check which dimension you are looking at.
 
-## The Season Column Saga
+## The Data Model
 
-One thing that seemed simple turned out not to be: the season column. The first version stored it as an integer — `2025` for the 2025/26 season. That caused confusion in the dashboard when the season filter showed `2025` but the season display label expected `2025/26`.
+The star schema centres on a single fact table joined to ten dimensions. The grain is one row per team per match — each fixture produces two rows, one for the home team and one for the away team.
 
-We added a `season_name` column to `dim_match` to store the human-readable label. Then we ran into a dashboard bug where a `replace_all` substitution in a Svelte component was inadvertently replacing every occurrence of the string "season" in the page, including in other variable names, breaking the standings filter. That was a fun one to debug.
+```
+                    dim_date         dim_time
+                       │                │
+         dim_referee ──┤                ├── dim_team_side
+                       │                │
+dim_match ─────────────┤  fct_match  ├──────── dim_team
+                       │   _results  │
+dim_league ────────────┤                ├── dim_opponent_team
+                       │                │
+         dim_stadium ──┤                ├── dim_match_result
+```
 
-Eventually we renamed the integer column and made `season` itself a `VARCHAR` formatted as `2025/26` throughout. Consistent types, consistent formats, no ambiguity.
+**`fct_match_results` — foreign keys**
 
-## The Group 4 Problem
+| Column | References |
+|---|---|
+| `date_sk` | `dim_date` |
+| `time_sk` | `dim_time` |
+| `team_sk` | `dim_team` |
+| `opponent_team_sk` | `dim_team` (role-playing as opponent) |
+| `league_sk` | `dim_league` |
+| `stadium_sk` | `dim_stadium` |
+| `referee_sk` | `dim_referee` |
+| `match_sk` | `dim_match` |
+| `team_side_sk` | `dim_team_side` |
+| `match_result_sk` | `dim_match_result` |
 
-api-football.com returned some fixture data for a "Group 4" entity that was not a real Superligaen team. It appeared to be an artefact from how the API models tournament formats — Superligaen's championship and relegation rounds are structured as groups internally. Including Group 4 in the data polluted dimension tables with a ghost team and produced nonsensical match records.
+**`fct_match_results` — measures**
 
-The fix was to add an explicit exclusion filter in every relevant silver and gold model: any fixture where either team_id corresponds to Group 4 is excluded. The ingestion layer was also updated to skip these records entirely so they never land in bronze in the first place.
+| Measure | Description |
+|---|---|
+| `points_earned` | 3 (win), 1 (draw), 0 (loss), NULL (not finished) |
+| `goals_scored` | Goals scored by this team |
+| `goals_conceded` | Goals conceded by this team |
+| `goals_ht_scored` | Half-time goals scored |
+| `goals_ht_conceded` | Half-time goals conceded |
+| `shots_on_goal` | Shots on target |
+| `shots_off_goal` | Shots off target |
+| `total_shots` | All shots attempted |
+| `blocked_shots` | Shots blocked |
+| `shots_insidebox` | Shots from inside the box |
+| `shots_outsidebox` | Shots from outside the box |
+| `ball_possession_pct` | Ball possession percentage |
+| `total_passes` | Total passes attempted |
+| `passes_accurate` | Accurate passes |
+| `fouls` | Fouls committed |
+| `corner_kicks` | Corner kicks |
+| `offsides` | Offsides |
+| `yellow_cards` | Yellow cards received |
+| `red_cards` | Red cards received |
+| `goalkeeper_saves` | Saves by the goalkeeper |
+| `expected_goals` | xG (where available from the API) |
 
 Next: building the dashboard on top of this model.
