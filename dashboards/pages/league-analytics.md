@@ -15,24 +15,18 @@ order by season desc
     <DropdownOption value="2025/26" valueLabel="2025/26"/>
 </Dropdown>
 
-```sql league_table
-select
-    row_number() over (order by total_points desc, goal_difference desc, goals_for desc) as pos,
-    team_name,
-    matches_played  as mp,
-    wins            as w,
-    draws           as d,
-    losses          as l,
-    goals_for       as gf,
-    goals_against   as ga,
-    goal_difference as gd,
-    total_points    as pts,
-    win_rate_pct,
-    total_xg,
-    xg_overperformance
+```sql current_standings
+select team_name, matches_played as mp, total_points as pts
 from superligaen.team_analytics_kpis
 where season = '${inputs.season.value}'
-order by pos
+order by pts desc
+```
+
+```sql points_progression
+select round, team_name, cumulative_points
+from superligaen.points_progression
+where season = '${inputs.season.value}'
+order by max(cumulative_points) over (partition by team_name) desc, team_name, round
 ```
 
 ```sql league_kpis
@@ -119,23 +113,40 @@ order by goals_for desc
 
 ---
 
-## League Table
+## Points Progression
 
-<DataTable data={league_table} rows=20>
-    <Column id=pos              title="#"            align=center />
-    <Column id=team_name        title="Team"         wrap=true />
-    <Column id=mp               title="MP"           align=center />
-    <Column id=w                title="W"            align=center />
-    <Column id=d                title="D"            align=center />
-    <Column id=l                title="L"            align=center />
-    <Column id=gf               title="GF"           align=center />
-    <Column id=ga               title="GA"           align=center />
-    <Column id=gd               title="GD"           contentType=delta align=center />
-    <Column id=pts              title="Pts"          contentType=colorscale colorPalette={['white','#3b82f6']} align=center />
-    <Column id=win_rate_pct     title="Win %"        contentType=colorscale colorPalette={['white','#22c55e']} fmt='0.0"%"' />
-    <Column id=total_xg         title="xG"           contentType=colorscale colorPalette={['white','#6366f1']} />
-    <Column id=xg_overperformance title="xG OP"      contentType=delta />
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
+
+<div>
+
+<LineChart
+    data={points_progression}
+    x=round
+    y=cumulative_points
+    series=team_name
+    xAxisTitle="Round"
+    yAxisTitle="Cumulative Points"
+    title="Points Progression by Round"
+    echartsOptions={{tooltip: {formatter: function(params) { const sorted = [...params].sort((a, b) => b.value[1] - a.value[1]); let out = '<span style="font-weight:600;">Round ' + params[0].value[0] + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }}}}
+    legend=false
+    chartAreaHeight=300
+/>
+
+</div>
+
+<div>
+
+#### Current Standings
+
+<DataTable data={current_standings} rows=20>
+    <Column id=team_name title="Team" />
+    <Column id=mp title="MP" align=center />
+    <Column id=pts title="Pts" align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
 </DataTable>
+
+</div>
+
+</div>
 
 ---
 
