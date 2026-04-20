@@ -42,7 +42,7 @@ This dashboard is free to use and updated every day. If you find it useful, cons
 Have a suggestion for the dashboard? Open an issue on GitHub — no account needed beyond a free sign-up.
 
 <div class="-mt-3">
-<a href="https://github.com/SaUgKi1773/data-engineering-demo/issues/new?template=suggestion.md" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-700 transition-colors no-underline">
+<a href="https://github.com/SaUgKi1773/data-engineering-demo/issues/new?template=suggestion.md" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-colors no-underline">
   Share a Suggestion
 </a>
 </div>
