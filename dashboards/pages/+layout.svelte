@@ -17,6 +17,6 @@
   });
 </script>
 
-<EvidenceDefaultLayout {data} hideBreadcrumbs={true}>
+<EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true}>
   <slot slot="content" />
 </EvidenceDefaultLayout>
