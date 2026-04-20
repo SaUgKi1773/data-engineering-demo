@@ -10,6 +10,5 @@ from superligaen.gold.fct_match_results f
 join superligaen.gold.dim_match        m on m.match_sk        = f.match_sk
 join superligaen.gold.dim_team         t on t.team_sk         = f.team_sk
 join superligaen.gold.dim_match_result r on r.match_result_sk = f.match_result_sk
-where m.match_round_type = 'Regular Season'
-  and r.match_result in ('Win', 'Draw', 'Loss')
+where r.match_result in ('Win', 'Draw', 'Loss')
 order by m.season, t.team_name, m.match_round_number
