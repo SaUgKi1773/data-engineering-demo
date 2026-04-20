@@ -25,7 +25,7 @@ WITH src AS (
         MAX(CASE WHEN stat->>'$.type' = 'Corner Kicks'      THEN TRY_CAST(stat->>'$.value' AS INTEGER)                        END) AS corner_kicks,
         MAX(CASE WHEN stat->>'$.type' = 'Offsides'          THEN TRY_CAST(stat->>'$.value' AS INTEGER)                        END) AS offsides,
         MAX(CASE WHEN stat->>'$.type' = 'Ball Possession'   THEN TRY_CAST(REPLACE(stat->>'$.value', '%', '') AS DECIMAL(5,2)) END) AS ball_possession_pct,
-        MAX(CASE WHEN stat->>'$.type' = 'Yellow Cards'      THEN TRY_CAST(stat->>'$.value' AS INTEGER)                        END) AS yellow_cards,
+        COALESCE(MAX(CASE WHEN stat->>'$.type' = 'Yellow Cards' THEN TRY_CAST(stat->>'$.value' AS INTEGER)                     END), 0) AS yellow_cards,
         COALESCE(MAX(CASE WHEN stat->>'$.type' = 'Red Cards' THEN TRY_CAST(stat->>'$.value' AS INTEGER)                       END), 0) AS red_cards,
         MAX(CASE WHEN stat->>'$.type' = 'Goalkeeper Saves'  THEN TRY_CAST(stat->>'$.value' AS INTEGER)                        END) AS goalkeeper_saves,
         MAX(CASE WHEN stat->>'$.type' = 'Total passes'      THEN TRY_CAST(stat->>'$.value' AS INTEGER)                        END) AS total_passes,
