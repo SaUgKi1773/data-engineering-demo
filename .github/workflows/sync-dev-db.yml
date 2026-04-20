@@ -2,6 +2,11 @@ name: Sync dev database from prod
 
 on:
   workflow_dispatch:
+    inputs:
+      season:
+        description: "Season year to copy into dev (e.g. 2024 for the 2024/25 season)"
+        required: true
+        default: "2024"
 
 jobs:
   sync:
@@ -24,4 +29,4 @@ jobs:
       - name: Copy superligaen → superligaen_dev
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: python scripts/sync_dev_db.py
+        run: python scripts/sync_dev_db.py --season ${{ github.event.inputs.season }}
