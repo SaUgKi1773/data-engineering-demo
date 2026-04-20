@@ -3,9 +3,14 @@
   import '../app.css';
   import { EvidenceDefaultLayout } from '@evidence-dev/core-components';
   import { onMount } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import { inject } from '@vercel/analytics';
 
   export let data;
+
+  afterNavigate(() => {
+    setTimeout(() => window.scrollTo(0, 0), 0);
+  });
 
   onMount(() => {
     inject();
