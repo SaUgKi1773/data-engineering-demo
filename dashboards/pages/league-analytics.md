@@ -34,6 +34,7 @@ select
     sum(goals_for)                                                          as total_goals,
     round(sum(goals_for)::double / (sum(matches_played) / 2), 2)           as avg_goals_per_match,
     round(avg(shot_conversion_pct), 1)                                     as avg_shot_conversion,
+    round(sum(total_xg), 1)                                                 as total_xg,
     sum(yellow_cards)                                                       as total_yellow_cards,
     sum(red_cards)                                                          as total_red_cards
 from superligaen.team_analytics_kpis
@@ -103,10 +104,11 @@ order by goals_for desc
 
 ## {inputs.season.value} — League Analysis
 
-<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-6">
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_goals           title="Goals Scored"       /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=avg_goals_per_match   title="Avg Goals / Match"  /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=avg_shot_conversion   title="Shot Conversion %"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_xg              title="Total xG"           /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_yellow_cards    title="Yellow Cards"       /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_red_cards       title="Red Cards"          /></div>
 </div>
