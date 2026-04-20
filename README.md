@@ -196,6 +196,7 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 | **League Analytics** | Cross-team benchmarks, rankings and league-wide trends |
 | **Team Analytics** | Deep-dive per-team KPIs, form, shooting, possession, discipline |
 | **Referee Analytics** | Cards, fouls, team exposure and match logs by referee |
+| **Glossary** | Definitions of all metrics and KPIs used across the dashboard |
 
 ---
 
@@ -224,7 +225,7 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 │   └── sources/superligaen/    # SQL sources queried at build time
 │
 ├── scripts/
-│   └── sync_dev_db.py          # Copies superligaen → superligaen_dev
+│   └── sync_dev_db.py          # Copies one season from superligaen → superligaen_dev
 │
 ├── .github/workflows/
 │   ├── master.yml              # Nightly: bronze → silver (dbt) → gold (dbt) → deploy
@@ -232,7 +233,6 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 │   ├── ingest.yml              # Manual bronze-only run
 │   ├── transform.yml           # Manual silver-only run (dbt)
 │   ├── gold.yml                # Manual gold-only run (dbt)
-│   ├── deploy.yml              # Manual gold full-refresh on prod
 │   ├── vercel.yml              # Manual Vercel deploy trigger
 │   └── sync-dev-db.yml         # Manual prod → dev database sync
 │
