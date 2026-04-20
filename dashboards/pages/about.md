@@ -27,6 +27,14 @@ The complete story — every decision, every mistake, every fix — is documente
   📖 Data Engineer's Diary
 </a>
 
+## Support This Project
+
+This dashboard is free to use and updated every day. If you find it useful, consider buying me a coffee.
+
+<a href="https://revolut.me/salihugurkimilli" target="_blank" class="inline-flex items-center gap-2 mt-2 px-5 py-3 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors no-underline">
+  Support via Revolut
+</a>
+
 ## Connect
 
 <a href="https://www.linkedin.com/in/salih-ugur-kimilli-since1773/" target="_blank" class="inline-flex items-center gap-2 mt-2 px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors no-underline">
