@@ -25,11 +25,11 @@ The plan is to build a full player analytics layer on top of what is already the
 
 The data is sitting in the warehouse. It just needs to be modelled and served.
 
-## Subdivision Analytics
+## Beyond the Top Flight
 
-Superligaen splits into two groups after the regular season — a Championship Round for the top six and a Relegation Round for the bottom six. Right now the dashboard treats all rounds as one continuous sequence.
+Right now the pipeline only ingests Superligaen — the Danish top division. But the same API covers the full Danish football pyramid: the 1st Division (second tier), the 2nd Division, and the DBU Pokalen cup competition.
 
-The plan is to model these subdivisions explicitly: separate standings per group, points reset logic for the Championship Round, and dedicated analysis pages that reflect how the season actually works rather than flattening it.
+The plan is to extend ingestion to cover all of these, model them through the same bronze → silver → gold pipeline, and build dedicated dashboard pages for each competition. Teams moving up and down between divisions, cup upsets, cross-division comparisons — all of it becomes possible once the data is flowing.
 
 ## Discussions Page
 
