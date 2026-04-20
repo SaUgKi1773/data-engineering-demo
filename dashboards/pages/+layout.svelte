@@ -9,7 +9,7 @@
   export let data;
 
   afterNavigate(() => {
-    window.scrollTo(0, 0);
+    setTimeout(() => window.scrollTo(0, 0), 0);
   });
 
   onMount(() => {
