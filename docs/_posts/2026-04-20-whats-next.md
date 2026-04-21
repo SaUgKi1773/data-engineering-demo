@@ -17,6 +17,16 @@ Right now the gold layer exposes raw dimensional tables and fact tables. The das
 
 The dbt Semantic Layer would centralise all metric definitions in one place. `total_goals`, `win_rate`, `xg_overperformance` — defined once in dbt, queryable everywhere. The dashboard would consume metrics rather than writing joins. No more drift between how a metric is calculated in one page versus another.
 
+## Data Quality Tests
+
+The pipeline runs nightly and the dashboard is public. If bad data makes it through, real users see wrong numbers — and there is currently no automated check stopping that from happening.
+
+dbt has a built-in testing framework that fits naturally into the existing setup. Tests live alongside the models and run as part of the same pipeline. The basics are straightforward: uniqueness and not-null constraints on keys, accepted value checks on categorical columns, referential integrity between the fact table and every dimension. These catch the obvious failures — a venue ID that resolves to nothing, a match result outside the expected set, a duplicate surrogate key.
+
+Beyond the built-in tests, the dbt-expectations package brings a richer set of statistical checks: row count thresholds, value range assertions, column distribution checks. These are useful for catching subtler issues — a round where suspiciously few goals were recorded, a team with negative possession, a season where no matches were flagged as complete.
+
+The goal is for every nightly run to either produce correct data or fail loudly. Silent corruption is the worst outcome in a pipeline like this.
+
 ## Player Analytics
 
 The bronze layer already ingests player-level data — appearances, goals, assists, shots, passes, cards, ratings — for every fixture. None of it surfaces in the dashboard yet.
