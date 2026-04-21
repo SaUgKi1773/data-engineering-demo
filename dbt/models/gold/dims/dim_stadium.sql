@@ -26,11 +26,11 @@ venues_from_fixtures AS (
     SELECT DISTINCT
         f.venue_id,
         f.venue_name,
-        f.venue_city      AS city,
-        NULL::VARCHAR     AS address,
-        NULL::VARCHAR     AS country,
-        NULL::INTEGER     AS capacity,
-        NULL::VARCHAR     AS surface
+        f.venue_city                     AS city,
+        'Unknown Stadium Address'        AS address,
+        'Unknown Stadium Country'        AS country,
+        NULL::INTEGER                    AS capacity,
+        'Unknown Stadium Surface'        AS surface
     FROM {{ ref('fixtures') }} f
     LEFT JOIN venues_from_api v ON v.venue_id = f.venue_id
     WHERE f.venue_id IS NOT NULL
