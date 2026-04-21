@@ -22,6 +22,6 @@
   });
 </script>
 
-<EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true}>
+<EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true} hideMenu={true}>
   <slot slot="content" />
 </EvidenceDefaultLayout>
