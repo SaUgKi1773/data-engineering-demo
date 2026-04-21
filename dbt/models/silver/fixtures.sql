@@ -16,9 +16,12 @@ WITH venue_lookup AS (
     GROUP BY (elem->>'$.name')::VARCHAR
 ),
 home_team_venue AS (
-    SELECT DISTINCT ON (team_id) team_id, venue_id
-    FROM {{ ref('teams') }}
-    WHERE venue_id IS NOT NULL
+    SELECT DISTINCT ON (team_id)
+        (elem->>'$.team.id')::INTEGER  AS team_id,
+        (elem->>'$.venue.id')::INTEGER AS venue_id
+    FROM {{ source('bronze', 'api_football__teams') }},
+    UNNEST(raw_json::JSON[]) AS t(elem)
+    WHERE (elem->>'$.venue.id') IS NOT NULL
     ORDER BY team_id, season DESC
 ),
 src AS (
