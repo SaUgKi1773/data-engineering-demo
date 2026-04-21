@@ -8,6 +8,10 @@ title: " "
 select * from superligaen.league_info
 ```
 
+```sql last_updated
+select * from superligaen.last_updated
+```
+
 ```sql kpis
 select
     count(*)                                                              as total_matches,
@@ -131,3 +135,5 @@ select * from superligaen.current_leader
 </a>
 
 </div>
+
+<div class="mt-8 text-center text-xs text-gray-400">Data last updated: {last_updated[0]?.last_updated}</div>
