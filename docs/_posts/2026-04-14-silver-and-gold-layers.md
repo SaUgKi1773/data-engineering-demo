@@ -76,11 +76,11 @@ We ended up with 10 dimension tables:
 
 | Dimension | What it represents |
 |---|---|
-| `dim_date` | Calendar attributes of the match date |
+| `dim_date` | Calendar attributes of the match date, including season |
 | `dim_time` | Hour of kick-off and period of day (Morning / Afternoon / Evening / Night) |
 | `dim_team` | Club identity — name, code, country, logo |
 | `dim_opponent_team` | Role-playing dimension — same structure as `dim_team`, aliased to represent the opposing club |
-| `dim_match` | Match metadata — round, season, names, status |
+| `dim_match` | Match metadata — round, names, status |
 | `dim_league` | League identity — name, country, logo, flag |
 | `dim_stadium` | Venue — name, city, capacity, surface |
 | `dim_referee` | Referee name |
@@ -157,6 +157,7 @@ erDiagram
         int day_of_week
         varchar day_name
         varchar is_weekend
+        varchar season
     }
     dim_time {
         int time_sk PK
@@ -184,7 +185,6 @@ erDiagram
     dim_match {
         int match_sk PK
         int match_id
-        varchar season
         varchar match_round_name
         varchar match_round_type
         int match_round_number

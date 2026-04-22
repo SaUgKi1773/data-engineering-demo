@@ -1,6 +1,6 @@
 select
     ref.referee_name,
-    m.season,
+    d.season,
     strftime(d.date, '%Y-%m-%d')   as match_date,
     m.match_round_name              as round,
     m.match_name,
@@ -16,5 +16,5 @@ join superligaen.gold.dim_date         d   on d.date_sk          = f.date_sk
 where r.match_result in ('Win', 'Draw', 'Loss')
   and ref.referee_name not like '%Unknown%'
   and ref.referee_name not like '%Applicable%'
-group by ref.referee_name, m.season, d.date, m.match_round_name, m.match_name, m.match_result
-order by ref.referee_name, m.season desc, d.date desc
+group by ref.referee_name, d.season, d.date, m.match_round_name, m.match_name, m.match_result
+order by ref.referee_name, d.season desc, d.date desc

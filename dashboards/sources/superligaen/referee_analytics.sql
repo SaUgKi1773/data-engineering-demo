@@ -1,6 +1,6 @@
 select
     ref.referee_name,
-    m.season,
+    d.season,
     count(distinct m.match_sk)                                                              as matches_managed,
     sum(f.yellow_cards)                                                                     as total_yellow_cards,
     sum(f.red_cards)                                                                        as total_red_cards,
@@ -12,9 +12,10 @@ select
 from superligaen.gold.fct_match_results f
 join superligaen.gold.dim_referee      ref on ref.referee_sk      = f.referee_sk
 join superligaen.gold.dim_match        m   on m.match_sk          = f.match_sk
+join superligaen.gold.dim_date         d   on d.date_sk           = f.date_sk
 join superligaen.gold.dim_match_result r   on r.match_result_sk  = f.match_result_sk
 where r.match_result in ('Win', 'Draw', 'Loss')
   and ref.referee_name not like '%Unknown%'
   and ref.referee_name not like '%Applicable%'
-group by ref.referee_name, m.season
-order by m.season desc, matches_managed desc
+group by ref.referee_name, d.season
+order by d.season desc, matches_managed desc

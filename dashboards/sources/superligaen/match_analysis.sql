@@ -2,7 +2,7 @@ select
     d.date                                                                      as match_date,
     m.match_name,
     m.match_result                                                              as score,
-    m.season,
+    d.season,
     t.team_name,
     ts.team_side                                                                as side,
     f.goals_scored                                                              as goals,

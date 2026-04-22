@@ -1,7 +1,7 @@
 select
     d.date                  as match_date,
     m.match_round_name           as round,
-    m.season,
+    d.season,
     t.team_name,
     ot.opponent_team_name        as opponent,
     ts.team_side                 as side,
