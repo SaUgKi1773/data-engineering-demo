@@ -6,6 +6,11 @@ title: Match Results
 
 <a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
 
+<script>
+  let selectedMatch = '';
+  $: selectedMatch = results?.[0]?.match_key ?? '';
+</script>
+
 ```sql seasons
 select distinct season from superligaen.match_results_by_match
 order by season desc
@@ -28,6 +33,7 @@ order by 1 desc
 
 ```sql results
 select
+    match_name || '|' || cast(match_date as varchar) as match_key,
     match_date, round, match_name, score,
     total_goals, total_shots_on_goal, total_xg,
     total_yellow_cards, total_red_cards, total_corners
@@ -57,37 +63,47 @@ where season = '${inputs.season.value}'
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=total_xg             title="Total xG"           /></div>
 </div>
 
-<DataTable data={results} rows=20>
-    <Column id=match_date          title="Date"           />
-    <Column id=round               title="Round"          />
-    <Column id=match_name          title="Match"          wrap=true />
-    <Column id=score               title="Score"          align=center />
-    <Column id=total_goals         title="Goals"          contentType=colorscale colorPalette={['white','#22c55e']} align=center />
-    <Column id=total_shots_on_goal title="Shots on Goal"  contentType=bar       colorPalette={['#6366f1']} />
-    <Column id=total_xg            title="xG"             contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=total_yellow_cards  title="YC"             contentType=colorscale colorPalette={['white','#eab308']} align=center />
-    <Column id=total_red_cards     title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
-    <Column id=total_corners       title="Corners"        contentType=colorscale colorPalette={['white','#a855f7']} align=center />
-</DataTable>
+<div class="overflow-x-auto rounded-xl border border-gray-200 mt-4">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+      <tr>
+        <th class="px-3 py-3 text-left font-medium">Date</th>
+        <th class="px-3 py-3 text-left font-medium">Round</th>
+        <th class="px-3 py-3 text-left font-medium">Match</th>
+        <th class="px-3 py-3 text-center font-medium">Score</th>
+        <th class="px-3 py-3 text-center font-medium">Goals</th>
+        <th class="px-3 py-3 text-center font-medium">Shots on Goal</th>
+        <th class="px-3 py-3 text-center font-medium">xG</th>
+        <th class="px-3 py-3 text-center font-medium">YC</th>
+        <th class="px-3 py-3 text-center font-medium">RC</th>
+        <th class="px-3 py-3 text-center font-medium">Corners</th>
+      </tr>
+    </thead>
+    <tbody>
+      {#each results as row}
+        <tr
+          class="border-t border-gray-100 cursor-pointer transition-colors {selectedMatch === row.match_key ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'hover:bg-gray-50'}"
+          on:click={() => { selectedMatch = row.match_key; }}
+        >
+          <td class="px-3 py-2 text-gray-500 whitespace-nowrap">{row.match_date}</td>
+          <td class="px-3 py-2 text-gray-600">{row.round}</td>
+          <td class="px-3 py-2 font-medium text-gray-800">{row.match_name}</td>
+          <td class="px-3 py-2 text-center font-semibold text-gray-700">{row.score}</td>
+          <td class="px-3 py-2 text-center text-gray-700">{row.total_goals}</td>
+          <td class="px-3 py-2 text-center text-gray-700">{row.total_shots_on_goal}</td>
+          <td class="px-3 py-2 text-center text-gray-700">{row.total_xg}</td>
+          <td class="px-3 py-2 text-center text-yellow-600">{row.total_yellow_cards}</td>
+          <td class="px-3 py-2 text-center text-red-500">{row.total_red_cards}</td>
+          <td class="px-3 py-2 text-center text-gray-700">{row.total_corners}</td>
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+</div>
 
 ---
 
 ## Match Analysis
-
-```sql match_options
-select
-    match_name || '|' || cast(match_date as varchar) as match_key,
-    match_name || '  (' || score || ')'              as match_label,
-    match_date
-from superligaen.match_results_by_match
-where season = '${inputs.season.value}'
-  and cast(match_round_number as integer) in ${inputs.round.value}
-order by match_date desc
-```
-
-{#key match_options[0]?.match_key}
-<Dropdown data={match_options} name=match value=match_key label=match_label defaultValue={match_options[0]?.match_key} />
-{/key}
 
 ```sql mc
 select
@@ -119,8 +135,8 @@ select
     max(case when side = 'Home' then saves end)                                  as home_saves,
     max(case when side = 'Away' then saves end)                                  as away_saves
 from superligaen.match_analysis
-where match_name            = split_part('${inputs.match.value}', '|', 1)
-  and cast(match_date as varchar) = split_part('${inputs.match.value}', '|', 2)
+where match_name            = split_part('${selectedMatch}', '|', 1)
+  and cast(match_date as varchar) = split_part('${selectedMatch}', '|', 2)
   and season                = '${inputs.season.value}'
 ```
 
