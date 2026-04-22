@@ -18,7 +18,7 @@ order by season desc
 ```sql rounds
 select distinct CAST(match_round_number AS INTEGER) as round_number
 from superligaen.match_results_by_match
-where season = (select max(season) from superligaen.match_results_by_match)
+where season = '${inputs.season.value}'
 order by 1 desc
 ```
 
