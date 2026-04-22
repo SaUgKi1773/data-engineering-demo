@@ -89,6 +89,7 @@ erDiagram
         int day_of_week
         varchar day_name
         varchar is_weekend
+        varchar season
     }
 
     dim_time {
@@ -121,7 +122,6 @@ erDiagram
     dim_match {
         int match_sk PK
         int match_id
-        int season
         varchar match_round_name
         varchar match_round_type
         int match_round_number
