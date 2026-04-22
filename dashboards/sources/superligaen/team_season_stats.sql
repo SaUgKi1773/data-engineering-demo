@@ -12,8 +12,7 @@ select
     case
         when max(case when m.match_round_type = 'Championship Group' then 1 else 0 end) = 1 then 'Championship Group'
         when max(case when m.match_round_type = 'Relegation Group'   then 1 else 0 end) = 1 then 'Relegation Group'
-        when max(case when m.match_round_type = 'Regular Season'     then 1 else 0 end) = 1 then 'Regular Season'
-        else max(m.match_round_type)
+        else 'Regular Season'
     end                                                                 as round_group
 from superligaen.gold.fct_match_results f
 join superligaen.gold.dim_team  t  on t.team_sk  = f.team_sk
