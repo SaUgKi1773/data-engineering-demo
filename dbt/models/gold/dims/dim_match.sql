@@ -28,10 +28,10 @@ src AS (
         f.fixture_id,
         f.season::VARCHAR || '/' || RIGHT((f.season + 1)::VARCHAR, 2)        AS season,
         CASE SPLIT_PART(f.league_round, ' - ', 1)
-            WHEN 'Championship Group' THEN 'Championship Group - ' || tr.round_number::VARCHAR
-            WHEN 'Championship Round' THEN 'Championship Group - ' || tr.round_number::VARCHAR
-            WHEN 'Relegation Group'   THEN 'Relegation Group - '   || tr.round_number::VARCHAR
-            WHEN 'Relegation Round'   THEN 'Relegation Group - '   || tr.round_number::VARCHAR
+            WHEN 'Championship Group' THEN 'Championship Group - ' || COALESCE(tr.round_number::VARCHAR, SPLIT_PART(f.league_round, ' - ', 2))
+            WHEN 'Championship Round' THEN 'Championship Group - ' || COALESCE(tr.round_number::VARCHAR, SPLIT_PART(f.league_round, ' - ', 2))
+            WHEN 'Relegation Group'   THEN 'Relegation Group - '   || COALESCE(tr.round_number::VARCHAR, SPLIT_PART(f.league_round, ' - ', 2))
+            WHEN 'Relegation Round'   THEN 'Relegation Group - '   || COALESCE(tr.round_number::VARCHAR, SPLIT_PART(f.league_round, ' - ', 2))
             ELSE f.league_round
         END                                                                   AS match_round_name,
         CASE SPLIT_PART(f.league_round, ' - ', 1)
