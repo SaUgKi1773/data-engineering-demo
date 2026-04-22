@@ -10,9 +10,10 @@ select
     sum(f.goals_scored) - sum(f.goals_conceded)                        as gd,
     sum(coalesce(f.points_earned, 0))                                   as pts,
     case
-        when max(case when m.match_round_type = 'Championship' then 1 else 0 end) = 1 then 'Championship Group'
-        when max(case when m.match_round_type = 'Relegation'   then 1 else 0 end) = 1 then 'Relegation Group'
-        else 'Regular Season'
+        when max(case when m.match_round_type = 'Championship Group' then 1 else 0 end) = 1 then 'Championship Group'
+        when max(case when m.match_round_type = 'Relegation Group'   then 1 else 0 end) = 1 then 'Relegation Group'
+        when max(case when m.match_round_type = 'Regular Season'     then 1 else 0 end) = 1 then 'Regular Season'
+        else max(m.match_round_type)
     end                                                                 as round_group
 from superligaen.gold.fct_match_results f
 join superligaen.gold.dim_team t   on t.team_sk  = f.team_sk
