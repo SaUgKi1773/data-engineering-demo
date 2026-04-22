@@ -44,7 +44,7 @@ We built seven pages:
 
 **Home** — a hero banner with the league logo and flag, four KPI tiles (current leader, team count, matches played, goals scored this season), and a navigation grid linking to every other page.
 
-**Standings** — three separate tables covering the Championship Round, Relegation Round, and Regular Season standings, with a season selector to browse historical tables.
+**Standings** — three separate tables covering the Championship Group, Relegation Group, and Regular Season standings, with a season selector to browse historical tables.
 
 **Match Results** — a filterable table of all historical results with a Goals vs xG chart by round that shows which rounds were overperforming or underperforming expected goals.
 
