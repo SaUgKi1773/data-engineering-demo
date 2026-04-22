@@ -64,13 +64,13 @@ joined AS (
             ELSE -1
         END                          AS match_result_sk,
         CASE
-            WHEN m.match_round_type IN ('Regular Season', 'Championship', 'Relegation')
+            WHEN m.match_round_type IN ('Regular Season', 'Championship Group', 'Relegation Group')
                  AND ft.status_short IN ('FT', 'AET', 'PEN')
                  AND ft.goals_scored  > ft.goals_conceded THEN 3
-            WHEN m.match_round_type IN ('Regular Season', 'Championship', 'Relegation')
+            WHEN m.match_round_type IN ('Regular Season', 'Championship Group', 'Relegation Group')
                  AND ft.status_short IN ('FT', 'AET', 'PEN')
                  AND ft.goals_scored  = ft.goals_conceded THEN 1
-            WHEN m.match_round_type IN ('Regular Season', 'Championship', 'Relegation')
+            WHEN m.match_round_type IN ('Regular Season', 'Championship Group', 'Relegation Group')
                  AND ft.status_short IN ('FT', 'AET', 'PEN')
                  AND ft.goals_scored  < ft.goals_conceded THEN 0
             ELSE NULL
