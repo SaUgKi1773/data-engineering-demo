@@ -4,8 +4,6 @@ hide_toc: true
 title: Upcoming Fixtures
 ---
 
-<a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
-
 ```sql upcoming
 select
     strftime(match_date, '%Y-%m-%d')                                              as match_date,
