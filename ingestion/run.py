@@ -110,8 +110,8 @@ def run(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ingest bronze data into MotherDuck")
-    parser.add_argument("--lookback", type=int, default=2,
-                        help="Days to look back for finished fixtures (default: 2)")
+    parser.add_argument("--lookback", type=int, default=3,
+                        help="Days to look back for finished fixtures (default: 3)")
     parser.add_argument("--full-load", action="store_true",
                         help="Historical load — requires upgraded API plan")
     parser.add_argument("--league", type=int, default=None,

@@ -18,9 +18,9 @@ on:
         required: false
         default: ""
       lookback:
-        description: "Days to look back for incremental runs (default: 5)"
+        description: "Days to look back for incremental runs (default: 3)"
         required: false
-        default: "5"
+        default: "3"
       target_db:
         description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
         required: false
@@ -51,7 +51,7 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           TARGET_DB: ${{ github.event.inputs.target_db || 'superligaen' }}
-        run: python ingestion/run.py --lookback ${{ github.event.inputs.lookback || '5' }}
+        run: python ingestion/run.py --lookback ${{ github.event.inputs.lookback || '3' }}
 
       - name: Run ingestion (full load)
         if: ${{ github.event.inputs.full_load == 'true' }}
@@ -97,7 +97,7 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
-          dbt run --select silver.* --target $TARGET --vars '{"lookback_days": ${{ github.event.inputs.lookback || '5' }}}'
+          dbt run --select silver.* --target $TARGET --vars '{"lookback_days": ${{ github.event.inputs.lookback || '3' }}}'
 
       - name: Run silver (full load)
         if: ${{ github.event.inputs.full_load == 'true' }}
@@ -144,7 +144,7 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
-          dbt run --select gold.* --target $TARGET --vars '{"lookback_days": ${{ github.event.inputs.lookback || '5' }}}'
+          dbt run --select gold.* --target $TARGET --vars '{"lookback_days": ${{ github.event.inputs.lookback || '3' }}}'
 
       - name: Build gold (full load)
         if: ${{ github.event.inputs.full_load == 'true' }}
