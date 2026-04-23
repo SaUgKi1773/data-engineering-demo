@@ -107,6 +107,7 @@ joined AS (
     LEFT JOIN {{ ref('fixture_statistics') }} s
                                              ON s.fixture_id   = ft.fixture_id
                                             AND s.team_id      = ft.team_id
+    WHERE m.match_round_type IN ('Regular Season', 'Championship', 'Relegation')
 )
 SELECT * FROM joined
 {% if is_incremental() %}
