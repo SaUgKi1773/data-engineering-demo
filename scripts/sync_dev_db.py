@@ -6,7 +6,7 @@ Steps:
   2. Drop all existing tables in dev
   3. Recreate each table in dev, filtering by season where the column exists
 
-Pass --season <year> (e.g. 2024) to copy only that season's data.
+Pass --season <year> (e.g. 2024) or comma-separated years (e.g. 2023,2024).
 Tables without a season column are always copied in full (e.g. venues).
 """
 
@@ -41,19 +41,21 @@ def season_column_info(con, db):
     return {(schema, table): dtype for schema, table, dtype in rows}
 
 
-def season_filter(dtype, season_int):
-    """Build a WHERE clause fragment matching the season column's type."""
-    season_str = f"{season_int}/{str(season_int + 1)[-2:]}"   # e.g. 2024/25
+def season_filter(dtype, seasons):
+    """Build a WHERE season IN (...) clause matching the season column's type."""
     if "INT" in dtype.upper():
-        return f"WHERE season = {season_int}"
-    return f"WHERE season = '{season_str}'"
+        vals = ", ".join(str(s) for s in seasons)
+        return f"WHERE season IN ({vals})"
+    vals = ", ".join(f"'{s}/{str(s + 1)[-2:]}'" for s in seasons)
+    return f"WHERE season IN ({vals})"
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--season", type=int, required=True,
-                        help="Season year to copy (e.g. 2024 for the 2024/25 season)")
+    parser.add_argument("--season", required=True,
+                        help="Comma-separated season year(s) to copy (e.g. 2024 or 2023,2024)")
     args = parser.parse_args()
+    seasons = [int(s.strip()) for s in args.season.split(",")]
 
     con = connect()
 
@@ -97,8 +99,8 @@ def main():
     for schema, table in prod_tables:
         key = (schema, table)
         if key in season_cols:
-            where = season_filter(season_cols[key], args.season)
-            log.info("Copying %s.%s (season=%s)", schema, table, args.season)
+            where = season_filter(season_cols[key], seasons)
+            log.info("Copying %s.%s (seasons=%s)", schema, table, seasons)
         else:
             where = ""
             log.info("Copying %s.%s (full)", schema, table)
@@ -110,8 +112,8 @@ def main():
         """)
         copied += 1
 
-    log.info("Sync complete — %d tables copied from %s to %s (season filter: %s)",
-             copied, PROD_DB, DEV_DB, args.season)
+    log.info("Sync complete — %d tables copied from %s to %s (seasons: %s)",
+             copied, PROD_DB, DEV_DB, seasons)
 
 
 if __name__ == "__main__":
