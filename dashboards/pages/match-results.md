@@ -139,7 +139,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_goals}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_goals ?? 0) / ((mc[0]?.home_goals ?? 0) + (mc[0]?.away_goals ?? 0)) * 100 || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_goals ?? 0) + (mc[0]?.away_goals ?? 0) > 0 ? (mc[0]?.home_goals ?? 0) / ((mc[0]?.home_goals ?? 0) + (mc[0]?.away_goals ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -150,7 +150,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_xg}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_xg ?? 0) / ((mc[0]?.home_xg ?? 0) + (mc[0]?.away_xg ?? 0)) * 100 || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_xg ?? 0) + (mc[0]?.away_xg ?? 0) > 0 ? (mc[0]?.home_xg ?? 0) / ((mc[0]?.home_xg ?? 0) + (mc[0]?.away_xg ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -161,7 +161,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_sog}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_sog ?? 0) / ((mc[0]?.home_sog ?? 0) + (mc[0]?.away_sog ?? 0)) * 100 || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_sog ?? 0) + (mc[0]?.away_sog ?? 0) > 0 ? (mc[0]?.home_sog ?? 0) / ((mc[0]?.home_sog ?? 0) + (mc[0]?.away_sog ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -172,7 +172,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_shots}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_shots ?? 0) / ((mc[0]?.home_shots ?? 0) + (mc[0]?.away_shots ?? 0)) * 100 || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_shots ?? 0) + (mc[0]?.away_shots ?? 0) > 0 ? (mc[0]?.home_shots ?? 0) / ((mc[0]?.home_shots ?? 0) + (mc[0]?.away_shots ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -194,7 +194,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_pass_accuracy}%</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{mc[0]?.home_pass_accuracy || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_pass_accuracy ?? 0) + (mc[0]?.away_pass_accuracy ?? 0) > 0 ? (mc[0]?.home_pass_accuracy ?? 0) / ((mc[0]?.home_pass_accuracy ?? 0) + (mc[0]?.away_pass_accuracy ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -205,7 +205,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_corners}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_corners ?? 0) / ((mc[0]?.home_corners ?? 0) + (mc[0]?.away_corners ?? 0)) * 100 || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_corners ?? 0) + (mc[0]?.away_corners ?? 0) > 0 ? (mc[0]?.home_corners ?? 0) / ((mc[0]?.home_corners ?? 0) + (mc[0]?.away_corners ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -216,7 +216,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_fouls}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_fouls ?? 0) / ((mc[0]?.home_fouls ?? 0) + (mc[0]?.away_fouls ?? 0)) * 100 || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_fouls ?? 0) + (mc[0]?.away_fouls ?? 0) > 0 ? (mc[0]?.home_fouls ?? 0) / ((mc[0]?.home_fouls ?? 0) + (mc[0]?.away_fouls ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -227,7 +227,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_offsides}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_offsides ?? 0) / ((mc[0]?.home_offsides ?? 0) + (mc[0]?.away_offsides ?? 0)) * 100 || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_offsides ?? 0) + (mc[0]?.away_offsides ?? 0) > 0 ? (mc[0]?.home_offsides ?? 0) / ((mc[0]?.home_offsides ?? 0) + (mc[0]?.away_offsides ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -238,7 +238,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_yc}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_yc ?? 0) / ((mc[0]?.home_yc ?? 0) + (mc[0]?.away_yc ?? 0)) * 100 || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_yc ?? 0) + (mc[0]?.away_yc ?? 0) > 0 ? (mc[0]?.home_yc ?? 0) / ((mc[0]?.home_yc ?? 0) + (mc[0]?.away_yc ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -249,7 +249,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_rc}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_rc ?? 0) / ((mc[0]?.home_rc ?? 0) + (mc[0]?.away_rc ?? 0)) * 100 || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_rc ?? 0) + (mc[0]?.away_rc ?? 0) > 0 ? (mc[0]?.home_rc ?? 0) / ((mc[0]?.home_rc ?? 0) + (mc[0]?.away_rc ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -260,7 +260,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_saves}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_saves ?? 0) / ((mc[0]?.home_saves ?? 0) + (mc[0]?.away_saves ?? 0)) * 100 || 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_saves ?? 0) + (mc[0]?.away_saves ?? 0) > 0 ? (mc[0]?.home_saves ?? 0) / ((mc[0]?.home_saves ?? 0) + (mc[0]?.away_saves ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
