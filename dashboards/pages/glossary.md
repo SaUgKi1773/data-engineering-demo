@@ -1,8 +1,8 @@
 ---
+sidebar: never
+hide_toc: true
 title: Data Glossary
 ---
-
-# Data Glossary
 
 A reference for all metrics, abbreviations, and KPIs used across the dashboard.
 
@@ -10,122 +10,84 @@ A reference for all metrics, abbreviations, and KPIs used across the dashboard.
 
 ## Standings Abbreviations
 
-<div class="overflow-x-auto">
-
-| Abbreviation | Full Name | Description |
-|---|---|---|
-| **MP** | Matches Played | Total number of matches played in the season |
-| **W** | Wins | Matches won |
-| **D** | Draws | Matches drawn |
-| **L** | Losses | Matches lost |
-| **GF** | Goals For | Total goals scored |
-| **GA** | Goals Against | Total goals conceded |
-| **GD** | Goal Difference | GF − GA |
-| **Pts** | Points | 3 per win, 1 per draw, 0 per loss |
-
+<div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
+  <div class="p-3 sm:grid sm:grid-cols-4 sm:gap-4"><div class="font-semibold text-sm">MP</div><div class="text-sm text-gray-500 sm:col-span-3 mt-0.5 sm:mt-0">Matches Played — Total number of matches played in the season</div></div>
+  <div class="p-3 sm:grid sm:grid-cols-4 sm:gap-4"><div class="font-semibold text-sm">W</div><div class="text-sm text-gray-500 sm:col-span-3 mt-0.5 sm:mt-0">Wins — Matches won</div></div>
+  <div class="p-3 sm:grid sm:grid-cols-4 sm:gap-4"><div class="font-semibold text-sm">D</div><div class="text-sm text-gray-500 sm:col-span-3 mt-0.5 sm:mt-0">Draws — Matches drawn</div></div>
+  <div class="p-3 sm:grid sm:grid-cols-4 sm:gap-4"><div class="font-semibold text-sm">L</div><div class="text-sm text-gray-500 sm:col-span-3 mt-0.5 sm:mt-0">Losses — Matches lost</div></div>
+  <div class="p-3 sm:grid sm:grid-cols-4 sm:gap-4"><div class="font-semibold text-sm">GF</div><div class="text-sm text-gray-500 sm:col-span-3 mt-0.5 sm:mt-0">Goals For — Total goals scored</div></div>
+  <div class="p-3 sm:grid sm:grid-cols-4 sm:gap-4"><div class="font-semibold text-sm">GA</div><div class="text-sm text-gray-500 sm:col-span-3 mt-0.5 sm:mt-0">Goals Against — Total goals conceded</div></div>
+  <div class="p-3 sm:grid sm:grid-cols-4 sm:gap-4"><div class="font-semibold text-sm">GD</div><div class="text-sm text-gray-500 sm:col-span-3 mt-0.5 sm:mt-0">Goal Difference — GF − GA</div></div>
+  <div class="p-3 sm:grid sm:grid-cols-4 sm:gap-4"><div class="font-semibold text-sm">Pts</div><div class="text-sm text-gray-500 sm:col-span-3 mt-0.5 sm:mt-0">Points — 3 per win, 1 per draw, 0 per loss</div></div>
 </div>
 
 ---
 
 ## Match & Performance Metrics
 
-<div class="overflow-x-auto">
-
-| Metric | Description | Formula |
-|---|---|---|
-| **Goals Scored / Match** | Average goals scored per game | Goals Scored ÷ Matches Played |
-| **Goals Conceded / Match** | Average goals conceded per game | Goals Conceded ÷ Matches Played |
-| **Win Rate (%)** | Percentage of matches won | (Wins ÷ Matches Played) × 100 |
-| **Clean Sheets** | Matches where the team conceded zero goals | Count of matches with Goals Conceded = 0 |
-| **Points Per Game** | Average points earned per match | Total Points ÷ Matches Played |
-
+<div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
+  <div class="p-3"><div class="font-semibold text-sm">Goals Scored / Match</div><div class="text-sm text-gray-500 mt-0.5">Average goals scored per game</div><div class="text-xs text-gray-400 mt-0.5">Goals Scored ÷ Matches Played</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Goals Conceded / Match</div><div class="text-sm text-gray-500 mt-0.5">Average goals conceded per game</div><div class="text-xs text-gray-400 mt-0.5">Goals Conceded ÷ Matches Played</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Win Rate (%)</div><div class="text-sm text-gray-500 mt-0.5">Percentage of matches won</div><div class="text-xs text-gray-400 mt-0.5">(Wins ÷ Matches Played) × 100</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Clean Sheets</div><div class="text-sm text-gray-500 mt-0.5">Matches where the team conceded zero goals</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Points Per Game</div><div class="text-sm text-gray-500 mt-0.5">Average points earned per match</div><div class="text-xs text-gray-400 mt-0.5">Total Points ÷ Matches Played</div></div>
 </div>
 
 ---
 
 ## Shooting Metrics
 
-<div class="overflow-x-auto">
-
-| Metric | Abbreviation | Description | Formula |
-|---|---|---|---|
-| **Shots on Goal** | SoG | Shots that were on target (required a save or resulted in a goal) | — |
-| **Shot Conversion (%)** | Shot Conv % | Share of total shots that resulted in a goal | (Goals ÷ Total Shots) × 100 |
-| **On-Target Conversion (%)** | On-Target Conv. | Share of on-target shots that resulted in a goal | (Goals ÷ Shots on Goal) × 100 |
-
+<div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
+  <div class="p-3"><div class="font-semibold text-sm">Shots on Goal <span class="font-normal text-gray-400">(SoG)</span></div><div class="text-sm text-gray-500 mt-0.5">Shots that were on target (required a save or resulted in a goal)</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Shot Conversion (%) <span class="font-normal text-gray-400">(Shot Conv %)</span></div><div class="text-sm text-gray-500 mt-0.5">Share of total shots that resulted in a goal</div><div class="text-xs text-gray-400 mt-0.5">(Goals ÷ Total Shots) × 100</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">On-Target Conversion (%) <span class="font-normal text-gray-400">(On-Target Conv.)</span></div><div class="text-sm text-gray-500 mt-0.5">Share of on-target shots that resulted in a goal</div><div class="text-xs text-gray-400 mt-0.5">(Goals ÷ Shots on Goal) × 100</div></div>
 </div>
 
 ---
 
 ## Advanced Metrics
 
-<div class="overflow-x-auto">
-
-| Metric | Abbreviation | Description | Formula |
-|---|---|---|---|
-| **Expected Goals** | xG | A model-based estimate of how many goals a team was expected to score, based on the quality of chances created. Values above 1.0 per match indicate strong attacking play. | Provided by api-football.com |
-| **xG Overperformance** | xG OP | How many more (or fewer) goals a team scored compared to what their chances were worth. Positive = clinical finishing; negative = wasteful. | Goals Scored − xG |
-| **Average xG / Match** | Avg xG | Average expected goals per match | Total xG ÷ Matches Played |
-
+<div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
+  <div class="p-3"><div class="font-semibold text-sm">Expected Goals <span class="font-normal text-gray-400">(xG)</span></div><div class="text-sm text-gray-500 mt-0.5">A model-based estimate of how many goals a team was expected to score, based on the quality of chances created. Values above 1.0 per match indicate strong attacking play.</div><div class="text-xs text-gray-400 mt-0.5">Provided by api-football.com</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">xG Overperformance <span class="font-normal text-gray-400">(xG OP)</span></div><div class="text-sm text-gray-500 mt-0.5">How many more (or fewer) goals a team scored compared to what their chances were worth. Positive = clinical finishing; negative = wasteful.</div><div class="text-xs text-gray-400 mt-0.5">Goals Scored − xG</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Average xG / Match <span class="font-normal text-gray-400">(Avg xG)</span></div><div class="text-sm text-gray-500 mt-0.5">Average expected goals per match</div><div class="text-xs text-gray-400 mt-0.5">Total xG ÷ Matches Played</div></div>
 </div>
 
 ---
 
 ## Passing & Possession
 
-<div class="overflow-x-auto">
-
-| Metric | Abbreviation | Description | Formula |
-|---|---|---|---|
-| **Possession (%)** | Poss % | Share of total ball possession in a match | Provided by api-football.com |
-| **Pass Accuracy (%)** | Pass Acc | Share of passes that reached a teammate | (Accurate Passes ÷ Total Passes) × 100 |
-
+<div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
+  <div class="p-3"><div class="font-semibold text-sm">Possession (%) <span class="font-normal text-gray-400">(Poss %)</span></div><div class="text-sm text-gray-500 mt-0.5">Share of total ball possession in a match</div><div class="text-xs text-gray-400 mt-0.5">Provided by api-football.com</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Pass Accuracy (%) <span class="font-normal text-gray-400">(Pass Acc)</span></div><div class="text-sm text-gray-500 mt-0.5">Share of passes that reached a teammate</div><div class="text-xs text-gray-400 mt-0.5">(Accurate Passes ÷ Total Passes) × 100</div></div>
 </div>
 
 ---
 
 ## Discipline Metrics
 
-<div class="overflow-x-auto">
-
-| Metric | Abbreviation | Description |
-|---|---|---|
-| **Yellow Cards** | YC | Cautions issued during a match |
-| **Red Cards** | RC | Dismissals issued during a match (includes second yellows) |
-| **Fouls** | — | Fouls committed by a team in a match |
-| **Aggression Index** | — | A weighted composite of fouls and cards per match. Higher values indicate more physical or aggressive play. |
-
+<div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
+  <div class="p-3"><div class="font-semibold text-sm">Yellow Cards <span class="font-normal text-gray-400">(YC)</span></div><div class="text-sm text-gray-500 mt-0.5">Cautions issued during a match</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Red Cards <span class="font-normal text-gray-400">(RC)</span></div><div class="text-sm text-gray-500 mt-0.5">Dismissals issued during a match (includes second yellows)</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Fouls</div><div class="text-sm text-gray-500 mt-0.5">Fouls committed by a team in a match</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Aggression Index</div><div class="text-sm text-gray-500 mt-0.5">A weighted composite of fouls and cards per match. Higher values indicate more physical or aggressive play.</div><div class="text-xs text-gray-400 mt-0.5">(Fouls + Yellow Cards × 5 + Red Cards × 15) ÷ Matches Played</div></div>
 </div>
-
-**Aggression Index formula:**
-
-```
-Aggression Index = (Fouls + Yellow Cards × 5 + Red Cards × 15) ÷ Matches Played
-```
 
 ---
 
 ## Goalkeeper Metrics
 
-<div class="overflow-x-auto">
-
-| Metric | Abbreviation | Description |
-|---|---|---|
-| **Saves / Match** | Avg Saves | Average number of saves made by the goalkeeper per match |
-
+<div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
+  <div class="p-3"><div class="font-semibold text-sm">Saves / Match <span class="font-normal text-gray-400">(Avg Saves)</span></div><div class="text-sm text-gray-500 mt-0.5">Average number of saves made by the goalkeeper per match</div></div>
 </div>
 
 ---
 
 ## Other
 
-<div class="overflow-x-auto">
-
-| Term | Description |
-|---|---|
-| **Home / Away** | Whether the team played at their own stadium (Home) or at the opponent's stadium (Away) |
-| **Kick-Off Time** | Local Danish time the match started |
-| **Round** | The matchday or round number within the season |
-| **Season** | Displayed as e.g. 2025/26, referring to the football season that started in 2025 |
-
+<div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
+  <div class="p-3"><div class="font-semibold text-sm">Home / Away</div><div class="text-sm text-gray-500 mt-0.5">Whether the team played at their own stadium (Home) or at the opponent's stadium (Away)</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Kick-Off Time</div><div class="text-sm text-gray-500 mt-0.5">Local Danish time the match started</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Round</div><div class="text-sm text-gray-500 mt-0.5">The matchday or round number within the season</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Season</div><div class="text-sm text-gray-500 mt-0.5">Displayed as e.g. 2025/26, referring to the football season that started in 2025</div></div>
 </div>
