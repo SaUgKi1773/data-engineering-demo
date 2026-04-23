@@ -4,8 +4,6 @@ hide_toc: true
 title: Referee Analysis
 ---
 
-<a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
-
 ```sql seasons
 select distinct season from superligaen.referee_analytics
 order by season desc

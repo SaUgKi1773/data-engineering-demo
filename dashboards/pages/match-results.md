@@ -4,8 +4,6 @@ hide_toc: true
 title: Match Results
 ---
 
-<a href="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 no-underline mb-6 transition-colors">← Back to Home</a>
-
 ```sql seasons
 select distinct season from superligaen.match_results_by_match
 order by season desc
@@ -22,7 +20,7 @@ where season = '${inputs.season.value}'
 order by 1 desc
 ```
 
-{#key rounds[0]?.round_number}
+{#key `${inputs.season.value}|${rounds[0]?.round_number}`}
 <Dropdown data={rounds} name=round value=round_number label=round_number multiple=true defaultValue={[rounds[0]?.round_number]} order="round_number desc" />
 {/key}
 
