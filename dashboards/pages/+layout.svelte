@@ -22,6 +22,6 @@
   });
 </script>
 
-<EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true} hideMenu={true}>
+<EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true} hideMenu={true} title="🇩🇰 Superligaen">
   <slot slot="content" />
 </EvidenceDefaultLayout>
