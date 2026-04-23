@@ -16,10 +16,20 @@ order by season desc
 </Dropdown>
 
 ```sql current_standings
-select team_name, matches_played as mp, total_points as pts
-from superligaen.team_analytics_kpis
+select
+    team_name,
+    gp as mp,
+    pts,
+    round_group
+from superligaen.team_season_stats
 where season = '${inputs.season.value}'
-order by pts desc
+order by
+    case round_group
+        when 'Championship Group' then 1
+        when 'Regular Season'     then 2
+        when 'Relegation Group'   then 3
+    end,
+    pts desc
 ```
 
 ```sql points_progression
@@ -138,12 +148,13 @@ order by goals_for desc
 
 <div>
 
-#### Current Standings
+#### League Table
 
 <DataTable data={current_standings} rows=20>
-    <Column id=team_name title="Team" />
-    <Column id=mp title="MP" align=center />
-    <Column id=pts title="Pts" align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=team_name  title="Team"  />
+    <Column id=round_group title="Group" />
+    <Column id=mp         title="MP"   align=center />
+    <Column id=pts        title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
 </DataTable>
 
 </div>
