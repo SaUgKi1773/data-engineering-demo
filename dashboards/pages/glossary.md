@@ -4,8 +4,6 @@ hide_toc: true
 title: Data Glossary
 ---
 
-# Data Glossary
-
 A reference for all metrics, abbreviations, and KPIs used across the dashboard.
 
 ---
