@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       season:
-        description: "Season year to copy into dev (e.g. 2024 for the 2024/25 season)"
+        description: "Season year(s) to copy into dev — comma-separated (e.g. 2024 or 2023,2024)"
         required: true
         default: "2024"
 
