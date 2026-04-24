@@ -27,7 +27,8 @@ order by
         when 'Regular Season'     then 2
         when 'Relegation Group'   then 3
     end,
-    pts desc
+    pts desc, gd desc, gf desc,
+    h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
 ```
 
 ```sql points_progression
