@@ -15,13 +15,18 @@ order by season desc
 
 ```sql standings
 select
-    row_number() over (partition by round_group order by pts desc, gd desc, gf desc) as rank,
+    row_number() over (
+        partition by round_group
+        order by pts desc, gd desc, gf desc,
+                 h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
+    ) as rank,
     team_name   as team,
     gp, w, d, l, gf, ga, gd, pts,
     round_group
 from superligaen.team_season_stats
 where season = '${inputs.season.value}'
-order by round_group, pts desc, gd desc, gf desc
+order by round_group, pts desc, gd desc, gf desc,
+         h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
 ```
 
 ```sql championship
@@ -38,7 +43,10 @@ where round_group = 'Relegation Group'
 
 ```sql regular
 select
-    row_number() over (order by pts desc, gd desc, gf desc) as rank,
+    row_number() over (
+        order by pts desc, gd desc, gf desc,
+                 h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
+    ) as rank,
     team_name as team, gp, w, d, l, gf, ga, gd, pts
 from superligaen.team_regular_season_stats
 where season = '${inputs.season.value}'
