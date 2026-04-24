@@ -1,11 +1,19 @@
 select
     m.season,
-    m.match_round_number          as round,
+    m.match_round_number                                as round,
     t.team_name,
     sum(f.points_earned) over (
         partition by f.team_sk, m.season
         order by m.match_round_number
-    )                             as cumulative_points
+    )                                                   as cumulative_points,
+    sum(f.goals_scored - f.goals_conceded) over (
+        partition by f.team_sk, m.season
+        order by m.match_round_number
+    )                                                   as cumulative_gd,
+    sum(f.goals_scored) over (
+        partition by f.team_sk, m.season
+        order by m.match_round_number
+    )                                                   as cumulative_gf
 from superligaen.gold.fct_match_results f
 join superligaen.gold.dim_match        m on m.match_sk        = f.match_sk
 join superligaen.gold.dim_team         t on t.team_sk         = f.team_sk

@@ -32,7 +32,7 @@ order by
 ```
 
 ```sql points_progression
-select round, team_name, cumulative_points
+select round, team_name, cumulative_points, cumulative_gd, cumulative_gf
 from superligaen.points_progression
 where season = '${inputs.season.value}'
 order by max(cumulative_points) over (partition by team_name) desc, team_name, round
@@ -138,7 +138,7 @@ order by goals_for desc
     xAxisTitle="Round"
     yAxisTitle="Cumulative Points"
     title="Points Progression by Round"
-    echartsOptions={{tooltip: {formatter: function(params) { const sorted = [...params].sort((a, b) => b.value[1] - a.value[1]); let out = '<span style="font-weight:600;">Round ' + params[0].value[0] + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }}}}
+    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; for (const row of points_progression) { if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const sorted = [...params].sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}}}
     legend=false
     chartAreaHeight=300
 />
