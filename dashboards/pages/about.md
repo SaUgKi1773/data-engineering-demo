@@ -25,7 +25,7 @@ A fully automated data pipeline that:
 
 The complete story — every decision, every mistake, every fix — is documented in the blog:
 <div class="-mt-3">
-<a href="https://saugki1773.github.io/data-engineering-demo/" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-700 transition-colors no-underline">
+<a href="https://saugki1773.github.io/data-engineering-blog/" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-700 transition-colors no-underline">
   📖 Data Engineer's Diary
 </a>
 </div>
