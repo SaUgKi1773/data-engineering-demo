@@ -5,12 +5,14 @@ title: Team Analysis
 ---
 
 ```sql seasons
-select distinct season from superligaen.team_analytics_kpis
+select distinct season from superligaen.mart_match_facts
+where result in ('Win', 'Draw', 'Loss')
 order by season desc
 ```
 
 ```sql teams
-select distinct team_name as team from superligaen.team_analytics_kpis
+select distinct team_name as team from superligaen.mart_match_facts
+where result in ('Win', 'Draw', 'Loss')
 order by team_name
 ```
 
@@ -23,23 +25,91 @@ order by team_name
 </Dropdown>
 
 ```sql kpis
-select * from superligaen.team_analytics_kpis
+select
+    sum(points_earned)                                                                         as total_points,
+    count(*) filter (where result = 'Win')                                                     as wins,
+    count(*) filter (where result = 'Draw')                                                    as draws,
+    count(*) filter (where result = 'Loss')                                                    as losses,
+    sum(goals_scored)                                                                          as goals_for,
+    sum(goals_conceded)                                                                        as goals_against,
+    sum(goals_scored) - sum(goals_conceded)                                                    as goal_difference,
+    round(100.0 * count(*) filter (where result = 'Win') / count(*), 1)                       as win_rate_pct,
+    round(avg(possession_pct::double), 1)                                                      as avg_possession,
+    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                      as avg_pass_accuracy,
+    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                          as shot_conversion_pct,
+    round(100.0 * sum(goals_scored) / nullif(sum(shots_on_goal), 0), 1)                        as on_target_conversion_pct,
+    round(sum(xg), 2)                                                                          as total_xg,
+    round(sum(goals_scored) - sum(xg), 2)                                                      as xg_overperformance,
+    round((sum(fouls) + sum(yellow_cards) * 5 + sum(red_cards) * 15)::double / count(*), 1)   as aggression_index,
+    round(avg(saves::double), 1)                                                               as avg_saves,
+    round(avg(goals_conceded::double), 2)                                                      as avg_goals_conceded,
+    round(sum(xg) / count(*), 2)                                                               as avg_xg_per_match,
+    round(avg(shots_on_goal::double), 1)                                                       as avg_shots_on_goal,
+    round(avg(goals_scored::double), 2)                                                        as avg_goals_scored,
+    round(avg(corner_kicks::double), 1)                                                        as avg_corners,
+    round(avg(offsides::double), 1)                                                            as avg_offsides,
+    round(avg(fouls::double), 1)                                                               as avg_fouls,
+    sum(yellow_cards)                                                                          as yellow_cards,
+    sum(red_cards)                                                                             as red_cards,
+    sum(shots_insidebox)                                                                       as shots_insidebox,
+    sum(shots_outsidebox)                                                                      as shots_outsidebox
+from superligaen.mart_match_facts
 where team_name = '${inputs.team.value}'
   and season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
 ```
 
 ```sql form
-select * from superligaen.team_analytics_form
+select
+    match_date,
+    match_round_name             as round,
+    match_round_number,
+    opponent_team_name           as opponent,
+    team_side                    as side,
+    goals_scored                 as gf,
+    goals_conceded               as ga,
+    result,
+    xg,
+    shots_on_goal,
+    possession_pct               as possession,
+    pass_accuracy,
+    fouls,
+    corner_kicks,
+    offsides,
+    yellow_cards,
+    red_cards,
+    saves
+from superligaen.mart_match_facts
 where team_name = '${inputs.team.value}'
   and season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
 order by match_date asc
 ```
 
 ```sql home_away
-select * from superligaen.team_analytics_home_away
+select
+    team_side                                                                                  as side,
+    count(*)                                                                                   as matches,
+    count(*) filter (where result = 'Win')                                                     as wins,
+    count(*) filter (where result = 'Draw')                                                    as draws,
+    count(*) filter (where result = 'Loss')                                                    as losses,
+    sum(goals_scored)                                                                          as goals_for,
+    sum(goals_conceded)                                                                        as goals_against,
+    round(100.0 * count(*) filter (where result = 'Win') / count(*), 1)                       as win_rate_pct,
+    round(avg(possession_pct::double), 1)                                                      as avg_possession,
+    round(avg(shots_on_goal::double), 1)                                                       as avg_shots_on_goal,
+    round(sum(xg) / count(*), 2)                                                               as avg_xg,
+    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                         as shot_conversion_pct,
+    round(avg(fouls::double), 1)                                                               as avg_fouls,
+    sum(yellow_cards)                                                                          as yellow_cards,
+    sum(red_cards)                                                                             as red_cards,
+    round(avg(saves::double), 1)                                                               as avg_saves
+from superligaen.mart_match_facts
 where team_name = '${inputs.team.value}'
   and season = '${inputs.season.value}'
-order by side desc
+  and result in ('Win', 'Draw', 'Loss')
+group by team_side
+order by team_side desc
 ```
 
 ---
@@ -73,10 +143,19 @@ order by side desc
 ## Points Progression
 
 ```sql points_trend
-select match_date, round, match_round_number, cumulative_points, result, opponent, gf, ga
-from superligaen.team_analytics_form
+select
+    match_date,
+    match_round_name               as round,
+    match_round_number,
+    sum(points_earned) over (order by match_round_number rows between unbounded preceding and current row) as cumulative_points,
+    result,
+    opponent_team_name             as opponent,
+    goals_scored                   as gf,
+    goals_conceded                 as ga
+from superligaen.mart_match_facts
 where team_name = '${inputs.team.value}'
   and season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
 order by match_date asc
 ```
 
@@ -96,12 +175,23 @@ order by match_date asc
 
 ```sql recent_form
 select
-    match_date, round, opponent, side,
-    gf, ga, result, xg, shots_on_goal, possession, fouls,
-    yellow_cards, red_cards
-from superligaen.team_analytics_form
+    match_date,
+    match_round_name               as round,
+    opponent_team_name             as opponent,
+    team_side                      as side,
+    goals_scored                   as gf,
+    goals_conceded                 as ga,
+    result,
+    xg,
+    shots_on_goal,
+    possession_pct                 as possession,
+    fouls,
+    yellow_cards,
+    red_cards
+from superligaen.mart_match_facts
 where team_name = '${inputs.team.value}'
   and season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
 order by match_date desc
 limit 10
 ```
@@ -154,13 +244,9 @@ limit 10
 />
 
 ```sql shot_location
-select 'Inside Box' as location, shots_insidebox as shots
-from superligaen.team_analytics_kpis
-where team_name = '${inputs.team.value}' and season = '${inputs.season.value}'
+select 'Inside Box' as location, shots_insidebox as shots from ${kpis}
 union all
-select 'Outside Box', shots_outsidebox
-from superligaen.team_analytics_kpis
-where team_name = '${inputs.team.value}' and season = '${inputs.season.value}'
+select 'Outside Box', shots_outsidebox from ${kpis}
 ```
 
 <BarChart
@@ -292,8 +378,7 @@ where team_name = '${inputs.team.value}' and season = '${inputs.season.value}'
 
 ```sql home_away_chart
 select side, avg_shots_on_goal as "Shots on Goal", avg_xg as "xG", avg_possession / 10 as "Possession / 10", win_rate_pct / 10 as "Win Rate / 10"
-from superligaen.team_analytics_home_away
-where team_name = '${inputs.team.value}' and season = '${inputs.season.value}'
+from ${home_away}
 ```
 
 <BarChart

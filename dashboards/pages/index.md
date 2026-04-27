@@ -14,18 +14,27 @@ select * from superligaen.last_updated
 
 ```sql kpis
 select
-    count(*)                                                              as total_matches,
-    sum(total_goals)                                                      as total_goals,
-    (select count(distinct team_name)
-     from superligaen.team_analytics_form
-     where season = (select max(season) from superligaen.match_results_by_match)) as total_teams,
-    max(season)                                                           as season
-from superligaen.match_results_by_match
-where season = (select max(season) from superligaen.match_results_by_match)
+    count(distinct match_name)  as total_matches,
+    sum(goals_scored)           as total_goals,
+    count(distinct team_name)   as total_teams,
+    max(season)                 as season
+from superligaen.mart_match_facts
+where season = (select max(season) from superligaen.mart_match_facts where result in ('Win', 'Draw', 'Loss'))
+  and result in ('Win', 'Draw', 'Loss')
 ```
 
 ```sql leader
-select * from superligaen.current_leader
+select team_name, pts
+from superligaen.mart_standings
+where season = (select max(season) from superligaen.mart_standings)
+order by
+    case standings_type
+        when 'Championship Group' then 1
+        when 'Relegation Group'   then 2
+        when 'Regular Season'     then 3
+    end,
+    pts desc, gd desc, gf desc
+limit 1
 ```
 
 <div class="relative rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 md:p-10 mb-6 shadow-xl">

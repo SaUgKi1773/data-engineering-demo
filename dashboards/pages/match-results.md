@@ -5,7 +5,7 @@ title: Match Results
 ---
 
 ```sql seasons
-select distinct season from superligaen.match_results_by_match
+select distinct season from superligaen.mart_match_facts
 order by season desc
 ```
 
@@ -14,9 +14,10 @@ order by season desc
 </Dropdown>
 
 ```sql rounds
-select distinct CAST(match_round_number AS INTEGER) as round_number
-from superligaen.match_results_by_match
+select distinct cast(match_round_number as integer) as round_number
+from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
 order by 1 desc
 ```
 
@@ -26,12 +27,24 @@ order by 1 desc
 
 ```sql results
 select
-    match_date, round, match_name, score,
-    total_goals, total_shots_on_goal, total_xg,
-    total_yellow_cards, total_red_cards, total_corners
-from superligaen.match_results_by_match
+    match_date,
+    match_round_name                as round,
+    match_round_number,
+    match_name,
+    match_short_name,
+    score,
+    sum(goals_scored)               as total_goals,
+    sum(shots_on_goal)              as total_shots_on_goal,
+    round(sum(xg), 2)               as total_xg,
+    sum(yellow_cards)               as total_yellow_cards,
+    sum(red_cards)                  as total_red_cards,
+    sum(corner_kicks)               as total_corners,
+    season
+from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
-  and CAST(match_round_number AS INTEGER) in ${inputs.round.value}
+  and cast(match_round_number as integer) in ${inputs.round.value}
+  and result in ('Win', 'Draw', 'Loss')
+group by match_date, match_round_name, match_round_number, match_name, match_short_name, score, season
 order by match_date desc
 ```
 
@@ -40,10 +53,8 @@ select
     sum(total_goals)                    as total_goals,
     round(avg(total_goals), 2)          as avg_goals_per_match,
     round(avg(total_shots_on_goal), 1)  as avg_shots_on_goal,
-    round(sum(total_xg::double), 2)     as total_xg
-from superligaen.match_results_by_match
-where season = '${inputs.season.value}'
-  and CAST(match_round_number AS INTEGER) in ${inputs.round.value}
+    round(sum(total_xg), 2)             as total_xg
+from ${results}
 ```
 
 ## Match Results — {inputs.season.value}
@@ -77,9 +88,11 @@ select
     match_name || '|' || cast(match_date as varchar) as match_key,
     match_name || '  (' || score || ')'              as match_label,
     match_date
-from superligaen.match_results_by_match
+from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and cast(match_round_number as integer) in ${inputs.round.value}
+  and result in ('Win', 'Draw', 'Loss')
+group by match_name, match_date, score
 order by match_date desc
 ```
 
@@ -89,34 +102,34 @@ order by match_date desc
 
 ```sql mc
 select
-    max(case when side = 'Home' then team_name end)                              as home_team,
-    max(case when side = 'Away' then team_name end)                              as away_team,
+    max(case when team_side = 'Home' then team_name end)                         as home_team,
+    max(case when team_side = 'Away' then team_name end)                         as away_team,
     max(score)                                                                   as score,
-    max(case when side = 'Home' then goals end)                                  as home_goals,
-    max(case when side = 'Away' then goals end)                                  as away_goals,
-    round(max(case when side = 'Home' then xg end)::double, 2)                   as home_xg,
-    round(max(case when side = 'Away' then xg end)::double, 2)                   as away_xg,
-    max(case when side = 'Home' then shots_on_goal end)                          as home_sog,
-    max(case when side = 'Away' then shots_on_goal end)                          as away_sog,
-    max(case when side = 'Home' then total_shots end)                            as home_shots,
-    max(case when side = 'Away' then total_shots end)                            as away_shots,
-    max(case when side = 'Home' then possession end)                             as home_possession,
-    max(case when side = 'Away' then possession end)                             as away_possession,
-    max(case when side = 'Home' then pass_accuracy end)                          as home_pass_accuracy,
-    max(case when side = 'Away' then pass_accuracy end)                          as away_pass_accuracy,
-    max(case when side = 'Home' then corners end)                                as home_corners,
-    max(case when side = 'Away' then corners end)                                as away_corners,
-    max(case when side = 'Home' then fouls end)                                  as home_fouls,
-    max(case when side = 'Away' then fouls end)                                  as away_fouls,
-    max(case when side = 'Home' then offsides end)                               as home_offsides,
-    max(case when side = 'Away' then offsides end)                               as away_offsides,
-    max(case when side = 'Home' then yellow_cards end)                           as home_yc,
-    max(case when side = 'Away' then yellow_cards end)                           as away_yc,
-    max(case when side = 'Home' then red_cards end)                              as home_rc,
-    max(case when side = 'Away' then red_cards end)                              as away_rc,
-    max(case when side = 'Home' then saves end)                                  as home_saves,
-    max(case when side = 'Away' then saves end)                                  as away_saves
-from superligaen.match_analysis
+    max(case when team_side = 'Home' then goals_scored end)                      as home_goals,
+    max(case when team_side = 'Away' then goals_scored end)                      as away_goals,
+    round(max(case when team_side = 'Home' then xg end)::double, 2)              as home_xg,
+    round(max(case when team_side = 'Away' then xg end)::double, 2)              as away_xg,
+    max(case when team_side = 'Home' then shots_on_goal end)                     as home_sog,
+    max(case when team_side = 'Away' then shots_on_goal end)                     as away_sog,
+    max(case when team_side = 'Home' then total_shots end)                       as home_shots,
+    max(case when team_side = 'Away' then total_shots end)                       as away_shots,
+    max(case when team_side = 'Home' then possession_pct end)                    as home_possession,
+    max(case when team_side = 'Away' then possession_pct end)                    as away_possession,
+    max(case when team_side = 'Home' then pass_accuracy end)                     as home_pass_accuracy,
+    max(case when team_side = 'Away' then pass_accuracy end)                     as away_pass_accuracy,
+    max(case when team_side = 'Home' then corner_kicks end)                      as home_corners,
+    max(case when team_side = 'Away' then corner_kicks end)                      as away_corners,
+    max(case when team_side = 'Home' then fouls end)                             as home_fouls,
+    max(case when team_side = 'Away' then fouls end)                             as away_fouls,
+    max(case when team_side = 'Home' then offsides end)                          as home_offsides,
+    max(case when team_side = 'Away' then offsides end)                          as away_offsides,
+    max(case when team_side = 'Home' then yellow_cards end)                      as home_yc,
+    max(case when team_side = 'Away' then yellow_cards end)                      as away_yc,
+    max(case when team_side = 'Home' then red_cards end)                         as home_rc,
+    max(case when team_side = 'Away' then red_cards end)                         as away_rc,
+    max(case when team_side = 'Home' then saves end)                             as home_saves,
+    max(case when team_side = 'Away' then saves end)                             as away_saves
+from superligaen.mart_match_facts
 where match_name            = split_part('${inputs.match.value}', '|', 1)
   and cast(match_date as varchar) = split_part('${inputs.match.value}', '|', 2)
   and season                = '${inputs.season.value}'

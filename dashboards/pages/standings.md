@@ -5,7 +5,7 @@ title: Standings
 ---
 
 ```sql seasons
-select distinct season from superligaen.team_season_stats
+select distinct season from superligaen.mart_standings
 order by season desc
 ```
 
@@ -16,17 +16,16 @@ order by season desc
 ```sql standings
 select
     row_number() over (
-        partition by round_group
-        order by pts desc, gd desc, gf desc,
-                 h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
+        partition by standings_type
+        order by pts desc, gd desc, gf desc
     ) as rank,
     team_name   as team,
     gp, w, d, l, gf, ga, gd, pts,
-    round_group
-from superligaen.team_season_stats
+    standings_type as round_group
+from superligaen.mart_standings
 where season = '${inputs.season.value}'
-order by round_group, pts desc, gd desc, gf desc,
-         h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
+  and standings_type != 'Regular Season'
+order by standings_type, pts desc, gd desc, gf desc
 ```
 
 ```sql championship
@@ -44,17 +43,19 @@ where round_group = 'Relegation Group'
 ```sql regular
 select
     row_number() over (
-        order by pts desc, gd desc, gf desc,
-                 h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
+        order by pts desc, gd desc, gf desc
     ) as rank,
     team_name as team, gp, w, d, l, gf, ga, gd, pts
-from superligaen.team_regular_season_stats
+from superligaen.mart_standings
 where season = '${inputs.season.value}'
+  and standings_type = 'Regular Season'
 ```
 
 ```sql all_teams
-select team, pts, gf, ga, round_group from ${standings}
-order by round_group, pts desc
+select team_name as team, pts, gf, ga, standings_type as round_group
+from superligaen.mart_standings
+where season = '${inputs.season.value}'
+order by standings_type, pts desc
 ```
 
 ## {inputs.season.label} Season Standings
