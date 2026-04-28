@@ -147,7 +147,7 @@ select
     match_date,
     match_round_name               as round,
     match_round_number,
-    sum(points_earned) over (order by match_round_number rows between unbounded preceding and current row) as cumulative_points,
+    cumulative_points,
     result,
     opponent_team_name             as opponent,
     goals_scored                   as gf,

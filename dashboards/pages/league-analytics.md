@@ -35,10 +35,11 @@ order by
 ```
 
 ```sql points_progression
-select round, team_name, cumulative_points, cumulative_gd, cumulative_gf
-from superligaen.mart_points_progression
+select match_round_number as round, team_name, cumulative_points, cumulative_gd, cumulative_gf
+from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
-order by max(cumulative_points) over (partition by team_name) desc, team_name, round
+  and result in ('Win', 'Draw', 'Loss')
+order by max(cumulative_points) over (partition by team_name) desc, team_name, match_round_number
 ```
 
 ```sql league_kpis

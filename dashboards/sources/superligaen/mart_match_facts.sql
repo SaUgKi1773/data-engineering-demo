@@ -46,7 +46,19 @@ SELECT
         WHEN MAX(CASE WHEN m.match_round_type = 'Relegation'   THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, m.season) = 1
             THEN 'Relegation Group'
         ELSE 'Regular Season'
-    END                                                                      AS standings_type
+    END                                                                      AS standings_type,
+    SUM(f.points_earned) OVER (
+        PARTITION BY f.team_sk, m.season
+        ORDER BY m.match_round_number
+    )                                                                        AS cumulative_points,
+    SUM(f.goals_scored - f.goals_conceded) OVER (
+        PARTITION BY f.team_sk, m.season
+        ORDER BY m.match_round_number
+    )                                                                        AS cumulative_gd,
+    SUM(f.goals_scored) OVER (
+        PARTITION BY f.team_sk, m.season
+        ORDER BY m.match_round_number
+    )                                                                        AS cumulative_gf
 FROM superligaen_dev.gold.fct_match_results  f
 JOIN superligaen_dev.gold.dim_date           d   ON d.date_sk           = f.date_sk
 JOIN superligaen_dev.gold.dim_match          m   ON m.match_sk          = f.match_sk
