@@ -6,18 +6,21 @@ title: Upcoming Fixtures
 
 ```sql upcoming
 select
-    strftime(match_date, '%Y-%m-%d')                                              as match_date,
-    round,
-    match_round_number,
+    max(case when team_side = 'Home' then team_name end) || '|||' ||
+    max(case when team_side = 'Away' then team_name end)              as match_key,
     match_name,
-    home_team,
-    away_team,
-    match_key,
+    match_round_name                                                   as round,
+    match_round_number,
+    max(case when team_side = 'Home' then team_name end)              as home_team,
+    max(case when team_side = 'Away' then team_name end)              as away_team,
+    strftime(match_date, '%Y-%m-%d')                                  as match_date,
     kick_off_time,
-    CASE WHEN stadium LIKE '%Unknown%' OR stadium LIKE '%Applicable%'
-         THEN 'TBD' ELSE stadium END                                               as stadium,
+    case when stadium_name like '%Unknown%' or stadium_name like '%Applicable%'
+         then 'TBD' else stadium_name end                             as stadium,
     season
-from superligaen.upcoming_matches
+from superligaen.mart_match_facts
+where result = 'Pending'
+group by match_name, match_round_name, match_round_number, match_date, kick_off_time, stadium_name, season
 order by match_date asc, kick_off_time asc
 ```
 
@@ -41,12 +44,11 @@ order by match_date asc, kick_off_time asc
 select
     home_team,
     away_team,
-    strftime(match_date, '%d %b %Y')                          as match_date,
+    match_date,
     round,
     kick_off_time,
-    CASE WHEN stadium LIKE '%Unknown%' OR stadium LIKE '%Applicable%'
-         THEN 'TBD' ELSE stadium END                          as stadium
-from superligaen.upcoming_matches
+    stadium
+from ${upcoming}
 where match_key = '${inputs.match.value}'
 limit 1
 ```
@@ -55,57 +57,63 @@ limit 1
 select
     season,
     match_date,
-    round,
-    match_short_name    as match,
+    match_round_name                    as round,
+    match_short_name                    as match,
     score,
-    total_goals         as goals,
-    total_shots_on_goal as shots_on_goal,
-    total_xg            as xg
-from superligaen.match_results_by_match
-where
-    (match_name = SPLIT_PART('${inputs.match.value}', '|||', 1) || ' - ' || SPLIT_PART('${inputs.match.value}', '|||', 2))
- or (match_name = SPLIT_PART('${inputs.match.value}', '|||', 2) || ' - ' || SPLIT_PART('${inputs.match.value}', '|||', 1))
+    sum(goals_scored)                   as total_goals,
+    sum(shots_on_goal)                  as total_shots_on_goal,
+    round(sum(xg), 2)                   as total_xg
+from superligaen.mart_match_facts
+where result in ('Win', 'Draw', 'Loss')
+  and (
+      match_name = split_part('${inputs.match.value}', '|||', 1) || ' - ' || split_part('${inputs.match.value}', '|||', 2)
+   or match_name = split_part('${inputs.match.value}', '|||', 2) || ' - ' || split_part('${inputs.match.value}', '|||', 1)
+  )
+group by season, match_date, match_round_name, match_short_name, score
 order by match_date desc
 ```
 
 ```sql h2h_stats
 select
-    SUM(CASE WHEN (team_name = SPLIT_PART('${inputs.match.value}', '|||', 1) AND result = 'Win')
-              OR  (team_name = SPLIT_PART('${inputs.match.value}', '|||', 2) AND result = 'Loss') THEN 1 ELSE 0 END) as team1_wins,
-    SUM(CASE WHEN result = 'Draw' THEN 1 ELSE 0 END)                                                                as draws,
-    SUM(CASE WHEN (team_name = SPLIT_PART('${inputs.match.value}', '|||', 2) AND result = 'Win')
-              OR  (team_name = SPLIT_PART('${inputs.match.value}', '|||', 1) AND result = 'Loss') THEN 1 ELSE 0 END) as team2_wins
-from superligaen.team_analytics_form
-where side = 'Home'
+    sum(case when (team_name = split_part('${inputs.match.value}', '|||', 1) and result = 'Win')
+              or  (team_name = split_part('${inputs.match.value}', '|||', 2) and result = 'Loss') then 1 else 0 end) as team1_wins,
+    sum(case when result = 'Draw' then 1 else 0 end)                                                                 as draws,
+    sum(case when (team_name = split_part('${inputs.match.value}', '|||', 2) and result = 'Win')
+              or  (team_name = split_part('${inputs.match.value}', '|||', 1) and result = 'Loss') then 1 else 0 end) as team2_wins
+from superligaen.mart_match_facts
+where team_side = 'Home'
+  and result in ('Win', 'Draw', 'Loss')
   and (
-      (team_name = SPLIT_PART('${inputs.match.value}', '|||', 1) and opponent = SPLIT_PART('${inputs.match.value}', '|||', 2))
-   or (team_name = SPLIT_PART('${inputs.match.value}', '|||', 2) and opponent = SPLIT_PART('${inputs.match.value}', '|||', 1))
+      (team_name = split_part('${inputs.match.value}', '|||', 1) and opponent_team_name = split_part('${inputs.match.value}', '|||', 2))
+   or (team_name = split_part('${inputs.match.value}', '|||', 2) and opponent_team_name = split_part('${inputs.match.value}', '|||', 1))
   )
 ```
 
 ```sql home_form
 select
     strftime(match_date, '%d %b') as match_date,
-    opponent,
-    gf,
-    ga,
+    opponent_team_name             as opponent,
+    goals_scored                   as gf,
+    goals_conceded                 as ga,
     result
-from superligaen.team_analytics_form
-where team_name = SPLIT_PART('${inputs.match.value}', '|||', 1)
-order by epoch(match_date) desc
+from superligaen.mart_match_facts
+where team_name = split_part('${inputs.match.value}', '|||', 1)
+  and result in ('Win', 'Draw', 'Loss')
+order by match_date::date desc
 limit 5
 ```
 
 ```sql away_form
 select
     strftime(match_date, '%d %b') as match_date,
-    opponent,
-    gf,
-    ga,
+    opponent_team_name             as opponent,
+    goals_scored                   as gf,
+    goals_conceded                 as ga,
     result
-from superligaen.team_analytics_form
-where team_name = SPLIT_PART('${inputs.match.value}', '|||', 2)
-order by epoch(match_date) desc
+from superligaen.mart_match_facts
+where team_name = split_part('${inputs.match.value}', '|||', 2)
+  and result in ('Win', 'Draw', 'Loss')
+order by match_date::date desc
 limit 5
 ```
 
@@ -149,9 +157,9 @@ limit 5
     <Column id=round          title="Round"  />
     <Column id=match          title="Match"  />
     <Column id=score          title="Score"  align=center />
-    <Column id=goals          title="Goals"  contentType=colorscale colorPalette={['white','#22c55e']} align=center />
-    <Column id=shots_on_goal  title="SoG"    contentType=bar colorPalette={['#6366f1']} />
-    <Column id=xg             title="xG"     contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=total_goals    title="Goals"  contentType=colorscale colorPalette={['white','#22c55e']} align=center />
+    <Column id=total_shots_on_goal title="SoG" contentType=bar colorPalette={['#6366f1']} />
+    <Column id=total_xg       title="xG"     contentType=colorscale colorPalette={['white','#3b82f6']} />
 </DataTable>
 
 ---

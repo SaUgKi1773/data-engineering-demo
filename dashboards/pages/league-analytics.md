@@ -5,7 +5,7 @@ title: League Analysis
 ---
 
 ```sql seasons
-select distinct season from superligaen.team_analytics_kpis
+select distinct season from superligaen.mart_match_facts
 order by season desc
 ```
 
@@ -16,38 +16,70 @@ order by season desc
 ```sql current_standings
 select
     team_name,
-    gp as mp,
-    pts,
-    round_group
-from superligaen.team_season_stats
+    count(distinct match_id)                          as mp,
+    sum(points_earned)                                as pts,
+    sum(goals_scored) - sum(goals_conceded)           as gd,
+    sum(goals_scored)                                 as gf,
+    standings_type                                    as round_group
+from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by team_name, standings_type
 order by
-    case round_group
+    case standings_type
         when 'Championship Group' then 1
-        when 'Regular Season'     then 2
-        when 'Relegation Group'   then 3
+        when 'Relegation Group'   then 2
+        else                           3
     end,
-    pts desc, gd desc, gf desc,
-    h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
+    pts desc, gd desc, gf desc
 ```
 
 ```sql points_progression
-select round, team_name, cumulative_points, cumulative_gd, cumulative_gf
-from superligaen.points_progression
+select match_round_number as round, team_name, cumulative_points, cumulative_gd, cumulative_gf
+from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
-order by max(cumulative_points) over (partition by team_name) desc, team_name, round
+  and result in ('Win', 'Draw', 'Loss')
+order by max(cumulative_points) over (partition by team_name) desc, team_name, match_round_number
 ```
 
 ```sql league_kpis
 select
-    sum(goals_for)                                                          as total_goals,
-    round(sum(goals_for)::double / (sum(matches_played) / 2), 2)           as avg_goals_per_match,
-    round(avg(shot_conversion_pct), 1)                                     as avg_shot_conversion,
-    round(sum(total_xg), 1)                                                 as total_xg,
-    sum(yellow_cards)                                                       as total_yellow_cards,
-    sum(red_cards)                                                          as total_red_cards
-from superligaen.team_analytics_kpis
+    sum(goals_scored)                                                                       as total_goals,
+    round(sum(goals_scored)::double / count(distinct match_id), 2)                        as avg_goals_per_match,
+    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                      as avg_shot_conversion,
+    round(sum(xg), 1)                                                                       as total_xg,
+    sum(yellow_cards)                                                                       as total_yellow_cards,
+    sum(red_cards)                                                                          as total_red_cards
+from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
+```
+
+```sql team_season_stats
+select
+    team_name,
+    sum(goals_scored)                                                                       as goals_for,
+    sum(goals_conceded)                                                                     as goals_against,
+    round(sum(xg), 2)                                                                       as total_xg,
+    round(sum(goals_scored) - sum(xg), 2)                                                   as xg_overperformance,
+    round(sum(shots_on_goal)::double / count(distinct match_id), 1)                        as avg_shots_on_goal,
+    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                      as shot_conversion_pct,
+    round(100.0 * sum(goals_scored) / nullif(sum(shots_on_goal), 0), 1)                    as on_target_conversion_pct,
+    count(distinct match_id) filter (where goals_conceded = 0)                              as clean_sheets,
+    round(sum(saves)::double / count(distinct match_id), 1)                                 as avg_saves,
+    round(sum(goals_conceded)::double / count(distinct match_id), 2)                        as avg_goals_conceded,
+    round(sum(possession_pct)::double / count(distinct match_id), 1)                        as avg_possession,
+    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                  as avg_pass_accuracy,
+    round(sum(corner_kicks)::double / count(distinct match_id), 1)                          as avg_corners,
+    round(sum(offsides)::double / count(distinct match_id), 1)                              as avg_offsides,
+    sum(yellow_cards)                                                                       as yellow_cards,
+    sum(red_cards)                                                                          as red_cards,
+    round(sum(fouls)::double / count(distinct match_id), 1)                                 as avg_fouls,
+    round((sum(fouls) + sum(yellow_cards) * 5 + sum(red_cards) * 15)::double / count(distinct match_id), 1) as aggression_index
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by team_name
 ```
 
 ```sql attack_rankings
@@ -59,8 +91,7 @@ select
     avg_shots_on_goal,
     shot_conversion_pct,
     on_target_conversion_pct
-from superligaen.team_analytics_kpis
-where season = '${inputs.season.value}'
+from ${team_season_stats}
 order by goals_for desc
 ```
 
@@ -71,8 +102,7 @@ select
     clean_sheets,
     avg_saves,
     avg_goals_conceded
-from superligaen.team_analytics_kpis
-where season = '${inputs.season.value}'
+from ${team_season_stats}
 order by clean_sheets desc
 ```
 
@@ -83,8 +113,7 @@ select
     avg_pass_accuracy,
     avg_corners,
     avg_offsides
-from superligaen.team_analytics_kpis
-where season = '${inputs.season.value}'
+from ${team_season_stats}
 order by avg_possession desc
 ```
 
@@ -95,8 +124,7 @@ select
     red_cards,
     avg_fouls,
     aggression_index
-from superligaen.team_analytics_kpis
-where season = '${inputs.season.value}'
+from ${team_season_stats}
 order by aggression_index desc
 ```
 
@@ -104,10 +132,9 @@ order by aggression_index desc
 select
     team_name,
     goals_for,
-    round(total_xg, 2) as expected_goals,
+    total_xg as expected_goals,
     xg_overperformance
-from superligaen.team_analytics_kpis
-where season = '${inputs.season.value}'
+from ${team_season_stats}
 order by goals_for desc
 ```
 

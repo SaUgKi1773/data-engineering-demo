@@ -5,7 +5,7 @@ title: Standings
 ---
 
 ```sql seasons
-select distinct season from superligaen.team_season_stats
+select distinct season from superligaen.mart_match_facts
 order by season desc
 ```
 
@@ -16,17 +16,31 @@ order by season desc
 ```sql standings
 select
     row_number() over (
-        partition by round_group
-        order by pts desc, gd desc, gf desc,
-                 h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
-    ) as rank,
-    team_name   as team,
+        partition by standings_type
+        order by pts desc, gd desc, gf desc
+    )              as rank,
+    team_name      as team,
     gp, w, d, l, gf, ga, gd, pts,
-    round_group
-from superligaen.team_season_stats
-where season = '${inputs.season.value}'
-order by round_group, pts desc, gd desc, gf desc,
-         h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
+    standings_type as round_group
+from (
+    select
+        team_name,
+        standings_type,
+        count(distinct match_id)                          as gp,
+        sum(case when result = 'Win'  then 1 else 0 end) as w,
+        sum(case when result = 'Draw' then 1 else 0 end) as d,
+        sum(case when result = 'Loss' then 1 else 0 end) as l,
+        sum(goals_scored)                                 as gf,
+        sum(goals_conceded)                               as ga,
+        sum(goals_scored) - sum(goals_conceded)           as gd,
+        sum(points_earned)                                as pts
+    from superligaen.mart_match_facts
+    where season = '${inputs.season.value}'
+      and result in ('Win', 'Draw', 'Loss')
+    group by team_name, standings_type
+)
+where standings_type != 'Regular Season'
+order by standings_type, pts desc, gd desc, gf desc
 ```
 
 ```sql championship
@@ -43,18 +57,45 @@ where round_group = 'Relegation Group'
 
 ```sql regular
 select
-    row_number() over (
-        order by pts desc, gd desc, gf desc,
-                 h2h_pts desc, h2h_gd desc, h2h_gf desc, h2h_away_gf desc
-    ) as rank,
+    row_number() over (order by pts desc, gd desc, gf desc) as rank,
     team_name as team, gp, w, d, l, gf, ga, gd, pts
-from superligaen.team_regular_season_stats
-where season = '${inputs.season.value}'
+from (
+    select
+        team_name,
+        count(distinct match_id)                          as gp,
+        sum(case when result = 'Win'  then 1 else 0 end) as w,
+        sum(case when result = 'Draw' then 1 else 0 end) as d,
+        sum(case when result = 'Loss' then 1 else 0 end) as l,
+        sum(goals_scored)                                 as gf,
+        sum(goals_conceded)                               as ga,
+        sum(goals_scored) - sum(goals_conceded)           as gd,
+        sum(points_earned)                                as pts
+    from superligaen.mart_match_facts
+    where season = '${inputs.season.value}'
+      and result in ('Win', 'Draw', 'Loss')
+      and match_round_type = 'Regular Season'
+    group by team_name
+)
 ```
 
 ```sql all_teams
-select team, pts, gf, ga, round_group from ${standings}
-order by round_group, pts desc
+select
+    team_name      as team,
+    sum(points_earned)                      as pts,
+    sum(goals_scored)                       as gf,
+    sum(goals_conceded)                     as ga,
+    standings_type                          as round_group
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by team_name, standings_type
+order by
+    case standings_type
+        when 'Championship Group' then 1
+        when 'Relegation Group'   then 2
+        else                           3
+    end,
+    pts desc
 ```
 
 ## {inputs.season.label} Season Standings
