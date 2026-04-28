@@ -4,6 +4,7 @@ SELECT
     m.match_round_name,
     m.match_round_type,
     m.match_round_number,
+    m.match_id,
     m.match_name,
     m.match_short_name,
     m.match_result                                                           AS score,

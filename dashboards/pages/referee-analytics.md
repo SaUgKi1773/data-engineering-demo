@@ -17,14 +17,14 @@ order by season desc
 ```sql season_stats
 select
     referee_name,
-    count(distinct match_name)                                                                  as matches_managed,
+    count(distinct match_id)                                                                  as matches_managed,
     sum(yellow_cards)                                                                           as total_yellow_cards,
     sum(red_cards)                                                                              as total_red_cards,
     sum(fouls)                                                                                  as total_fouls,
-    round(sum(yellow_cards)::double / count(distinct match_name), 2)                           as avg_yellows_per_match,
-    round(sum(red_cards)::double / count(distinct match_name), 3)                              as avg_reds_per_match,
-    round(sum(fouls)::double / count(distinct match_name), 1)                                  as avg_fouls_per_match,
-    round((sum(yellow_cards) + sum(red_cards) * 3)::double / count(distinct match_name), 2)   as card_severity_index
+    round(sum(yellow_cards)::double / count(distinct match_id), 2)                           as avg_yellows_per_match,
+    round(sum(red_cards)::double / count(distinct match_id), 3)                              as avg_reds_per_match,
+    round(sum(fouls)::double / count(distinct match_id), 1)                                  as avg_fouls_per_match,
+    round((sum(yellow_cards) + sum(red_cards) * 3)::double / count(distinct match_id), 2)   as card_severity_index
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
@@ -36,9 +36,9 @@ order by matches_managed desc
 select
     count(distinct referee_name)                          as total_referees,
     sum(matches_managed)                                  as total_match_slots,
-    round(avg(avg_yellows_per_match), 2)                  as league_avg_yellows,
-    round(avg(avg_reds_per_match), 3)                     as league_avg_reds,
-    round(avg(avg_fouls_per_match), 1)                    as league_avg_fouls
+    round(sum(total_yellow_cards)::double / sum(matches_managed), 2)   as league_avg_yellows,
+    round(sum(total_red_cards)::double   / sum(matches_managed), 3)   as league_avg_reds,
+    round(sum(total_fouls)::double       / sum(matches_managed), 1)   as league_avg_fouls
 from ${season_stats}
 ```
 
@@ -106,7 +106,7 @@ from ${season_stats}
 ```sql referee_team_exposure
 select
     team_name,
-    count(distinct match_name)  as matches
+    count(distinct match_id)  as matches
 from superligaen.mart_match_facts
 where referee_name = '${inputs.referee.value}'
   and season = '${inputs.season.value}'

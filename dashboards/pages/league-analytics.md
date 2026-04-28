@@ -16,7 +16,7 @@ order by season desc
 ```sql current_standings
 select
     team_name,
-    count(*)                                          as mp,
+    count(distinct match_id)                          as mp,
     sum(points_earned)                                as pts,
     sum(goals_scored) - sum(goals_conceded)           as gd,
     sum(goals_scored)                                 as gf,
@@ -44,7 +44,7 @@ order by max(cumulative_points) over (partition by team_name) desc, team_name, r
 ```sql league_kpis
 select
     sum(goals_scored)                                                                       as total_goals,
-    round(sum(goals_scored)::double / count(distinct match_name), 2)                       as avg_goals_per_match,
+    round(sum(goals_scored)::double / count(distinct match_id), 2)                        as avg_goals_per_match,
     round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                      as avg_shot_conversion,
     round(sum(xg), 1)                                                                       as total_xg,
     sum(yellow_cards)                                                                       as total_yellow_cards,
@@ -61,20 +61,20 @@ select
     sum(goals_conceded)                                                                     as goals_against,
     round(sum(xg), 2)                                                                       as total_xg,
     round(sum(goals_scored) - sum(xg), 2)                                                   as xg_overperformance,
-    round(avg(shots_on_goal::double), 1)                                                    as avg_shots_on_goal,
+    round(sum(shots_on_goal)::double / count(distinct match_id), 1)                        as avg_shots_on_goal,
     round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                      as shot_conversion_pct,
     round(100.0 * sum(goals_scored) / nullif(sum(shots_on_goal), 0), 1)                    as on_target_conversion_pct,
-    count(*) filter (where goals_conceded = 0)                                              as clean_sheets,
-    round(avg(saves::double), 1)                                                            as avg_saves,
-    round(avg(goals_conceded::double), 2)                                                   as avg_goals_conceded,
-    round(avg(possession_pct::double), 1)                                                   as avg_possession,
+    count(distinct match_id) filter (where goals_conceded = 0)                              as clean_sheets,
+    round(sum(saves)::double / count(distinct match_id), 1)                                 as avg_saves,
+    round(sum(goals_conceded)::double / count(distinct match_id), 2)                        as avg_goals_conceded,
+    round(sum(possession_pct)::double / count(distinct match_id), 1)                        as avg_possession,
     round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                  as avg_pass_accuracy,
-    round(avg(corner_kicks::double), 1)                                                     as avg_corners,
-    round(avg(offsides::double), 1)                                                         as avg_offsides,
+    round(sum(corner_kicks)::double / count(distinct match_id), 1)                          as avg_corners,
+    round(sum(offsides)::double / count(distinct match_id), 1)                              as avg_offsides,
     sum(yellow_cards)                                                                       as yellow_cards,
     sum(red_cards)                                                                          as red_cards,
-    round(avg(fouls::double), 1)                                                            as avg_fouls,
-    round((sum(fouls) + sum(yellow_cards) * 5 + sum(red_cards) * 15)::double / count(*), 1) as aggression_index
+    round(sum(fouls)::double / count(distinct match_id), 1)                                 as avg_fouls,
+    round((sum(fouls) + sum(yellow_cards) * 5 + sum(red_cards) * 15)::double / count(distinct match_id), 1) as aggression_index
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
