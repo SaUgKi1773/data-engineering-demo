@@ -59,13 +59,13 @@ SELECT
         PARTITION BY f.team_sk, m.season
         ORDER BY m.match_round_number
     )                                                                        AS cumulative_gf
-FROM superligaen_dev.gold.fct_match_results  f
-JOIN superligaen_dev.gold.dim_date           d   ON d.date_sk           = f.date_sk
-JOIN superligaen_dev.gold.dim_match          m   ON m.match_sk          = f.match_sk
-JOIN superligaen_dev.gold.dim_team           t   ON t.team_sk           = f.team_sk
-JOIN superligaen_dev.gold.dim_opponent_team  ot  ON ot.opponent_team_sk = f.opponent_team_sk
-JOIN superligaen_dev.gold.dim_match_result   r   ON r.match_result_sk   = f.match_result_sk
-JOIN superligaen_dev.gold.dim_team_side      ts  ON ts.team_side_sk     = f.team_side_sk
-JOIN superligaen_dev.gold.dim_referee        ref ON ref.referee_sk      = f.referee_sk
-JOIN superligaen_dev.gold.dim_stadium        st  ON st.stadium_sk       = f.stadium_sk
+FROM superligaen.gold.fct_match_results  f
+JOIN superligaen.gold.dim_date           d   ON d.date_sk           = f.date_sk
+JOIN superligaen.gold.dim_match          m   ON m.match_sk          = f.match_sk
+JOIN superligaen.gold.dim_team           t   ON t.team_sk           = f.team_sk
+JOIN superligaen.gold.dim_opponent_team  ot  ON ot.opponent_team_sk = f.opponent_team_sk
+JOIN superligaen.gold.dim_match_result   r   ON r.match_result_sk   = f.match_result_sk
+JOIN superligaen.gold.dim_team_side      ts  ON ts.team_side_sk     = f.team_side_sk
+JOIN superligaen.gold.dim_referee        ref ON ref.referee_sk      = f.referee_sk
+JOIN superligaen.gold.dim_stadium        st  ON st.stadium_sk       = f.stadium_sk
 WHERE f.match_result_sk > 0
