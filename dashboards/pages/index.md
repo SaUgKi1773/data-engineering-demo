@@ -14,7 +14,7 @@ select * from superligaen.last_updated
 
 ```sql kpis
 select
-    count(distinct match_name)  as total_matches,
+    count(distinct match_id)    as total_matches,
     sum(goals_scored)           as total_goals,
     count(distinct team_name)   as total_teams,
     max(season)                 as season
