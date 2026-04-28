@@ -25,8 +25,18 @@ where season = (select max(season) from superligaen.mart_match_facts where resul
 
 ```sql leader
 select team_name, pts
-from superligaen.mart_standings
-where season = (select max(season) from superligaen.mart_standings)
+from (
+    select
+        team_name,
+        standings_type,
+        sum(points_earned)                      as pts,
+        sum(goals_scored) - sum(goals_conceded) as gd,
+        sum(goals_scored)                       as gf
+    from superligaen.mart_match_facts
+    where season = (select max(season) from superligaen.mart_match_facts where result in ('Win', 'Draw', 'Loss'))
+      and result in ('Win', 'Draw', 'Loss')
+    group by team_name, standings_type
+)
 order by
     case standings_type
         when 'Championship Group' then 1

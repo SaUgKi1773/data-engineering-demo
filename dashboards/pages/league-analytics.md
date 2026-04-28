@@ -16,19 +16,15 @@ order by season desc
 ```sql current_standings
 select
     team_name,
-    gp as mp,
-    pts,
-    standings_type as round_group
-from superligaen.mart_standings
+    count(*)                                          as mp,
+    sum(points_earned)                                as pts,
+    sum(goals_scored) - sum(goals_conceded)           as gd,
+    sum(goals_scored)                                 as gf,
+    standings_type                                    as round_group
+from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
-qualify row_number() over (
-    partition by team_name
-    order by case standings_type
-        when 'Championship Group' then 1
-        when 'Relegation Group'   then 2
-        else                           3
-    end
-) = 1
+  and result in ('Win', 'Draw', 'Loss')
+group by team_name, standings_type
 order by
     case standings_type
         when 'Championship Group' then 1
