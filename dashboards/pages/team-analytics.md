@@ -89,21 +89,21 @@ order by match_date asc
 ```sql home_away
 select
     team_side                                                                                  as side,
-    count(*)                                                                                   as matches,
-    count(*) filter (where result = 'Win')                                                     as wins,
-    count(*) filter (where result = 'Draw')                                                    as draws,
-    count(*) filter (where result = 'Loss')                                                    as losses,
+    count(distinct match_id)                                                                   as matches,
+    count(distinct match_id) filter (where result = 'Win')                                     as wins,
+    count(distinct match_id) filter (where result = 'Draw')                                    as draws,
+    count(distinct match_id) filter (where result = 'Loss')                                    as losses,
     sum(goals_scored)                                                                          as goals_for,
     sum(goals_conceded)                                                                        as goals_against,
-    round(100.0 * count(*) filter (where result = 'Win') / count(*), 1)                       as win_rate_pct,
-    round(avg(possession_pct::double), 1)                                                      as avg_possession,
-    round(avg(shots_on_goal::double), 1)                                                       as avg_shots_on_goal,
-    round(sum(xg) / count(*), 2)                                                               as avg_xg,
+    round(100.0 * count(distinct match_id) filter (where result = 'Win') / count(distinct match_id), 1) as win_rate_pct,
+    round(sum(possession_pct)::double / count(distinct match_id), 1)                           as avg_possession,
+    round(sum(shots_on_goal)::double / count(distinct match_id), 1)                            as avg_shots_on_goal,
+    round(sum(xg) / count(distinct match_id), 2)                                               as avg_xg,
     round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                         as shot_conversion_pct,
-    round(avg(fouls::double), 1)                                                               as avg_fouls,
+    round(sum(fouls)::double / count(distinct match_id), 1)                                    as avg_fouls,
     sum(yellow_cards)                                                                          as yellow_cards,
     sum(red_cards)                                                                             as red_cards,
-    round(avg(saves::double), 1)                                                               as avg_saves
+    round(sum(saves)::double / count(distinct match_id), 1)                                    as avg_saves
 from superligaen.mart_match_facts
 where team_name = '${inputs.team.value}'
   and season = '${inputs.season.value}'

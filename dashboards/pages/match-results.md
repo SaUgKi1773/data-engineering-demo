@@ -27,6 +27,7 @@ order by 1 desc
 
 ```sql results
 select
+    match_id,
     match_date,
     match_round_name                as round,
     match_round_number,
@@ -44,15 +45,15 @@ from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and cast(match_round_number as integer) in ${inputs.round.value}
   and result in ('Win', 'Draw', 'Loss')
-group by match_date, match_round_name, match_round_number, match_name, match_short_name, score, season
+group by match_id, match_date, match_round_name, match_round_number, match_name, match_short_name, score, season
 order by match_date desc
 ```
 
 ```sql round_kpis
 select
     sum(total_goals)                    as total_goals,
-    round(avg(total_goals), 2)          as avg_goals_per_match,
-    round(avg(total_shots_on_goal), 1)  as avg_shots_on_goal,
+    round(sum(total_goals)::double / count(distinct match_id), 2)         as avg_goals_per_match,
+    round(sum(total_shots_on_goal)::double / count(distinct match_id), 1) as avg_shots_on_goal,
     round(sum(total_xg), 2)             as total_xg
 from ${results}
 ```

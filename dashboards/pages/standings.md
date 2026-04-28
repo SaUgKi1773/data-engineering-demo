@@ -26,7 +26,7 @@ from (
     select
         team_name,
         standings_type,
-        count(*)                                          as gp,
+        count(distinct match_id)                          as gp,
         sum(case when result = 'Win'  then 1 else 0 end) as w,
         sum(case when result = 'Draw' then 1 else 0 end) as d,
         sum(case when result = 'Loss' then 1 else 0 end) as l,
@@ -62,7 +62,7 @@ select
 from (
     select
         team_name,
-        count(*)                                          as gp,
+        count(distinct match_id)                          as gp,
         sum(case when result = 'Win'  then 1 else 0 end) as w,
         sum(case when result = 'Draw' then 1 else 0 end) as d,
         sum(case when result = 'Loss' then 1 else 0 end) as l,
