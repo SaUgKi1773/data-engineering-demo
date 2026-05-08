@@ -9,8 +9,8 @@
 WITH fixture_teams AS (
     SELECT
         f.fixture_id,
-        f.kick_off::DATE                         AS match_date,
-        EXTRACT(hour FROM f.kick_off)::INTEGER    AS kick_off_hour,
+        (f.kick_off AT TIME ZONE 'Europe/Copenhagen')::DATE    AS match_date,
+        EXTRACT(hour FROM f.kick_off AT TIME ZONE 'Europe/Copenhagen')::INTEGER AS kick_off_hour,
         f.league_id,
         f.referee,
         f.venue_id,
@@ -26,8 +26,8 @@ WITH fixture_teams AS (
     UNION ALL
     SELECT
         f.fixture_id,
-        f.kick_off::DATE,
-        EXTRACT(hour FROM f.kick_off)::INTEGER,
+        (f.kick_off AT TIME ZONE 'Europe/Copenhagen')::DATE,
+        EXTRACT(hour FROM f.kick_off AT TIME ZONE 'Europe/Copenhagen')::INTEGER,
         f.league_id,
         f.referee,
         f.venue_id,
