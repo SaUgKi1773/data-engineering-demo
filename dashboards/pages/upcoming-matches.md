@@ -4,23 +4,57 @@ hide_toc: true
 title: Upcoming Fixtures
 ---
 
-```sql upcoming
-select
-    max(case when team_side = 'Home' then team_name end) || '|||' ||
-    max(case when team_side = 'Away' then team_name end)              as match_key,
-    match_name,
-    match_round_name                                                   as round,
-    match_round_number,
-    max(case when team_side = 'Home' then team_name end)              as home_team,
-    max(case when team_side = 'Away' then team_name end)              as away_team,
-    strftime(match_date, '%Y-%m-%d')                                  as match_date,
-    kick_off_time,
-    case when stadium_name like '%Unknown%' or stadium_name like '%Applicable%'
-         then 'TBD' else stadium_name end                             as stadium,
-    season
+```sql rounds
+select distinct
+    match_round_name   as round,
+    match_round_number
 from superligaen.mart_match_facts
 where result = 'Pending'
-group by match_name, match_round_name, match_round_number, match_date, kick_off_time, stadium_name, season
+order by match_round_number asc
+```
+
+{#key rounds[0]?.match_round_number}
+<Dropdown data={rounds} name=round value=match_round_number label=round defaultValue={rounds[0]?.match_round_number} order="match_round_number asc" />
+{/key}
+
+```sql teams
+select distinct team_name
+from superligaen.mart_match_facts
+where result = 'Pending'
+  and match_round_number = ${inputs.round.value}
+order by team_name asc
+```
+
+{#key inputs.round.value}
+<Dropdown data={teams} name=team value=team_name label=team_name order="team_name asc" defaultValue="All Teams">
+    <DropdownOption value="All Teams" valueLabel="All Teams"/>
+</Dropdown>
+{/key}
+
+```sql upcoming
+with base as (
+    select
+        max(case when team_side = 'Home' then team_name end) || '|||' ||
+        max(case when team_side = 'Away' then team_name end)              as match_key,
+        match_name,
+        match_round_name                                                   as round,
+        match_round_number,
+        max(case when team_side = 'Home' then team_name end)              as home_team,
+        max(case when team_side = 'Away' then team_name end)              as away_team,
+        strftime(match_date, '%Y-%m-%d')                                  as match_date,
+        kick_off_time,
+        case when stadium_name like '%Unknown%' or stadium_name like '%Applicable%'
+             then 'TBD' else stadium_name end                             as stadium,
+        season
+    from superligaen.mart_match_facts
+    where result = 'Pending'
+      and match_round_number = ${inputs.round.value}
+    group by match_name, match_round_name, match_round_number, match_date, kick_off_time, stadium_name, season
+)
+select * from base
+where '${inputs.team.value}' = 'All Teams'
+   or home_team = '${inputs.team.value}'
+   or away_team = '${inputs.team.value}'
 order by match_date asc, kick_off_time asc
 ```
 
