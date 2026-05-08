@@ -4,32 +4,14 @@ hide_toc: true
 title: Upcoming Fixtures
 ---
 
-```sql rounds
-select distinct
-    match_round_name   as round,
-    match_round_number
-from superligaen.mart_match_facts
-where result = 'Pending'
-order by match_round_number asc
-```
-
-{#key rounds[0]?.match_round_number}
-<Dropdown data={rounds} name=round value=match_round_number label=round defaultValue={rounds[0]?.match_round_number} order="match_round_number asc" />
-{/key}
-
 ```sql teams
 select distinct team_name
 from superligaen.mart_match_facts
 where result = 'Pending'
-  and match_round_number = ${inputs.round.value}
 order by team_name asc
 ```
 
-{#key inputs.round.value}
-<Dropdown data={teams} name=team value=team_name label=team_name order="team_name asc" defaultValue="All Teams">
-    <DropdownOption value="All Teams" valueLabel="All Teams"/>
-</Dropdown>
-{/key}
+<Dropdown data={teams} name=team value=team_name label=team_name order="team_name asc" multiple=true selectAllByDefault=true />
 
 ```sql upcoming
 with base as (
@@ -48,13 +30,11 @@ with base as (
         season
     from superligaen.mart_match_facts
     where result = 'Pending'
-      and match_round_number = ${inputs.round.value}
     group by match_name, match_round_name, match_round_number, match_date, kick_off_time, stadium_name, season
 )
 select * from base
-where '${inputs.team.value}' = 'All Teams'
-   or home_team = '${inputs.team.value}'
-   or away_team = '${inputs.team.value}'
+where home_team in ${inputs.team.value}
+   or away_team in ${inputs.team.value}
 order by match_date asc, kick_off_time asc
 ```
 
