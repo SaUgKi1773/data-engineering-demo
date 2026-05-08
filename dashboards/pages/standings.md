@@ -5,6 +5,7 @@ title: Standings
 ---
 
 
+
 ```sql seasons
 select distinct season from superligaen.mart_match_facts
 order by season desc
@@ -131,7 +132,7 @@ order by
 
 ### 🏆 Championship Group
 
-<div class="block md:hidden">
+<div class="standings-table block md:hidden">
 <DataTable data={championship} rows=20>
     <Column id=rank title="#"   align=center />
     <Column id=team title="Team" wrap=true   />
@@ -143,7 +144,7 @@ order by
     <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
 </div>
-<div class="hidden md:block">
+<div class="standings-table hidden md:block">
 <DataTable data={championship} rows=20>
     <Column id=rank title="#"   align=center />
     <Column id=team title="Team" wrap=true   />
@@ -164,7 +165,7 @@ order by
 
 ### ⬇️ Relegation Group
 
-<div class="block md:hidden">
+<div class="standings-table block md:hidden">
 <DataTable data={relegation} rows=20>
     <Column id=rank title="#"   align=center />
     <Column id=team title="Team" wrap=true   />
@@ -176,7 +177,7 @@ order by
     <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
 </div>
-<div class="hidden md:block">
+<div class="standings-table hidden md:block">
 <DataTable data={relegation} rows=20>
     <Column id=rank title="#"   align=center />
     <Column id=team title="Team" wrap=true   />
@@ -197,7 +198,7 @@ order by
 
 ### 📋 Regular Season
 
-<div class="block md:hidden">
+<div class="standings-table block md:hidden">
 <DataTable data={regular} rows=20>
     <Column id=rank title="#"   align=center />
     <Column id=team title="Team" wrap=true   />
@@ -209,7 +210,7 @@ order by
     <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
 </div>
-<div class="hidden md:block">
+<div class="standings-table hidden md:block">
 <DataTable data={regular} rows=20>
     <Column id=rank title="#"   align=center />
     <Column id=team title="Team" wrap=true   />
