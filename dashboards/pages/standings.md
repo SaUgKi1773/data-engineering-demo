@@ -4,6 +4,7 @@ hide_toc: true
 title: Standings
 ---
 
+
 ```sql seasons
 select distinct season from superligaen.mart_match_facts
 order by season desc
@@ -130,6 +131,19 @@ order by
 
 ### 🏆 Championship Group
 
+<div class="block md:hidden">
+<DataTable data={championship} rows=20>
+    <Column id=rank title="#"   align=center />
+    <Column id=team title="Team" wrap=true   />
+    <Column id=gp   title="GP"  align=center />
+    <Column id=w    title="W"   align=center />
+    <Column id=d    title="D"   align=center />
+    <Column id=l    title="L"   align=center />
+    <Column id=gd   title="GD"  align=center />
+    <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
+</DataTable>
+</div>
+<div class="hidden md:block">
 <DataTable data={championship} rows=20>
     <Column id=rank title="#"   align=center />
     <Column id=team title="Team" wrap=true   />
@@ -142,6 +156,7 @@ order by
     <Column id=gd   title="GD"  align=center />
     <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
+</div>
 
 {/if}
 
@@ -149,6 +164,17 @@ order by
 
 ### ⬇️ Relegation Group
 
+<div class="block md:hidden">
+<DataTable data={relegation} rows=20>
+    <Column id=rank title="#"   align=center />
+    <Column id=team title="Team" wrap=true   />
+    <Column id=w    title="W"   align=center />
+    <Column id=d    title="D"   align=center />
+    <Column id=l    title="L"   align=center />
+    <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
+</DataTable>
+</div>
+<div class="hidden md:block">
 <DataTable data={relegation} rows=20>
     <Column id=rank title="#"   align=center />
     <Column id=team title="Team" wrap=true   />
@@ -161,6 +187,7 @@ order by
     <Column id=gd   title="GD"  align=center />
     <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
+</div>
 
 {/if}
 
@@ -168,6 +195,17 @@ order by
 
 ### 📋 Regular Season
 
+<div class="block md:hidden">
+<DataTable data={regular} rows=20>
+    <Column id=rank title="#"   align=center />
+    <Column id=team title="Team" wrap=true   />
+    <Column id=w    title="W"   align=center />
+    <Column id=d    title="D"   align=center />
+    <Column id=l    title="L"   align=center />
+    <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
+</DataTable>
+</div>
+<div class="hidden md:block">
 <DataTable data={regular} rows=20>
     <Column id=rank title="#"   align=center />
     <Column id=team title="Team" wrap=true   />
@@ -180,6 +218,7 @@ order by
     <Column id=gd   title="GD"  align=center />
     <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
+</div>
 
 {/if}
 
