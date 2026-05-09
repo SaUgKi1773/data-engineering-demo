@@ -65,7 +65,8 @@ SELECT
     ingested_at
 FROM {{ source('bronze', 'api_football__topyellowcards') }},
 UNNEST(raw_json::JSON[]) AS t1(elem),
-UNNEST((elem->'$.statistics')::JSON[]) AS t2(stats)
+UNNEST((elem->'$.statistics')::JSON[]) WITH ORDINALITY AS t2(stats, stats_ord)
 {% if is_incremental() %}
 WHERE {{ season_filter() }}
 {% endif %}
+QUALIFY ROW_NUMBER() OVER (PARTITION BY season, league_id, player_id ORDER BY stats_ord DESC) = 1

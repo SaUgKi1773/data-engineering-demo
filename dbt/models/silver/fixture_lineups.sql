@@ -31,6 +31,7 @@ WITH src AS (
     JOIN {{ source('bronze', 'api_football__fixtures') }} f USING (fixture_id),
     UNNEST(l.raw_json::JSON[]) AS t1(tl),
     UNNEST((tl->'$.startXI')::JSON[]) AS t2(p)
+    WHERE (p->>'$.player.id') IS NOT NULL
     UNION ALL
     SELECT
         l.fixture_id,
@@ -56,6 +57,7 @@ WITH src AS (
     JOIN {{ source('bronze', 'api_football__fixtures') }} f USING (fixture_id),
     UNNEST(l.raw_json::JSON[]) AS t1(tl),
     UNNEST((tl->'$.substitutes')::JSON[]) AS t2(p)
+    WHERE (p->>'$.player.id') IS NOT NULL
 )
 SELECT * FROM src
 {% if is_incremental() %}
