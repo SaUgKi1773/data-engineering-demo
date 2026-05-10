@@ -2,7 +2,7 @@
     config(
         materialized='incremental',
         incremental_strategy='delete+insert',
-        unique_key=['fixture_id', 'player_id', 'team_id']
+        unique_key=['match_sk', 'player_sk', 'team_sk']
     )
 }}
 
@@ -36,18 +36,18 @@ WITH src AS (
         f.venue_id,
         f.referee,
         fp.minutes_played,
-        fp.goals,
-        fp.assists,
-        fp.shots_total,
-        fp.shots_on,
-        fp.passes_total,
-        fp.passes_key,
-        fp.tackles_total,
-        fp.interceptions,
-        fp.duels_total,
-        fp.duels_won,
-        fp.yellow_cards,
-        fp.red_cards,
+        COALESCE(fp.goals,          0) AS goals,
+        COALESCE(fp.assists,        0) AS assists,
+        COALESCE(fp.shots_total,    0) AS shots_total,
+        COALESCE(fp.shots_on,       0) AS shots_on,
+        COALESCE(fp.passes_total,   0) AS passes_total,
+        COALESCE(fp.passes_key,     0) AS passes_key,
+        COALESCE(fp.tackles_total,  0) AS tackles_total,
+        COALESCE(fp.interceptions,  0) AS interceptions,
+        COALESCE(fp.duels_total,    0) AS duels_total,
+        COALESCE(fp.duels_won,      0) AS duels_won,
+        COALESCE(fp.yellow_cards,   0) AS yellow_cards,
+        COALESCE(fp.red_cards,      0) AS red_cards,
         TRY_CAST(fp.rating AS DECIMAL) AS rating
     FROM {{ ref('fixture_players') }} fp
     JOIN {{ ref('fixtures') }} f ON f.fixture_id = fp.fixture_id
@@ -67,9 +67,6 @@ joined AS (
         src.team_side_sk,
         src.match_result_sk,
         src.appearance_type_sk,
-        src.fixture_id,
-        src.player_id,
-        src.team_id,
         src.minutes_played,
         src.goals,
         src.assists,

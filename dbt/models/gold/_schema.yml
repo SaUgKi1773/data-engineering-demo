@@ -242,7 +242,7 @@ models:
   - name: fct_player_appearances
     tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns: [fixture_id, player_id, team_id]
+          combination_of_columns: [match_sk, player_sk, team_sk]
       - dbt_expectations.expect_table_row_count_to_be_between:
           min_value: 2000
     columns:
