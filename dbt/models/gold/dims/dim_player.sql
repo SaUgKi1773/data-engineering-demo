@@ -3,9 +3,9 @@
         materialized='incremental',
         incremental_strategy='merge',
         unique_key='player_id',
-        merge_update_columns=['player_name', 'firstname', 'lastname', 'nationality', 'birth_date', 'birth_place', 'birth_country', 'height', 'weight', 'photo', 'position', 'current_shirt_number', 'current_team_id', 'current_team_name'],
+        merge_update_columns=['player_name', 'firstname', 'lastname', 'nationality', 'birth_date', 'birth_place', 'birth_country', 'height', 'weight', 'photo', 'position', 'current_shirt_number', 'current_team_name'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Player Name', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Player Name', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR)) t(player_sk, player_id, player_name, firstname, lastname, nationality, birth_date, birth_place, birth_country, height, weight, photo, position, current_shirt_number, current_team_id, current_team_name) WHERE t.player_sk NOT IN (SELECT player_sk FROM {{ this }})"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Player Name', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Player Name', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR)) t(player_sk, player_id, player_name, firstname, lastname, nationality, birth_date, birth_place, birth_country, height, weight, photo, position, current_shirt_number, current_team_name) WHERE t.player_sk NOT IN (SELECT player_sk FROM {{ this }})"
         ]
     )
 }}
@@ -25,7 +25,6 @@ WITH latest AS (
         photo,
         position,
         shirt_number AS current_shirt_number,
-        team_id      AS current_team_id,
         team_name    AS current_team_name
     FROM {{ ref('players') }}
     {% if is_incremental() %}
@@ -53,7 +52,6 @@ SELECT
     src.photo,
     src.position,
     src.current_shirt_number,
-    src.current_team_id,
     src.current_team_name
 FROM latest src
 WHERE src.player_id IS NOT NULL
