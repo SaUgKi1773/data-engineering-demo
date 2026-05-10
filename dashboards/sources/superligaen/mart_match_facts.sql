@@ -1,6 +1,6 @@
 SELECT
     d.date                                                                   AS match_date,
-    m.season,
+    d.season,
     m.match_round_name,
     m.match_round_type,
     m.match_round_number,
@@ -41,22 +41,22 @@ SELECT
     f.goalkeeper_saves                                                       AS saves,
     ROUND(f.expected_goals::DOUBLE, 2)                                       AS xg,
     CASE
-        WHEN MAX(CASE WHEN m.match_round_type = 'Championship Group' THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, m.season) = 1
+        WHEN MAX(CASE WHEN m.match_round_type = 'Championship Group' THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
             THEN 'Championship Group'
-        WHEN MAX(CASE WHEN m.match_round_type = 'Relegation Group'   THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, m.season) = 1
+        WHEN MAX(CASE WHEN m.match_round_type = 'Relegation Group'   THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
             THEN 'Relegation Group'
         ELSE 'Regular Season'
     END                                                                      AS standings_type,
     SUM(f.points_earned) OVER (
-        PARTITION BY f.team_sk, m.season
+        PARTITION BY f.team_sk, d.season
         ORDER BY m.match_round_number
     )                                                                        AS cumulative_points,
     SUM(f.goals_scored - f.goals_conceded) OVER (
-        PARTITION BY f.team_sk, m.season
+        PARTITION BY f.team_sk, d.season
         ORDER BY m.match_round_number
     )                                                                        AS cumulative_gd,
     SUM(f.goals_scored) OVER (
-        PARTITION BY f.team_sk, m.season
+        PARTITION BY f.team_sk, d.season
         ORDER BY m.match_round_number
     )                                                                        AS cumulative_gf
 FROM superligaen.gold.fct_match_results  f
