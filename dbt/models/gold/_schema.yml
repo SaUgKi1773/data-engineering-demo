@@ -270,6 +270,48 @@ models:
           - relationships:
               to: ref('dim_team')
               field: team_sk
+      - name: opponent_team_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team')
+              field: team_sk
+      - name: league_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_league')
+              field: league_sk
+      - name: stadium_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_stadium')
+              field: stadium_sk
+      - name: referee_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_referee')
+              field: referee_sk
+      - name: time_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_time')
+              field: time_sk
+      - name: team_side_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_team_side')
+              field: team_side_sk
+      - name: match_result_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_match_result')
+              field: match_result_sk
       - name: appearance_type_sk
         tests:
           - not_null
