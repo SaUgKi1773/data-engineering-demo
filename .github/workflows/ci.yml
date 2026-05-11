@@ -17,26 +17,31 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: uv sync
 
       - name: Validate Python syntax
         run: |
-          python -m py_compile ingestion/run.py
-          python -m py_compile ingestion/api.py
-          python -m py_compile ingestion/db.py
-          python -m py_compile ingestion/config.py
+          uv run python -m py_compile ingestion/sportmonks/run.py
+          uv run python -m py_compile ingestion/sportmonks/api.py
+          uv run python -m py_compile ingestion/sportmonks/db.py
+          uv run python -m py_compile ingestion/sportmonks/config.py
+          uv run python -m py_compile ingestion/sportmonks/ingest_static.py
+          uv run python -m py_compile ingestion/sportmonks/ingest_standings.py
+          uv run python -m py_compile ingestion/sportmonks/ingest_fixtures.py
+
+      - name: Create local DuckDB for compile
+        run: uv run python -c "import duckdb; duckdb.connect('local_dev.duckdb').close()"
 
       - name: dbt deps
         working-directory: dbt
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: dbt deps
+        run: uv run dbt deps
 
       - name: dbt compile
         working-directory: dbt
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: dbt compile --target dev
+        run: uv run dbt compile --target local
