@@ -21,7 +21,7 @@ import requests
 from api import get, get_paginated, CORE_API_BASE
 from config import (
     DATE_CHUNK_DAYS, FIRST_SEASON_YEAR, FIXTURE_INCLUDES,
-    H2H_INCLUDES, INCREMENTAL_DAYS, LEAGUE_ID,
+    H2H_INCLUDES, INCREMENTAL_DAYS_BACK, INCREMENTAL_DAYS_FORWARD, LEAGUE_ID,
 )
 from db import delete_global, delete_by_season, delete_by_date, insert_batch
 
@@ -397,9 +397,9 @@ def load_fixtures_full(conn, seasons: list) -> int:
 
 
 def load_fixtures_incremental(conn) -> int:
-    """Daily refresh: delete and reload the last INCREMENTAL_DAYS days."""
-    from_date = (date.today() - timedelta(days=INCREMENTAL_DAYS)).isoformat()
-    to_date   = date.today().isoformat()
+    """Daily refresh: delete and reload a rolling window of past + upcoming fixtures."""
+    from_date = (date.today() - timedelta(days=INCREMENTAL_DAYS_BACK)).isoformat()
+    to_date   = (date.today() + timedelta(days=INCREMENTAL_DAYS_FORWARD)).isoformat()
     delete_by_date(conn, "sportmonks__fixtures", from_date, to_date)
     n = _load_fixture_window(conn, from_date, to_date)
     log.info("fixtures incremental complete: %d rows (%s → %s)", n, from_date, to_date)

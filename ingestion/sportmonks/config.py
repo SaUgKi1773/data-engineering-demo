@@ -8,7 +8,8 @@ FIRST_SEASON_YEAR = 2010
 MAX_RETRIES       = 5
 PER_PAGE          = 100
 DATE_CHUNK_DAYS   = 90   # stay under the 100-day API window limit
-INCREMENTAL_DAYS  = 30   # how far back the daily refresh looks
+INCREMENTAL_DAYS_BACK    = 3    # days back for daily refresh
+INCREMENTAL_DAYS_FORWARD = 30   # days ahead for daily refresh
 
 # All includes confirmed available on the free plan via API probe + official docs
 FIXTURE_INCLUDES = (
