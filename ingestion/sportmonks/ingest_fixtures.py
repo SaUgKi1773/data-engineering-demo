@@ -23,12 +23,13 @@ def _chunks(start: date, end: date):
 def _ingest_window(conn, from_date: str, to_date: str) -> int:
     records = get_paginated(
         f"/fixtures/between/{from_date}/{to_date}",
-        params={"filters": f"leagueIds:{LEAGUE_ID}", "include": FIXTURE_INCLUDES},
+        params={"include": FIXTURE_INCLUDES},
     )
-    for fixture in records:
+    fixtures = [f for f in records if f.get("league_id") == LEAGUE_ID]
+    for fixture in fixtures:
         upsert(conn, "sportmonks__fixtures", fixture["id"], fixture, "sportmonks/fixtures")
-    log.info("Fixtures %s → %s: %d upserted", from_date, to_date, len(records))
-    return len(records)
+    log.info("Fixtures %s → %s: %d upserted (%d fetched, %d filtered out)", from_date, to_date, len(fixtures), len(records), len(records) - len(fixtures))
+    return len(fixtures)
 
 
 def load_fixtures_full(conn, seasons: list[dict]) -> None:
