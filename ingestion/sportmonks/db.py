@@ -19,6 +19,10 @@ BRONZE_TABLES = [
     "sportmonks__seasons",
     "sportmonks__fixtures",
     "sportmonks__standings",
+    "sportmonks__teams",
+    "sportmonks__venues",
+    "sportmonks__referees",
+    "sportmonks__rounds",
 ]
 
 

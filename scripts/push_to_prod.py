@@ -22,6 +22,10 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 TABLES = [
     "sportmonks__seasons",
+    "sportmonks__teams",
+    "sportmonks__venues",
+    "sportmonks__referees",
+    "sportmonks__rounds",
     "sportmonks__fixtures",
     "sportmonks__standings",
 ]
