@@ -105,17 +105,10 @@ ENDPOINT_MANIFEST = [
         "extra_params": {"filters": "regionCountries:320"},
         "modes":        ["full", "incremental"],
     },
-    {
-        "table":       "sportmonks__core_cities",
-        "path":        "/cities",
-        "base":        CORE_API_BASE,
-        "strategy":    "static",
-        "delete":      "global",
-        "includes":    "",
-        # Filter to Denmark only — the global cities dataset is enormous (100k+ rows)
-        "extra_params": {"country_id": 320},
-        "modes":       ["full", "incremental"],
-    },
+    # core_cities excluded — the API ignores the country_id filter param,
+    # returning the full global dataset (100k+ cities). No viable way to
+    # scope to Denmark without a working server-side filter.
+
     {
         "table":    "sportmonks__types",
         # Lookup table for every type_id referenced in other tables

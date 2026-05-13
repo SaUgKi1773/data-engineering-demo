@@ -29,7 +29,6 @@ GLOBAL_TABLES = [
     "sportmonks__core_continents",
     "sportmonks__core_countries",
     "sportmonks__core_regions",
-    "sportmonks__core_cities",
     # Football API global tables
     "sportmonks__types",
     "sportmonks__states",
