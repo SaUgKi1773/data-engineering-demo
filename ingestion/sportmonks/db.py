@@ -3,13 +3,13 @@ DuckDB connection, schema management, and write helpers.
 
 Table categories and their delete strategy
 -------------------------------------------
-Global    : DELETE FROM table (truncate)      — types, league, seasons, coaches,
-                                                transfers, rivals, h2h
+Global    : DELETE FROM table (truncate)      — types, states, tv_stations, league,
+                                                seasons, players, rivals
 Seasonal  : DELETE WHERE _season_id = ?       — stages, rounds, teams, venues,
-                                                referees, squads, standings,
-                                                topscorers, stage_topscorers,
-                                                stage_statistics, round_statistics
-Date-win  : DELETE WHERE _fixture_date BETWEEN — fixtures
+                                                referees, standings, topscorers,
+                                                stage_topscorers, stage_statistics,
+                                                round_statistics
+Date-win  : DELETE WHERE _fixture_date BETWEEN — transfers, fixtures
 """
 
 import json

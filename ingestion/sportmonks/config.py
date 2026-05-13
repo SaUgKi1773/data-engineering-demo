@@ -113,7 +113,7 @@ ENDPOINT_MANIFEST = [
         "delete":      "global",
         "includes":    "",
         # Filter to Denmark only — the global cities dataset is enormous (100k+ rows)
-        "extra_params": {"filters": f"cityCountries:{320}"},
+        "extra_params": {"country_id": 320},
         "modes":       ["full", "incremental"],
     },
     {
@@ -218,7 +218,7 @@ ENDPOINT_MANIFEST = [
         "strategy":    "season_based",
         "delete":      "seasonal",
         "includes":    "sport;country;venue;coaches;rivals;activeSeasons;statistics",
-        # team_map built here drives squads / coaches / transfers / rivals / h2h below
+        # team_map built here drives rivals below and populates ctx.all_team_ids
         "context_key": "team_map",
         "modes":       ["full", "incremental"],
     },

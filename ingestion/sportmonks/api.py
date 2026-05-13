@@ -9,13 +9,18 @@ import time
 
 import requests
 
-from config import API_BASE, API_CALL_DELAY, CORE_API_BASE, MAX_RETRIES, PER_PAGE, REQUEST_TIMEOUT  # noqa: F401
+from config import API_BASE, API_CALL_DELAY, MAX_RETRIES, PER_PAGE, REQUEST_TIMEOUT  # noqa: F401
 
 log = logging.getLogger(__name__)
 
+_API_KEY: str | None = None
+
 
 def _headers() -> dict:
-    return {"Authorization": os.environ["SPORTMONKS_API_KEY"]}
+    global _API_KEY
+    if _API_KEY is None:
+        _API_KEY = os.environ["SPORTMONKS_API_KEY"]
+    return {"Authorization": _API_KEY}
 
 
 def get(path: str, params: dict = None, base: str = API_BASE) -> dict:
@@ -26,7 +31,7 @@ def get(path: str, params: dict = None, base: str = API_BASE) -> dict:
             r = requests.get(url, headers=_headers(), params=params, timeout=REQUEST_TIMEOUT)
         except requests.RequestException as exc:
             log.warning("Request error (attempt %d/%d): %s", attempt + 1, MAX_RETRIES, exc)
-            time.sleep(5 * (attempt + 1))
+            time.sleep(min(5 * 2 ** attempt, 120))
             continue
         if r.status_code == 429:
             # Use retry_after from the API response if present; otherwise fall back

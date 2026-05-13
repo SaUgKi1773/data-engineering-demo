@@ -33,7 +33,6 @@ pair_based          → every unique (team1_id, team2_id) combination (H2H)
 date_based          → season-range chunks (full) or rolling window (incremental)
 """
 
-import itertools
 import json
 import logging
 from datetime import date, timedelta
@@ -94,6 +93,9 @@ def _resolve_all_team_ids(conn, team_map: dict) -> set:
     return ids
 
 
+
+
+
 def _params(entry: dict) -> dict:
     p = {}
     if entry.get("includes"):
@@ -125,6 +127,8 @@ class _Context:
 def _handle_static(conn, entry: dict, _ctx: _Context) -> int:
     delete_global(conn, entry["table"])
     records = get_paginated(entry["path"], _params(entry), _base(entry))
+    if not records:
+        log.warning("%-46s 0 rows — check endpoint or filter config", entry["table"] + ":")
     insert_batch(conn, entry["table"], _rows(records))
     log.info("%-46s %d rows", entry["table"] + ":", len(records))
     return len(records)
@@ -182,28 +186,6 @@ def _handle_season_based(conn, entry: dict, seasons: list, _ctx: _Context) -> di
         log.info("%-46s %-12s %d rows", entry["table"] + ":", season["name"], len(rows))
     return result_map
 
-
-def _handle_season_team_based(conn, entry: dict, seasons: list, ctx: _Context) -> int:
-    """Iterate every (season × team) pair; used for squad rosters."""
-    total = 0
-    for season in seasons:
-        sid = season["id"]
-        teams = ctx.team_map.get(sid) or get_paginated(
-            f"/teams/seasons/{sid}", base=API_BASE
-        )
-        delete_by_season(conn, entry["table"], sid)
-        rows = []
-        for team in teams:
-            records = get_paginated(
-                entry["path"].format(season_id=sid, team_id=team["id"]),
-                _params(entry),
-                _base(entry),
-            )
-            rows.extend(_rows(records, season_id=sid))
-        insert_batch(conn, entry["table"], rows)
-        log.info("%-46s %-12s %d rows", entry["table"] + ":", season["name"], len(rows))
-        total += len(rows)
-    return total
 
 
 def _handle_stage_based(conn, entry: dict, seasons: list, ctx: _Context) -> int:
@@ -275,28 +257,8 @@ def _handle_team_based(conn, entry: dict, ctx: _Context) -> int:
     return len(rows)
 
 
-def _handle_pair_based(conn, entry: dict, ctx: _Context) -> int:
-    """Iterate all unique unordered team pairs for H2H data."""
-    team_ids = sorted(ctx.all_team_ids)
-    pairs = list(itertools.combinations(team_ids, 2))
-    delete_global(conn, entry["table"])
-    rows, seen = [], set()
-    for t1, t2 in pairs:
-        for r in get_paginated(
-            entry["path"].format(team1_id=t1, team2_id=t2),
-            _params(entry),
-            _base(entry),
-        ):
-            if r["id"] not in seen:
-                seen.add(r["id"])
-                fd = (r.get("starting_at") or "")[:10] or None
-                rows.append((r["id"], json.dumps(r), None, fd))
-    insert_batch(conn, entry["table"], rows)
-    log.info("%-46s %d rows (%d pairs)", entry["table"] + ":", len(rows), len(pairs))
-    return len(rows)
 
-
-def _fetch_fixture_window(conn, entry: dict, from_date: str, to_date: str) -> int:
+def _fetch_date_window(conn, entry: dict, from_date: str, to_date: str) -> int:
     """
     Fetch one date window and upsert.  Behaviour is controlled by optional
     manifest keys:
@@ -347,7 +309,7 @@ def _handle_date_based_full(conn, entry: dict, ctx: _Context) -> int:
         end   = date.fromisoformat(season["ending_at"])
         for from_date, to_date in _date_chunks(start, end):
             delete_by_date(conn, entry["table"], from_date, to_date)
-            total += _fetch_fixture_window(conn, entry, from_date, to_date)
+            total += _fetch_date_window(conn, entry, from_date, to_date)
     log.info("%-46s full load complete: %d rows", entry["table"] + ":", total)
     return total
 
@@ -359,7 +321,7 @@ def _handle_date_based_incremental(conn, entry: dict, _ctx: _Context) -> int:
     from_date = (date.today() - timedelta(days=days_back)).isoformat()
     to_date   = (date.today() + timedelta(days=days_forward)).isoformat()
     delete_by_date(conn, entry["table"], from_date, to_date)
-    n = _fetch_fixture_window(conn, entry, from_date, to_date)
+    n = _fetch_date_window(conn, entry, from_date, to_date)
     log.info("%-46s incremental: %d rows (%s → %s)",
              entry["table"] + ":", n, from_date, to_date)
     return n
@@ -393,9 +355,6 @@ def _dispatch(conn, entry: dict, ctx: _Context, mode: str) -> None:
             # historical teams even when running in incremental mode.
             ctx.all_team_ids = _resolve_all_team_ids(conn, ctx.team_map)
 
-    elif strategy == "season_team_based":
-        _handle_season_team_based(conn, entry, seasons, ctx)
-
     elif strategy == "stage_based":
         _handle_stage_based(conn, entry, seasons, ctx)
 
@@ -404,9 +363,6 @@ def _dispatch(conn, entry: dict, ctx: _Context, mode: str) -> None:
 
     elif strategy == "team_based":
         _handle_team_based(conn, entry, ctx)
-
-    elif strategy == "pair_based":
-        _handle_pair_based(conn, entry, ctx)
 
     elif strategy == "date_based":
         if mode == "full":
