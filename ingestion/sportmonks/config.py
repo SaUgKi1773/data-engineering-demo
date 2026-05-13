@@ -289,12 +289,16 @@ ENDPOINT_MANIFEST = [
     # ══════════════════════════════════════════════════════════════════════════
 
     {
-        "table":    "sportmonks__transfers",
-        "path":     "/transfers/teams/{team_id}",
-        "strategy": "team_based",
-        "delete":   "global",
-        "includes": "sport;player;type;fromTeam;toTeam;position;detailedPosition",
-        "modes":    ["full", "incremental"],
+        "table":         "sportmonks__transfers",
+        "path":          "/transfers/between/{from_date}/{to_date}",
+        "strategy":      "date_based",
+        "delete":        "date_window",
+        "includes":      "sport;player;type;fromTeam;toTeam;position;detailedPosition",
+        "league_filter": False,
+        "date_field":    "date",
+        "days_back":     30,   # wider window — transfers can lag weeks
+        "days_forward":  0,    # no future dates — API rejects them
+        "modes":         ["full", "incremental"],
     },
     {
         "table":    "sportmonks__rivals",

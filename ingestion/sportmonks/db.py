@@ -36,7 +36,6 @@ GLOBAL_TABLES = [
     "sportmonks__tv_stations",
     "sportmonks__league",
     "sportmonks__seasons",
-    "sportmonks__transfers",
     "sportmonks__rivals",
     "sportmonks__players",         # new: football-API player data with full includes
 ]
@@ -55,6 +54,7 @@ SEASONAL_TABLES = [
 ]
 
 DATE_TABLES = [
+    "sportmonks__transfers",
     "sportmonks__fixtures",
 ]
 

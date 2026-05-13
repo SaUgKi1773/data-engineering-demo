@@ -8,6 +8,9 @@ Usage
   python run.py                          # DUCKDB_PATH env var or config default
   python run.py --tables sportmonks__states,sportmonks__tv_stations
 
+Note: --tables skips the seasons/teams bootstrap, so date_based and
+season_based entries will produce 0 rows when run in isolation.
+
 Modes
 -----
 Both modes load every table.  The difference is refresh granularity, driven by

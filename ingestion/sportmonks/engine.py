@@ -298,8 +298,10 @@ def _handle_pair_based(conn, entry: dict, ctx: _Context) -> int:
 
 def _fetch_fixture_window(conn, entry: dict, from_date: str, to_date: str) -> int:
     """
-    Fetch one date window, filter to LEAGUE_ID client-side (the API's leagueIds
-    param is unreliable on the between-dates endpoint), and upsert.
+    Fetch one date window and upsert.  Behaviour is controlled by optional
+    manifest keys:
+      league_filter (bool, default True)  — keep only records matching LEAGUE_ID
+      date_field    (str, default "starting_at") — field to store as _fixture_date
     Returns 400 from the API if the window is empty — treated as zero rows.
     """
     try:
@@ -313,16 +315,27 @@ def _fetch_fixture_window(conn, entry: dict, from_date: str, to_date: str) -> in
             return 0
         raise
 
-    fixtures = [f for f in records if f.get("league_id") == LEAGUE_ID]
+    league_filter = entry.get("league_filter", True)
+    date_field    = entry.get("date_field", "starting_at")
+
+    if league_filter:
+        kept = [f for f in records if f.get("league_id") == LEAGUE_ID]
+    else:
+        kept = records
+
     rows = [
         (f["id"], json.dumps(f), f.get("season_id"),
-         (f.get("starting_at") or "")[:10] or None)
-        for f in fixtures
+         (f.get(date_field) or "")[:10] or None)
+        for f in kept
     ]
     insert_batch(conn, entry["table"], rows)
-    log.info("%-46s %s → %s  %d rows (%d other-league filtered)",
-             entry["table"] + ":", from_date, to_date,
-             len(rows), len(records) - len(rows))
+    filtered = len(records) - len(kept)
+    if league_filter:
+        log.info("%-46s %s → %s  %d rows (%d other-league filtered)",
+                 entry["table"] + ":", from_date, to_date, len(rows), filtered)
+    else:
+        log.info("%-46s %s → %s  %d rows",
+                 entry["table"] + ":", from_date, to_date, len(rows))
     return len(rows)
 
 
@@ -341,8 +354,10 @@ def _handle_date_based_full(conn, entry: dict, ctx: _Context) -> int:
 
 def _handle_date_based_incremental(conn, entry: dict, _ctx: _Context) -> int:
     """Incremental load: delete-and-reload a rolling past+future window."""
-    from_date = (date.today() - timedelta(days=INCREMENTAL_DAYS_BACK)).isoformat()
-    to_date   = (date.today() + timedelta(days=INCREMENTAL_DAYS_FORWARD)).isoformat()
+    days_back    = entry.get("days_back",    INCREMENTAL_DAYS_BACK)
+    days_forward = entry.get("days_forward", INCREMENTAL_DAYS_FORWARD)
+    from_date = (date.today() - timedelta(days=days_back)).isoformat()
+    to_date   = (date.today() + timedelta(days=days_forward)).isoformat()
     delete_by_date(conn, entry["table"], from_date, to_date)
     n = _fetch_fixture_window(conn, entry, from_date, to_date)
     log.info("%-46s incremental: %d rows (%s → %s)",
