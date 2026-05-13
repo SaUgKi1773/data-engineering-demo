@@ -15,6 +15,10 @@ SELECT
     (lu->>'jersey_number')::INTEGER   AS jersey_number,
     lu->>'formation_field'            AS formation_field,
     (lu->>'formation_position')::INTEGER AS formation_position,
+    lu->'type'->>'name'                  AS type_name,
+    lu->'position'->>'name'              AS position_name,
+    lu->'position'->>'code'              AS position_code,
+    lu->'detailedposition'->>'name'      AS detailed_position_name,
     f._ingested_at
 FROM {{ source('bronze', 'sportmonks__fixtures') }} AS f,
 unnest(json_transform(f.raw_json::VARCHAR, '{"lineups": ["JSON"]}').lineups) AS t(lu)

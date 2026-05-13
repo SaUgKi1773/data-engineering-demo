@@ -20,6 +20,8 @@ SELECT
     raw_json->'country'->>'iso2'        AS country_iso2,
     raw_json->'country'->>'fifa_name'   AS country_fifa_name,
     raw_json->>'image_path'             AS image_path,
+    raw_json->'nationality'->>'name'    AS nationality_name,
+    raw_json->'city'->>'name'           AS city_name,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__referees') }}
 {% if is_incremental() %}

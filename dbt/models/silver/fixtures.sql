@@ -4,7 +4,7 @@
     unique_key='id'
 ) }}
 
-SELECT
+{% set cols %}
     id,
     (raw_json->>'league_id')::INTEGER        AS league_id,
     (raw_json->>'season_id')::INTEGER        AS season_id,
@@ -34,7 +34,33 @@ SELECT
     (raw_json->'round'->>'is_current')::BOOLEAN AS round_is_current,
     _fixture_date,
     _ingested_at
-FROM {{ source('bronze', 'sportmonks__fixtures') }}
+{% endset %}
+
 {% if is_incremental() %}
+
+SELECT {{ cols }}
+FROM {{ source('bronze', 'sportmonks__fixtures') }}
 WHERE _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }})
+
+{% else %}
+
+-- Initial full build: process one season at a time to stay within memory limits.
+-- Each season has ~200 fixtures; UNION ALL lets DuckDB stream rather than
+-- materialise all 3 000+ rows simultaneously.
+{% if execute %}
+    {% set season_ids = run_query(
+        "SELECT DISTINCT _season_id FROM " ~ source('bronze', 'sportmonks__fixtures') ~
+        " WHERE _season_id IS NOT NULL ORDER BY 1"
+    ).columns[0].values() %}
+{% else %}
+    {% set season_ids = [] %}
+{% endif %}
+
+{% for sid in season_ids %}
+SELECT {{ cols }}
+FROM {{ source('bronze', 'sportmonks__fixtures') }}
+WHERE _season_id = {{ sid }}
+{% if not loop.last %} UNION ALL {% endif %}
+{% endfor %}
+
 {% endif %}

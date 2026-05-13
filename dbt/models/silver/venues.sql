@@ -18,6 +18,7 @@ SELECT
     (raw_json->>'longitude')::DOUBLE      AS longitude,
     (raw_json->>'national_team')::BOOLEAN AS national_team,
     raw_json->>'image_path'               AS image_path,
+    raw_json->'country'->>'name'          AS country_name,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__venues') }}
 {% if is_incremental() %}

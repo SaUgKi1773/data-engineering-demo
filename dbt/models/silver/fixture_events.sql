@@ -25,6 +25,9 @@ SELECT
     (event->>'sub_type_id')::INTEGER     AS sub_type_id,
     (event->>'sort_order')::INTEGER      AS sort_order,
     (event->>'rescinded')::BOOLEAN       AS rescinded,
+    event->'type'->>'name'               AS type_name,
+    event->'type'->>'developer_name'     AS type_developer_name,
+    event->'participant'->>'name'        AS team_name,
     f._ingested_at
 FROM {{ source('bronze', 'sportmonks__fixtures') }} AS f,
 unnest(json_transform(f.raw_json::VARCHAR, '{"events": ["JSON"]}').events) AS t(event)

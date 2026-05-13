@@ -16,6 +16,10 @@ SELECT
     (raw_json->>'placeholder')::BOOLEAN      AS placeholder,
     (raw_json->>'last_played_at')::TIMESTAMP AS last_played_at,
     raw_json->>'image_path'                  AS image_path,
+    raw_json->'country'->>'name'             AS country_name,
+    raw_json->'venue'->>'name'               AS venue_name,
+    raw_json->'venue'->>'city_name'          AS venue_city,
+    (raw_json->'venue'->>'capacity')::INTEGER AS venue_capacity,
     _season_id,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__teams') }}

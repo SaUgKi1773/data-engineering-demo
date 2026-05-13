@@ -17,6 +17,8 @@ SELECT
     (raw_json->>'starting_at')::DATE             AS starting_at,
     (raw_json->>'ending_at')::DATE               AS ending_at,
     (raw_json->>'games_in_current_week')::BOOLEAN AS games_in_current_week,
+    raw_json->'type'->>'name'                    AS type_name,
+    raw_json->'type'->>'developer_name'          AS type_developer_name,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__stages') }}
 {% if is_incremental() %}

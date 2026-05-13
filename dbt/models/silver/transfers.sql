@@ -22,6 +22,8 @@ SELECT
     raw_json->'fromTeam'->>'name'                AS from_team_name,
     raw_json->'toTeam'->>'name'                  AS to_team_name,
     raw_json->'type'->>'name'                    AS transfer_type,
+    raw_json->'position'->>'name'                AS position_name,
+    raw_json->'position'->>'developer_name'      AS position_developer_name,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__transfers') }}
 {% if is_incremental() %}

@@ -5,6 +5,8 @@ sources:
     schema: bronze
     tables:
       - name: sportmonks__types
+      - name: sportmonks__states
+      - name: sportmonks__tv_stations
       - name: sportmonks__league
       - name: sportmonks__seasons
       - name: sportmonks__stages
@@ -12,9 +14,8 @@ sources:
       - name: sportmonks__teams
       - name: sportmonks__venues
       - name: sportmonks__referees
-      - name: sportmonks__squads
+      - name: sportmonks__players
       - name: sportmonks__fixtures
-      - name: sportmonks__h2h
       - name: sportmonks__standings
       - name: sportmonks__topscorers
       - name: sportmonks__stage_topscorers
@@ -22,8 +23,6 @@ sources:
       - name: sportmonks__round_statistics
       - name: sportmonks__transfers
       - name: sportmonks__rivals
-      - name: sportmonks__coaches
       - name: sportmonks__core_continents
       - name: sportmonks__core_countries
       - name: sportmonks__core_regions
-      - name: sportmonks__core_players

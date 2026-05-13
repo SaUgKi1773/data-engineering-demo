@@ -18,6 +18,7 @@ SELECT
     raw_json->'participant'->>'name'       AS team_name,
     raw_json->'type'->>'name'             AS stat_name,
     raw_json->'type'->>'code'             AS stat_code,
+    raw_json->'season'->>'name'           AS season_name,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__topscorers') }}
 {% if is_incremental() %}
