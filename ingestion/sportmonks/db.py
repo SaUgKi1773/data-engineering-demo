@@ -29,6 +29,7 @@ GLOBAL_TABLES = [
     "sportmonks__core_continents",
     "sportmonks__core_countries",
     "sportmonks__core_regions",
+    "sportmonks__core_cities",     # new
     "sportmonks__core_players",
     # Football API global tables
     "sportmonks__types",
@@ -38,6 +39,7 @@ GLOBAL_TABLES = [
     "sportmonks__transfers",
     "sportmonks__rivals",
     "sportmonks__h2h",
+    "sportmonks__players",         # new: football-API player data with full includes
 ]
 
 SEASONAL_TABLES = [
