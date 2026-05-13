@@ -29,9 +29,23 @@ def get(path: str, params: dict = None, base: str = API_BASE) -> dict:
             time.sleep(5 * (attempt + 1))
             continue
         if r.status_code == 429:
-            # Cap backoff at 600 s so that long rate-limit windows are survived
-            wait = min(60 * (attempt + 1), 600)
-            log.warning("Rate limited — sleeping %ds (attempt %d/%d)", wait, attempt + 1, MAX_RETRIES)
+            # Use retry_after from the API response if present; otherwise fall back
+            # to exponential backoff capped at 600 s
+            try:
+                body = r.json()
+                retry_after = (
+                    body.get("retry_after")
+                    or body.get("message", {}).get("retry_after")
+                    or 0
+                )
+                entity = body.get("requested_entity", "unknown")
+            except Exception:
+                retry_after, entity = 0, "unknown"
+            wait = int(retry_after) if retry_after else min(60 * (attempt + 1), 600)
+            log.warning(
+                "Rate limited (entity=%s) — sleeping %ds (attempt %d/%d)",
+                entity, wait, attempt + 1, MAX_RETRIES,
+            )
             time.sleep(wait)
             continue
         r.raise_for_status()
