@@ -3,9 +3,9 @@
         materialized='incremental',
         incremental_strategy='merge',
         unique_key='coach_id',
-        merge_update_columns=['coach_name', 'coach_display_name', 'coach_firstname', 'coach_lastname', 'coach_nationality_id', 'coach_image_path'],
+        merge_update_columns=['coach_name', 'coach_display_name', 'coach_firstname', 'coach_lastname', 'coach_nationality', 'coach_image_path'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Coach', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR)) t(coach_sk, coach_id, coach_name, coach_display_name, coach_firstname, coach_lastname, coach_nationality_id, coach_image_path) WHERE t.coach_sk NOT IN (SELECT coach_sk FROM {{ this }})"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Coach', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR)) t(coach_sk, coach_id, coach_name, coach_display_name, coach_firstname, coach_lastname, coach_nationality, coach_image_path) WHERE t.coach_sk NOT IN (SELECT coach_sk FROM {{ this }})"
         ]
     )
 }}
@@ -29,12 +29,13 @@ SELECT
     {% else %}
     ROW_NUMBER() OVER (ORDER BY coach_id) AS coach_sk,
     {% endif %}
-    coach_id,
-    common_name    AS coach_name,
-    display_name   AS coach_display_name,
-    firstname      AS coach_firstname,
-    lastname       AS coach_lastname,
-    nationality_id AS coach_nationality_id,
-    image_path     AS coach_image_path
-FROM latest
-WHERE coach_id IS NOT NULL
+    l.coach_id,
+    l.common_name  AS coach_name,
+    l.display_name AS coach_display_name,
+    l.firstname    AS coach_firstname,
+    l.lastname     AS coach_lastname,
+    c.name         AS coach_nationality,
+    l.image_path   AS coach_image_path
+FROM latest l
+LEFT JOIN {{ ref('core_countries') }} c ON c.id = l.nationality_id
+WHERE l.coach_id IS NOT NULL
