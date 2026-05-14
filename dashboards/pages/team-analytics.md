@@ -16,13 +16,9 @@ where result in ('Win', 'Draw', 'Loss')
 order by team_name
 ```
 
-<Dropdown data={seasons} name=season value=season label=season order="season desc">
-    <DropdownOption value="2025/26" valueLabel="2025/26"/>
-</Dropdown>
+<Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
 
-<Dropdown data={teams} name=team value=team label=team>
-    <DropdownOption value="FC Copenhagen" valueLabel="FC Copenhagen"/>
-</Dropdown>
+<Dropdown data={teams} name=team value=team label=team defaultValue={teams[0]?.team} />
 
 ```sql kpis
 select

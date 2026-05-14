@@ -9,9 +9,7 @@ select distinct season from superligaen.mart_match_facts
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season label=season order="season desc">
-    <DropdownOption value="2025/26" valueLabel="2025/26"/>
-</Dropdown>
+<Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
 
 ```sql current_standings
 select

@@ -37,9 +37,7 @@ order by season desc
   </div>
 </details>
 
-<Dropdown data={seasons} name=season value=season label=season order="season desc">
-    <DropdownOption value="2025/26" valueLabel="2025/26"/>
-</Dropdown>
+<Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
 
 ```sql standings
 select
