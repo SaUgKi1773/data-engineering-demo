@@ -1,24 +1,19 @@
 SELECT
     ROW_NUMBER() OVER (ORDER BY id) AS player_sk,
-    id                 AS player_id,
-    common_name,
-    display_name,
-    firstname,
-    lastname,
-    date_of_birth,
-    EXTRACT(YEAR FROM date_of_birth)::INTEGER AS birth_year,
-    height,
-    weight,
-    image_path,
-    gender,
-    country_id,
-    nationality_id,
-    nationality_name,
-    position_name,
-    position_code,
-    position_developer_name,
-    detailed_position_name
+    id                              AS player_id,
+    display_name                    AS player_name,
+    firstname                       AS player_firstname,
+    lastname                        AS player_lastname,
+    nationality_name                AS player_nationality,
+    date_of_birth                   AS player_birth_date,
+    city_name                       AS player_birth_place,
+    country_name                    AS player_birth_country,
+    height                          AS player_height,
+    weight                          AS player_weight,
+    image_path                      AS player_photo,
+    position_name                   AS player_position,
+    NULL::VARCHAR                   AS player_team_name
 FROM {{ ref('players') }}
 WHERE id IS NOT NULL
-UNION ALL SELECT -1, NULL, 'Unknown Player',        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
-UNION ALL SELECT -2, NULL, 'Not Applicable Player', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+UNION ALL SELECT -1, NULL, 'Unknown Player',        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+UNION ALL SELECT -2, NULL, 'Not Applicable Player', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
