@@ -17,6 +17,7 @@ WITH latest AS (
         image_path, position_name, detailed_position_name
     FROM {{ ref('players') }}
     WHERE id IS NOT NULL
+      AND position_name != 'Coach'
     ORDER BY id, _ingested_at DESC
 )
 SELECT
