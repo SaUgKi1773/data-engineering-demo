@@ -11,6 +11,9 @@ models:
           - unique:   {where: "team_sk > 0"}
       - name: team_name
         tests: [not_null]
+      - name: team_code
+        tests:
+          - not_null: {where: "team_sk > 0"}
       - name: team_short_name
         tests:
           - not_null: {where: "team_sk > 0"}

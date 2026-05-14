@@ -28,6 +28,7 @@ SELECT
     m.match_status,
     m.kick_off_time,
     t.team_name,
+    t.team_short_name,
     f.team_sk,
     ot.opponent_team_name,
     f.opponent_team_sk,
