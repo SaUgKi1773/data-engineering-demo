@@ -5,7 +5,8 @@
         unique_key='coach_id',
         merge_update_columns=['coach_name', 'coach_display_name', 'coach_firstname', 'coach_lastname', 'coach_nationality', 'coach_image_path'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Coach', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Coach', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR)) t(coach_sk, coach_id, coach_name, coach_display_name, coach_firstname, coach_lastname, coach_nationality, coach_image_path) WHERE t.coach_sk NOT IN (SELECT coach_sk FROM {{ this }})"
+            "DELETE FROM {{ this }} WHERE coach_sk IN (-1, -2)",
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Coach', 'Unknown Coach', 'Unknown', 'Unknown', 'Unknown Coach Nationality', NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Coach', 'Not Applicable Coach', 'Not Applicable', 'Not Applicable', 'Not Applicable Coach Nationality', NULL::VARCHAR)) t(coach_sk, coach_id, coach_name, coach_display_name, coach_firstname, coach_lastname, coach_nationality, coach_image_path)"
         ]
     )
 }}

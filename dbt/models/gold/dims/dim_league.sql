@@ -5,7 +5,8 @@
         unique_key='league_id',
         merge_update_columns=['league_name', 'league_type', 'league_logo', 'league_country', 'league_country_code', 'league_country_flag', 'league_short_code', 'league_sub_type', 'league_is_active'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown League', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::BOOLEAN), (-2, NULL::INTEGER, 'Not Applicable League', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::BOOLEAN)) t(league_sk, league_id, league_name, league_type, league_logo, league_country, league_country_code, league_country_flag, league_short_code, league_sub_type, league_is_active) WHERE t.league_sk NOT IN (SELECT league_sk FROM {{ this }})"
+            "DELETE FROM {{ this }} WHERE league_sk IN (-1, -2)",
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown League', 'Unknown League Type', NULL::VARCHAR, 'Unknown League Country', 'UNK', NULL::VARCHAR, 'UNK', 'Unknown League Sub Type', NULL::BOOLEAN), (-2, NULL::INTEGER, 'Not Applicable League', 'Not Applicable League Type', NULL::VARCHAR, 'Not Applicable League Country', 'N/A', NULL::VARCHAR, 'N/A', 'Not Applicable League Sub Type', NULL::BOOLEAN)) t(league_sk, league_id, league_name, league_type, league_logo, league_country, league_country_code, league_country_flag, league_short_code, league_sub_type, league_is_active)"
         ]
     )
 }}

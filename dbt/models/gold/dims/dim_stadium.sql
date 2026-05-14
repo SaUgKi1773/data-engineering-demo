@@ -5,7 +5,8 @@
         unique_key='stadium_id',
         merge_update_columns=['stadium_name', 'stadium_address', 'stadium_city', 'stadium_country', 'stadium_capacity', 'stadium_surface', 'stadium_latitude', 'stadium_longitude', 'stadium_image'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Stadium', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR, NULL::DOUBLE, NULL::DOUBLE, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Stadium', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR, NULL::DOUBLE, NULL::DOUBLE, NULL::VARCHAR)) t(stadium_sk, stadium_id, stadium_name, stadium_address, stadium_city, stadium_country, stadium_capacity, stadium_surface, stadium_latitude, stadium_longitude, stadium_image) WHERE t.stadium_sk NOT IN (SELECT stadium_sk FROM {{ this }})"
+            "DELETE FROM {{ this }} WHERE stadium_sk IN (-1, -2)",
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Stadium', 'Unknown Stadium Address', 'Unknown Stadium City', 'Unknown Stadium Country', NULL::INTEGER, 'Unknown Stadium Surface', NULL::DOUBLE, NULL::DOUBLE, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Stadium', 'Not Applicable Stadium Address', 'Not Applicable Stadium City', 'Not Applicable Stadium Country', NULL::INTEGER, 'Not Applicable Stadium Surface', NULL::DOUBLE, NULL::DOUBLE, NULL::VARCHAR)) t(stadium_sk, stadium_id, stadium_name, stadium_address, stadium_city, stadium_country, stadium_capacity, stadium_surface, stadium_latitude, stadium_longitude, stadium_image)"
         ]
     )
 }}

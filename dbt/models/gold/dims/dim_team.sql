@@ -5,7 +5,8 @@
         unique_key='team_id',
         merge_update_columns=['team_name', 'team_short_name', 'team_country', 'team_founded_year', 'team_logo', 'team_venue_name', 'team_venue_city', 'team_venue_capacity'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Team', NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER), (-2, NULL::INTEGER, 'Not Applicable Team', NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER)) t(team_sk, team_id, team_name, team_short_name, team_country, team_founded_year, team_logo, team_venue_name, team_venue_city, team_venue_capacity) WHERE t.team_sk NOT IN (SELECT team_sk FROM {{ this }})"
+            "DELETE FROM {{ this }} WHERE team_sk IN (-1, -2)",
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Team', 'Unknown', 'Unknown Team Country', NULL::INTEGER, NULL::VARCHAR, 'Unknown Team Venue', 'Unknown Team City', NULL::INTEGER), (-2, NULL::INTEGER, 'Not Applicable Team', 'N/A', 'Not Applicable Team Country', NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Team Venue', 'Not Applicable Team City', NULL::INTEGER)) t(team_sk, team_id, team_name, team_short_name, team_country, team_founded_year, team_logo, team_venue_name, team_venue_city, team_venue_capacity)"
         ]
     )
 }}

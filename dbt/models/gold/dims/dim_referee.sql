@@ -5,7 +5,8 @@
         unique_key='referee_id',
         merge_update_columns=['referee_common_name', 'referee_firstname', 'referee_lastname', 'referee_display_name', 'referee_nationality', 'referee_image_path'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Referee', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Referee', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR)) t(referee_sk, referee_id, referee_common_name, referee_firstname, referee_lastname, referee_display_name, referee_nationality, referee_image_path) WHERE t.referee_sk NOT IN (SELECT referee_sk FROM {{ this }})"
+            "DELETE FROM {{ this }} WHERE referee_sk IN (-1, -2)",
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Referee', 'Unknown', 'Unknown', 'Unknown Referee', 'Unknown Referee Nationality', NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Referee', 'Not Applicable', 'Not Applicable', 'Not Applicable Referee', 'Not Applicable Referee Nationality', NULL::VARCHAR)) t(referee_sk, referee_id, referee_common_name, referee_firstname, referee_lastname, referee_display_name, referee_nationality, referee_image_path)"
         ]
     )
 }}
