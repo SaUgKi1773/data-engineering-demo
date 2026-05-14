@@ -17,6 +17,14 @@ WITH all_fixtures AS (
     FROM {{ ref('fixtures') }} f
     LEFT JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
 ),
+coaches AS (
+    SELECT fixture_id, team_id, coach_id
+    FROM {{ ref('fixture_coaches') }}
+),
+formations AS (
+    SELECT fixture_id, team_id, formation
+    FROM {{ ref('fixture_formations') }}
+),
 participants AS (
     SELECT fixture_id, team_id, location
     FROM {{ ref('fixture_participants') }}
@@ -71,6 +79,8 @@ src AS (
         mt.opponent_team_id,
         mr.referee_id,
         f.is_finished,
+        co.coach_id,
+        fo.formation,
         CASE WHEN f.is_finished THEN COALESCE(sc.goals_scored,     0) END AS goals_scored,
         CASE WHEN f.is_finished THEN COALESCE(osc.goals_scored,    0) END AS goals_conceded,
         CASE WHEN f.is_finished THEN COALESCE(sc.goals_ht_scored,  0) END AS goals_ht_scored,
@@ -85,6 +95,8 @@ src AS (
     LEFT JOIN scores        osc  ON osc.fixture_id = f.fixture_id AND osc.team_id = mt.opponent_team_id
     LEFT JOIN stats         st   ON st.fixture_id  = f.fixture_id AND st.team_id  = mt.team_id
     LEFT JOIN main_referee  mr   ON mr.fixture_id  = f.fixture_id
+    LEFT JOIN coaches       co   ON co.fixture_id  = f.fixture_id AND co.team_id = mt.team_id
+    LEFT JOIN formations    fo   ON fo.fixture_id  = f.fixture_id AND fo.team_id = mt.team_id
 )
 SELECT
     COALESCE(dd.date_sk,           -1) AS date_sk,
@@ -95,6 +107,8 @@ SELECT
     COALESCE(ds.stadium_sk,        -1) AS stadium_sk,
     COALESCE(dr.referee_sk,        -1) AS referee_sk,
     COALESCE(dm.match_sk,          -1) AS match_sk,
+    COALESCE(dc.coach_sk,          -1) AS coach_sk,
+    COALESCE(df.formation_sk,      -1) AS formation_sk,
     CASE src.location
         WHEN 'home' THEN 1
         WHEN 'away' THEN 2
@@ -117,22 +131,10 @@ SELECT
     src.goals_conceded,
     src.goals_ht_scored,
     src.goals_ht_conceded,
-    NULL::INTEGER                      AS shots_on_goal,
-    NULL::INTEGER                      AS shots_off_goal,
-    NULL::INTEGER                      AS total_shots,
-    NULL::INTEGER                      AS blocked_shots,
-    NULL::INTEGER                      AS shots_insidebox,
-    NULL::INTEGER                      AS shots_outsidebox,
-    src.ball_possession_pct,
-    NULL::INTEGER                      AS total_passes,
-    NULL::INTEGER                      AS passes_accurate,
-    NULL::INTEGER                      AS fouls,
     src.corner_kicks,
-    NULL::INTEGER                      AS offsides,
+    src.ball_possession_pct,
     src.yellow_cards,
-    src.red_cards,
-    NULL::INTEGER                      AS goalkeeper_saves,
-    NULL::DECIMAL(5,2)                 AS expected_goals
+    src.red_cards
 FROM src
 LEFT JOIN {{ ref('dim_date') }}          dd      ON dd.date              = src.starting_at::DATE
 LEFT JOIN {{ ref('dim_time') }}          dt_time ON dt_time.time_sk      = EXTRACT(hour FROM src.starting_at::TIMESTAMPTZ AT TIME ZONE 'Europe/Copenhagen')::INTEGER
@@ -141,7 +143,9 @@ LEFT JOIN {{ ref('dim_opponent_team') }} dopp    ON dopp.opponent_team_id = src.
 LEFT JOIN {{ ref('dim_league') }}        dl      ON dl.league_id         = src.league_id
 LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id        = src.venue_id
 LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id        = src.referee_id
-LEFT JOIN {{ ref('dim_match') }}         dm      ON dm.match_id          = src.fixture_id
+LEFT JOIN {{ ref('dim_match') }}          dm      ON dm.match_id          = src.fixture_id
+LEFT JOIN {{ ref('dim_coach') }}          dc      ON dc.coach_id          = src.coach_id
+LEFT JOIN {{ ref('dim_formation') }}      df      ON df.formation         = src.formation
 {% if is_incremental() %}
 WHERE {{ gold_incremental_filter() }}
 {% endif %}

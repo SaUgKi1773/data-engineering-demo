@@ -44,72 +44,119 @@ main_referee AS (
     FROM {{ ref('fixture_referees') }}
     ORDER BY fixture_id, id
 ),
-minutes AS (
-    SELECT fixture_id, player_id, value::INTEGER AS minutes_played
-    FROM {{ ref('fixture_lineup_details') }}
-    WHERE type_id = 119
+coaches AS (
+    SELECT fixture_id, team_id, coach_id
+    FROM {{ ref('fixture_coaches') }}
+),
+formations AS (
+    SELECT fixture_id, team_id, formation
+    FROM {{ ref('fixture_formations') }}
 ),
 lineup_base AS (
     SELECT
         lu.fixture_id,
         lu.player_id,
         lu.team_id,
-        lu.type_id AS lineup_type_id,
-        COALESCE(m.minutes_played, 0) AS minutes_played
+        lu.type_id        AS lineup_type_id,
+        lu.position_id,
+        COALESCE(
+            MAX(CASE WHEN ld.type_id = 119 THEN ld.value::INTEGER END)
+            OVER (PARTITION BY lu.fixture_id, lu.player_id),
+            0
+        ) AS minutes_played
     FROM {{ ref('fixture_lineups') }} lu
     INNER JOIN finished_fixtures f ON f.fixture_id = lu.fixture_id
-    LEFT JOIN minutes m ON m.fixture_id = lu.fixture_id AND m.player_id = lu.player_id
+    LEFT JOIN {{ ref('fixture_lineup_details') }} ld
+        ON ld.fixture_id = lu.fixture_id AND ld.player_id = lu.player_id AND ld.type_id = 119
     WHERE lu.player_id IS NOT NULL
       AND lu.team_id   IS NOT NULL
-      AND (lu.type_id = 11 OR COALESCE(m.minutes_played, 0) > 0)
+    QUALIFY lu.type_id = 11 OR minutes_played > 0
 ),
 stats AS (
     SELECT
-        fixture_id, player_id,
-        MAX(CASE WHEN type_id =  52 THEN value ELSE 0 END)::INTEGER AS goals_scored,
-        MAX(CASE WHEN type_id =  88 THEN value ELSE 0 END)::INTEGER AS goals_conceded,
-        MAX(CASE WHEN type_id =  79 THEN value ELSE 0 END)::INTEGER AS assists,
-        MAX(CASE WHEN type_id =  57 THEN value ELSE 0 END)::INTEGER AS saves,
-        MAX(CASE WHEN type_id =  42 THEN value ELSE 0 END)::INTEGER AS total_shots,
-        MAX(CASE WHEN type_id =  86 THEN value ELSE 0 END)::INTEGER AS shots_on_goal,
-        MAX(CASE WHEN type_id =  80 THEN value ELSE 0 END)::INTEGER AS total_passes,
-        MAX(CASE WHEN type_id = 117 THEN value ELSE 0 END)::INTEGER AS passes_key,
-        MAX(CASE WHEN type_id = 116 THEN value ELSE 0 END)::INTEGER AS passes_accurate,
-        MAX(CASE WHEN type_id =  78 THEN value ELSE 0 END)::INTEGER AS tackles_total,
-        MAX(CASE WHEN type_id = 100 THEN value ELSE 0 END)::INTEGER AS interceptions,
-        MAX(CASE WHEN type_id = 105 THEN value ELSE 0 END)::INTEGER AS duels_total,
-        MAX(CASE WHEN type_id = 106 THEN value ELSE 0 END)::INTEGER AS duels_won,
-        MAX(CASE WHEN type_id = 108 THEN value ELSE 0 END)::INTEGER AS dribbles_attempts,
-        MAX(CASE WHEN type_id = 109 THEN value ELSE 0 END)::INTEGER AS dribbles_success,
-        MAX(CASE WHEN type_id = 110 THEN value ELSE 0 END)::INTEGER AS dribbles_past,
-        MAX(CASE WHEN type_id =  56 THEN value ELSE 0 END)::INTEGER AS fouls_committed,
-        MAX(CASE WHEN type_id =  96 THEN value ELSE 0 END)::INTEGER AS fouls_drawn,
-        MAX(CASE WHEN type_id =  51 THEN value ELSE 0 END)::INTEGER AS offsides,
-        MAX(CASE WHEN type_id = 118 THEN value ELSE NULL END)        AS rating
+        fixture_id,
+        player_id,
+        -- Attacking
+        MAX(CASE WHEN type_id =   52 THEN value ELSE 0 END)::INTEGER  AS goals_scored,
+        MAX(CASE WHEN type_id =  324 THEN value ELSE 0 END)::INTEGER  AS own_goals,
+        MAX(CASE WHEN type_id =   79 THEN value ELSE 0 END)::INTEGER  AS assists,
+        MAX(CASE WHEN type_id =   42 THEN value ELSE 0 END)::INTEGER  AS shots_total,
+        MAX(CASE WHEN type_id =   86 THEN value ELSE 0 END)::INTEGER  AS shots_on_target,
+        MAX(CASE WHEN type_id =   41 THEN value ELSE 0 END)::INTEGER  AS shots_off_target,
+        MAX(CASE WHEN type_id =   58 THEN value ELSE 0 END)::INTEGER  AS shots_blocked,
+        MAX(CASE WHEN type_id =   64 THEN value ELSE 0 END)::INTEGER  AS woodwork_hits,
+        MAX(CASE WHEN type_id =  580 THEN value ELSE 0 END)::INTEGER  AS big_chances_created,
+        MAX(CASE WHEN type_id =  581 THEN value ELSE 0 END)::INTEGER  AS big_chances_missed,
+        MAX(CASE WHEN type_id = 9706 THEN value ELSE 0 END)::INTEGER  AS chances_created,
+        -- Passing
+        MAX(CASE WHEN type_id =   80 THEN value ELSE 0 END)::INTEGER  AS passes_total,
+        MAX(CASE WHEN type_id =  116 THEN value ELSE 0 END)::INTEGER  AS passes_accurate,
+        MAX(CASE WHEN type_id =  117 THEN value ELSE 0 END)::INTEGER  AS key_passes,
+        MAX(CASE WHEN type_id = 27269 THEN value ELSE 0 END)::INTEGER AS passes_final_third,
+        MAX(CASE WHEN type_id = 27272 THEN value ELSE 0 END)::INTEGER AS passes_backward,
+        MAX(CASE WHEN type_id =  122 THEN value ELSE 0 END)::INTEGER  AS long_balls,
+        MAX(CASE WHEN type_id =  123 THEN value ELSE 0 END)::INTEGER  AS long_balls_won,
+        MAX(CASE WHEN type_id =   98 THEN value ELSE 0 END)::INTEGER  AS crosses_total,
+        MAX(CASE WHEN type_id =   99 THEN value ELSE 0 END)::INTEGER  AS crosses_accurate,
+        -- Defending
+        MAX(CASE WHEN type_id =   78 THEN value ELSE 0 END)::INTEGER  AS tackles,
+        MAX(CASE WHEN type_id = 27267 THEN value ELSE 0 END)::INTEGER AS tackles_won,
+        MAX(CASE WHEN type_id =  101 THEN value ELSE 0 END)::INTEGER  AS clearances,
+        MAX(CASE WHEN type_id =  100 THEN value ELSE 0 END)::INTEGER  AS interceptions,
+        MAX(CASE WHEN type_id =  107 THEN value ELSE 0 END)::INTEGER  AS aerials_won,
+        MAX(CASE WHEN type_id = 27266 THEN value ELSE 0 END)::INTEGER AS aerials_lost,
+        MAX(CASE WHEN type_id =   97 THEN value ELSE 0 END)::INTEGER  AS blocks,
+        MAX(CASE WHEN type_id = 27271 THEN value ELSE 0 END)::INTEGER AS balls_recovered,
+        MAX(CASE WHEN type_id =  583 THEN value ELSE 0 END)::INTEGER  AS last_man_tackle,
+        MAX(CASE WHEN type_id =  582 THEN value ELSE 0 END)::INTEGER  AS clearances_off_line,
+        -- Duels & dribbling
+        MAX(CASE WHEN type_id =  105 THEN value ELSE 0 END)::INTEGER  AS duels_total,
+        MAX(CASE WHEN type_id =  106 THEN value ELSE 0 END)::INTEGER  AS duels_won,
+        MAX(CASE WHEN type_id = 1491 THEN value ELSE 0 END)::INTEGER  AS duels_lost,
+        MAX(CASE WHEN type_id =  108 THEN value ELSE 0 END)::INTEGER  AS dribbles_attempts,
+        MAX(CASE WHEN type_id =  109 THEN value ELSE 0 END)::INTEGER  AS dribbles_completed,
+        MAX(CASE WHEN type_id =  110 THEN value ELSE 0 END)::INTEGER  AS times_dribbled_past,
+        MAX(CASE WHEN type_id =   94 THEN value ELSE 0 END)::INTEGER  AS dispossessed,
+        -- Discipline
+        MAX(CASE WHEN type_id =   56 THEN value ELSE 0 END)::INTEGER  AS fouls_committed,
+        MAX(CASE WHEN type_id =   96 THEN value ELSE 0 END)::INTEGER  AS fouls_drawn,
+        MAX(CASE WHEN type_id =   84 THEN value ELSE 0 END)::INTEGER  AS yellow_cards,
+        MAX(CASE WHEN type_id =   85 THEN value ELSE 0 END)::INTEGER  AS yellow_red_cards,
+        MAX(CASE WHEN type_id =   83 THEN value ELSE 0 END)::INTEGER  AS red_cards,
+        MAX(CASE WHEN type_id =   51 THEN value ELSE 0 END)::INTEGER  AS offsides,
+        -- Penalties
+        MAX(CASE WHEN type_id =  115 THEN value ELSE 0 END)::INTEGER  AS penalty_won,
+        MAX(CASE WHEN type_id =  114 THEN value ELSE 0 END)::INTEGER  AS penalty_committed,
+        MAX(CASE WHEN type_id =  111 THEN value ELSE 0 END)::INTEGER  AS penalty_scored,
+        MAX(CASE WHEN type_id =  112 THEN value ELSE 0 END)::INTEGER  AS penalty_missed,
+        MAX(CASE WHEN type_id =  113 THEN value ELSE 0 END)::INTEGER  AS penalty_saved,
+        -- Goalkeeping
+        MAX(CASE WHEN type_id =   88 THEN value ELSE 0 END)::INTEGER  AS goals_conceded,
+        MAX(CASE WHEN type_id =   57 THEN value ELSE 0 END)::INTEGER  AS saves,
+        MAX(CASE WHEN type_id =  104 THEN value ELSE 0 END)::INTEGER  AS saves_inside_box,
+        MAX(CASE WHEN type_id =  103 THEN value ELSE 0 END)::INTEGER  AS goalkeeper_punches,
+        MAX(CASE WHEN type_id =  584 THEN value ELSE 0 END)::INTEGER  AS high_ball_claims,
+        MAX(CASE WHEN type_id =  571 THEN value ELSE 0 END)::INTEGER  AS errors_leading_to_goal,
+        MAX(CASE WHEN type_id = 48997 THEN value ELSE 0 END)::INTEGER AS errors_leading_to_shot,
+        -- General
+        MAX(CASE WHEN type_id =  120 THEN value ELSE 0 END)::INTEGER  AS touches,
+        MAX(CASE WHEN type_id = 27273 THEN value ELSE 0 END)::INTEGER AS possession_losses,
+        MAX(CASE WHEN type_id =  118 THEN value ELSE NULL END)         AS rating
     FROM {{ ref('fixture_lineup_details') }}
     GROUP BY fixture_id, player_id
-),
-events AS (
-    SELECT
-        e.fixture_id, e.player_id,
-        SUM(CASE WHEN e.type_id = 19 THEN 1 ELSE 0 END)::INTEGER AS yellow_cards,
-        SUM(CASE WHEN e.type_id = 20 THEN 1 ELSE 0 END)::INTEGER AS red_cards,
-        SUM(CASE WHEN e.type_id = 16 THEN 1 ELSE 0 END)::INTEGER AS penalty_scored,
-        SUM(CASE WHEN e.type_id = 17 THEN 1 ELSE 0 END)::INTEGER AS penalty_missed
-    FROM {{ ref('fixture_events') }} e
-    INNER JOIN finished_fixtures f ON f.fixture_id = e.fixture_id
-    WHERE e.player_id IS NOT NULL AND e.rescinded IS NOT TRUE
-    GROUP BY e.fixture_id, e.player_id
 ),
 src AS (
     SELECT
         lb.fixture_id,
         lb.player_id,
         lb.team_id,
+        lb.position_id,
         lb.minutes_played,
         ff.starting_at,
         ff.league_id,
         ff.venue_id,
+        COALESCE(co.coach_id, NULL)    AS coach_id,
+        fo.formation,
         CASE lb.lineup_type_id WHEN 11 THEN 1 ELSE 2 END AS appearance_type_sk,
         COALESCE(tc.team_side_sk, -1)  AS team_side_sk,
         tc.opponent_team_id,
@@ -119,33 +166,71 @@ src AS (
             WHEN COALESCE(ts_own.goals, 0) = COALESCE(ts_opp.goals, 0) THEN 2
             ELSE 3
         END                            AS match_result_sk,
-        COALESCE(s.goals_scored,      0) AS goals_scored,
-        COALESCE(s.goals_conceded,    0) AS goals_conceded,
-        COALESCE(s.assists,           0) AS assists,
-        COALESCE(s.saves,             0) AS saves,
-        COALESCE(s.total_shots,       0) AS total_shots,
-        COALESCE(s.shots_on_goal,     0) AS shots_on_goal,
-        COALESCE(s.total_passes,      0) AS total_passes,
-        COALESCE(s.passes_key,        0) AS passes_key,
-        COALESCE(s.passes_accurate,   0) AS passes_accurate,
-        COALESCE(s.tackles_total,     0) AS tackles_total,
-        0::INTEGER                        AS tackles_blocks,
-        COALESCE(s.interceptions,     0) AS interceptions,
-        COALESCE(s.duels_total,       0) AS duels_total,
-        COALESCE(s.duels_won,         0) AS duels_won,
-        COALESCE(s.dribbles_attempts, 0) AS dribbles_attempts,
-        COALESCE(s.dribbles_success,  0) AS dribbles_success,
-        COALESCE(s.dribbles_past,     0) AS dribbles_past,
-        COALESCE(s.fouls_drawn,       0) AS fouls_drawn,
-        COALESCE(s.fouls_committed,   0) AS fouls_committed,
-        COALESCE(s.offsides,          0) AS offsides,
-        COALESCE(ev.yellow_cards,     0) AS yellow_cards,
-        COALESCE(ev.red_cards,        0) AS red_cards,
-        0::INTEGER                        AS penalty_won,
-        0::INTEGER                        AS penalty_committed,
-        COALESCE(ev.penalty_scored,   0) AS penalty_scored,
-        COALESCE(ev.penalty_missed,   0) AS penalty_missed,
-        0::INTEGER                        AS penalty_saved,
+        -- Attacking
+        COALESCE(s.goals_scored,       0) AS goals_scored,
+        COALESCE(s.own_goals,          0) AS own_goals,
+        COALESCE(s.assists,            0) AS assists,
+        COALESCE(s.shots_total,        0) AS shots_total,
+        COALESCE(s.shots_on_target,    0) AS shots_on_target,
+        COALESCE(s.shots_off_target,   0) AS shots_off_target,
+        COALESCE(s.shots_blocked,      0) AS shots_blocked,
+        COALESCE(s.woodwork_hits,       0) AS woodwork_hits,
+        COALESCE(s.big_chances_created,0) AS big_chances_created,
+        COALESCE(s.big_chances_missed, 0) AS big_chances_missed,
+        COALESCE(s.chances_created,    0) AS chances_created,
+        -- Passing
+        COALESCE(s.passes_total,       0) AS passes_total,
+        COALESCE(s.passes_accurate,    0) AS passes_accurate,
+        COALESCE(s.key_passes,         0) AS key_passes,
+        COALESCE(s.passes_final_third, 0) AS passes_final_third,
+        COALESCE(s.passes_backward,    0) AS passes_backward,
+        COALESCE(s.long_balls,         0) AS long_balls,
+        COALESCE(s.long_balls_won,     0) AS long_balls_won,
+        COALESCE(s.crosses_total,      0) AS crosses_total,
+        COALESCE(s.crosses_accurate,   0) AS crosses_accurate,
+        -- Defending
+        COALESCE(s.tackles,            0) AS tackles,
+        COALESCE(s.tackles_won,        0) AS tackles_won,
+        COALESCE(s.clearances,         0) AS clearances,
+        COALESCE(s.interceptions,      0) AS interceptions,
+        COALESCE(s.aerials_won,        0) AS aerials_won,
+        COALESCE(s.aerials_lost,       0) AS aerials_lost,
+        COALESCE(s.blocks,      0) AS blocks,
+        COALESCE(s.balls_recovered,      0) AS balls_recovered,
+        COALESCE(s.last_man_tackle,    0) AS last_man_tackle,
+        COALESCE(s.clearances_off_line,  0) AS clearances_off_line,
+        -- Duels & dribbling
+        COALESCE(s.duels_total,        0) AS duels_total,
+        COALESCE(s.duels_won,          0) AS duels_won,
+        COALESCE(s.duels_lost,         0) AS duels_lost,
+        COALESCE(s.dribbles_attempts,  0) AS dribbles_attempts,
+        COALESCE(s.dribbles_completed,   0) AS dribbles_completed,
+        COALESCE(s.times_dribbled_past,      0) AS times_dribbled_past,
+        COALESCE(s.dispossessed,       0) AS dispossessed,
+        -- Discipline
+        COALESCE(s.fouls_committed,    0) AS fouls_committed,
+        COALESCE(s.fouls_drawn,        0) AS fouls_drawn,
+        COALESCE(s.yellow_cards,       0) AS yellow_cards,
+        COALESCE(s.yellow_red_cards,   0) AS yellow_red_cards,
+        COALESCE(s.red_cards,          0) AS red_cards,
+        COALESCE(s.offsides,           0) AS offsides,
+        -- Penalties
+        COALESCE(s.penalty_won,        0) AS penalty_won,
+        COALESCE(s.penalty_committed,  0) AS penalty_committed,
+        COALESCE(s.penalty_scored,     0) AS penalty_scored,
+        COALESCE(s.penalty_missed,     0) AS penalty_missed,
+        COALESCE(s.penalty_saved,      0) AS penalty_saved,
+        -- Goalkeeping
+        COALESCE(s.goals_conceded,     0) AS goals_conceded,
+        COALESCE(s.saves,              0) AS saves,
+        COALESCE(s.saves_inside_box,   0) AS saves_inside_box,
+        COALESCE(s.goalkeeper_punches,            0) AS goalkeeper_punches,
+        COALESCE(s.high_ball_claims,   0) AS high_ball_claims,
+        COALESCE(s.errors_leading_to_goal,0) AS errors_leading_to_goal,
+        COALESCE(s.errors_leading_to_shot,0) AS errors_leading_to_shot,
+        -- General
+        COALESCE(s.touches,            0) AS touches,
+        COALESCE(s.possession_losses,    0) AS possession_losses,
         s.rating
     FROM lineup_base lb
     INNER JOIN finished_fixtures ff  ON ff.fixture_id  = lb.fixture_id
@@ -153,7 +238,8 @@ src AS (
     LEFT JOIN team_scores   ts_own   ON ts_own.fixture_id = lb.fixture_id AND ts_own.team_id = lb.team_id
     LEFT JOIN team_scores   ts_opp   ON ts_opp.fixture_id = lb.fixture_id AND ts_opp.team_id = tc.opponent_team_id
     LEFT JOIN stats         s        ON s.fixture_id   = lb.fixture_id AND s.player_id = lb.player_id
-    LEFT JOIN events        ev       ON ev.fixture_id  = lb.fixture_id AND ev.player_id = lb.player_id
+    LEFT JOIN coaches       co       ON co.fixture_id  = lb.fixture_id AND co.team_id  = lb.team_id
+    LEFT JOIN formations    fo       ON fo.fixture_id  = lb.fixture_id AND fo.team_id  = lb.team_id
 )
 SELECT
     COALESCE(dd.date_sk,           -1) AS date_sk,
@@ -165,37 +251,70 @@ SELECT
     COALESCE(dl.league_sk,         -1) AS league_sk,
     COALESCE(ds.stadium_sk,        -1) AS stadium_sk,
     COALESCE(dr.referee_sk,        -1) AS referee_sk,
+    COALESCE(dc.coach_sk,          -1) AS coach_sk,
+    COALESCE(df.formation_sk,      -1) AS formation_sk,
+    COALESCE(dp2.position_sk,      -1) AS position_sk,
     src.team_side_sk,
     src.match_result_sk,
     src.appearance_type_sk,
     src.minutes_played,
     src.goals_scored,
-    src.goals_conceded,
+    src.own_goals,
     src.assists,
-    src.saves,
-    src.total_shots,
-    src.shots_on_goal,
-    src.total_passes,
-    src.passes_key,
+    src.shots_total,
+    src.shots_on_target,
+    src.shots_off_target,
+    src.shots_blocked,
+    src.woodwork_hits,
+    src.big_chances_created,
+    src.big_chances_missed,
+    src.chances_created,
+    src.passes_total,
     src.passes_accurate,
-    src.tackles_total,
-    src.tackles_blocks,
+    src.key_passes,
+    src.passes_final_third,
+    src.passes_backward,
+    src.long_balls,
+    src.long_balls_won,
+    src.crosses_total,
+    src.crosses_accurate,
+    src.tackles,
+    src.tackles_won,
+    src.clearances,
     src.interceptions,
+    src.aerials_won,
+    src.aerials_lost,
+    src.blocks,
+    src.balls_recovered,
+    src.last_man_tackle,
+    src.clearances_off_line,
     src.duels_total,
     src.duels_won,
+    src.duels_lost,
     src.dribbles_attempts,
-    src.dribbles_success,
-    src.dribbles_past,
-    src.fouls_drawn,
+    src.dribbles_completed,
+    src.times_dribbled_past,
+    src.dispossessed,
     src.fouls_committed,
-    src.offsides,
+    src.fouls_drawn,
     src.yellow_cards,
+    src.yellow_red_cards,
     src.red_cards,
+    src.offsides,
     src.penalty_won,
     src.penalty_committed,
     src.penalty_scored,
     src.penalty_missed,
     src.penalty_saved,
+    src.goals_conceded,
+    src.saves,
+    src.saves_inside_box,
+    src.goalkeeper_punches,
+    src.high_ball_claims,
+    src.errors_leading_to_goal,
+    src.errors_leading_to_shot,
+    src.touches,
+    src.possession_losses,
     src.rating
 FROM src
 LEFT JOIN {{ ref('dim_date') }}          dd      ON dd.date              = src.starting_at::DATE
@@ -208,6 +327,9 @@ LEFT JOIN {{ ref('dim_league') }}        dl      ON dl.league_id         = src.l
 LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id        = src.venue_id
 LEFT JOIN main_referee                   mr      ON mr.fixture_id        = src.fixture_id
 LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id        = mr.referee_id
+LEFT JOIN {{ ref('dim_coach') }}         dc      ON dc.coach_id          = src.coach_id
+LEFT JOIN {{ ref('dim_formation') }}     df      ON df.formation         = src.formation
+LEFT JOIN {{ ref('dim_position') }}      dp2     ON dp2.position_id      = src.position_id
 {% if is_incremental() %}
 WHERE {{ gold_incremental_filter() }}
 {% endif %}
