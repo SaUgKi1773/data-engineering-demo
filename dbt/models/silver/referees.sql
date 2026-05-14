@@ -24,6 +24,7 @@ SELECT
     raw_json->'city'->>'name'           AS city_name,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__referees') }}
+WHERE id NOT IN (SELECT referee_id FROM {{ ref('referee_id_overrides') }})
 {% if is_incremental() %}
-WHERE _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }})
+  AND _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }})
 {% endif %}

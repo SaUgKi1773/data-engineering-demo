@@ -9,7 +9,7 @@ macro-paths: ["macros"]
 
 seeds:
   superligaen:
-    +schema: gold
+    +schema: silver
     referee_id_overrides:
       +column_types:
         referee_id: integer
