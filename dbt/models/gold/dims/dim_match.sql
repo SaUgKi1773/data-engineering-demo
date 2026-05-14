@@ -3,9 +3,9 @@
         materialized='incremental',
         incremental_strategy='merge',
         unique_key='match_id',
-        merge_update_columns=['match_round_type', 'match_round_number', 'match_type', 'match_name', 'match_short_name', 'match_result', 'kick_off_time', 'match_status'],
+        merge_update_columns=['match_round_type', 'match_round_number', 'match_round_name', 'match_type', 'match_name', 'match_short_name', 'match_result', 'kick_off_time', 'match_status'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR, 'Unknown Match', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR), (-2, NULL::INTEGER, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Match', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR)) t(match_sk, match_id, match_round_type, match_round_number, match_type, match_name, match_short_name, match_result, kick_off_time, match_status) WHERE t.match_sk NOT IN (SELECT match_sk FROM {{ this }})"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR, NULL::VARCHAR, 'Unknown Match', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR), (-2, NULL::INTEGER, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR, NULL::VARCHAR, 'Not Applicable Match', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR)) t(match_sk, match_id, match_round_type, match_round_number, match_round_name, match_type, match_name, match_short_name, match_result, kick_off_time, match_status) WHERE t.match_sk NOT IN (SELECT match_sk FROM {{ this }})"
         ]
     )
 }}
@@ -80,6 +80,7 @@ SELECT
     match_id,
     match_round_type,
     match_round_number,
+    match_round_type || ' - ' || match_round_number::VARCHAR AS match_round_name,
     match_type,
     match_name,
     match_short_name,
