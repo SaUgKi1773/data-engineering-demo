@@ -12,8 +12,7 @@ order by season desc
 ```
 
 ```sql current_season
-select max(season) as season from superligaen.mart_match_facts
-where result in ('Win', 'Draw', 'Loss')
+select season from superligaen.mart_match_facts where is_current_season = true limit 1
 ```
 
 <details class="mb-6 rounded-xl border border-blue-100 bg-blue-50">

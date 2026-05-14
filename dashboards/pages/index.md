@@ -19,7 +19,7 @@ select
     count(distinct team_name)   as total_teams,
     max(season)                 as season
 from superligaen.mart_match_facts
-where season = (select max(season) from superligaen.mart_match_facts where result in ('Win', 'Draw', 'Loss'))
+where is_current_season = true
   and result in ('Win', 'Draw', 'Loss')
 ```
 
@@ -33,7 +33,7 @@ from (
         sum(goals_scored) - sum(goals_conceded) as gd,
         sum(goals_scored)                       as gf
     from superligaen.mart_match_facts
-    where season = (select max(season) from superligaen.mart_match_facts where result in ('Win', 'Draw', 'Loss'))
+    where is_current_season = true
       and result in ('Win', 'Draw', 'Loss')
     group by team_name, standings_type
 )

@@ -17,6 +17,7 @@ WITH player_agg AS (
 SELECT
     d.date                                                                   AS match_date,
     d.season,
+    d.is_current_season,
     m.match_round_name,
     m.match_round_type,
     m.match_round_number,

@@ -10,8 +10,7 @@ order by season desc
 ```
 
 ```sql current_season
-select max(season) as season from superligaen.mart_match_facts
-where result in ('Win', 'Draw', 'Loss')
+select season from superligaen.mart_match_facts where is_current_season = true limit 1
 ```
 
 <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={current_season[0]?.season} />
