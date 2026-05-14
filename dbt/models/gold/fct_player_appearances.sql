@@ -39,10 +39,9 @@ team_scores AS (
     GROUP BY fixture_id, team_id
 ),
 main_referee AS (
-    SELECT DISTINCT ON (fixture_id)
-        fixture_id, referee_id
+    SELECT fixture_id, referee_id
     FROM {{ ref('fixture_referees') }}
-    ORDER BY fixture_id, id
+    WHERE type_id = 6
 ),
 coaches AS (
     SELECT fixture_id, team_id, coach_id
