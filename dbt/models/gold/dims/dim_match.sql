@@ -1,3 +1,15 @@
+{{
+    config(
+        materialized='incremental',
+        incremental_strategy='merge',
+        unique_key='match_id',
+        merge_update_columns=['season', 'match_round_type', 'match_round_name', 'match_round_number', 'match_name', 'match_short_name', 'match_result', 'kick_off_time', 'match_status'],
+        post_hook=[
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, 'Unknown Match', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR), (-2, NULL::INTEGER, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, 'Not Applicable Match', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR)) t(match_sk, match_id, season, match_round_type, match_round_name, match_round_number, match_name, match_short_name, match_result, kick_off_time, match_status) WHERE t.match_sk NOT IN (SELECT match_sk FROM {{ this }})"
+        ]
+    )
+}}
+
 WITH participants_pivot AS (
     SELECT
         fixture_id,
@@ -26,7 +38,7 @@ src AS (
         COALESCE(pp.home_team_name, '') || ' - ' || COALESCE(pp.away_team_name, '') AS match_name,
         COALESCE(pp.home_team_code, pp.home_team_name, '')
             || ' - ' || COALESCE(pp.away_team_code, pp.away_team_name, '')      AS match_short_name,
-        CASE WHEN f.state_developer_name IN ('FT', 'FT_PEN')
+        CASE WHEN f.state_developer_name IN ('FT', 'FT_PEN', 'AET')
              THEN sp.goals_home::VARCHAR || ' - ' || sp.goals_away::VARCHAR
         END                                                                      AS match_result,
         lpad(EXTRACT(hour   FROM f.starting_at::TIMESTAMPTZ AT TIME ZONE 'Europe/Copenhagen')::VARCHAR, 2, '0')
@@ -41,7 +53,12 @@ src AS (
     LEFT JOIN scores_pivot             sp ON sp.fixture_id = f.id
 )
 SELECT
+    {% if is_incremental() %}
+    (SELECT COALESCE(MAX(match_sk), 0) FROM {{ this }} WHERE match_sk > 0)
+        + ROW_NUMBER() OVER (ORDER BY match_id) AS match_sk,
+    {% else %}
     ROW_NUMBER() OVER (ORDER BY match_id) AS match_sk,
+    {% endif %}
     match_id,
     season,
     match_round_type,
@@ -53,5 +70,3 @@ SELECT
     kick_off_time,
     match_status
 FROM src
-UNION ALL SELECT -1, NULL, NULL, NULL, NULL, NULL, 'Unknown Match',        NULL, NULL, NULL, NULL
-UNION ALL SELECT -2, NULL, NULL, NULL, NULL, NULL, 'Not Applicable Match', NULL, NULL, NULL, NULL

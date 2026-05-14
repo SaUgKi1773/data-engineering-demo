@@ -1,3 +1,15 @@
+{{
+    config(
+        materialized='incremental',
+        incremental_strategy='merge',
+        unique_key='stadium_id',
+        merge_update_columns=['stadium_name', 'stadium_address', 'stadium_city', 'stadium_country', 'stadium_capacity', 'stadium_surface'],
+        post_hook=[
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Stadium', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Stadium', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR)) t(stadium_sk, stadium_id, stadium_name, stadium_address, stadium_city, stadium_country, stadium_capacity, stadium_surface) WHERE t.stadium_sk NOT IN (SELECT stadium_sk FROM {{ this }})"
+        ]
+    )
+}}
+
 WITH from_venues AS (
     SELECT DISTINCT ON (id)
         id           AS venue_id,
@@ -31,7 +43,12 @@ combined AS (
     SELECT * FROM from_fixtures
 )
 SELECT
+    {% if is_incremental() %}
+    (SELECT COALESCE(MAX(stadium_sk), 0) FROM {{ this }} WHERE stadium_sk > 0)
+        + ROW_NUMBER() OVER (ORDER BY venue_id) AS stadium_sk,
+    {% else %}
     ROW_NUMBER() OVER (ORDER BY venue_id) AS stadium_sk,
+    {% endif %}
     venue_id   AS stadium_id,
     name       AS stadium_name,
     address    AS stadium_address,
@@ -40,5 +57,3 @@ SELECT
     capacity   AS stadium_capacity,
     surface    AS stadium_surface
 FROM combined
-UNION ALL SELECT -1, NULL, 'Unknown Stadium',        NULL, NULL, NULL, NULL, NULL
-UNION ALL SELECT -2, NULL, 'Not Applicable Stadium', NULL, NULL, NULL, NULL, NULL

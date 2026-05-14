@@ -1,3 +1,11 @@
+{{
+    config(
+        materialized='incremental',
+        incremental_strategy='delete+insert',
+        unique_key=['match_sk', 'player_sk', 'team_sk']
+    )
+}}
+
 WITH finished_fixtures AS (
     SELECT
         id        AS fixture_id,
@@ -200,3 +208,6 @@ LEFT JOIN {{ ref('dim_league') }}        dl      ON dl.league_id         = src.l
 LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id        = src.venue_id
 LEFT JOIN main_referee                   mr      ON mr.fixture_id        = src.fixture_id
 LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id        = mr.referee_id
+{% if is_incremental() %}
+WHERE {{ gold_incremental_filter() }}
+{% endif %}
