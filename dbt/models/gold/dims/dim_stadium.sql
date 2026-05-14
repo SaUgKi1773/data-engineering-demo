@@ -3,9 +3,9 @@
         materialized='incremental',
         incremental_strategy='merge',
         unique_key='stadium_id',
-        merge_update_columns=['stadium_name', 'stadium_address', 'stadium_city', 'stadium_country', 'stadium_capacity', 'stadium_surface'],
+        merge_update_columns=['stadium_name', 'stadium_address', 'stadium_city', 'stadium_country', 'stadium_capacity', 'stadium_surface', 'stadium_latitude', 'stadium_longitude', 'stadium_image'],
         post_hook=[
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Stadium', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Stadium', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR)) t(stadium_sk, stadium_id, stadium_name, stadium_address, stadium_city, stadium_country, stadium_capacity, stadium_surface) WHERE t.stadium_sk NOT IN (SELECT stadium_sk FROM {{ this }})"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Stadium', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR, NULL::DOUBLE, NULL::DOUBLE, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Stadium', NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::INTEGER, NULL::VARCHAR, NULL::DOUBLE, NULL::DOUBLE, NULL::VARCHAR)) t(stadium_sk, stadium_id, stadium_name, stadium_address, stadium_city, stadium_country, stadium_capacity, stadium_surface, stadium_latitude, stadium_longitude, stadium_image) WHERE t.stadium_sk NOT IN (SELECT stadium_sk FROM {{ this }})"
         ]
     )
 }}
@@ -18,7 +18,10 @@ WITH from_venues AS (
         city_name    AS city,
         country_name AS country,
         surface,
-        capacity
+        capacity,
+        latitude,
+        longitude,
+        image_path
     FROM {{ ref('venues') }}
     WHERE id IS NOT NULL
     ORDER BY id, _ingested_at DESC
@@ -26,12 +29,15 @@ WITH from_venues AS (
 from_fixtures AS (
     SELECT DISTINCT
         venue_id,
-        venue_name   AS name,
-        NULL         AS address,
-        venue_city   AS city,
-        NULL         AS country,
+        venue_name    AS name,
+        NULL          AS address,
+        venue_city    AS city,
+        NULL          AS country,
         venue_surface AS surface,
-        venue_capacity AS capacity
+        venue_capacity AS capacity,
+        NULL::DOUBLE  AS latitude,
+        NULL::DOUBLE  AS longitude,
+        NULL::VARCHAR AS image_path
     FROM {{ ref('fixtures') }}
     WHERE venue_id IS NOT NULL
       AND venue_id NOT IN (SELECT venue_id FROM from_venues)
@@ -55,5 +61,8 @@ SELECT
     city       AS stadium_city,
     country    AS stadium_country,
     capacity   AS stadium_capacity,
-    surface    AS stadium_surface
+    surface    AS stadium_surface,
+    latitude   AS stadium_latitude,
+    longitude  AS stadium_longitude,
+    image_path AS stadium_image
 FROM combined
