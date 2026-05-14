@@ -203,7 +203,6 @@ stats AS (
         MAX(CASE WHEN type_id =  571 THEN value ELSE 0 END)::INTEGER  AS errors_leading_to_goal,
         MAX(CASE WHEN type_id = 48997 THEN value ELSE 0 END)::INTEGER AS errors_leading_to_shot,
         -- General
-        MAX(CASE WHEN type_id =  120 THEN value ELSE 0 END)::INTEGER  AS touches,
         MAX(CASE WHEN type_id = 27273 THEN value ELSE 0 END)::INTEGER AS possession_losses,
         MAX(CASE WHEN type_id =  118 THEN value ELSE NULL END)         AS rating
     FROM {{ ref('fixture_lineup_details') }}
@@ -293,7 +292,6 @@ src AS (
         COALESCE(s.errors_leading_to_goal,0) AS errors_leading_to_goal,
         COALESCE(s.errors_leading_to_shot,0) AS errors_leading_to_shot,
         -- General
-        COALESCE(s.touches,            0) AS touches,
         COALESCE(s.possession_losses,    0) AS possession_losses,
         s.rating
     FROM lineup_base lb
@@ -378,7 +376,6 @@ SELECT
     src.high_ball_claims,
     src.errors_leading_to_goal,
     src.errors_leading_to_shot,
-    src.touches,
     src.possession_losses,
     src.rating
 FROM src
