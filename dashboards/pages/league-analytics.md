@@ -46,6 +46,7 @@ order by max(cumulative_points) over (partition by team_name) desc, team_name, m
 select
     sum(goals_scored)                                                                       as total_goals,
     round(sum(goals_scored)::double / count(distinct match_id), 2)                         as avg_goals_per_match,
+    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                      as avg_shot_conversion,
     sum(yellow_cards)                                                                       as total_yellow_cards,
     sum(red_cards)                                                                          as total_red_cards
 from superligaen.mart_match_facts
@@ -58,10 +59,16 @@ select
     team_name,
     sum(goals_scored)                                                                       as goals_for,
     sum(goals_conceded)                                                                     as goals_against,
+    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                      as shot_conversion_pct,
+    round(100.0 * sum(goals_scored) / nullif(sum(shots_on_goal), 0), 1)                    as on_target_conversion_pct,
     count(distinct match_id) filter (where goals_conceded = 0)                              as clean_sheets,
+    round(sum(saves)::double / count(distinct match_id), 1)                                 as avg_saves,
     round(sum(goals_conceded)::double / count(distinct match_id), 2)                        as avg_goals_conceded,
     round(sum(possession_pct)::double / count(distinct match_id), 1)                        as avg_possession,
+    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                  as avg_pass_accuracy,
     round(sum(corner_kicks)::double / count(distinct match_id), 1)                          as avg_corners,
+    round(sum(fouls)::double / count(distinct match_id), 1)                                 as avg_fouls,
+    round((sum(fouls) + sum(yellow_cards) * 5 + sum(red_cards) * 15)::double / count(distinct match_id), 1) as aggression_index,
     sum(yellow_cards)                                                                       as yellow_cards,
     sum(red_cards)                                                                          as red_cards
 from superligaen.mart_match_facts
@@ -73,7 +80,9 @@ group by team_name
 ```sql attack_rankings
 select
     team_name,
-    goals_for
+    goals_for,
+    shot_conversion_pct,
+    on_target_conversion_pct
 from ${team_season_stats}
 order by goals_for desc
 ```
@@ -83,6 +92,7 @@ select
     team_name,
     goals_against,
     clean_sheets,
+    avg_saves,
     avg_goals_conceded
 from ${team_season_stats}
 order by clean_sheets desc
@@ -92,6 +102,7 @@ order by clean_sheets desc
 select
     team_name,
     avg_possession,
+    avg_pass_accuracy,
     avg_corners
 from ${team_season_stats}
 order by avg_possession desc
@@ -101,16 +112,19 @@ order by avg_possession desc
 select
     team_name,
     yellow_cards,
-    red_cards
+    red_cards,
+    avg_fouls,
+    aggression_index
 from ${team_season_stats}
-order by yellow_cards desc
+order by aggression_index desc
 ```
 
 ## {inputs.season.value} — League Analysis
 
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_goals           title="Goals Scored"       /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=avg_goals_per_match   title="Avg Goals / Match"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=avg_shot_conversion   title="Shot Conversion %"  /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_yellow_cards    title="Yellow Cards"       /></div>
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_red_cards       title="Red Cards"          /></div>
 </div>
@@ -157,6 +171,10 @@ order by yellow_cards desc
 
 ## Attack — Who's Scoring?
 
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<div>
+
 <BarChart
     data={attack_rankings}
     x=team_name
@@ -167,6 +185,25 @@ order by yellow_cards desc
     colorPalette={['#22c55e']}
     swapXY=true
 />
+
+</div>
+
+<div>
+
+<BarChart
+    data={attack_rankings}
+    x=team_name
+    y=shot_conversion_pct
+    title="Shot Conversion %"
+    xAxisTitle="Team"
+    yAxisTitle="Conversion %"
+    colorPalette={['#f59e0b']}
+    swapXY=true
+/>
+
+</div>
+
+</div>
 
 ---
 
@@ -208,7 +245,11 @@ order by yellow_cards desc
 
 ---
 
-## Possession
+## Possession & Passing
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<div>
 
 <BarChart
     data={possession_rankings}
@@ -221,9 +262,39 @@ order by yellow_cards desc
     swapXY=true
 />
 
+</div>
+
+<div>
+
+<BarChart
+    data={possession_rankings}
+    x=team_name
+    y=avg_pass_accuracy
+    title="Average Pass Accuracy %"
+    xAxisTitle="Team"
+    yAxisTitle="Pass Accuracy %"
+    colorPalette={['#0ea5e9']}
+    swapXY=true
+/>
+
+</div>
+
+</div>
+
 ---
 
 ## Discipline
+
+<BarChart
+    data={discipline_rankings}
+    x=team_name
+    y=aggression_index
+    title="Aggression Index — Fouls + Cards Weighted"
+    xAxisTitle="Team"
+    yAxisTitle="Aggression Index"
+    colorPalette={['#f97316']}
+    swapXY=true
+/>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 

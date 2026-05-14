@@ -113,7 +113,7 @@ SELECT
         ELSE -1
     END                                AS team_side_sk,
     CASE
-        WHEN NOT src.is_finished                        THEN -1
+        WHEN NOT src.is_finished                        THEN 4
         WHEN src.goals_scored > src.goals_conceded      THEN 1
         WHEN src.goals_scored = src.goals_conceded      THEN 2
         ELSE                                                 3
