@@ -16,35 +16,22 @@ SELECT
     f.opponent_team_sk,
     ts.team_side,
     r.match_result                                                           AS result,
-    ref.referee_name,
+    ref.referee_common_name                                                  AS referee_name,
     st.stadium_name,
     f.points_earned,
     f.goals_scored,
     f.goals_conceded,
     f.goals_ht_scored,
     f.goals_ht_conceded,
-    f.shots_on_goal,
-    f.shots_off_goal,
-    f.total_shots,
-    f.blocked_shots,
-    f.shots_insidebox,
-    f.shots_outsidebox,
     f.ball_possession_pct                                                    AS possession_pct,
-    f.total_passes,
-    f.passes_accurate,
-    ROUND(f.passes_accurate::DOUBLE / NULLIF(f.total_passes, 0) * 100, 1)   AS pass_accuracy,
-    f.fouls,
     f.corner_kicks,
-    f.offsides,
     f.yellow_cards,
     f.red_cards,
-    f.goalkeeper_saves                                                       AS saves,
-    ROUND(f.expected_goals::DOUBLE, 2)                                       AS xg,
     CASE
-        WHEN MAX(CASE WHEN m.match_round_type = 'Championship Group' THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
-            THEN 'Championship Group'
-        WHEN MAX(CASE WHEN m.match_round_type = 'Relegation Group'   THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
-            THEN 'Relegation Group'
+        WHEN MAX(CASE WHEN m.match_round_type = 'Championship Round' THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
+            THEN 'Championship Round'
+        WHEN MAX(CASE WHEN m.match_round_type = 'Relegation Round'   THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
+            THEN 'Relegation Round'
         ELSE 'Regular Season'
     END                                                                      AS standings_type,
     SUM(f.points_earned) OVER (

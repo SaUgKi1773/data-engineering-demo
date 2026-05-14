@@ -35,24 +35,11 @@ select
     sum(goals_scored) - sum(goals_conceded)                                                    as goal_difference,
     round(100.0 * count(distinct match_id) filter (where result = 'Win') / count(distinct match_id), 1) as win_rate_pct,
     round(sum(possession_pct)::double / count(distinct match_id), 1)                           as avg_possession,
-    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                      as avg_pass_accuracy,
-    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                          as shot_conversion_pct,
-    round(100.0 * sum(goals_scored) / nullif(sum(shots_on_goal), 0), 1)                        as on_target_conversion_pct,
-    round(sum(xg), 2)                                                                          as total_xg,
-    round(sum(goals_scored) - sum(xg), 2)                                                      as xg_overperformance,
-    round((sum(fouls) + sum(yellow_cards) * 5 + sum(red_cards) * 15)::double / count(distinct match_id), 1) as aggression_index,
-    round(sum(saves)::double / count(distinct match_id), 1)                                    as avg_saves,
-    round(sum(goals_conceded)::double / count(distinct match_id), 2)                           as avg_goals_conceded,
-    round(sum(xg) / count(distinct match_id), 2)                                               as avg_xg_per_match,
-    round(sum(shots_on_goal)::double / count(distinct match_id), 1)                            as avg_shots_on_goal,
     round(sum(goals_scored)::double / count(distinct match_id), 2)                             as avg_goals_scored,
+    round(sum(goals_conceded)::double / count(distinct match_id), 2)                           as avg_goals_conceded,
     round(sum(corner_kicks)::double / count(distinct match_id), 1)                             as avg_corners,
-    round(sum(offsides)::double / count(distinct match_id), 1)                                 as avg_offsides,
-    round(sum(fouls)::double / count(distinct match_id), 1)                                    as avg_fouls,
     sum(yellow_cards)                                                                          as yellow_cards,
-    sum(red_cards)                                                                             as red_cards,
-    sum(shots_insidebox)                                                                       as shots_insidebox,
-    sum(shots_outsidebox)                                                                      as shots_outsidebox
+    sum(red_cards)                                                                             as red_cards
 from superligaen.mart_match_facts
 where team_name = '${inputs.team.value}'
   and season = '${inputs.season.value}'
@@ -69,16 +56,10 @@ select
     goals_scored                 as gf,
     goals_conceded               as ga,
     result,
-    xg,
-    shots_on_goal,
     possession_pct               as possession,
-    pass_accuracy,
-    fouls,
     corner_kicks,
-    offsides,
     yellow_cards,
-    red_cards,
-    saves
+    red_cards
 from superligaen.mart_match_facts
 where team_name = '${inputs.team.value}'
   and season = '${inputs.season.value}'
@@ -97,13 +78,8 @@ select
     sum(goals_conceded)                                                                        as goals_against,
     round(100.0 * count(distinct match_id) filter (where result = 'Win') / count(distinct match_id), 1) as win_rate_pct,
     round(sum(possession_pct)::double / count(distinct match_id), 1)                           as avg_possession,
-    round(sum(shots_on_goal)::double / count(distinct match_id), 1)                            as avg_shots_on_goal,
-    round(sum(xg) / count(distinct match_id), 2)                                               as avg_xg,
-    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                         as shot_conversion_pct,
-    round(sum(fouls)::double / count(distinct match_id), 1)                                    as avg_fouls,
     sum(yellow_cards)                                                                          as yellow_cards,
-    sum(red_cards)                                                                             as red_cards,
-    round(sum(saves)::double / count(distinct match_id), 1)                                    as avg_saves
+    sum(red_cards)                                                                             as red_cards
 from superligaen.mart_match_facts
 where team_name = '${inputs.team.value}'
   and season = '${inputs.season.value}'
@@ -128,14 +104,10 @@ order by team_side desc
 </div>
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_possession       title="Avg Possession"    fmt='0.0"%"' /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_pass_accuracy    title="Pass Accuracy"     fmt='0.0"%"' /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=shot_conversion_pct  title="Shot Conversion"   fmt='0.0"%"' /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=on_target_conversion_pct title="On-Target Conv." fmt='0.0"%"' /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=total_xg             title="Total xG"          /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=xg_overperformance   title="xG Overperformance" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=aggression_index     title="Aggression Index"  /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_saves            title="Avg Saves/Match"   /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_possession    title="Avg Possession"    fmt='0.0"%"' /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_goals_scored  title="Goals Scored/Match"             /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_corners       title="Corners/Match"                  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_goals_conceded title="Goals Conceded/Match"           /></div>
 </div>
 
 ---
@@ -182,10 +154,8 @@ select
     goals_scored                   as gf,
     goals_conceded                 as ga,
     result,
-    xg,
-    shots_on_goal,
     possession_pct                 as possession,
-    fouls,
+    corner_kicks,
     yellow_cards,
     red_cards
 from superligaen.mart_match_facts
@@ -204,10 +174,8 @@ limit 10
     <Column id=gf           title="GF"         />
     <Column id=ga           title="GA"         />
     <Column id=result       title="Result"     />
-    <Column id=xg           title="xG"         />
-    <Column id=shots_on_goal title="SoG"       />
     <Column id=possession   title="Poss %"     fmt='0.0"%"' />
-    <Column id=fouls        title="Fouls"      />
+    <Column id=corner_kicks title="Corners"    />
     <Column id=yellow_cards title="YC"         />
     <Column id=red_cards    title="RC"         />
 </DataTable>
@@ -215,13 +183,6 @@ limit 10
 ---
 
 ## Attack
-
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_xg_per_match      title="xG per Match"        /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_shots_on_goal     title="Shots on Goal/Match" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_goals_scored      title="Goals Scored/Match"  /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=shot_conversion_pct   title="Shot Conversion %"   fmt='0.0"%"' /></div>
-</div>
 
 <BarChart
     data={form}
@@ -233,40 +194,12 @@ limit 10
     colorPalette={['#22c55e']}
 />
 
-<BarChart
-    data={form}
-    x=match_round_number
-    y=xg
-    title="xG per Match"
-    xAxisTitle="Round"
-    yAxisTitle="xG"
-    colorPalette={['#3b82f6']}
-/>
-
-```sql shot_location
-select 'Inside Box' as location, shots_insidebox as shots from ${kpis}
-union all
-select 'Outside Box', shots_outsidebox from ${kpis}
-```
-
-<BarChart
-    data={shot_location}
-    x=location
-    y=shots
-    title="Shot Locations — Season Total"
-    xAxisTitle="Location"
-    yAxisTitle="Shots"
-    colorPalette={['#f59e0b', '#ef4444']}
-    swapXY=true
-/>
-
 ---
 
 ## Defence
 
 <div class="grid grid-cols-2 gap-4 mb-4">
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_goals_conceded title="Goals Conceded/Match" /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_saves          title="Saves/Match"          /></div>
 </div>
 
 <BarChart
@@ -279,25 +212,13 @@ select 'Outside Box', shots_outsidebox from ${kpis}
     colorPalette={['#ef4444']}
 />
 
-<BarChart
-    data={form}
-    x=match_round_number
-    y=saves
-    title="Goalkeeper Saves per Match"
-    xAxisTitle="Round"
-    yAxisTitle="Saves"
-    colorPalette={['#6366f1']}
-/>
-
 ---
 
-## Passing & Possession
+## Possession
 
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_possession     title="Avg Possession %"  fmt='0.0"%"' /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_pass_accuracy  title="Avg Pass Accuracy" fmt='0.0"%"' /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_corners        title="Corners/Match"               /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_offsides       title="Offsides/Match"              /></div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_possession title="Avg Possession %"  fmt='0.0"%"' /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_corners    title="Corners/Match"               /></div>
 </div>
 
 <BarChart
@@ -310,36 +231,14 @@ select 'Outside Box', shots_outsidebox from ${kpis}
     colorPalette={['#14b8a6']}
 />
 
-<BarChart
-    data={form}
-    x=match_round_number
-    y=pass_accuracy
-    title="Pass Accuracy % per Match"
-    xAxisTitle="Round"
-    yAxisTitle="Pass Accuracy %"
-    colorPalette={['#8b5cf6']}
-/>
-
 ---
 
 ## Discipline
 
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=avg_fouls        title="Fouls/Match"      /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=yellow_cards     title="Yellow Cards"     /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=red_cards        title="Red Cards"        /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=aggression_index title="Aggression Index" /></div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=yellow_cards title="Yellow Cards" /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={kpis} value=red_cards    title="Red Cards"   /></div>
 </div>
-
-<BarChart
-    data={form}
-    x=match_round_number
-    y=fouls
-    title="Fouls per Match"
-    xAxisTitle="Round"
-    yAxisTitle="Fouls"
-    colorPalette={['#f97316']}
-/>
 
 <BarChart
     data={form}
@@ -366,26 +265,7 @@ select 'Outside Box', shots_outsidebox from ${kpis}
     <Column id=goals_against      title="GA"               />
     <Column id=win_rate_pct       title="Win %"            fmt='0.0"%"' />
     <Column id=avg_possession     title="Avg Poss %"       fmt='0.0"%"' />
-    <Column id=avg_shots_on_goal  title="Avg SoG"          />
-    <Column id=avg_xg             title="Avg xG"           />
-    <Column id=shot_conversion_pct title="Shot Conv %"     fmt='0.0"%"' />
-    <Column id=avg_fouls          title="Avg Fouls"        />
     <Column id=yellow_cards       title="YC"               />
     <Column id=red_cards          title="RC"               />
-    <Column id=avg_saves          title="Avg Saves"        />
 </DataTable>
 </div>
-
-```sql home_away_chart
-select side, avg_shots_on_goal as "Shots on Goal", avg_xg as "xG", avg_possession / 10 as "Possession / 10", win_rate_pct / 10 as "Win Rate / 10"
-from ${home_away}
-```
-
-<BarChart
-    data={home_away_chart}
-    x=side
-    y={['Shots on Goal', 'xG', 'Possession / 10', 'Win Rate / 10']}
-    title="Home vs Away — Key Metrics"
-    xAxisTitle="Side"
-    swapXY=false
-/>
