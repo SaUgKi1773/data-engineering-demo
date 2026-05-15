@@ -19,6 +19,7 @@ select season from (
 ```sql current_standings
 select
     team_name,
+    team_short_name,
     count(distinct match_id)                          as mp,
     sum(points_earned)                                as pts,
     sum(goals_scored) - sum(goals_conceded)           as gd,
@@ -27,7 +28,7 @@ select
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
-group by team_name, standings_type
+group by team_name, team_short_name, standings_type
 order by
     case standings_type
         when 'Championship Group' then 1
@@ -159,12 +160,22 @@ order by aggression_index desc
 
 #### League Table
 
+<div class="block md:hidden">
 <DataTable data={current_standings} rows=20>
-    <Column id=team_name  title="Team"  />
-    <Column id=round_group title="Group" />
-    <Column id=mp         title="MP"   align=center />
-    <Column id=pts        title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=team_short_name title="Team"  />
+    <Column id=round_group     title="Group" />
+    <Column id=mp              title="MP"   align=center />
+    <Column id=pts             title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
 </DataTable>
+</div>
+<div class="hidden md:block">
+<DataTable data={current_standings} rows=20>
+    <Column id=team_name   title="Team"  />
+    <Column id=round_group title="Group" />
+    <Column id=mp          title="MP"   align=center />
+    <Column id=pts         title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+</DataTable>
+</div>
 
 </div>
 

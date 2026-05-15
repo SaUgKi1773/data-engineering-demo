@@ -49,13 +49,15 @@ select
     row_number() over (
         partition by standings_type
         order by pts desc, gd desc, gf desc
-    )              as rank,
-    team_name      as team,
+    )                as rank,
+    team_name        as team,
+    team_short_name  as team_short,
     gp, w, d, l, gf, ga, gd, pts,
-    standings_type as round_group
+    standings_type   as round_group
 from (
     select
         team_name,
+        team_short_name,
         standings_type,
         count(distinct match_id)                          as gp,
         sum(case when result = 'Win'  then 1 else 0 end) as w,
@@ -68,20 +70,20 @@ from (
     from superligaen.mart_match_facts
     where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
-    group by team_name, standings_type
+    group by team_name, team_short_name, standings_type
 )
 where standings_type != 'Regular Season'
 order by standings_type, pts desc, gd desc, gf desc
 ```
 
 ```sql championship
-select rank, team, gp, w, d, l, gf, ga, gd, pts
+select rank, team, team_short, gp, w, d, l, gf, ga, gd, pts
 from ${standings}
 where round_group = 'Championship Group'
 ```
 
 ```sql relegation
-select rank, team, gp, w, d, l, gf, ga, gd, pts
+select rank, team, team_short, gp, w, d, l, gf, ga, gd, pts
 from ${standings}
 where round_group = 'Relegation Group'
 ```
@@ -89,10 +91,11 @@ where round_group = 'Relegation Group'
 ```sql regular
 select
     row_number() over (order by pts desc, gd desc, gf desc) as rank,
-    team_name as team, gp, w, d, l, gf, ga, gd, pts
+    team_name as team, team_short_name as team_short, gp, w, d, l, gf, ga, gd, pts
 from (
     select
         team_name,
+        team_short_name,
         count(distinct match_id)                          as gp,
         sum(case when result = 'Win'  then 1 else 0 end) as w,
         sum(case when result = 'Draw' then 1 else 0 end) as d,
@@ -105,13 +108,13 @@ from (
     where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
       and match_round_type = 'Regular Season'
-    group by team_name
+    group by team_name, team_short_name
 )
 ```
 
 ```sql all_teams
 select
-    team_name      as team,
+    team_short_name as team,
     sum(points_earned)                                as pts,
     sum(case when result = 'Win'  then 1 else 0 end)  as w,
     sum(case when result = 'Draw' then 1 else 0 end)  as d,
@@ -120,7 +123,7 @@ select
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
-group by team_name, standings_type
+group by team_short_name, standings_type
 order by
     case standings_type
         when 'Championship Group' then 1
@@ -139,7 +142,7 @@ order by
 <div class="standings-table block md:hidden">
 <DataTable data={championship} rows=20>
     <Column id=rank title="#"   align=center />
-    <Column id=team title="Team" wrap=true   />
+    <Column id=team_short title="Team" />
     <Column id=gp   title="GP"  align=center />
     <Column id=w    title="W"   align=center />
     <Column id=d    title="D"   align=center />
@@ -172,7 +175,7 @@ order by
 <div class="standings-table block md:hidden">
 <DataTable data={relegation} rows=20>
     <Column id=rank title="#"   align=center />
-    <Column id=team title="Team" wrap=true   />
+    <Column id=team_short title="Team" />
     <Column id=gp   title="GP"  align=center />
     <Column id=w    title="W"   align=center />
     <Column id=d    title="D"   align=center />
@@ -205,7 +208,7 @@ order by
 <div class="standings-table block md:hidden">
 <DataTable data={regular} rows=20>
     <Column id=rank title="#"   align=center />
-    <Column id=team title="Team" wrap=true   />
+    <Column id=team_short title="Team" />
     <Column id=gp   title="GP"  align=center />
     <Column id=w    title="W"   align=center />
     <Column id=d    title="D"   align=center />

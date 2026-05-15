@@ -20,6 +20,7 @@ SELECT
     t.team_name,
     t.team_short_name,
     ot.opponent_team_name,
+    ot.opponent_team_short_name,
     r.match_result                                        AS result,
     ts.team_side,
     ref.referee_common_name                               AS referee_name,

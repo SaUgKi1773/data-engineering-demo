@@ -23,10 +23,15 @@ with base as (
         match_round_number,
         max(case when team_side = 'Home' then team_name end)              as home_team,
         max(case when team_side = 'Away' then team_name end)              as away_team,
+        max(case when team_side = 'Home' then team_short_name end)        as home_team_short,
+        max(case when team_side = 'Away' then team_short_name end)        as away_team_short,
+        max(case when team_side = 'Home' then team_short_name end) || ' - ' ||
+        max(case when team_side = 'Away' then team_short_name end)        as match_short_name,
         strftime(match_date, '%Y-%m-%d')                                  as match_date,
         kick_off_time,
         case when stadium_name like '%Unknown%' or stadium_name like '%Applicable%'
              then 'TBD' else stadium_name end                             as stadium,
+        max(referee_name)                                                  as referee,
         season
     from superligaen.mart_match_facts
     where result = 'Pending'
@@ -40,24 +45,39 @@ order by match_date asc, kick_off_time asc
 
 ## Upcoming Fixtures
 
+<div class="block md:hidden">
 <DataTable data={upcoming} rows=10>
-    <Column id=match_date    title="Date"        />
-    <Column id=round         title="Round"       />
-    <Column id=match_name    title="Match"       wrap=true />
-    <Column id=stadium       title="Stadium"     />
-    <Column id=kick_off_time title="Kick-Off Time" />
+    <Column id=match_date       title="Date"          />
+    <Column id=round            title="Round"         />
+    <Column id=match_short_name title="Match"         wrap=true />
+    <Column id=stadium          title="Stadium"       />
+    <Column id=kick_off_time    title="K/O"           />
+    <Column id=referee          title="Referee"       />
 </DataTable>
+</div>
+<div class="hidden md:block">
+<DataTable data={upcoming} rows=10>
+    <Column id=match_date    title="Date"          />
+    <Column id=round         title="Round"         />
+    <Column id=match_name    title="Match"         wrap=true />
+    <Column id=stadium       title="Stadium"       />
+    <Column id=kick_off_time title="Kick-Off Time" />
+    <Column id=referee       title="Referee"       />
+</DataTable>
+</div>
 
 ---
 
 ## Match Analysis
 
-<Dropdown data={upcoming} name=match value=match_key label=match_name order="match_date asc, kick_off_time asc" />
+<Dropdown data={upcoming} name=match value=match_key label=match_short_name order="match_date asc, kick_off_time asc" />
 
 ```sql match_info
 select
     home_team,
     away_team,
+    home_team_short,
+    away_team_short,
     match_date,
     round,
     kick_off_time,
@@ -82,11 +102,13 @@ order by season desc
 select
     season,
     match_date,
-    match_round_name                    as round,
-    match_short_name                    as match,
+    match_round_name                                                        as round,
+    max(case when team_side = 'Home' then team_code end) || ' - ' ||
+    max(case when team_side = 'Away' then team_code end)                    as match,
     score,
-    sum(goals_scored)                   as total_goals,
-    sum(shots_on_goal)                  as total_shots_on_goal
+    sum(goals_scored)                                                       as total_goals,
+    sum(shots_on_goal)                                                      as total_shots_on_goal,
+    sum(big_chances_created)                                                as total_big_chances
 from superligaen.mart_match_facts
 where result in ('Win', 'Draw', 'Loss')
   and season in ${inputs.h2h_season.value}
@@ -94,7 +116,7 @@ where result in ('Win', 'Draw', 'Loss')
       match_name = split_part('${inputs.match.value}', '|||', 1) || ' - ' || split_part('${inputs.match.value}', '|||', 2)
    or match_name = split_part('${inputs.match.value}', '|||', 2) || ' - ' || split_part('${inputs.match.value}', '|||', 1)
   )
-group by season, match_date, match_round_name, match_short_name, score
+group by season, match_date, match_round_name, score
 order by match_date desc
 ```
 
@@ -117,10 +139,10 @@ where team_side = 'Home'
 
 ```sql home_form
 select
-    strftime(match_date, '%d %b') as match_date,
-    opponent_team_name             as opponent,
-    goals_scored                   as gf,
-    goals_conceded                 as ga,
+    strftime(match_date, '%d %b')  as match_date,
+    opponent_team_short_name        as opponent,
+    goals_scored                    as gf,
+    goals_conceded                  as ga,
     result
 from superligaen.mart_match_facts
 where team_name = split_part('${inputs.match.value}', '|||', 1)
@@ -131,10 +153,10 @@ limit 5
 
 ```sql away_form
 select
-    strftime(match_date, '%d %b') as match_date,
-    opponent_team_name             as opponent,
-    goals_scored                   as gf,
-    goals_conceded                 as ga,
+    strftime(match_date, '%d %b')  as match_date,
+    opponent_team_short_name        as opponent,
+    goals_scored                    as gf,
+    goals_conceded                  as ga,
     result
 from superligaen.mart_match_facts
 where team_name = split_part('${inputs.match.value}', '|||', 2)
@@ -147,12 +169,12 @@ limit 5
   <div class="text-xs text-gray-400 uppercase tracking-widest mb-3">{match_info[0].round} &middot; {match_info[0].match_date} &middot; {match_info[0].kick_off_time} &middot; {match_info[0].stadium}</div>
   <div class="flex items-center justify-center gap-4 md:gap-6">
     <div class="flex-1 min-w-0">
-      <div class="text-base md:text-xl font-bold text-gray-800 truncate">{match_info[0].home_team}</div>
+      <div class="text-base md:text-xl font-bold text-gray-800 truncate">{match_info[0].home_team_short}</div>
       <div class="text-xs text-blue-400 font-semibold uppercase tracking-widest mt-1">Home</div>
     </div>
     <div class="text-xl md:text-2xl font-black text-gray-300 shrink-0">vs</div>
     <div class="flex-1 min-w-0">
-      <div class="text-base md:text-xl font-bold text-gray-800 truncate">{match_info[0].away_team}</div>
+      <div class="text-base md:text-xl font-bold text-gray-800 truncate">{match_info[0].away_team_short}</div>
       <div class="text-xs text-red-400 font-semibold uppercase tracking-widest mt-1">Away</div>
     </div>
   </div>
@@ -167,7 +189,7 @@ limit 5
 <div class="grid grid-cols-3 gap-4 mb-6">
   <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center">
     <div class="text-3xl font-black text-blue-600">{h2h_stats[0].team1_wins}</div>
-    <div class="text-xs text-blue-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].home_team} Wins</div>
+    <div class="text-xs text-blue-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].home_team_short} Wins</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-gray-100 p-4 text-center">
     <div class="text-3xl font-black text-gray-500">{h2h_stats[0].draws}</div>
@@ -175,19 +197,32 @@ limit 5
   </div>
   <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-center">
     <div class="text-3xl font-black text-red-500">{h2h_stats[0].team2_wins}</div>
-    <div class="text-xs text-red-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].away_team} Wins</div>
+    <div class="text-xs text-red-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].away_team_short} Wins</div>
   </div>
 </div>
 
+<div class="block md:hidden">
 <DataTable data={h2h} rows=20>
-    <Column id=season         title="Season" />
-    <Column id=match_date     title="Date"   />
-    <Column id=round          title="Round"  />
-    <Column id=match          title="Match"  />
-    <Column id=score          title="Score"  align=center />
-    <Column id=total_goals         title="Goals" contentType=colorscale colorPalette={['white','#22c55e']} align=center />
-    <Column id=total_shots_on_goal title="SoG"  contentType=bar colorPalette={['#6366f1']} />
+    <Column id=match_date          title="Date"        />
+    <Column id=match               title="Match"       />
+    <Column id=score               title="Score"       align=center />
+    <Column id=total_goals         title="Goals"       contentType=colorscale colorPalette={['white','#22c55e']} align=center />
+    <Column id=total_big_chances   title="Big Ch."     contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
+    <Column id=total_shots_on_goal title="SoG"         contentType=bar colorPalette={['#6366f1']} />
 </DataTable>
+</div>
+<div class="hidden md:block">
+<DataTable data={h2h} rows=20>
+    <Column id=season              title="Season"      />
+    <Column id=match_date          title="Date"        />
+    <Column id=round               title="Round"       />
+    <Column id=match               title="Match"       />
+    <Column id=score               title="Score"       align=center />
+    <Column id=total_goals         title="Goals"       contentType=colorscale colorPalette={['white','#22c55e']} align=center />
+    <Column id=total_big_chances   title="Big Chances" contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
+    <Column id=total_shots_on_goal title="SoG"         contentType=bar colorPalette={['#6366f1']} />
+</DataTable>
+</div>
 
 ---
 
@@ -196,7 +231,7 @@ limit 5
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
 <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-  <div class="text-base font-bold text-gray-700 mb-3">{match_info[0].home_team}</div>
+  <div class="text-base font-bold text-gray-700 mb-3">{match_info[0].home_team_short}</div>
   <div class="flex flex-col gap-2">
     {#each home_form as m}
       <div class="flex items-center justify-between rounded-lg bg-white border border-gray-100 px-3 py-2">
@@ -218,7 +253,7 @@ limit 5
 </div>
 
 <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-  <div class="text-base font-bold text-gray-700 mb-3">{match_info[0].away_team}</div>
+  <div class="text-base font-bold text-gray-700 mb-3">{match_info[0].away_team_short}</div>
   <div class="flex flex-col gap-2">
     {#each away_form as m}
       <div class="flex items-center justify-between rounded-lg bg-white border border-gray-100 px-3 py-2">

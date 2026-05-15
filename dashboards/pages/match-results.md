@@ -70,6 +70,17 @@ from ${results}
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=goals_per_big_chance   title="Goals / Big Chance"  fmt="0.00" /></div>
 </div>
 
+<div class="block md:hidden">
+<DataTable data={results} rows=20>
+    <Column id=match_date          title="Date"           />
+    <Column id=match_short_name    title="Match"          wrap=true />
+    <Column id=score               title="Score"          align=center />
+    <Column id=total_goals         title="Goals"          contentType=colorscale colorPalette={['white','#22c55e']} align=center />
+    <Column id=total_yellow_cards  title="YC"             contentType=colorscale colorPalette={['white','#eab308']} align=center />
+    <Column id=total_red_cards     title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
+</DataTable>
+</div>
+<div class="hidden md:block">
 <DataTable data={results} rows=20>
     <Column id=match_date          title="Date"           />
     <Column id=round               title="Round"          />
@@ -81,6 +92,7 @@ from ${results}
     <Column id=total_yellow_cards  title="YC"             contentType=colorscale colorPalette={['white','#eab308']} align=center />
     <Column id=total_red_cards     title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
 </DataTable>
+</div>
 
 ---
 
@@ -89,13 +101,13 @@ from ${results}
 ```sql match_options
 select
     match_name || '|' || cast(match_date as varchar) as match_key,
-    match_name || '  (' || score || ')'              as match_label,
+    match_short_name || '  (' || score || ')'        as match_label,
     match_date
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and cast(match_round_number as integer) in ${inputs.round.value}
   and result in ('Win', 'Draw', 'Loss')
-group by match_name, match_date, score
+group by match_name, match_short_name, match_date, score
 order by match_date desc
 ```
 
@@ -107,6 +119,8 @@ order by match_date desc
 select
     max(case when team_side = 'Home' then team_name end)                         as home_team,
     max(case when team_side = 'Away' then team_name end)                         as away_team,
+    max(case when team_side = 'Home' then team_short_name end)                   as home_team_short,
+    max(case when team_side = 'Away' then team_short_name end)                   as away_team_short,
     max(score)                                                                   as score,
     max(case when team_side = 'Home' then goals_scored end)                      as home_goals,
     max(case when team_side = 'Away' then goals_scored end)                      as away_goals,
@@ -145,9 +159,9 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
 <div class="rounded-xl border border-gray-200 bg-white p-6 mt-2">
 
   <div class="grid grid-cols-3 text-center border-b border-gray-200 pb-4 mb-2">
-    <div class="text-left font-bold text-lg text-blue-600">{mc[0]?.home_team}<div class="text-xs font-normal text-gray-400">Home</div></div>
+    <div class="text-left font-bold text-lg text-blue-600">{mc[0]?.home_team_short}<div class="text-xs font-normal text-gray-400">Home</div></div>
     <div class="text-center text-2xl font-bold text-gray-700">{mc[0]?.score}</div>
-    <div class="text-right font-bold text-lg text-orange-500">{mc[0]?.away_team}<div class="text-xs font-normal text-gray-400">Away</div></div>
+    <div class="text-right font-bold text-lg text-orange-500">{mc[0]?.away_team_short}<div class="text-xs font-normal text-gray-400">Away</div></div>
   </div>
 
   <div class="py-2 border-b border-gray-100">
