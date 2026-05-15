@@ -247,6 +247,7 @@ order by season asc
     xAxisTitle="Season"
     yAxisTitle="YC / Match"
     lineColor="#eab308"
+    sort=false
 />
 
 <LineChart
@@ -257,6 +258,7 @@ order by season asc
     xAxisTitle="Season"
     yAxisTitle="Fouls / Match"
     lineColor="#f97316"
+    sort=false
 />
 
 <LineChart
@@ -267,6 +269,7 @@ order by season asc
     xAxisTitle="Season"
     yAxisTitle="Severity Index"
     lineColor="#dc2626"
+    sort=false
 />
 
 <LineChart
@@ -277,6 +280,7 @@ order by season asc
     xAxisTitle="Season"
     yAxisTitle="RC / Match"
     lineColor="#ef4444"
+    sort=false
 />
 
 </div>

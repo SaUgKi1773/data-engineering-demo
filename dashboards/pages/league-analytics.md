@@ -493,6 +493,7 @@ order by min(possession_pct)
     xAxisTitle="Season"
     yAxisTitle="Goals / Match"
     lineColor="#22c55e"
+    sort=false
     chartAreaHeight=220
 />
 
@@ -504,6 +505,7 @@ order by min(possession_pct)
     xAxisTitle="Season"
     yAxisTitle="%"
     colorPalette={['#3b82f6','#eab308']}
+    sort=false
     chartAreaHeight=220
 />
 
@@ -515,6 +517,7 @@ order by min(possession_pct)
     xAxisTitle="Season"
     yAxisTitle="YC / Match"
     lineColor="#f97316"
+    sort=false
     chartAreaHeight=220
 />
 
@@ -526,6 +529,7 @@ order by min(possession_pct)
     xAxisTitle="Season"
     yAxisTitle="Pass Acc %"
     lineColor="#8b5cf6"
+    sort=false
     chartAreaHeight=220
 />
 
