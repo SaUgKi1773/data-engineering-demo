@@ -43,12 +43,13 @@ select
     sum(big_chances_created)        as total_big_chances,
     sum(yellow_cards)               as total_yellow_cards,
     sum(red_cards)                  as total_red_cards,
+    referee_name                    as referee,
     season
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and cast(match_round_number as integer) in ${inputs.round.value}
   and result in ('Win', 'Draw', 'Loss')
-group by match_id, match_date, match_round_name, match_round_number, match_name, match_short_name, score, season
+group by match_id, match_date, match_round_name, match_round_number, match_name, match_short_name, score, referee_name, season
 order by match_date desc
 ```
 
@@ -74,8 +75,11 @@ from ${results}
 <DataTable data={results} rows=20>
     <Column id=match_date          title="Date"           />
     <Column id=match_short_name    title="Match"          wrap=true />
+    <Column id=referee             title="Referee"        />
     <Column id=score               title="Score"          align=center />
     <Column id=total_goals         title="Goals"          contentType=colorscale colorPalette={['white','#22c55e']} align=center />
+    <Column id=total_shots         title="Shots"          contentType=bar        colorPalette={['#6366f1']} />
+    <Column id=total_big_chances   title="Big Ch."        contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
     <Column id=total_yellow_cards  title="YC"             contentType=colorscale colorPalette={['white','#eab308']} align=center />
     <Column id=total_red_cards     title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
 </DataTable>
@@ -85,6 +89,7 @@ from ${results}
     <Column id=match_date          title="Date"           />
     <Column id=round               title="Round"          />
     <Column id=match_name          title="Match"          wrap=true />
+    <Column id=referee             title="Referee"        />
     <Column id=score               title="Score"          align=center />
     <Column id=total_goals         title="Goals"          contentType=colorscale colorPalette={['white','#22c55e']} align=center />
     <Column id=total_shots         title="Shots"          contentType=bar        colorPalette={['#6366f1']} />

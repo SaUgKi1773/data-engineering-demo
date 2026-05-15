@@ -31,11 +31,11 @@ with base as (
         kick_off_time,
         case when stadium_name like '%Unknown%' or stadium_name like '%Applicable%'
              then 'TBD' else stadium_name end                             as stadium,
-        max(referee_name)                                                  as referee,
+        referee_name                                                       as referee,
         season
     from superligaen.mart_match_facts
     where result = 'Pending'
-    group by match_name, match_round_name, match_round_number, match_date, kick_off_time, stadium_name, season
+    group by match_name, match_round_name, match_round_number, match_date, kick_off_time, stadium_name, referee_name, season
 )
 select * from base
 where home_team in ${inputs.team.value}
