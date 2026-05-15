@@ -7,7 +7,7 @@ title: Player Analysis
 ```sql seasons
 select season from (
   select season, max(is_current_season::int) as is_current
-  from superligaen.mart_player_stats
+  from superligaen.mart_player_facts
   group by season
 ) order by is_current desc, season desc
 ```
@@ -17,7 +17,7 @@ select team_name from (
   select 'All Teams' as team_name, 0 as sort_order
   union all
   select distinct team_name, 1
-  from superligaen.mart_player_stats
+  from superligaen.mart_player_facts
   where season = '${inputs.season.value}'
 ) order by sort_order, team_name
 ```
@@ -48,7 +48,7 @@ select
     round(sum(goals_scored)::double / nullif(count(distinct match_id), 0), 2) as goals_per_match,
     sum(yellow_cards)                                                          as yellow_cards,
     sum(red_cards)                                                             as red_cards
-from superligaen.mart_player_stats
+from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
   and (team_name = '${inputs.team.value}' or '${inputs.team.value}' = 'All Teams')
@@ -69,7 +69,7 @@ select
     sum(key_passes)                                                              as key_passes,
     sum(chances_created)                                                         as chances_created,
     round(sum(assists)::double / nullif(count(distinct match_id), 0), 2)         as assists_per_match
-from superligaen.mart_player_stats
+from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
   and (team_name = '${inputs.team.value}' or '${inputs.team.value}' = 'All Teams')
@@ -84,7 +84,7 @@ select
     sum(goals_scored)                                                         as total_goals,
     sum(assists)                                                              as total_assists,
     round(avg(nullif(rating, 0)), 2)                                         as avg_rating
-from superligaen.mart_player_stats
+from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
   and (team_name = '${inputs.team.value}' or '${inputs.team.value}' = 'All Teams')
@@ -142,7 +142,7 @@ where season = '${inputs.season.value}'
 
 ```sql all_players
 select distinct player_name
-from superligaen.mart_player_stats
+from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
   and (team_name = '${inputs.team.value}' or '${inputs.team.value}' = 'All Teams')
@@ -186,7 +186,7 @@ select
     sum(red_cards)                                                             as red_cards,
     sum(offsides)                                                              as offsides,
     round(avg(nullif(rating, 0)), 2)                                           as avg_rating
-from superligaen.mart_player_stats
+from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
   and result in ('Win', 'Draw', 'Loss')
@@ -211,7 +211,7 @@ select
     yellow_cards                                                               as yc,
     red_cards                                                                  as rc,
     rating
-from superligaen.mart_player_stats
+from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
   and result in ('Win', 'Draw', 'Loss')
