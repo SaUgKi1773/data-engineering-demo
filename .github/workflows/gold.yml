@@ -8,6 +8,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   gold:
     name: Gold transformation
