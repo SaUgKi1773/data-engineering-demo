@@ -34,6 +34,7 @@ select team_name from (
 select
     player_name,
     team_name,
+    team_short_name,
     player_photo,
     player_position,
     count(distinct match_id)                                                   as appearances,
@@ -52,7 +53,7 @@ from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
   and (team_name = '${inputs.team.value}' or '${inputs.team.value}' = 'All Teams')
-group by player_name, team_name, player_photo, player_position
+group by player_name, team_name, team_short_name, player_photo, player_position
 having sum(goals_scored) > 0
 order by goals desc, assists desc
 ```
@@ -61,6 +62,7 @@ order by goals desc, assists desc
 select
     player_name,
     team_name,
+    team_short_name,
     player_position,
     count(distinct match_id)                                                     as appearances,
     sum(assists)                                                                 as assists,
@@ -73,7 +75,7 @@ from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
   and (team_name = '${inputs.team.value}' or '${inputs.team.value}' = 'All Teams')
-group by player_name, team_name, player_position
+group by player_name, team_name, team_short_name, player_position
 having sum(assists) > 0
 order by assists desc, goals desc
 ```
@@ -103,6 +105,17 @@ where season = '${inputs.season.value}'
 
 ## Top Scorers
 
+<div class="block md:hidden">
+<DataTable data={scorers} rows=20>
+    <Column id=player_name         title="Player"         wrap=true />
+    <Column id=team_short_name     title="Team"           />
+    <Column id=appearances         title="Apps"           align=center />
+    <Column id=goals               title="G"              contentType=colorscale colorPalette={['white','#22c55e']} align=center />
+    <Column id=assists             title="A"              contentType=colorscale colorPalette={['white','#3b82f6']} align=center />
+    <Column id=goal_contributions  title="G+A"            contentType=colorscale colorPalette={['white','#6366f1']} align=center />
+</DataTable>
+</div>
+<div class="hidden md:block">
 <DataTable data={scorers} rows=20>
     <Column id=player_name         title="Player"         wrap=true />
     <Column id=team_name           title="Team"           wrap=true />
@@ -118,11 +131,23 @@ where season = '${inputs.season.value}'
     <Column id=yellow_cards        title="YC"             align=center />
     <Column id=red_cards           title="RC"             align=center />
 </DataTable>
+</div>
 
 ---
 
 ## Top Assisters
 
+<div class="block md:hidden">
+<DataTable data={assisters} rows=20>
+    <Column id=player_name         title="Player"         wrap=true />
+    <Column id=team_short_name     title="Team"           />
+    <Column id=appearances         title="Apps"           align=center />
+    <Column id=assists             title="A"              contentType=colorscale colorPalette={['white','#3b82f6']} align=center />
+    <Column id=goals               title="G"              align=center />
+    <Column id=goal_contributions  title="G+A"            contentType=colorscale colorPalette={['white','#6366f1']} align=center />
+</DataTable>
+</div>
+<div class="hidden md:block">
 <DataTable data={assisters} rows=20>
     <Column id=player_name         title="Player"         wrap=true />
     <Column id=team_name           title="Team"           wrap=true />
@@ -135,6 +160,7 @@ where season = '${inputs.season.value}'
     <Column id=chances_created     title="Chances"        align=center />
     <Column id=assists_per_match   title="Assists/Match"  />
 </DataTable>
+</div>
 
 ---
 
@@ -198,6 +224,7 @@ select
     match_date,
     match_round_name                                                           as round,
     opponent_team_name                                                         as opponent,
+    opponent_team_short_name                                                   as opponent_short,
     team_side,
     result,
     appearance_type,
@@ -242,6 +269,18 @@ order by match_date asc
 
 ### Match Log
 
+<div class="block md:hidden">
+<DataTable data={player_match_log} rows=40>
+    <Column id=match_date       title="Date"        />
+    <Column id=opponent_short   title="Opponent"    />
+    <Column id=result           title="Result"      />
+    <Column id=minutes_played   title="Mins"        align=center />
+    <Column id=goals            title="G"           contentType=colorscale colorPalette={['white','#22c55e']} align=center />
+    <Column id=assists          title="A"           contentType=colorscale colorPalette={['white','#3b82f6']} align=center />
+    <Column id=rating           title="Rating"      contentType=colorscale colorPalette={['white','#6366f1']} />
+</DataTable>
+</div>
+<div class="hidden md:block">
 <DataTable data={player_match_log} rows=40>
     <Column id=match_date       title="Date"        />
     <Column id=round            title="Round"       />
@@ -260,3 +299,4 @@ order by match_date asc
     <Column id=rc               title="RC"          contentType=colorscale colorPalette={['white','#ef4444']} align=center />
     <Column id=rating           title="Rating"      contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
+</div>

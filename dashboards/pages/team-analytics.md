@@ -64,6 +64,7 @@ select
     match_round_name             as round,
     match_round_number,
     opponent_team_name           as opponent,
+    opponent_team_short_name     as opponent_short,
     team_side                    as side,
     goals_scored                 as gf,
     goals_conceded               as ga,
@@ -176,6 +177,7 @@ select
     match_date,
     match_round_name               as round,
     opponent_team_name             as opponent,
+    opponent_team_short_name       as opponent_short,
     team_side                      as side,
     goals_scored                   as gf,
     goals_conceded                 as ga,
@@ -194,6 +196,19 @@ order by match_date desc
 limit 10
 ```
 
+<div class="block md:hidden">
+<DataTable data={recent_form} rows=10>
+    <Column id=match_date      title="Date"     />
+    <Column id=opponent_short  title="Opponent" />
+    <Column id=side            title="Side"     />
+    <Column id=gf              title="GF"       />
+    <Column id=ga              title="GA"       />
+    <Column id=result          title="Result"   />
+    <Column id=yellow_cards    title="YC"       align=center />
+    <Column id=red_cards       title="RC"       align=center />
+</DataTable>
+</div>
+<div class="hidden md:block">
 <DataTable data={recent_form} rows=10>
     <Column id=match_date    title="Date"       />
     <Column id=round         title="Round"      />
@@ -209,6 +224,7 @@ limit 10
     <Column id=yellow_cards  title="YC"         align=center />
     <Column id=red_cards     title="RC"         align=center />
 </DataTable>
+</div>
 
 ---
 
@@ -336,7 +352,19 @@ limit 10
 
 ## Home vs Away
 
-<div class="overflow-x-auto">
+<div class="block md:hidden">
+<DataTable data={home_away}>
+    <Column id=side                  title="Side"       />
+    <Column id=matches               title="MP"         />
+    <Column id=wins                  title="W"          />
+    <Column id=draws                 title="D"          />
+    <Column id=losses                title="L"          />
+    <Column id=goals_for             title="GF"         />
+    <Column id=goals_against         title="GA"         />
+    <Column id=win_rate_pct          title="Win %"      fmt='0.0"%"' />
+</DataTable>
+</div>
+<div class="hidden md:block">
 <DataTable data={home_away}>
     <Column id=side                  title="Side"            />
     <Column id=matches               title="MP"              />

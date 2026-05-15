@@ -40,8 +40,8 @@ from (
 )
 order by
     case standings_type
-        when 'Championship Round' then 1
-        when 'Relegation Round'   then 2
+        when 'Championship Group' then 1
+        when 'Relegation Group'   then 2
         when 'Regular Season'     then 3
     end,
     pts desc, gd desc, gf desc

@@ -20,6 +20,7 @@ SELECT
     t.team_name,
     t.team_short_name,
     ot.opponent_team_name,
+    ot.opponent_team_short_name,
     r.match_result                                        AS result,
     ts.team_side,
     ref.referee_common_name                               AS referee_name,
@@ -79,3 +80,4 @@ JOIN superligaen.gold.dim_stadium             st   ON st.stadium_sk       = f.st
 JOIN superligaen.gold.dim_appearance_type     at_dim ON at_dim.appearance_type_sk = f.appearance_type_sk
 WHERE f.player_sk > 0
   AND f.match_result_sk > 0
+  AND m.match_round_number IS NOT NULL

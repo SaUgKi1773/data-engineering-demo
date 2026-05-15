@@ -6,11 +6,15 @@ WITH player_agg AS (
         SUM(shots_off_target) AS shots_off_goal,
         SUM(shots_total)      AS total_shots,
         SUM(shots_blocked)    AS blocked_shots,
-        SUM(passes_total)     AS total_passes,
-        SUM(passes_accurate)  AS passes_accurate,
-        SUM(fouls_committed)  AS fouls,
-        SUM(saves)            AS goalkeeper_saves,
-        SUM(offsides)         AS offsides
+        SUM(passes_total)          AS total_passes,
+        SUM(passes_accurate)       AS passes_accurate,
+        SUM(fouls_committed)       AS fouls,
+        SUM(saves)                 AS goalkeeper_saves,
+        SUM(offsides)              AS offsides,
+        SUM(tackles)               AS tackles,
+        SUM(key_passes)            AS key_passes,
+        SUM(big_chances_created)   AS big_chances_created,
+        SUM(woodwork_hits)         AS woodwork_hits
     FROM superligaen.gold.fct_player_appearances
     GROUP BY match_sk, team_sk
 )
@@ -29,8 +33,11 @@ SELECT
     m.kick_off_time,
     t.team_name,
     t.team_short_name,
+    t.team_code,
     f.team_sk,
     ot.opponent_team_name,
+    ot.opponent_team_short_name,
+    ot.opponent_team_code,
     f.opponent_team_sk,
     ts.team_side,
     r.match_result                                                           AS result,
@@ -51,14 +58,18 @@ SELECT
     COALESCE(pa.blocked_shots,    0)                                        AS blocked_shots,
     COALESCE(pa.total_passes,     0)                                        AS total_passes,
     COALESCE(pa.passes_accurate,  0)                                        AS passes_accurate,
-    COALESCE(pa.fouls,            0)                                        AS fouls,
-    COALESCE(pa.goalkeeper_saves, 0)                                        AS saves,
-    COALESCE(pa.offsides,         0)                                        AS offsides,
+    COALESCE(pa.fouls,              0)                                      AS fouls,
+    COALESCE(pa.goalkeeper_saves,  0)                                      AS saves,
+    COALESCE(pa.offsides,          0)                                      AS offsides,
+    COALESCE(pa.tackles,           0)                                      AS tackles,
+    COALESCE(pa.key_passes,        0)                                      AS key_passes,
+    COALESCE(pa.big_chances_created, 0)                                    AS big_chances_created,
+    COALESCE(pa.woodwork_hits,     0)                                      AS woodwork_hits,
     CASE
         WHEN MAX(CASE WHEN m.match_round_type = 'Championship Round' THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
-            THEN 'Championship Round'
+            THEN 'Championship Group'
         WHEN MAX(CASE WHEN m.match_round_type = 'Relegation Round'   THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
-            THEN 'Relegation Round'
+            THEN 'Relegation Group'
         ELSE 'Regular Season'
     END                                                                      AS standings_type,
     SUM(f.points_earned) OVER (
@@ -85,3 +96,4 @@ JOIN superligaen.gold.dim_stadium        st  ON st.stadium_sk       = f.stadium_
 LEFT JOIN player_agg                         pa  ON pa.match_sk         = f.match_sk
                                                 AND pa.team_sk          = f.team_sk
 WHERE f.match_result_sk > 0
+  AND m.match_round_number IS NOT NULL
