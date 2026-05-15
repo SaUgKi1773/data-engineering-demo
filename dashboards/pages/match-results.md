@@ -39,9 +39,10 @@ select
     score,
     sum(goals_scored)               as total_goals,
     sum(shots_on_goal)              as total_shots_on_goal,
+    sum(total_shots)                as total_shots,
+    sum(big_chances_created)        as total_big_chances,
     sum(yellow_cards)               as total_yellow_cards,
     sum(red_cards)                  as total_red_cards,
-    sum(corner_kicks)               as total_corners,
     season
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
@@ -53,18 +54,20 @@ order by match_date desc
 
 ```sql round_kpis
 select
-    sum(total_goals)                                                                    as total_goals,
-    round(sum(total_goals)::double / count(distinct match_id), 2)                      as avg_goals_per_match,
-    round(sum(total_shots_on_goal)::double / count(distinct match_id), 1)              as avg_shots_on_goal
+    sum(total_goals)                                                                        as total_goals,
+    round(sum(total_goals)::double / count(distinct match_id), 2)                          as avg_goals_per_match,
+    round(sum(total_shots_on_goal)::double / count(distinct match_id), 1)                  as avg_shots_on_goal,
+    round(sum(total_goals)::double / nullif(sum(total_big_chances), 0), 2)                   as goals_per_big_chance
 from ${results}
 ```
 
 ## Match Results — {inputs.season.value}
 
-<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=total_goals         title="Goals Scored"       /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=avg_goals_per_match  title="Avg Goals / Match"  /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=avg_shots_on_goal    title="Avg Shots on Goal"  /></div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=total_goals          title="Goals Scored"       /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=avg_goals_per_match   title="Avg Goals / Match"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=avg_shots_on_goal     title="Avg Shots on Goal"  /></div>
+  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=goals_per_big_chance   title="Goals / Big Chance"  fmt="0.00" /></div>
 </div>
 
 <DataTable data={results} rows=20>
@@ -73,10 +76,10 @@ from ${results}
     <Column id=match_name          title="Match"          wrap=true />
     <Column id=score               title="Score"          align=center />
     <Column id=total_goals         title="Goals"          contentType=colorscale colorPalette={['white','#22c55e']} align=center />
-    <Column id=total_shots_on_goal title="Shots on Goal"  contentType=bar        colorPalette={['#6366f1']} />
+    <Column id=total_shots         title="Shots"          contentType=bar        colorPalette={['#6366f1']} />
+    <Column id=total_big_chances   title="Big Chances"    contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
     <Column id=total_yellow_cards  title="YC"             contentType=colorscale colorPalette={['white','#eab308']} align=center />
     <Column id=total_red_cards     title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
-    <Column id=total_corners       title="Corners"        contentType=colorscale colorPalette={['white','#a855f7']} align=center />
 </DataTable>
 
 ---
@@ -124,7 +127,15 @@ select
     max(case when team_side = 'Home' then red_cards end)                         as home_rc,
     max(case when team_side = 'Away' then red_cards end)                         as away_rc,
     max(case when team_side = 'Home' then saves end)                             as home_saves,
-    max(case when team_side = 'Away' then saves end)                             as away_saves
+    max(case when team_side = 'Away' then saves end)                             as away_saves,
+    max(case when team_side = 'Home' then total_shots end)                       as home_total_shots,
+    max(case when team_side = 'Away' then total_shots end)                       as away_total_shots,
+    max(case when team_side = 'Home' then big_chances_created end)               as home_big_chances,
+    max(case when team_side = 'Away' then big_chances_created end)               as away_big_chances,
+    max(case when team_side = 'Home' then tackles end)                           as home_tackles,
+    max(case when team_side = 'Away' then tackles end)                           as away_tackles,
+    max(case when team_side = 'Home' then woodwork_hits end)                     as home_woodwork,
+    max(case when team_side = 'Away' then woodwork_hits end)                     as away_woodwork
 from superligaen.mart_match_facts
 where match_name            = split_part('${inputs.match.value}', '|', 1)
   and cast(match_date as varchar) = split_part('${inputs.match.value}', '|', 2)
@@ -152,12 +163,34 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
 
   <div class="py-2 border-b border-gray-100">
     <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_total_shots}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Total Shots</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_total_shots}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_total_shots ?? 0) + (mc[0]?.away_total_shots ?? 0) > 0 ? (mc[0]?.home_total_shots ?? 0) / ((mc[0]?.home_total_shots ?? 0) + (mc[0]?.away_total_shots ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2 border-b border-gray-100">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
       <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_sog}</div>
       <div class="text-gray-400 text-xs uppercase tracking-wide">Shots on Goal</div>
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_sog}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
       <div class="bg-blue-500" style="width:{(mc[0]?.home_sog ?? 0) + (mc[0]?.away_sog ?? 0) > 0 ? (mc[0]?.home_sog ?? 0) / ((mc[0]?.home_sog ?? 0) + (mc[0]?.away_sog ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2 border-b border-gray-100">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_big_chances}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Big Chances</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_big_chances}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_big_chances ?? 0) + (mc[0]?.away_big_chances ?? 0) > 0 ? (mc[0]?.home_big_chances ?? 0) / ((mc[0]?.home_big_chances ?? 0) + (mc[0]?.away_big_chances ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -238,7 +271,18 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
     </div>
   </div>
 
-  <div class="py-2">
+  <div class="py-2 border-b border-gray-100">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_tackles}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Tackles</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_tackles}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_tackles ?? 0) + (mc[0]?.away_tackles ?? 0) > 0 ? (mc[0]?.home_tackles ?? 0) / ((mc[0]?.home_tackles ?? 0) + (mc[0]?.away_tackles ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2 border-b border-gray-100">
     <div class="grid grid-cols-3 items-center text-center mb-1.5">
       <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_offsides}</div>
       <div class="text-gray-400 text-xs uppercase tracking-wide">Offsides</div>
@@ -246,6 +290,17 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
       <div class="bg-blue-500" style="width:{(mc[0]?.home_offsides ?? 0) + (mc[0]?.away_offsides ?? 0) > 0 ? (mc[0]?.home_offsides ?? 0) / ((mc[0]?.home_offsides ?? 0) + (mc[0]?.away_offsides ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_woodwork}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Woodwork Hits</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_woodwork}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_woodwork ?? 0) + (mc[0]?.away_woodwork ?? 0) > 0 ? (mc[0]?.home_woodwork ?? 0) / ((mc[0]?.home_woodwork ?? 0) + (mc[0]?.away_woodwork ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
