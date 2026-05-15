@@ -14,6 +14,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   # ---------------------------------------------------------------------------
   # Bronze — ingest raw API data from Sportmonks

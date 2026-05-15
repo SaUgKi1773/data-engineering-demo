@@ -3,6 +3,10 @@ name: Publish to Vercel
 on:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     name: Publish to Vercel
