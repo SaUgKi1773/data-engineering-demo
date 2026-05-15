@@ -22,16 +22,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       - name: Run ingestion
         working-directory: ingestion/sportmonks
         run: |
           if [ "${{ github.event.inputs.mode }}" = "full-load" ]; then
-            uv run --with requests --with python-dotenv --with duckdb python run.py --mode full --db md:superligaen
+            python run.py --mode full --db md:superligaen
           else
-            uv run --with requests --with python-dotenv --with duckdb python run.py --mode incremental --db md:superligaen
+            python run.py --mode incremental --db md:superligaen
           fi
         env:
           SPORTMONKS_API_KEY: ${{ secrets.SPORTMONKS_API_KEY }}
