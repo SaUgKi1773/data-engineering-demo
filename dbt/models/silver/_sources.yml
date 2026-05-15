@@ -25,7 +25,6 @@ sources:
       - name: sportmonks__stage_topscorers
       - name: sportmonks__stage_statistics
       - name: sportmonks__round_statistics
-      - name: sportmonks__transfers
       - name: sportmonks__rivals
       - name: sportmonks__core_continents
       - name: sportmonks__core_countries
