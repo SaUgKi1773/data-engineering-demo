@@ -134,14 +134,14 @@ from (
 
 ## Stadium Intelligence — {inputs.season.value}
 
-<div class="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-2 sm:p-4 text-center">
+<div class="grid grid-cols-3 gap-2 sm:gap-4 mb-6 items-stretch">
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-2 sm:p-4 text-center flex flex-col justify-center">
     <BigValue data={stadium_kpis} value=total_stadiums title="Stadiums" />
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-2 sm:p-4 text-center">
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-2 sm:p-4 text-center flex flex-col justify-center">
     <BigValue data={stadium_kpis} value=grass_stadiums title="Natural Grass" />
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-2 sm:p-4 text-center">
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-2 sm:p-4 text-center flex flex-col justify-center">
     <BigValue data={stadium_kpis} value=turf_stadiums title="Artificial Turf" />
   </div>
 </div>
