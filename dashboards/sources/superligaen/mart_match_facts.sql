@@ -93,3 +93,4 @@ JOIN superligaen.gold.dim_stadium        st  ON st.stadium_sk       = f.stadium_
 LEFT JOIN player_agg                         pa  ON pa.match_sk         = f.match_sk
                                                 AND pa.team_sk          = f.team_sk
 WHERE f.match_result_sk > 0
+  AND m.match_round_number IS NOT NULL
