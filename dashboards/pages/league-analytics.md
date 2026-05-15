@@ -1,145 +1,405 @@
 ---
 sidebar: never
 hide_toc: true
-title: League Analysis
+title: League Intelligence
 ---
 
 ```sql seasons
 select season from (
-  select season, max(is_current_season::int) as is_current
+  select season, max(is_current_season::int) as is_current, 0 as sort_key
   from superligaen.mart_match_facts
+  where result in ('Win', 'Draw', 'Loss')
   group by season
-) order by is_current desc, season desc
+  union all
+  select 'All Seasons', -1, 1
+)
+order by sort_key, is_current desc, season desc
 ```
 
 {#key seasons[0]?.season}
-<Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
+<Dropdown data={seasons} name=season value=season label=season defaultValue={seasons[0]?.season} />
 {/key}
 
-```sql current_standings
+```sql league_kpis
+with curr as (
+    select
+        count(distinct match_id) / 2                                                                    as total_matches,
+        sum(goals_scored) / 2                                                                           as total_goals,
+        count(distinct team_name)                                                                       as total_teams,
+        round(sum(goals_scored)::double / count(distinct match_id), 2)                                  as goals_per_match,
+        round(100.0 * count(*) filter (where team_side='Home' and result='Win')
+              / nullif(count(*) filter (where team_side='Home'), 0), 1)                                 as home_win_pct,
+        round(100.0 * count(*) filter (where result='Draw') / count(*), 1)                             as draw_pct,
+        round(sum(yellow_cards)::double / count(distinct match_id), 2)                                  as yc_per_match,
+        round(100.0 * sum(goals_scored) / nullif(sum(big_chances_created), 0), 1)                      as big_chance_conv
+    from superligaen.mart_match_facts
+    where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+      and result in ('Win', 'Draw', 'Loss')
+),
+prev as (
+    select
+        round(sum(goals_scored)::double / count(distinct match_id), 2)                                  as prev_goals_per_match,
+        round(100.0 * count(*) filter (where team_side='Home' and result='Win')
+              / nullif(count(*) filter (where team_side='Home'), 0), 1)                                 as prev_home_win_pct,
+        round(100.0 * count(*) filter (where result='Draw') / count(*), 1)                             as prev_draw_pct,
+        round(sum(yellow_cards)::double / count(distinct match_id), 2)                                  as prev_yc_per_match
+    from superligaen.mart_match_facts
+    where season = (
+        select max(season) from superligaen.mart_match_facts
+        where season < '${inputs.season.value}'
+          and result in ('Win','Draw','Loss')
+          and '${inputs.season.value}' != 'All Seasons'
+    )
+      and result in ('Win', 'Draw', 'Loss')
+)
+select curr.*, prev.* from curr cross join prev
+```
+
+```sql season_awards
+with goals_ranked as (
+    select player_name, player_photo, team_name, team_logo,
+           sum(goals_scored)::int as total_goals,
+           row_number() over (order by sum(goals_scored) desc) as rn
+    from superligaen.mart_player_facts
+    where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+      and result in ('Win', 'Draw', 'Loss')
+    group by player_name, player_photo, team_name, team_logo
+    having sum(goals_scored) > 0
+),
+assists_ranked as (
+    select player_name, player_photo, team_name, team_logo,
+           sum(assists)::int as total_assists,
+           row_number() over (order by sum(assists) desc) as rn
+    from superligaen.mart_player_facts
+    where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+      and result in ('Win', 'Draw', 'Loss')
+    group by player_name, player_photo, team_name, team_logo
+    having sum(assists) > 0
+),
+rating_ranked as (
+    select player_name, player_photo, team_name, team_logo,
+           round(avg(rating), 2) as avg_rating,
+           count(distinct match_id)::int as matches,
+           row_number() over (order by avg(rating) desc) as rn
+    from superligaen.mart_player_facts
+    where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+      and result in ('Win', 'Draw', 'Loss')
+      and rating is not null
+      and rating > 0
+    group by player_name, player_photo, team_name, team_logo
+    having count(distinct match_id) >= 5
+)
+select
+    g.player_name  as top_scorer_name,
+    g.player_photo as top_scorer_photo,
+    g.team_name    as top_scorer_team,
+    g.team_logo    as top_scorer_logo,
+    g.total_goals,
+    a.player_name  as top_assister_name,
+    a.player_photo as top_assister_photo,
+    a.team_name    as top_assister_team,
+    a.team_logo    as top_assister_logo,
+    a.total_assists,
+    r.player_name  as best_rated_name,
+    r.player_photo as best_rated_photo,
+    r.team_name    as best_rated_team,
+    r.team_logo    as best_rated_logo,
+    r.avg_rating,
+    r.matches      as best_rated_matches
+from goals_ranked   g
+cross join assists_ranked a
+cross join rating_ranked  r
+where g.rn = 1 and a.rn = 1 and r.rn = 1
+```
+
+```sql top_scorers
+select
+    row_number() over (order by sum(goals_scored) desc)::int  as rank,
+    player_name,
+    player_photo,
+    team_name,
+    team_logo,
+    sum(goals_scored)::int                                     as goals,
+    sum(assists)::int                                          as assists,
+    count(distinct match_id)::int                             as matches,
+    round(sum(goals_scored) * 90.0 / nullif(sum(minutes_played), 0), 2) as goals_per90
+from superligaen.mart_player_facts
+where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+  and result in ('Win', 'Draw', 'Loss')
+group by player_name, player_photo, team_name, team_logo
+having sum(goals_scored) >= 1
+order by goals desc
+limit 20
+```
+
+```sql team_landscape
 select
     team_name,
-    team_short_name,
-    count(distinct match_id)                          as mp,
-    sum(points_earned)                                as pts,
-    sum(goals_scored) - sum(goals_conceded)           as gd,
-    sum(goals_scored)                                 as gf,
-    standings_type                                    as round_group
+    team_logo,
+    sum(goals_scored)::int                                                                   as goals_for,
+    sum(goals_conceded)::int                                                                 as goals_against,
+    sum(points_earned)::int                                                                  as points,
+    round(100.0 * count(*) filter (where result='Win') / count(*), 1)                       as win_pct,
+    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                       as shot_conv,
+    count(distinct match_id) filter (where goals_conceded = 0)::int                         as clean_sheets,
+    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                   as pass_accuracy
 from superligaen.mart_match_facts
-where season = '${inputs.season.value}'
+where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
   and result in ('Win', 'Draw', 'Loss')
-group by team_name, team_short_name, standings_type
-order by
-    case standings_type
-        when 'Championship Group' then 1
-        when 'Relegation Group'   then 2
-        else                           3
-    end,
-    pts desc, gd desc, gf desc
+group by team_name, team_logo
+order by points desc
 ```
 
 ```sql points_progression
-select match_round_number as round, team_name, cumulative_points, cumulative_gd, cumulative_gf
+select
+    match_round_number  as round,
+    team_name,
+    team_code,
+    cumulative_points,
+    cumulative_gd
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
+  and '${inputs.season.value}' != 'All Seasons'
   and result in ('Win', 'Draw', 'Loss')
 order by max(cumulative_points) over (partition by team_name) desc, team_name, match_round_number
 ```
 
-```sql league_kpis
+```sql historical_trends
 select
-    sum(goals_scored)                                                                       as total_goals,
-    round(sum(goals_scored)::double / count(distinct match_id), 2)                         as avg_goals_per_match,
-    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                      as avg_shot_conversion,
-    sum(yellow_cards)                                                                       as total_yellow_cards,
-    sum(red_cards)                                                                          as total_red_cards
+    season,
+    round(sum(goals_scored)::double / count(distinct match_id), 2)                                 as goals_per_match,
+    round(100.0 * count(*) filter (where team_side='Home' and result='Win')
+          / nullif(count(*) filter (where team_side='Home'), 0), 1)                                as home_win_pct,
+    round(100.0 * count(*) filter (where result='Draw') / count(*), 1)                            as draw_pct,
+    round(sum(yellow_cards)::double / count(distinct match_id), 2)                                 as yc_per_match,
+    round(100.0 * sum(goals_scored) / nullif(sum(big_chances_created), 0), 1)                     as big_chance_conv,
+    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                         as pass_accuracy
 from superligaen.mart_match_facts
-where season = '${inputs.season.value}'
-  and result in ('Win', 'Draw', 'Loss')
+where result in ('Win', 'Draw', 'Loss')
+group by season
+order by season
 ```
 
-```sql team_season_stats
+```sql ht_intelligence
 select
-    team_name,
-    sum(goals_scored)                                                                       as goals_for,
-    sum(goals_conceded)                                                                     as goals_against,
-    round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                      as shot_conversion_pct,
-    round(100.0 * sum(goals_scored) / nullif(sum(shots_on_goal), 0), 1)                    as on_target_conversion_pct,
-    count(distinct match_id) filter (where goals_conceded = 0)                              as clean_sheets,
-    round(sum(saves)::double / count(distinct match_id), 1)                                 as avg_saves,
-    round(sum(goals_conceded)::double / count(distinct match_id), 2)                        as avg_goals_conceded,
-    round(sum(possession_pct)::double / count(distinct match_id), 1)                        as avg_possession,
-    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                  as avg_pass_accuracy,
-    round(sum(corner_kicks)::double / count(distinct match_id), 1)                          as avg_corners,
-    round(sum(fouls)::double / count(distinct match_id), 1)                                 as avg_fouls,
-    round((sum(fouls) + sum(yellow_cards) * 5 + sum(red_cards) * 15)::double / count(distinct match_id), 1) as aggression_index,
-    sum(yellow_cards)                                                                       as yellow_cards,
-    sum(red_cards)                                                                          as red_cards
+    case
+        when goals_ht_scored > goals_ht_conceded then 'Leading'
+        when goals_ht_scored = goals_ht_conceded then 'Level'
+        else 'Trailing'
+    end                                                                          as ht_state,
+    count(*)::int                                                                as total,
+    round(100.0 * sum(case when result='Win'  then 1 else 0 end) / count(*), 1) as win_pct,
+    round(100.0 * sum(case when result='Draw' then 1 else 0 end) / count(*), 1) as draw_pct,
+    round(100.0 * sum(case when result='Loss' then 1 else 0 end) / count(*), 1) as loss_pct
 from superligaen.mart_match_facts
-where season = '${inputs.season.value}'
+where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
   and result in ('Win', 'Draw', 'Loss')
-group by team_name
+group by 1
+order by case ht_state when 'Leading' then 1 when 'Level' then 2 else 3 end
 ```
 
-```sql attack_rankings
+```sql possession_paradox
 select
-    team_name,
-    goals_for,
-    shot_conversion_pct,
-    on_target_conversion_pct
-from ${team_season_stats}
-order by goals_for desc
+    case
+        when possession_pct < 40 then '< 40%'
+        when possession_pct < 50 then '40–50%'
+        when possession_pct < 60 then '50–60%'
+        else '≥ 60%'
+    end                                                                          as possession_bucket,
+    count(*)::int                                                                as matches,
+    round(100.0 * sum(case when result='Win'  then 1 else 0 end) / count(*), 1) as win_pct,
+    round(100.0 * sum(case when result='Draw' then 1 else 0 end) / count(*), 1) as draw_pct,
+    round(100.0 * sum(case when result='Loss' then 1 else 0 end) / count(*), 1) as loss_pct
+from superligaen.mart_match_facts
+where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+  and result in ('Win', 'Draw', 'Loss')
+group by 1
+order by min(possession_pct)
 ```
 
-```sql defence_rankings
-select
-    team_name,
-    goals_against,
-    clean_sheets,
-    avg_saves,
-    avg_goals_conceded
-from ${team_season_stats}
-order by clean_sheets desc
-```
+---
 
-```sql possession_rankings
-select
-    team_name,
-    avg_possession,
-    avg_pass_accuracy,
-    avg_corners
-from ${team_season_stats}
-order by avg_possession desc
-```
+## League Intelligence — {inputs.season.value}
 
-```sql discipline_rankings
-select
-    team_name,
-    yellow_cards,
-    red_cards,
-    avg_fouls,
-    aggression_index
-from ${team_season_stats}
-order by aggression_index desc
-```
-
-## {inputs.season.value} — League Analysis
-
-<div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_goals           title="Goals Scored"       /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=avg_goals_per_match   title="Avg Goals / Match"  /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=avg_shot_conversion   title="Shot Conversion %"  /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_yellow_cards    title="Yellow Cards"       /></div>
-  <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={league_kpis} value=total_red_cards       title="Red Cards"          /></div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
+    <BigValue data={league_kpis} value=total_goals title="Goals Scored" />
+  </div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
+    <BigValue data={league_kpis} value=goals_per_match title="Goals / Match" comparison=prev_goals_per_match comparisonTitle="vs prev season" comparisonDelta=true />
+  </div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
+    <BigValue data={league_kpis} value=home_win_pct title="Home Win %" comparison=prev_home_win_pct comparisonTitle="vs prev season" comparisonDelta=true fmt='0.0"%"' />
+  </div>
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
+    <BigValue data={league_kpis} value=yc_per_match title="YC / Match" comparison=prev_yc_per_match comparisonTitle="vs prev season" comparisonDelta=true downIsGood=true />
+  </div>
 </div>
 
 ---
 
-## Points Progression
+## Season Awards
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
+{#if inputs.season.value !== 'All Seasons'}
 
-<div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+  {#each season_awards as award}
+
+  <!-- Top Scorer -->
+  <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-amber-50 to-yellow-100 border border-amber-200 shadow-md p-6">
+    <div class="absolute top-3 right-4 text-3xl">⚽</div>
+    <div class="text-xs uppercase tracking-widest text-amber-600 font-bold mb-4">Top Scorer</div>
+    <div class="flex items-center gap-4">
+      <img src="{award.top_scorer_photo}" alt="{award.top_scorer_name}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-300 shadow" onerror="this.style.display='none'" />
+      <div>
+        <div class="text-xl font-extrabold text-gray-800 leading-tight">{award.top_scorer_name}</div>
+        <div class="flex items-center gap-2 mt-1">
+          <img src="{award.top_scorer_logo}" alt="{award.top_scorer_team}" class="h-5 w-5 object-contain" onerror="this.style.display='none'" />
+          <span class="text-sm text-gray-500">{award.top_scorer_team}</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 text-4xl font-black text-amber-500">{award.total_goals} <span class="text-base font-normal text-gray-500">goals</span></div>
+  </div>
+
+  <!-- Top Assister -->
+  <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50 to-sky-100 border border-blue-200 shadow-md p-6">
+    <div class="absolute top-3 right-4 text-3xl">🎯</div>
+    <div class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-4">Top Assister</div>
+    <div class="flex items-center gap-4">
+      <img src="{award.top_assister_photo}" alt="{award.top_assister_name}" class="w-16 h-16 rounded-full object-cover border-2 border-blue-300 shadow" onerror="this.style.display='none'" />
+      <div>
+        <div class="text-xl font-extrabold text-gray-800 leading-tight">{award.top_assister_name}</div>
+        <div class="flex items-center gap-2 mt-1">
+          <img src="{award.top_assister_logo}" alt="{award.top_assister_team}" class="h-5 w-5 object-contain" onerror="this.style.display='none'" />
+          <span class="text-sm text-gray-500">{award.top_assister_team}</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 text-4xl font-black text-blue-500">{award.total_assists} <span class="text-base font-normal text-gray-500">assists</span></div>
+  </div>
+
+  <!-- Best Rated -->
+  <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-50 to-violet-100 border border-purple-200 shadow-md p-6">
+    <div class="absolute top-3 right-4 text-3xl">⭐</div>
+    <div class="text-xs uppercase tracking-widest text-purple-600 font-bold mb-4">Best Rated</div>
+    <div class="flex items-center gap-4">
+      <img src="{award.best_rated_photo}" alt="{award.best_rated_name}" class="w-16 h-16 rounded-full object-cover border-2 border-purple-300 shadow" onerror="this.style.display='none'" />
+      <div>
+        <div class="text-xl font-extrabold text-gray-800 leading-tight">{award.best_rated_name}</div>
+        <div class="flex items-center gap-2 mt-1">
+          <img src="{award.best_rated_logo}" alt="{award.best_rated_team}" class="h-5 w-5 object-contain" onerror="this.style.display='none'" />
+          <span class="text-sm text-gray-500">{award.best_rated_team}</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 text-4xl font-black text-purple-500">{award.avg_rating} <span class="text-base font-normal text-gray-500">avg rating ({award.best_rated_matches} games)</span></div>
+  </div>
+
+  {/each}
+
+</div>
+
+{/if}
+
+---
+
+## Top Scorers
+
+<div class="hidden md:block">
+<DataTable data={top_scorers} rows=20>
+    <Column id=rank          title="#"           align=center />
+    <Column id=player_photo  title=""            contentType=image height=32 />
+    <Column id=player_name   title="Player"      />
+    <Column id=team_logo     title=""            contentType=image height=24 />
+    <Column id=team_name     title="Team"        />
+    <Column id=goals         title="Goals"       align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
+    <Column id=assists       title="Assists"     align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=matches       title="MP"          align=center />
+    <Column id=goals_per90   title="Goals/90"    contentType=colorscale colorPalette={['white','#22c55e']} />
+</DataTable>
+</div>
+<div class="block md:hidden">
+<DataTable data={top_scorers} rows=20>
+    <Column id=rank        title="#"       align=center />
+    <Column id=player_name title="Player"  />
+    <Column id=goals       title="G"       align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
+    <Column id=assists     title="A"       align=center />
+    <Column id=goals_per90 title="G/90"   />
+</DataTable>
+</div>
+
+---
+
+## Team Landscape — Attack vs Defence
+
+*Each team plotted by goals scored (x) vs goals conceded (y). Top-right = most exciting. Bottom-left = tight games. Top-left = defensively vulnerable, low-scoring attackers. Bottom-right = dominant.*
+
+<ScatterPlot
+    data={team_landscape}
+    x=goals_for
+    y=goals_against
+    series=team_name
+    xAxisTitle="Goals Scored"
+    yAxisTitle="Goals Conceded"
+    title="Attack vs Defence — {inputs.season.value}"
+    tooltipColumns={[{id: 'team_name', title: 'Team'}, {id: 'goals_for', title: 'Goals For'}, {id: 'goals_against', title: 'Goals Against'}, {id: 'points', title: 'Points'}, {id: 'win_pct', title: 'Win %', fmt: '0.0"%"'}]}
+/>
+
+---
+
+## Team Rankings
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={team_landscape}
+    x=team_name
+    y=goals_for
+    title="Goals Scored"
+    colorPalette={['#22c55e']}
+    swapXY=true
+    sort=true
+/>
+
+<BarChart
+    data={team_landscape}
+    x=team_name
+    y=goals_against
+    title="Goals Conceded"
+    colorPalette={['#ef4444']}
+    swapXY=true
+    sort=true
+/>
+
+<BarChart
+    data={team_landscape}
+    x=team_name
+    y=clean_sheets
+    title="Clean Sheets"
+    colorPalette={['#14b8a6']}
+    swapXY=true
+    sort=true
+/>
+
+<BarChart
+    data={team_landscape}
+    x=team_name
+    y=pass_accuracy
+    title="Pass Accuracy %"
+    colorPalette={['#8b5cf6']}
+    swapXY=true
+    sort=true
+/>
+
+</div>
+
+---
+
+## Points Race
+
+{#if inputs.season.value !== 'All Seasons'}
 
 <LineChart
     data={points_progression}
@@ -148,198 +408,125 @@ order by aggression_index desc
     series=team_name
     xAxisTitle="Round"
     yAxisTitle="Cumulative Points"
-    title="Points Progression by Round"
-    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; for (const row of points_progression) { if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const sorted = [...params].sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}}}
+    title="Points Race — {inputs.season.value}"
     legend=false
-    chartAreaHeight=300
+    chartAreaHeight=320
 />
 
+{:else}
+<p class="text-sm text-gray-500 italic">Select a specific season to view the points race.</p>
+{/if}
+
+---
+
+## Tactical Intelligence
+
+### Half-Time State → Full-Time Result
+
+*Once you're ahead at half-time in Superligaen, how likely are you to hold on?*
+
+<div class="grid grid-cols-3 gap-4 mb-8">
+  {#each ht_intelligence as row}
+    <div class="rounded-2xl border p-5 text-center {row.ht_state === 'Leading' ? 'border-green-200 bg-green-50' : row.ht_state === 'Trailing' ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-gray-50'}">
+      <div class="text-2xl mb-2">{row.ht_state === 'Leading' ? '🟢' : row.ht_state === 'Trailing' ? '🔴' : '🟡'}</div>
+      <div class="text-xs uppercase tracking-widest font-bold mb-1 {row.ht_state === 'Leading' ? 'text-green-600' : row.ht_state === 'Trailing' ? 'text-red-500' : 'text-gray-500'}">
+        {row.ht_state} at HT
+      </div>
+      <div class="text-sm text-gray-400 mb-4">{row.total} matches</div>
+      <div class="flex justify-around">
+        <div>
+          <div class="text-2xl font-black text-green-600">{row.win_pct}%</div>
+          <div class="text-xs text-gray-400 mt-1">Win</div>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-yellow-500">{row.draw_pct}%</div>
+          <div class="text-xs text-gray-400 mt-1">Draw</div>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-red-500">{row.loss_pct}%</div>
+          <div class="text-xs text-gray-400 mt-1">Loss</div>
+        </div>
+      </div>
+    </div>
+  {/each}
 </div>
 
-<div>
+### The Possession Paradox
 
-#### League Table
+*More possession doesn't mean more wins. The data tells a counterintuitive story.*
 
-<div class="block md:hidden">
-<DataTable data={current_standings} rows=20>
-    <Column id=team_short_name title="Team"  />
-    <Column id=round_group     title="Group" />
-    <Column id=mp              title="MP"   align=center />
-    <Column id=pts             title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-</DataTable>
-</div>
-<div class="hidden md:block">
-<DataTable data={current_standings} rows=20>
-    <Column id=team_name   title="Team"  />
-    <Column id=round_group title="Group" />
-    <Column id=mp          title="MP"   align=center />
-    <Column id=pts         title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-</DataTable>
-</div>
-
-</div>
-
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  {#each possession_paradox as row}
+    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+      <div class="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-1">Possession</div>
+      <div class="text-lg font-bold text-gray-700 mb-1">{row.possession_bucket}</div>
+      <div class="text-xs text-gray-400 mb-3">{row.matches} matches</div>
+      <div class="flex justify-around">
+        <div>
+          <div class="text-xl font-black text-green-600">{row.win_pct}%</div>
+          <div class="text-xs text-gray-400">W</div>
+        </div>
+        <div>
+          <div class="text-xl font-black text-yellow-500">{row.draw_pct}%</div>
+          <div class="text-xs text-gray-400">D</div>
+        </div>
+        <div>
+          <div class="text-xl font-black text-red-500">{row.loss_pct}%</div>
+          <div class="text-xs text-gray-400">L</div>
+        </div>
+      </div>
+    </div>
+  {/each}
 </div>
 
 ---
 
-## Attack — Who's Scoring?
+## 16 Seasons of Data
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
-<div>
-
-<BarChart
-    data={attack_rankings}
-    x=team_name
-    y=goals_for
-    title="Goals Scored"
-    xAxisTitle="Team"
-    yAxisTitle="Goals"
-    colorPalette={['#22c55e']}
-    swapXY=true
+<LineChart
+    data={historical_trends}
+    x=season
+    y=goals_per_match
+    title="Goals per Match — Historical"
+    xAxisTitle="Season"
+    yAxisTitle="Goals / Match"
+    lineColor="#22c55e"
+    chartAreaHeight=220
 />
 
-</div>
-
-<div>
-
-<BarChart
-    data={attack_rankings}
-    x=team_name
-    y=shot_conversion_pct
-    title="Shot Conversion %"
-    xAxisTitle="Team"
-    yAxisTitle="Conversion %"
-    colorPalette={['#f59e0b']}
-    swapXY=true
+<LineChart
+    data={historical_trends}
+    x=season
+    y={['home_win_pct','draw_pct']}
+    title="Home Win % & Draw % — Historical"
+    xAxisTitle="Season"
+    yAxisTitle="%"
+    colorPalette={['#3b82f6','#eab308']}
+    chartAreaHeight=220
 />
 
-</div>
-
-</div>
-
----
-
-## Defence — Who's Keeping Clean Sheets?
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<div>
-
-<BarChart
-    data={defence_rankings}
-    x=team_name
-    y=clean_sheets
-    title="Clean Sheets"
-    xAxisTitle="Team"
-    yAxisTitle="Clean Sheets"
-    colorPalette={['#14b8a6']}
-    swapXY=true
+<LineChart
+    data={historical_trends}
+    x=season
+    y=yc_per_match
+    title="Yellow Cards per Match — Historical"
+    xAxisTitle="Season"
+    yAxisTitle="YC / Match"
+    lineColor="#f97316"
+    chartAreaHeight=220
 />
 
-</div>
-
-<div>
-
-<BarChart
-    data={defence_rankings}
-    x=team_name
-    y=goals_against
-    title="Goals Conceded"
-    xAxisTitle="Team"
-    yAxisTitle="Goals Conceded"
-    colorPalette={['#ef4444']}
-    swapXY=true
+<LineChart
+    data={historical_trends}
+    x=season
+    y=pass_accuracy
+    title="Pass Accuracy % — Historical"
+    xAxisTitle="Season"
+    yAxisTitle="Pass Acc %"
+    lineColor="#8b5cf6"
+    chartAreaHeight=220
 />
-
-</div>
-
-</div>
-
----
-
-## Possession & Passing
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<div>
-
-<BarChart
-    data={possession_rankings}
-    x=team_name
-    y=avg_possession
-    title="Average Possession %"
-    xAxisTitle="Team"
-    yAxisTitle="Possession %"
-    colorPalette={['#8b5cf6']}
-    swapXY=true
-/>
-
-</div>
-
-<div>
-
-<BarChart
-    data={possession_rankings}
-    x=team_name
-    y=avg_pass_accuracy
-    title="Average Pass Accuracy %"
-    xAxisTitle="Team"
-    yAxisTitle="Pass Accuracy %"
-    colorPalette={['#0ea5e9']}
-    swapXY=true
-/>
-
-</div>
-
-</div>
-
----
-
-## Discipline
-
-<BarChart
-    data={discipline_rankings}
-    x=team_name
-    y=aggression_index
-    title="Aggression Index — Fouls + Cards Weighted"
-    xAxisTitle="Team"
-    yAxisTitle="Aggression Index"
-    colorPalette={['#f97316']}
-    swapXY=true
-/>
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-
-<div>
-
-<BarChart
-    data={discipline_rankings}
-    x=team_name
-    y=yellow_cards
-    title="Yellow Cards"
-    xAxisTitle="Team"
-    yAxisTitle="Yellow Cards"
-    colorPalette={['#eab308']}
-    swapXY=true
-/>
-
-</div>
-
-<div>
-
-<BarChart
-    data={discipline_rankings}
-    x=team_name
-    y=red_cards
-    title="Red Cards"
-    xAxisTitle="Team"
-    yAxisTitle="Red Cards"
-    colorPalette={['#dc2626']}
-    swapXY=true
-/>
-
-</div>
 
 </div>

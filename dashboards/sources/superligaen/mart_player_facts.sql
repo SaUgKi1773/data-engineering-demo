@@ -19,6 +19,7 @@ SELECT
     p.player_detailed_position,
     t.team_name,
     t.team_short_name,
+    t.team_logo,
     ot.opponent_team_name,
     ot.opponent_team_short_name,
     r.match_result                                        AS result,

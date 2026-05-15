@@ -34,6 +34,7 @@ SELECT
     t.team_name,
     t.team_short_name,
     t.team_code,
+    t.team_logo,
     f.team_sk,
     ot.opponent_team_name,
     ot.opponent_team_short_name,
@@ -42,7 +43,12 @@ SELECT
     ts.team_side,
     r.match_result                                                           AS result,
     ref.referee_common_name                                                  AS referee_name,
+    dc.coach_name,
     st.stadium_name,
+    st.stadium_surface,
+    st.stadium_capacity,
+    st.stadium_latitude,
+    st.stadium_longitude,
     f.points_earned,
     f.goals_scored,
     f.goals_conceded,
@@ -93,6 +99,7 @@ JOIN superligaen.gold.dim_match_result   r   ON r.match_result_sk   = f.match_re
 JOIN superligaen.gold.dim_team_side      ts  ON ts.team_side_sk     = f.team_side_sk
 JOIN superligaen.gold.dim_referee        ref ON ref.referee_sk      = f.referee_sk
 JOIN superligaen.gold.dim_stadium        st  ON st.stadium_sk       = f.stadium_sk
+LEFT JOIN superligaen.gold.dim_coach     dc  ON dc.coach_sk         = f.coach_sk
 LEFT JOIN player_agg                         pa  ON pa.match_sk         = f.match_sk
                                                 AND pa.team_sk          = f.team_sk
 WHERE f.match_result_sk > 0
