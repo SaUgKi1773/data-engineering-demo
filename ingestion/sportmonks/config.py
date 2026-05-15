@@ -278,23 +278,8 @@ ENDPOINT_MANIFEST = [
 
     # ══════════════════════════════════════════════════════════════════════════
     # FOOTBALL API — Team-based global tables  (delete: global)
-    # Full truncate + reload on every run (full and incremental).
-    # The engine resolves team IDs from the DB so all historical teams are
-    # covered even when only the current season was fetched this run.
     # ══════════════════════════════════════════════════════════════════════════
 
-    {
-        "table":         "sportmonks__transfers",
-        "path":          "/transfers/between/{from_date}/{to_date}",
-        "strategy":      "date_based",
-        "delete":        "date_window",
-        "includes":      "sport;player;type;fromTeam;toTeam;position;detailedPosition",
-        "league_filter": False,
-        "date_field":    "date",
-        "days_back":     60,   # covers both Danish transfer windows (end of Aug / end of Jan)
-        "days_forward":  0,    # no future dates — API rejects them
-        "modes":         ["full", "incremental"],
-    },
     {
         "table":    "sportmonks__rivals",
         "path":     "/rivals/teams/{team_id}",

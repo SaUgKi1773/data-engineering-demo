@@ -49,6 +49,10 @@ scores AS (
     FROM {{ ref('fixture_scores') }}
     GROUP BY fixture_id, team_id
 ),
+score_corrections AS (
+    SELECT fixture_id, team_id, goals_scored_corrected
+    FROM {{ ref('fixture_score_corrections') }}
+),
 stats AS (
     SELECT
         fixture_id,
@@ -79,8 +83,8 @@ src AS (
         f.is_finished,
         co.coach_id,
         fo.formation,
-        CASE WHEN f.is_finished THEN COALESCE(sc.goals_scored,     0) END AS goals_scored,
-        CASE WHEN f.is_finished THEN COALESCE(osc.goals_scored,    0) END AS goals_conceded,
+        CASE WHEN f.is_finished THEN COALESCE(scf.goals_scored_corrected, sc.goals_scored,  0) END AS goals_scored,
+        CASE WHEN f.is_finished THEN COALESCE(oscf.goals_scored_corrected, osc.goals_scored, 0) END AS goals_conceded,
         CASE WHEN f.is_finished THEN COALESCE(sc.goals_ht_scored,  0) END AS goals_ht_scored,
         CASE WHEN f.is_finished THEN COALESCE(osc.goals_ht_scored, 0) END AS goals_ht_conceded,
         CASE WHEN f.is_finished THEN COALESCE(st.corner_kicks,     0) END AS corner_kicks,
@@ -89,8 +93,10 @@ src AS (
         CASE WHEN f.is_finished THEN COALESCE(st.red_cards,        0) END AS red_cards
     FROM all_fixtures f
     JOIN  match_teams       mt   ON mt.fixture_id  = f.fixture_id
-    LEFT JOIN scores        sc   ON sc.fixture_id  = f.fixture_id AND sc.team_id  = mt.team_id
-    LEFT JOIN scores        osc  ON osc.fixture_id = f.fixture_id AND osc.team_id = mt.opponent_team_id
+    LEFT JOIN scores              sc   ON sc.fixture_id  = f.fixture_id AND sc.team_id  = mt.team_id
+    LEFT JOIN scores              osc  ON osc.fixture_id = f.fixture_id AND osc.team_id = mt.opponent_team_id
+    LEFT JOIN score_corrections   scf  ON scf.fixture_id = f.fixture_id AND scf.team_id = mt.team_id
+    LEFT JOIN score_corrections   oscf ON oscf.fixture_id = f.fixture_id AND oscf.team_id = mt.opponent_team_id
     LEFT JOIN stats         st   ON st.fixture_id  = f.fixture_id AND st.team_id  = mt.team_id
     LEFT JOIN main_referee  mr   ON mr.fixture_id  = f.fixture_id
     LEFT JOIN coaches       co   ON co.fixture_id  = f.fixture_id AND co.team_id = mt.team_id
