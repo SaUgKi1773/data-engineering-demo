@@ -1,15 +1,11 @@
 """
 DuckDB connection, schema management, and write helpers.
 
-Table categories and their delete strategy
--------------------------------------------
-Global    : DELETE FROM table (truncate)      — types, states, tv_stations, league,
-                                                seasons, players, rivals
-Seasonal  : DELETE WHERE _season_id = ?       — stages, rounds, teams, venues,
-                                                referees, standings, topscorers,
-                                                stage_topscorers, stage_statistics,
-                                                round_statistics
-Date-win  : DELETE WHERE _fixture_date BETWEEN — transfers, fixtures
+Table lists are derived from ENDPOINT_MANIFEST in config.py — the delete
+strategy on each entry determines which category a table falls into:
+  global     → DELETE FROM table (truncate)
+  seasonal   → DELETE WHERE _season_id = ?
+  date_window → DELETE WHERE _fixture_date BETWEEN ? AND ?
 """
 
 import json
@@ -20,50 +16,21 @@ from datetime import datetime, timezone
 import duckdb
 from dotenv import load_dotenv
 
-from config import DEFAULT_DB_PATH
+from config import DEFAULT_DB_PATH, ENDPOINT_MANIFEST
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 log = logging.getLogger(__name__)
 
-GLOBAL_TABLES = [
-    # Core API lookups (static reference data)
-    "sportmonks__core_continents",
-    "sportmonks__core_countries",
-    "sportmonks__core_regions",
-    # Football API global tables
-    "sportmonks__types",
-    "sportmonks__states",
-    "sportmonks__tv_stations",
-    "sportmonks__league",
-    "sportmonks__seasons",
-    "sportmonks__rivals",
-    "sportmonks__players",         # new: football-API player data with full includes
-]
-
-SEASONAL_TABLES = [
-    "sportmonks__stages",
-    "sportmonks__rounds",
-    "sportmonks__teams",
-    "sportmonks__venues",
-    "sportmonks__referees",
-    "sportmonks__standings",
-    "sportmonks__topscorers",
-    "sportmonks__stage_topscorers",
-    "sportmonks__stage_statistics",
-    "sportmonks__round_statistics",
-]
-
-DATE_TABLES = [
-    "sportmonks__transfers",
-    "sportmonks__fixtures",
-]
-
-ALL_TABLES = GLOBAL_TABLES + SEASONAL_TABLES + DATE_TABLES
+GLOBAL_TABLES   = [e["table"] for e in ENDPOINT_MANIFEST if e["delete"] == "global"]
+SEASONAL_TABLES = [e["table"] for e in ENDPOINT_MANIFEST if e["delete"] == "seasonal"]
+DATE_TABLES     = [e["table"] for e in ENDPOINT_MANIFEST if e["delete"] == "date_window"]
+ALL_TABLES      = GLOBAL_TABLES + SEASONAL_TABLES + DATE_TABLES
 
 
 def connect(db_path: str = None) -> duckdb.DuckDBPyConnection:
     path = db_path or os.environ.get("DUCKDB_PATH", DEFAULT_DB_PATH)
     conn = duckdb.connect(path)
+    conn.execute("SELECT 1")  # validate connectivity (catches bad MotherDuck tokens early)
     log.info("Connected: %s", path)
     return conn
 
@@ -120,7 +87,7 @@ def delete_by_date(conn: duckdb.DuckDBPyConnection, table: str,
 
 # ── Insert helpers ────────────────────────────────────────────────────────────
 
-_INSERT_CHUNK = 500  # rows per INSERT statement; keeps parameter count well under DuckDB's 65535 limit
+_INSERT_CHUNK = 2000  # rows per INSERT statement; keeps parameter count well under DuckDB's 65535 limit (2000×5=10000)
 
 
 def insert_batch(
