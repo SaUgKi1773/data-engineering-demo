@@ -56,9 +56,9 @@ SELECT
     COALESCE(pa.offsides,         0)                                        AS offsides,
     CASE
         WHEN MAX(CASE WHEN m.match_round_type = 'Championship Round' THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
-            THEN 'Championship Round'
+            THEN 'Championship Group'
         WHEN MAX(CASE WHEN m.match_round_type = 'Relegation Round'   THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
-            THEN 'Relegation Round'
+            THEN 'Relegation Group'
         ELSE 'Regular Season'
     END                                                                      AS standings_type,
     SUM(f.points_earned) OVER (

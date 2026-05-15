@@ -16,7 +16,7 @@ select season from (
 
 <details class="mb-6 rounded-xl border border-blue-100 bg-blue-50">
   <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-blue-700 flex items-center gap-2">
-    ℹ️ How does the Danish Superliga work?
+    ℹ️ How does the Danish Superliga season work?
   </summary>
   <div class="px-4 pb-4 pt-2 text-sm text-gray-700 space-y-3">
     <p><strong>Two phases, one season.</strong> All 12 teams play each other home and away in the Regular Season (22 games). After that, the league splits based on the table:</p>
@@ -77,13 +77,13 @@ order by standings_type, pts desc, gd desc, gf desc
 ```sql championship
 select rank, team, gp, w, d, l, gf, ga, gd, pts
 from ${standings}
-where round_group = 'Championship Round'
+where round_group = 'Championship Group'
 ```
 
 ```sql relegation
 select rank, team, gp, w, d, l, gf, ga, gd, pts
 from ${standings}
-where round_group = 'Relegation Round'
+where round_group = 'Relegation Group'
 ```
 
 ```sql regular
@@ -122,8 +122,8 @@ where season = '${inputs.season.value}'
 group by team_name, standings_type
 order by
     case standings_type
-        when 'Championship Round' then 1
-        when 'Relegation Round'   then 2
+        when 'Championship Group' then 1
+        when 'Relegation Group'   then 2
         else                           3
     end,
     pts desc
@@ -133,7 +133,7 @@ order by
 
 {#if championship.length > 0}
 
-### 🏆 Championship Round
+### 🏆 Championship Group
 
 <div class="standings-table block md:hidden">
 <DataTable data={championship} rows=20>
@@ -166,7 +166,7 @@ order by
 
 {#if relegation.length > 0}
 
-### ⬇️ Relegation Round
+### ⬇️ Relegation Group
 
 <div class="standings-table block md:hidden">
 <DataTable data={relegation} rows=20>
