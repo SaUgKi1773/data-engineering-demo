@@ -7,16 +7,20 @@ models:
         tests: [not_null, unique]
       - name: team_id
         tests:
-          - not_null: {where: "team_sk > 0"}
-          - unique:   {where: "team_sk > 0"}
+          - not_null:
+              config: {where: "team_sk > 0"}
+          - unique:
+              config: {where: "team_sk > 0"}
       - name: team_name
         tests: [not_null]
       - name: team_code
         tests:
-          - not_null: {where: "team_sk > 0"}
+          - not_null:
+              config: {where: "team_sk > 0"}
       - name: team_short_name
         tests:
-          - not_null: {where: "team_sk > 0"}
+          - not_null:
+              config: {where: "team_sk > 0"}
 
   - name: dim_opponent_team
     columns:
@@ -31,11 +35,14 @@ models:
         tests: [not_null, unique]
       - name: match_id
         tests:
-          - not_null: {where: "match_sk > 0"}
-          - unique:   {where: "match_sk > 0"}
+          - not_null:
+              config: {where: "match_sk > 0"}
+          - unique:
+              config: {where: "match_sk > 0"}
       - name: match_name
         tests:
-          - not_null: {where: "match_sk > 0"}
+          - not_null:
+              config: {where: "match_sk > 0"}
 
   - name: dim_player
     columns:
@@ -43,8 +50,10 @@ models:
         tests: [not_null, unique]
       - name: player_id
         tests:
-          - not_null: {where: "player_sk > 0"}
-          - unique:   {where: "player_sk > 0"}
+          - not_null:
+              config: {where: "player_sk > 0"}
+          - unique:
+              config: {where: "player_sk > 0"}
 
   - name: dim_referee
     columns:
@@ -52,8 +61,10 @@ models:
         tests: [not_null, unique]
       - name: referee_id
         tests:
-          - not_null: {where: "referee_sk > 0"}
-          - unique:   {where: "referee_sk > 0"}
+          - not_null:
+              config: {where: "referee_sk > 0"}
+          - unique:
+              config: {where: "referee_sk > 0"}
 
   - name: dim_coach
     columns:
@@ -61,8 +72,10 @@ models:
         tests: [not_null, unique]
       - name: coach_id
         tests:
-          - not_null: {where: "coach_sk > 0"}
-          - unique:   {where: "coach_sk > 0"}
+          - not_null:
+              config: {where: "coach_sk > 0"}
+          - unique:
+              config: {where: "coach_sk > 0"}
 
   - name: dim_stadium
     columns:
@@ -70,8 +83,10 @@ models:
         tests: [not_null, unique]
       - name: stadium_id
         tests:
-          - not_null: {where: "stadium_sk > 0"}
-          - unique:   {where: "stadium_sk > 0"}
+          - not_null:
+              config: {where: "stadium_sk > 0"}
+          - unique:
+              config: {where: "stadium_sk > 0"}
 
   - name: dim_league
     columns:
@@ -79,8 +94,10 @@ models:
         tests: [not_null, unique]
       - name: league_id
         tests:
-          - not_null: {where: "league_sk > 0"}
-          - unique:   {where: "league_sk > 0"}
+          - not_null:
+              config: {where: "league_sk > 0"}
+          - unique:
+              config: {where: "league_sk > 0"}
 
   - name: dim_formation
     columns:
@@ -107,7 +124,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['Win', 'Draw', 'Loss', 'Pending', 'Unknown Match Result', 'Not Applicable Match Result']
+              arguments:
+                values: ['Win', 'Draw', 'Loss', 'Pending', 'Unknown Match Result', 'Not Applicable Match Result']
 
   - name: dim_team_side
     columns:
@@ -117,7 +135,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['Home', 'Away', 'Unknown Team Side', 'Not Applicable Team Side']
+              arguments:
+                values: ['Home', 'Away', 'Unknown Team Side', 'Not Applicable Team Side']
 
   - name: dim_date
     columns:
