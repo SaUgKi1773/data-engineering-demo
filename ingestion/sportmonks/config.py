@@ -248,19 +248,6 @@ ENDPOINT_MANIFEST = [
         "modes":    ["full", "incremental"],
     },
 
-    {
-        "table":    "sportmonks__squads",
-        # Season-scoped squad membership — guarantees every player who appeared
-        # for each team in each season is captured, even if they later transfer
-        # out of the league. This is the authoritative source for "who played
-        # in which Superliga season", replacing the global /players approach.
-        "path":     "/squads/teams/{team_id}/seasons/{season_id}",
-        "strategy": "season_team_based",
-        "delete":   "seasonal",
-        "includes": "player;position;detailedPosition;transfers",
-        "modes":    ["full", "incremental"],
-    },
-
     # Sub-season aggregates (driven by stage_map / round_map populated above)
     {
         "table":    "sportmonks__stage_topscorers",
