@@ -67,7 +67,8 @@ select
     round(sum(yellow_cards)::double    / count(distinct match_id), 2)                               as yc_per_match,
     round(sum(fouls)::double           / count(distinct match_id), 1)                               as fouls_per_match,
     round(sum(corner_kicks)::double    / count(distinct match_id), 1)                               as corners_per_match,
-    round(100.0 * sum(goals_scored)    / nullif(sum(total_shots), 0), 1)                            as shot_conversion
+    round(100.0 * sum(goals_scored)    / nullif(sum(total_shots), 0), 1)                            as shot_conversion,
+    round(100.0 * sum(crosses_accurate) / nullif(sum(crosses_total), 0), 1)                        as cross_accuracy
 from superligaen.mart_match_facts
 where result in ('Win', 'Draw', 'Loss')
   and stadium_surface is not null
@@ -208,28 +209,9 @@ from (
 
 ## Surface Analysis: Grass vs Artificial Turf
 
-*Does the playing surface affect goals, passing, and discipline?*
+*How does the playing surface shape the way football is played?*
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<BarChart
-    data={surface_analysis}
-    x=stadium_surface
-    y=goals_per_match
-    title="Goals per Match by Surface"
-    yAxisTitle="Goals / Match"
-    colorPalette={['#22c55e','#6366f1','#f59e0b']}
-/>
-
-<BarChart
-    data={surface_analysis}
-    x=stadium_surface
-    y=home_win_pct
-    title="Home Win Rate % by Surface"
-    yAxisTitle="Home Win %"
-    yFmt='0.0'
-    colorPalette={['#22c55e','#6366f1','#f59e0b']}
-/>
 
 <BarChart
     data={surface_analysis}
@@ -243,25 +225,39 @@ from (
 <BarChart
     data={surface_analysis}
     x=stadium_surface
-    y=yc_per_match
-    title="Yellow Cards per Match by Surface"
-    yAxisTitle="YC / Match"
-    colorPalette={['#eab308','#f97316','#ef4444']}
+    y=cross_accuracy
+    title="Cross Accuracy % by Surface"
+    yAxisTitle="Cross Accuracy %"
+    colorPalette={['#22c55e','#6366f1','#f59e0b']}
+/>
+
+<BarChart
+    data={surface_analysis}
+    x=stadium_surface
+    y=shot_conversion
+    title="Shot Conversion % by Surface"
+    yAxisTitle="Shot Conversion %"
+    colorPalette={['#22c55e','#6366f1','#f59e0b']}
+/>
+
+<BarChart
+    data={surface_analysis}
+    x=stadium_surface
+    y=fouls_per_match
+    title="Fouls per Match by Surface"
+    yAxisTitle="Fouls / Match"
+    colorPalette={['#22c55e','#6366f1','#f59e0b']}
 />
 
 </div>
 
 <DataTable data={surface_analysis}>
-    <Column id=stadium_surface   title="Surface"         />
-    <Column id=matches           title="Matches"         align=center />
-    <Column id=goals_per_match   title="Goals/Match"     contentType=colorscale colorPalette={['white','#22c55e']} />
-    <Column id=home_win_pct      title="Home Win %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=draw_pct          title="Draw %"          fmt='0.0"%"' />
-    <Column id=pass_accuracy     title="Pass Acc %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
-    <Column id=shot_conversion   title="Shot Conv %"     fmt='0.0"%"' />
-    <Column id=shots_per_match   title="SoG/Match"       />
-    <Column id=yc_per_match      title="YC/Match"        contentType=colorscale colorPalette={['white','#eab308']} />
-    <Column id=fouls_per_match   title="Fouls/Match"     contentType=colorscale colorPalette={['white','#f97316']} />
+    <Column id=stadium_surface  title="Surface"          />
+    <Column id=matches          title="Matches"          align=center />
+    <Column id=pass_accuracy    title="Pass Acc %"       fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
+    <Column id=cross_accuracy   title="Cross Acc %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=shot_conversion  title="Shot Conv %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#22c55e']} />
+    <Column id=fouls_per_match  title="Fouls/Match"       contentType=colorscale colorPalette={['white','#f97316']} />
     <Column id=corners_per_match title="Corners/Match"   />
 </DataTable>
 

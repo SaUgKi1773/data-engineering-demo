@@ -14,7 +14,9 @@ WITH player_agg AS (
         SUM(tackles)               AS tackles,
         SUM(key_passes)            AS key_passes,
         SUM(big_chances_created)   AS big_chances_created,
-        SUM(woodwork_hits)         AS woodwork_hits
+        SUM(woodwork_hits)         AS woodwork_hits,
+        SUM(crosses_total)         AS crosses_total,
+        SUM(crosses_accurate)      AS crosses_accurate
     FROM superligaen.gold.fct_player_appearances
     GROUP BY match_sk, team_sk
 )
@@ -71,6 +73,8 @@ SELECT
     COALESCE(pa.key_passes,        0)                                      AS key_passes,
     COALESCE(pa.big_chances_created, 0)                                    AS big_chances_created,
     COALESCE(pa.woodwork_hits,     0)                                      AS woodwork_hits,
+    COALESCE(pa.crosses_total,     0)                                      AS crosses_total,
+    COALESCE(pa.crosses_accurate,  0)                                      AS crosses_accurate,
     CASE
         WHEN MAX(CASE WHEN m.match_round_type = 'Championship Round' THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
             THEN 'Championship Group'
