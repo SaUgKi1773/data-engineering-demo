@@ -5,7 +5,7 @@ title: Stadium Intelligence
 ---
 
 ```sql season_options
-select season from (
+select season, sort_key from (
   select season, max(is_current_season::int) as is_current, 0 as sort_key
   from superligaen.mart_match_facts
   where result in ('Win', 'Draw', 'Loss')
@@ -17,7 +17,7 @@ order by sort_key, is_current desc, season desc
 ```
 
 {#key season_options[0]?.season}
-<Dropdown data={season_options} name=season value=season label=season defaultValue={season_options[0]?.season} />
+<Dropdown data={season_options} name=season value=season label=season order="sort_key asc, season desc" defaultValue={season_options[0]?.season} />
 {/key}
 
 ```sql stadium_stats
@@ -160,10 +160,12 @@ from (
     lat=lat
     long=lon
     size=total_goals_scaled
-    value=surface_code
+    value=stadium_surface
     pointName=stadium_name
     tooltipType=click
     colorPalette={['#22c55e','#6366f1','#f59e0b']}
+    legendType=categorical
+    legendTitle="Stadium Surface"
     title="Superligaen Stadiums — {inputs.season.value}"
     tooltip={[{id: 'stadium_name', showColumnName: false, valueClass: 'font-bold text-sm'}, {id: 'stadium_surface'}, {id: 'total_goals'}, {id: 'goals_per_match'}]}
 />
@@ -286,55 +288,29 @@ from (
 
 <div class="hidden md:block mt-4">
 <DataTable data={fortress_ranking} rows=20>
-    <Column id=team_logo               title=""                       contentType=image height=28 />
-    <Column id=stadium_name            title="Stadium"                wrap=true />
-    <Column id=home_team               title="Home Team"              />
-    <Column id=stadium_surface         title="Surface"                />
-    <Column id=stadium_capacity        title="Capacity"               align=center />
-    <Column id=home_matches            title="Home MP"                align=center />
-    <Column id=home_wins               title="W"                      align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    <Column id=home_draws              title="D"                      align=center />
-    <Column id=home_losses             title="L"                      align=center contentType=colorscale colorPalette={['white','#ef4444']} />
-    <Column id=home_win_pct            title="Win %"                  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=goals_scored_per_match  title="Goals Scored/Match"     />
-    <Column id=goals_conceded_per_match title="Goals Conceded/Match"  />
+    <Column id=team_logo                title=""                        contentType=image height=28 />
+    <Column id=home_team                title="Home Team"               />
+    <Column id=stadium_name             title="Stadium"                 wrap=true />
+    <Column id=stadium_capacity         title="Capacity"                align=center />
+    <Column id=home_win_pct             title="Win %"                   fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=home_wins                title="W"                       align=center contentType=colorscale colorPalette={['white','#22c55e']} />
+    <Column id=home_draws               title="D"                       align=center />
+    <Column id=home_losses              title="L"                       align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    <Column id=goals_scored_per_match   title="Goals Scored/Match"      />
+    <Column id=goals_conceded_per_match title="Goals Conceded/Match"    />
 </DataTable>
 </div>
 <div class="block md:hidden mt-4">
 <DataTable data={fortress_ranking} rows=20>
-    <Column id=stadium_name  title="Stadium"  wrap=true />
-    <Column id=home_matches  title="MP"       align=center />
-    <Column id=home_wins     title="W"        align=center />
-    <Column id=home_losses   title="L"        align=center />
-    <Column id=home_win_pct  title="Win %"    fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=home_team                title="Home Team"               />
+    <Column id=stadium_name             title="Stadium"                 wrap=true />
+    <Column id=stadium_capacity         title="Capacity"                align=center />
+    <Column id=home_win_pct             title="Win %"                   fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=home_wins                title="W"                       align=center />
+    <Column id=home_draws               title="D"                       align=center />
+    <Column id=home_losses              title="L"                       align=center />
+    <Column id=goals_scored_per_match   title="Goals Scored/Match"      />
+    <Column id=goals_conceded_per_match title="Goals Conceded/Match"    />
 </DataTable>
 </div>
 
----
-
-## Stadium Stats Table
-
-<div class="hidden md:block">
-<DataTable data={stadium_stats} rows=20>
-    <Column id=stadium_name     title="Stadium"         wrap=true />
-    <Column id=stadium_surface  title="Surface"         />
-    <Column id=stadium_capacity title="Capacity"        align=center />
-    <Column id=total_matches    title="Matches"         align=center />
-    <Column id=total_goals      title="Total Goals"     align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    <Column id=goals_per_match  title="Goals/Match"     contentType=colorscale colorPalette={['white','#22c55e']} />
-    <Column id=home_win_pct     title="Home Win %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=draw_pct         title="Draw %"          fmt='0.0"%"' />
-    <Column id=pass_accuracy    title="Pass Acc %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
-    <Column id=yc_per_match     title="YC/Match"        contentType=colorscale colorPalette={['white','#eab308']} />
-    <Column id=fouls_per_match  title="Fouls/Match"     />
-</DataTable>
-</div>
-<div class="block md:hidden">
-<DataTable data={stadium_stats} rows=20>
-    <Column id=stadium_name     title="Stadium"         wrap=true />
-    <Column id=total_matches    title="Matches"         align=center />
-    <Column id=goals_per_match  title="Goals/Match"     contentType=colorscale colorPalette={['white','#22c55e']} />
-    <Column id=home_win_pct     title="Home Win %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=pass_accuracy    title="Pass %"          fmt='0.0"%"' />
-</DataTable>
-</div>
