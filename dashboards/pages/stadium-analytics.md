@@ -260,7 +260,7 @@ from (
     <Column id=cross_accuracy   title="Cross Acc %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
     <Column id=shot_conversion  title="Shot Conv %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#22c55e']} />
     <Column id=fouls_per_match  title="Fouls/Match"       contentType=colorscale colorPalette={['white','#f97316']} />
-    <Column id=corners_per_match title="Corners/Match"   />
+    <Column id=goals_per_match  title="Goals/Match"      fmt='0.00'   contentType=colorscale colorPalette={['white','#f59e0b']} />
 </DataTable>
 
 ---
