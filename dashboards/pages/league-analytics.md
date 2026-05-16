@@ -342,7 +342,7 @@ select * from ranked where team_name in ${inputs.team.value} order by team_name
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.yc_per_match}</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-xs text-gray-400">Prev season: {k.prev_yc_per_match ?? '—'}</span>
-      {#if k.yc_ratio != null}<span class="text-sm font-bold {k.yc_ratio <= 1 ? 'text-green-600' : 'text-red-500'}">{k.yc_ratio <= 1 ? '▲' : '▼'}</span>{/if}
+      {#if k.yc_ratio != null}<span class="text-sm font-bold {k.yc_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.yc_ratio >= 1 ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
 
@@ -360,7 +360,7 @@ select * from ranked where team_name in ${inputs.team.value} order by team_name
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.rc_per_match}</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-xs text-gray-400">Prev season: {k.prev_rc_per_match ?? '—'}</span>
-      {#if k.rc_ratio != null}<span class="text-sm font-bold {k.rc_ratio <= 1 ? 'text-green-600' : 'text-red-500'}">{k.rc_ratio <= 1 ? '▲' : '▼'}</span>{/if}
+      {#if k.rc_ratio != null}<span class="text-sm font-bold {k.rc_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.rc_ratio >= 1 ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
 
