@@ -65,16 +65,24 @@ with team_curr as (
 ),
 league_avg as (
     select
-        round(sum(goals_scored)::double       / count(distinct match_id), 2)  as league_goals_per_match,
-        round(sum(goals_conceded)::double      / count(distinct match_id), 2)  as league_conceded_per_match,
+        round(sum(goals_scored)::double       / count(*), 2)  as league_goals_per_match,
+        round(sum(goals_conceded)::double      / count(*), 2)  as league_conceded_per_match,
         round(100.0 * sum(passes_accurate)     / nullif(sum(total_passes), 0), 1) as league_pass_accuracy,
         round(100.0 * sum(goals_scored)        / nullif(sum(total_shots), 0), 1) as league_shot_conv,
-        round(sum(yellow_cards)::double        / count(distinct match_id), 2)  as league_yc_per_match
+        round(sum(yellow_cards)::double        / count(*), 2)  as league_yc_per_match
     from superligaen.mart_match_facts
     where season in ${inputs.season.value}
       and result in ('Win', 'Draw', 'Loss')
 )
-select tc.*, la.* from team_curr tc cross join league_avg la
+select
+    tc.*,
+    la.*,
+    round(tc.goals_per_match     / nullif(la.league_goals_per_match,     0), 2) as goals_ratio,
+    round(tc.conceded_per_match  / nullif(la.league_conceded_per_match,  0), 2) as conceded_ratio,
+    round(tc.pass_accuracy       / nullif(la.league_pass_accuracy,       0), 2) as pass_ratio,
+    round(tc.shot_conv           / nullif(la.league_shot_conv,           0), 2) as shot_conv_ratio,
+    round(tc.yc_per_match        / nullif(la.league_yc_per_match,        0), 2) as yc_ratio
+from team_curr tc cross join league_avg la
 ```
 
 ```sql all_teams_points
@@ -116,18 +124,20 @@ order by match_date desc
 ```
 
 ```sql form_last10
-select
-    match_date,
-    result,
-    goals_scored   as gf,
-    goals_conceded as ga,
-    opponent_team_name as opponent
-from superligaen.mart_match_facts
-where season in ${inputs.season.value}
-  and team_name = '${inputs.team.value}'
-  and result in ('Win', 'Draw', 'Loss')
-order by match_date desc
-limit 10
+select * from (
+    select
+        match_date,
+        result,
+        goals_scored       as gf,
+        goals_conceded     as ga,
+        opponent_team_name as opponent
+    from superligaen.mart_match_facts
+    where season in ${inputs.season.value}
+      and team_name = '${inputs.team.value}'
+      and result in ('Win', 'Draw', 'Loss')
+    order by match_date desc
+    limit 10
+) order by match_date asc
 ```
 
 ```sql home_away_split
@@ -312,26 +322,61 @@ end
 
 ## Performance vs League Average
 
+{#each team_kpis as k}
 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
-    <BigValue data={team_kpis} value=goals_per_match title="Goals / Match" comparison=league_goals_per_match comparisonTitle="league avg" comparisonDelta=true />
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Goals Scored / Match</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.goals_per_match}</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">League avg: {k.league_goals_per_match}</span>
+      <span class="text-sm font-bold {k.goals_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.goals_ratio >= 1 ? '▲' : '▼'}</span>
+    </div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
-    <BigValue data={team_kpis} value=conceded_per_match title="Conceded / Match" comparison=league_conceded_per_match comparisonTitle="league avg" comparisonDelta=true downIsGood=true />
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Goals Conceded / Match</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.conceded_per_match}</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">League avg: {k.league_conceded_per_match}</span>
+      <span class="text-sm font-bold {k.conceded_ratio <= 1 ? 'text-green-600' : 'text-red-500'}">{k.conceded_ratio <= 1 ? '▲' : '▼'}</span>
+    </div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
-    <BigValue data={team_kpis} value=pass_accuracy title="Pass Accuracy %" comparison=league_pass_accuracy comparisonTitle="league avg" comparisonDelta=true fmt='0.0"%"' />
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Pass Accuracy %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.pass_accuracy}%</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">League avg: {k.league_pass_accuracy}%</span>
+      <span class="text-sm font-bold {k.pass_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.pass_ratio >= 1 ? '▲' : '▼'}</span>
+    </div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
-    <BigValue data={team_kpis} value=avg_possession title="Avg Possession %" fmt='0.0"%"' />
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Avg Possession %</div>
+    <div class="text-3xl font-black text-center flex-1 flex items-center justify-center {k.avg_possession >= 55 ? 'text-green-600' : k.avg_possession < 45 ? 'text-red-500' : 'text-orange-400'}">{k.avg_possession}%</div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
-    <BigValue data={team_kpis} value=shot_conv title="Shot Conversion %" comparison=league_shot_conv comparisonTitle="league avg" comparisonDelta=true fmt='0.0"%"' />
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Shot Conversion %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.shot_conv}%</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">League avg: {k.league_shot_conv}%</span>
+      <span class="text-sm font-bold {k.shot_conv_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.shot_conv_ratio >= 1 ? '▲' : '▼'}</span>
+    </div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
-    <BigValue data={team_kpis} value=yc_per_match title="YC / Match" comparison=league_yc_per_match comparisonTitle="league avg" comparisonDelta=true downIsGood=true />
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">YC / Match</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.yc_per_match}</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">League avg: {k.league_yc_per_match}</span>
+      <span class="text-sm font-bold {k.yc_ratio <= 1 ? 'text-green-600' : 'text-red-500'}">{k.yc_ratio <= 1 ? '▲' : '▼'}</span>
+    </div>
   </div>
+
 </div>
+{/each}
 
 ---
 
