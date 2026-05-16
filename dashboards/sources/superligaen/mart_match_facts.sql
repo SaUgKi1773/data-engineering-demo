@@ -14,7 +14,9 @@ WITH player_agg AS (
         SUM(tackles)               AS tackles,
         SUM(key_passes)            AS key_passes,
         SUM(big_chances_created)   AS big_chances_created,
-        SUM(woodwork_hits)         AS woodwork_hits
+        SUM(woodwork_hits)         AS woodwork_hits,
+        SUM(crosses_total)         AS crosses_total,
+        SUM(crosses_accurate)      AS crosses_accurate
     FROM superligaen.gold.fct_player_appearances
     GROUP BY match_sk, team_sk
 )
@@ -34,6 +36,7 @@ SELECT
     t.team_name,
     t.team_short_name,
     t.team_code,
+    t.team_logo,
     f.team_sk,
     ot.opponent_team_name,
     ot.opponent_team_short_name,
@@ -42,7 +45,12 @@ SELECT
     ts.team_side,
     r.match_result                                                           AS result,
     ref.referee_common_name                                                  AS referee_name,
+    dc.coach_name,
     st.stadium_name,
+    st.stadium_surface,
+    st.stadium_capacity,
+    st.stadium_latitude,
+    st.stadium_longitude,
     f.points_earned,
     f.goals_scored,
     f.goals_conceded,
@@ -65,6 +73,8 @@ SELECT
     COALESCE(pa.key_passes,        0)                                      AS key_passes,
     COALESCE(pa.big_chances_created, 0)                                    AS big_chances_created,
     COALESCE(pa.woodwork_hits,     0)                                      AS woodwork_hits,
+    COALESCE(pa.crosses_total,     0)                                      AS crosses_total,
+    COALESCE(pa.crosses_accurate,  0)                                      AS crosses_accurate,
     CASE
         WHEN MAX(CASE WHEN m.match_round_type = 'Championship Round' THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
             THEN 'Championship Group'
@@ -93,6 +103,7 @@ JOIN superligaen.gold.dim_match_result   r   ON r.match_result_sk   = f.match_re
 JOIN superligaen.gold.dim_team_side      ts  ON ts.team_side_sk     = f.team_side_sk
 JOIN superligaen.gold.dim_referee        ref ON ref.referee_sk      = f.referee_sk
 JOIN superligaen.gold.dim_stadium        st  ON st.stadium_sk       = f.stadium_sk
+LEFT JOIN superligaen.gold.dim_coach     dc  ON dc.coach_sk         = f.coach_sk
 LEFT JOIN player_agg                         pa  ON pa.match_sk         = f.match_sk
                                                 AND pa.team_sk          = f.team_sk
 WHERE f.match_result_sk > 0
