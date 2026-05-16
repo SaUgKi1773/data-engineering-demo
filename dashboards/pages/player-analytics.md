@@ -61,6 +61,8 @@ with base as (
         player_name,
         player_photo,
         player_position,
+        max(team_name)                                  as team_name,
+        max(team_logo)                                  as team_logo,
         count(distinct match_id)                        as matches,
         sum(goals_scored)                               as goals,
         sum(assists)                                    as assists,
@@ -75,19 +77,19 @@ with base as (
     group by player_name, player_photo, player_position
     having count(distinct match_id) >= 3
 )
-select category, player_name, player_photo, player_position, stat_value, stat_label
+select category, player_name, player_photo, player_position, team_name, team_logo, stat_value, stat_label
 from (
-    select 'Top Scorer'   as category, player_name, player_photo, player_position, goals::int             as stat_value, 'Goals'        as stat_label, row_number() over (order by goals             desc) as rn from base
+    select 'Top Scorer'   as category, player_name, player_photo, player_position, team_name, team_logo, goals::int             as stat_value, 'Goals'        as stat_label, row_number() over (order by goals             desc) as rn from base
     union all
-    select 'Top Assister',              player_name, player_photo, player_position, assists::int,              'Assists',      row_number() over (order by assists           desc) from base
+    select 'Top Assister',              player_name, player_photo, player_position, team_name, team_logo, assists::int,              'Assists',      row_number() over (order by assists           desc) from base
     union all
-    select 'Top Dribbler',              player_name, player_photo, player_position, dribbles::int,             'Dribbles',     row_number() over (order by dribbles          desc) from base
+    select 'Top Dribbler',              player_name, player_photo, player_position, team_name, team_logo, dribbles::int,             'Dribbles',     row_number() over (order by dribbles          desc) from base
     union all
-    select 'Top Defender',              player_name, player_photo, player_position, defensive_actions::int,    'Tkl+Int',      row_number() over (order by defensive_actions desc) from base
+    select 'Top Defender',              player_name, player_photo, player_position, team_name, team_logo, defensive_actions::int,    'Tkl+Int',      row_number() over (order by defensive_actions desc) from base
     union all
-    select 'Top Crosser',               player_name, player_photo, player_position, crosses::int,              'Crosses',      row_number() over (order by crosses           desc) from base
+    select 'Top Crosser',               player_name, player_photo, player_position, team_name, team_logo, crosses::int,              'Crosses',      row_number() over (order by crosses           desc) from base
     union all
-    select 'Top Passer',                player_name, player_photo, player_position, passes::int,               'Acc. Passes',  row_number() over (order by passes            desc) from base
+    select 'Top Passer',                player_name, player_photo, player_position, team_name, team_logo, passes::int,               'Acc. Passes',  row_number() over (order by passes            desc) from base
 )
 where rn = 1
 order by case category
@@ -223,8 +225,9 @@ select * from ranked where player_name = '${inputs.player.value}'
 <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col items-center text-center">
   <div class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">{tp.category}</div>
   <img src="{tp.player_photo}" alt="{tp.player_name}" class="h-16 w-16 rounded-full object-cover mb-3 border-2 border-gray-100" onerror="this.style.display='none'" />
-  <div class="text-sm font-bold text-gray-900 leading-tight">{tp.player_name}</div>
+  <div class="text-sm font-bold text-gray-900 leading-tight min-h-10 flex items-start justify-center">{tp.player_name}</div>
   <div class="text-xs text-gray-400 mt-1">{tp.player_position}</div>
+  <img src="{tp.team_logo}" alt="{tp.team_name}" class="h-7 w-7 object-contain mt-1" onerror="this.style.display='none'" />
   <div class="mt-auto pt-3 text-2xl font-black text-blue-600">{tp.stat_value}</div>
   <div class="text-xs text-gray-400">{tp.stat_label}</div>
 </div>
