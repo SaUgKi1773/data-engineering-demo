@@ -38,7 +38,7 @@ order by team_name
 select distinct player_position
 from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
-  and team_name = '${inputs.team.value}'
+  and team_name in ${inputs.team.value}
   and result in ('Win', 'Draw', 'Loss')
   and player_position is not null
 order by player_position
@@ -48,7 +48,7 @@ order by player_position
 select distinct player_name
 from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
-  and team_name = '${inputs.team.value}'
+  and team_name in ${inputs.team.value}
   and player_position in ${inputs.position.value}
   and result in ('Win', 'Draw', 'Loss')
 order by player_name
@@ -70,7 +70,7 @@ with base as (
         sum(passes_accurate)                            as passes
     from superligaen.mart_player_facts
     where season = '${inputs.season.value}'
-      and team_name = '${inputs.team.value}'
+      and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, player_position
     having count(distinct match_id) >= 3
@@ -105,7 +105,7 @@ end
 {/key}
 
 {#key teams[0]?.team_name}
-<Dropdown data={teams} name=team value=team_name label=team_name defaultValue={teams[0]?.team_name} />
+<Dropdown data={teams} name=team value=team_name label=team_name multiple=true defaultValue={teams.map(t => t.team_name)} />
 {/key}
 
 ```sql player_profile
@@ -216,7 +216,7 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 ---
 
-## Team Leaders
+## Top Players
 
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
 {#each top_players as tp}
