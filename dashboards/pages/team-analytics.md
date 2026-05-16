@@ -66,12 +66,24 @@ with current_stats as (
       and result in ('Win', 'Draw', 'Loss')
 ),
 current_ranking as (
-    select row_number() over (order by sum(points_earned) desc, sum(goals_scored - goals_conceded) desc, sum(goals_scored) desc) as rank,
+    select row_number() over (order by group_order, total_pts desc, total_gd desc, total_gf desc) as rank,
            team_name
-    from superligaen.mart_match_facts
-    where season = '${inputs.season.value}'
-      and result in ('Win', 'Draw', 'Loss')
-    group by team_name
+    from (
+        select
+            team_name,
+            sum(points_earned)                          as total_pts,
+            sum(goals_scored - goals_conceded)          as total_gd,
+            sum(goals_scored)                           as total_gf,
+            case max(standings_type)
+                when 'Championship Group' then 1
+                when 'Relegation Group'   then 2
+                else                           3
+            end                                         as group_order
+        from superligaen.mart_match_facts
+        where season = '${inputs.season.value}'
+          and result in ('Win', 'Draw', 'Loss')
+        group by team_name
+    )
 ),
 prev_season as (
     select max(season) as season
@@ -94,13 +106,25 @@ prev_stats as (
       and match_round_number <= (select max_round from current_stats)
 ),
 prev_ranking as (
-    select row_number() over (order by sum(points_earned) desc, sum(goals_scored - goals_conceded) desc, sum(goals_scored) desc) as rank,
+    select row_number() over (order by group_order, total_pts desc, total_gd desc, total_gf desc) as rank,
            team_name
-    from superligaen.mart_match_facts
-    where season = (select season from prev_season)
-      and result in ('Win', 'Draw', 'Loss')
-      and match_round_number <= (select max_round from current_stats)
-    group by team_name
+    from (
+        select
+            team_name,
+            sum(points_earned)                          as total_pts,
+            sum(goals_scored - goals_conceded)          as total_gd,
+            sum(goals_scored)                           as total_gf,
+            case max(standings_type)
+                when 'Championship Group' then 1
+                when 'Relegation Group'   then 2
+                else                           3
+            end                                         as group_order
+        from superligaen.mart_match_facts
+        where season = (select season from prev_season)
+          and result in ('Win', 'Draw', 'Loss')
+          and match_round_number <= (select max_round from current_stats)
+        group by team_name
+    )
 )
 select
     cs.*,
