@@ -106,7 +106,7 @@ limit 1
 
 <a href="/league-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
   <div class="flex items-start gap-4">
-    <div class="text-3xl">🌍</div>
+    <div class="text-3xl">📊</div>
     <div>
       <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">League Intelligence</div>
       <div class="text-gray-400 text-sm mt-1">Season KPIs, standings, points race, team landscape & radar, attack/defence/discipline rankings</div>
@@ -116,7 +116,7 @@ limit 1
 
 <a href="/team-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
   <div class="flex items-start gap-4">
-    <div class="text-3xl">📊</div>
+    <div class="text-3xl">👥</div>
     <div>
       <div class="text-base font-bold text-gray-800 group-hover:text-blue-500 transition-colors">Team Intelligence</div>
       <div class="text-gray-400 text-sm mt-1">KPIs vs previous season, points race, match log, squad depth &amp; home/away splits</div>
