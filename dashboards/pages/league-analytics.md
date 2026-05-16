@@ -14,20 +14,18 @@ title: League Intelligence
 
 ```sql seasons
 select season from (
-  select season, max(is_current_season::int) as is_current, 0 as sort_key
+  select season, max(is_current_season::int) as is_current
   from superligaen.mart_match_facts
   where result in ('Win', 'Draw', 'Loss')
   group by season
-  union all
-  select 'All Seasons', -1, 1
 )
-order by sort_key, is_current desc, season desc
+order by is_current desc, season desc
 ```
 
 ```sql teams
 select distinct team_name
 from superligaen.mart_match_facts
-where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
 order by team_name
 ```
@@ -53,7 +51,7 @@ with curr as (
         round(sum(red_cards)::double / count(distinct match_id), 2)                                    as rc_per_match,
         round(sum(shots_on_goal)::double / count(distinct match_id), 1)                                as sot_per_match
     from superligaen.mart_match_facts
-    where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+    where season = '${inputs.season.value}'
       and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
 ),
@@ -72,7 +70,6 @@ prev as (
         select max(season) from superligaen.mart_match_facts
         where season < '${inputs.season.value}'
           and result in ('Win','Draw','Loss')
-          and '${inputs.season.value}' != 'All Seasons'
     )
       and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
@@ -97,7 +94,7 @@ with goals_ranked as (
            sum(goals_scored)::int as total_goals,
            row_number() over (order by sum(goals_scored) desc) as rn
     from superligaen.mart_player_facts
-    where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+    where season = '${inputs.season.value}'
       and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, team_name, team_logo
@@ -108,7 +105,7 @@ assists_ranked as (
            sum(assists)::int as total_assists,
            row_number() over (order by sum(assists) desc) as rn
     from superligaen.mart_player_facts
-    where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+    where season = '${inputs.season.value}'
       and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, team_name, team_logo
@@ -120,7 +117,7 @@ rating_ranked as (
            count(distinct match_id)::int as matches,
            row_number() over (order by avg(rating) desc) as rn
     from superligaen.mart_player_facts
-    where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+    where season = '${inputs.season.value}'
       and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
       and rating is not null
@@ -163,7 +160,7 @@ select
     sum(goals_scored)                                 as gf,
     standings_type                                    as round_group
 from superligaen.mart_match_facts
-where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+where season = '${inputs.season.value}'
   and team_name in ${inputs.team.value}
   and result in ('Win', 'Draw', 'Loss')
 group by team_name, team_short_name, team_logo, standings_type
@@ -188,17 +185,34 @@ select
     count(distinct match_id) filter (where goals_conceded = 0)::int                         as clean_sheets,
     round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                   as pass_accuracy
 from superligaen.mart_match_facts
-where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+where season = '${inputs.season.value}'
   and team_name in ${inputs.team.value}
   and result in ('Win', 'Draw', 'Loss')
 group by team_name, team_logo
 order by team_name
 ```
 
+```sql team_landscape_bounds
+select
+    floor(min(goals_for)  * 0.9)  as x_min,
+    ceil(max(goals_for)   * 1.1)  as x_max,
+    floor(min(goals_against) * 0.9) as y_min,
+    ceil(max(goals_against)  * 1.1) as y_max
+from (
+    select
+        sum(goals_scored)::int   as goals_for,
+        sum(goals_conceded)::int as goals_against
+    from superligaen.mart_match_facts
+    where season = '${inputs.season.value}'
+      and result in ('Win', 'Draw', 'Loss')
+    group by team_name
+)
+```
+
 ```sql points_progression
 select match_round_number as round, team_name, cumulative_points, cumulative_gd, cumulative_gf
 from superligaen.mart_match_facts
-where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+where season = '${inputs.season.value}'
   and team_name in ${inputs.team.value}
   and result in ('Win', 'Draw', 'Loss')
 order by max(cumulative_points) over (partition by team_name) desc, team_name, match_round_number
@@ -222,7 +236,7 @@ select
     sum(yellow_cards)::int                                                                              as yellow_cards,
     sum(red_cards)::int                                                                                 as red_cards
 from superligaen.mart_match_facts
-where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+where season = '${inputs.season.value}'
   and team_name in ${inputs.team.value}
   and result in ('Win', 'Draw', 'Loss')
 group by team_name
@@ -263,7 +277,7 @@ with all_teams as (
         100.0 * sum(goals_scored)       / nullif(sum(total_shots), 0)                      as shot_conv,
         100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id)  as win_rate
     from superligaen.mart_match_facts
-    where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+    where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
     group by team_name
 ),
@@ -421,8 +435,6 @@ select * from ranked where team_name in ${inputs.team.value} order by team_name
 
 ## Season Awards
 
-{#if inputs.season.value !== 'All Seasons'}
-
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
   {#each season_awards as award}
@@ -482,7 +494,6 @@ select * from ranked where team_name in ${inputs.team.value} order by team_name
 
 </div>
 
-{/if}
 
 ---
 
@@ -507,6 +518,10 @@ select * from ranked where team_name in ${inputs.team.value} order by team_name
     tooltipColumns={[{id: 'team_name', title: 'Team'}, {id: 'goals_for', title: 'Goals For'}, {id: 'goals_against', title: 'Goals Against'}, {id: 'points', title: 'Points'}, {id: 'win_pct', title: 'Win %', fmt: '0.0"%"'}]}
     chartAreaHeight=320
     legend=false
+    xMin={team_landscape_bounds[0].x_min}
+    xMax={team_landscape_bounds[0].x_max}
+    yMin={team_landscape_bounds[0].y_min}
+    yMax={team_landscape_bounds[0].y_max}
     echartsOptions={{series: team_landscape.map((row, i) => ({name: row.team_name, itemStyle: {color: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db'}}))}}
 />
 <div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:2px;">
