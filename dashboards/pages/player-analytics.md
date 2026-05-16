@@ -225,7 +225,7 @@ select * from ranked where player_name = '${inputs.player.value}'
   <img src="{tp.player_photo}" alt="{tp.player_name}" class="h-16 w-16 rounded-full object-cover mb-3 border-2 border-gray-100" onerror="this.style.display='none'" />
   <div class="text-sm font-bold text-gray-900 leading-tight">{tp.player_name}</div>
   <div class="text-xs text-gray-400 mt-1">{tp.player_position}</div>
-  <div class="mt-3 text-2xl font-black text-blue-600">{tp.stat_value}</div>
+  <div class="mt-auto pt-3 text-2xl font-black text-blue-600">{tp.stat_value}</div>
   <div class="text-xs text-gray-400">{tp.stat_label}</div>
 </div>
 {/each}
