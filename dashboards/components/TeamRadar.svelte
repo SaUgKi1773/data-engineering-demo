@@ -10,15 +10,27 @@
     { key: 'possession_pct',  label: 'Possession',  valueKey: 'avg_possession',       fmt: v => v != null ? v.toFixed(1) + '%' : '—' },
   ];
 
-  const W      = 560;
-  const H      = 400;
-  const cx     = W / 2;
-  const cy     = H / 2;
-  const r      = 110;
-  const n      = metrics.length;
-  const rings  = [0.2, 0.4, 0.6, 0.8, 1.0];
+  const palette = [
+    '#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6',
+    '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
+    '#06b6d4', '#a855f7',
+  ];
 
-  function ang(i)  { return ((360 / n) * i - 90) * Math.PI / 180; }
+  const W     = 560;
+  const H     = 400;
+  const cx    = W / 2;
+  const cy    = H / 2;
+  const r     = 110;
+  const n     = metrics.length;
+  const rings = [0.2, 0.4, 0.6, 0.8, 1.0];
+
+  let highlighted = null;
+
+  function toggle(teamName) {
+    highlighted = highlighted === teamName ? null : teamName;
+  }
+
+  function ang(i) { return ((360 / n) * i - 90) * Math.PI / 180; }
   function pt(i, s = 1) {
     return { x: cx + r * s * Math.cos(ang(i)), y: cy + r * s * Math.sin(ang(i)) };
   }
@@ -26,9 +38,12 @@
     return scales.map((s, i) => { const p = pt(i, s); return `${p.x},${p.y}`; }).join(' ');
   }
   function anchor(px) { return px < cx - 8 ? 'end' : px > cx + 8 ? 'start' : 'middle'; }
+  function teamScales(row) {
+    return metrics.map(m => Math.min(Math.max((row[m.key] ?? 0) / 100, 0), 1));
+  }
 
-  $: row    = data[0] ?? {};
-  $: scales = metrics.map(m => Math.min(Math.max((row[m.key] ?? 0) / 100, 0), 1));
+  $: single   = data.length === 1;
+  $: labelRow = highlighted ? (data.find(r => r.team_name === highlighted) ?? data[0] ?? {}) : (data[0] ?? {});
 </script>
 
 <div style="display:flex;flex-direction:column;align-items:center;">
@@ -44,15 +59,20 @@
       <line x1={cx} y1={cy} x2={pt(i).x} y2={pt(i).y} stroke="#d1d5db" stroke-width="1" />
     {/each}
 
-    <!-- Data polygon -->
-    <polygon points={poly(scales)} fill="#3b82f620" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" />
-
-    <!-- Data dots -->
-    {#each scales as s, i}
-      <circle cx={pt(i, s).x} cy={pt(i, s).y} r="4" fill="#3b82f6" stroke="white" stroke-width="1.5" />
+    <!-- Data polygons — rendered in reverse so index-0 team is drawn on top -->
+    {#each [...data].reverse() as row, ri}
+      {@const idx    = data.length - 1 - ri}
+      {@const color  = palette[idx % palette.length]}
+      {@const scales = teamScales(row)}
+      <polygon points={poly(scales)} fill="{color}18" stroke={color} stroke-width="2" stroke-linejoin="round"
+        opacity={highlighted === null ? 1 : highlighted === row.team_name ? 1 : 0.08} />
+      {#each scales as s, i}
+        <circle cx={pt(i, s).x} cy={pt(i, s).y} r="4" fill={color} stroke="white" stroke-width="1.5"
+          opacity={highlighted === null ? 1 : highlighted === row.team_name ? 1 : 0.08} />
+      {/each}
     {/each}
 
-    <!-- Labels -->
+    <!-- Axis labels (metric name always; value when single team or one highlighted) -->
     {#each metrics as m, i}
       <text
         x={pt(i, 1.48).x}
@@ -62,6 +82,7 @@
         fill="#9ca3af"
         font-family="ui-sans-serif,system-ui,sans-serif"
       >{m.label}</text>
+      {#if single || highlighted}
       <text
         x={pt(i, 1.48).x}
         y={pt(i, 1.48).y + 8}
@@ -70,12 +91,31 @@
         font-weight="700"
         fill="#111827"
         font-family="ui-sans-serif,system-ui,sans-serif"
-      >{m.fmt(row[m.valueKey])}</text>
+      >{m.fmt(labelRow[m.valueKey])}</text>
+      {/if}
     {/each}
 
     <!-- Centre dot -->
     <circle cx={cx} cy={cy} r="3" fill="#374151" />
 
   </svg>
-  <div style="font-size:11px;color:#9ca3af;margin-top:-8px;">Percentile rank vs league (100 = best)</div>
+
+  <!-- Legend — only when more than one team -->
+  {#if data.length > 1}
+  <div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:2px;">
+    {#each data as row, i}
+    <div
+      on:click={() => toggle(row.team_name)}
+      style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;transition:opacity 0.15s;
+             opacity:{highlighted === null || highlighted === row.team_name ? 1 : 0.35};
+             color:{highlighted === row.team_name ? palette[i % palette.length] : '#374151'};
+             font-weight:{highlighted === row.team_name ? '700' : '400'};"
+    >
+      <div style="width:10px;height:10px;border-radius:50%;background:{palette[i % palette.length]};flex-shrink:0;"></div>
+      {row.team_name}
+    </div>
+    {/each}
+  </div>
+  {/if}
+
 </div>

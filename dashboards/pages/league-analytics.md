@@ -6,6 +6,10 @@ title: League Intelligence
 
 <script>
   import TeamRadar from '../../components/TeamRadar.svelte';
+
+  const scatterPalette = ['#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7'];
+  let selectedTeam = null;
+  function toggleTeam(name) { selectedTeam = selectedTeam === name ? null : name; }
 </script>
 
 ```sql seasons
@@ -20,15 +24,25 @@ select season from (
 order by sort_key, is_current desc, season desc
 ```
 
+```sql teams
+select distinct team_name
+from superligaen.mart_match_facts
+where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+  and result in ('Win', 'Draw', 'Loss')
+order by team_name
+```
+
 {#key seasons[0]?.season}
 <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
 {/key}
 
+<Dropdown data={teams} name=team value=team_name label=team_name multiple=true selectAllByDefault=true />
+
 ```sql league_kpis
 with curr as (
     select
-        count(distinct match_id) / 2                                                                    as total_matches,
-        sum(goals_scored) / 2                                                                           as total_goals,
+        count(distinct match_id)                                                                        as total_matches,
+        sum(goals_scored)                                                                               as total_goals,
         count(distinct team_name)                                                                       as total_teams,
         round(sum(goals_scored)::double / count(distinct match_id), 2)                                  as goals_per_match,
         round(100.0 * count(*) filter (where team_side='Home' and result='Win')
@@ -38,6 +52,7 @@ with curr as (
         round(100.0 * sum(goals_scored) / nullif(sum(big_chances_created), 0), 1)                      as big_chance_conv
     from superligaen.mart_match_facts
     where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+      and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
 ),
 prev as (
@@ -54,6 +69,7 @@ prev as (
           and result in ('Win','Draw','Loss')
           and '${inputs.season.value}' != 'All Seasons'
     )
+      and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
 )
 select curr.*, prev.* from curr cross join prev
@@ -66,6 +82,7 @@ with goals_ranked as (
            row_number() over (order by sum(goals_scored) desc) as rn
     from superligaen.mart_player_facts
     where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+      and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, team_name, team_logo
     having sum(goals_scored) > 0
@@ -76,6 +93,7 @@ assists_ranked as (
            row_number() over (order by sum(assists) desc) as rn
     from superligaen.mart_player_facts
     where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+      and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, team_name, team_logo
     having sum(assists) > 0
@@ -87,6 +105,7 @@ rating_ranked as (
            row_number() over (order by avg(rating) desc) as rn
     from superligaen.mart_player_facts
     where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+      and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
       and rating is not null
       and rating > 0
@@ -116,24 +135,27 @@ cross join rating_ranked  r
 where g.rn = 1 and a.rn = 1 and r.rn = 1
 ```
 
-```sql top_scorers
+```sql current_standings
 select
-    row_number() over (order by sum(goals_scored) desc)::int  as rank,
-    player_name,
-    player_photo,
     team_name,
-    team_logo,
-    sum(goals_scored)::int                                     as goals,
-    sum(assists)::int                                          as assists,
-    count(distinct match_id)::int                             as matches,
-    round(sum(goals_scored) * 90.0 / nullif(sum(minutes_played), 0), 2) as goals_per90
-from superligaen.mart_player_facts
+    team_short_name,
+    count(distinct match_id)                          as mp,
+    sum(points_earned)                                as pts,
+    sum(goals_scored) - sum(goals_conceded)           as gd,
+    sum(goals_scored)                                 as gf,
+    standings_type                                    as round_group
+from superligaen.mart_match_facts
 where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+  and team_name in ${inputs.team.value}
   and result in ('Win', 'Draw', 'Loss')
-group by player_name, player_photo, team_name, team_logo
-having sum(goals_scored) >= 1
-order by goals desc
-limit 20
+group by team_name, team_short_name, standings_type
+order by
+    case standings_type
+        when 'Championship Group' then 1
+        when 'Relegation Group'   then 2
+        else                           3
+    end,
+    pts desc, gd desc, gf desc
 ```
 
 ```sql team_landscape
@@ -149,31 +171,19 @@ select
     round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                   as pass_accuracy
 from superligaen.mart_match_facts
 where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+  and team_name in ${inputs.team.value}
   and result in ('Win', 'Draw', 'Loss')
 group by team_name, team_logo
-order by points desc
+order by team_name
 ```
 
 ```sql points_progression
-select
-    match_round_number  as round,
-    team_name,
-    team_code,
-    cumulative_points,
-    cumulative_gd
-from superligaen.mart_match_facts
-where season = '${inputs.season.value}'
-  and '${inputs.season.value}' != 'All Seasons'
-  and result in ('Win', 'Draw', 'Loss')
-order by max(cumulative_points) over (partition by team_name) desc, team_name, match_round_number
-```
-
-```sql radar_teams
-select distinct team_name
+select match_round_number as round, team_name, cumulative_points, cumulative_gd, cumulative_gf
 from superligaen.mart_match_facts
 where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+  and team_name in ${inputs.team.value}
   and result in ('Win', 'Draw', 'Loss')
-order by team_name
+order by max(cumulative_points) over (partition by team_name) desc, team_name, match_round_number
 ```
 
 ```sql radar_data
@@ -208,7 +218,7 @@ ranked as (
         round(percent_rank() over (order by win_rate)                * 100) as wins_pct
     from all_teams
 )
-select * from ranked where team_name = '${inputs.radar_team.value}'
+select * from ranked where team_name in ${inputs.team.value} order by team_name
 ```
 
 ```sql historical_trends
@@ -223,6 +233,7 @@ select
     round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                         as pass_accuracy
 from superligaen.mart_match_facts
 where result in ('Win', 'Draw', 'Loss')
+  and team_name in ${inputs.team.value}
 group by season
 order by season
 ```
@@ -240,6 +251,7 @@ select
     round(100.0 * sum(case when result='Loss' then 1 else 0 end) / count(*), 1) as loss_pct
 from superligaen.mart_match_facts
 where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+  and team_name in ${inputs.team.value}
   and result in ('Win', 'Draw', 'Loss')
 group by 1
 order by case ht_state when 'Leading' then 1 when 'Level' then 2 else 3 end
@@ -259,6 +271,7 @@ select
     round(100.0 * sum(case when result='Loss' then 1 else 0 end) / count(*), 1) as loss_pct
 from superligaen.mart_match_facts
 where ('${inputs.season.value}' = 'All Seasons' or season = '${inputs.season.value}')
+  and team_name in ${inputs.team.value}
   and result in ('Win', 'Draw', 'Loss')
 group by 1
 order by min(possession_pct)
@@ -281,6 +294,54 @@ order by min(possession_pct)
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
     <BigValue data={league_kpis} value=yc_per_match title="YC / Match" comparison=prev_yc_per_match comparisonTitle="vs prev season" comparisonDelta=true downIsGood=true />
   </div>
+</div>
+
+---
+
+## Standings & Points Race
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
+
+<div>
+
+<LineChart
+    data={points_progression}
+    x=round
+    y=cumulative_points
+    series=team_name
+    xAxisTitle="Round"
+    yAxisTitle="Cumulative Points"
+    title="Points Race"
+    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; for (const row of points_progression) { if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const sorted = [...params].sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}}}
+    legend=false
+    chartAreaHeight=300
+/>
+
+</div>
+
+<div>
+
+#### League Table
+
+<div class="block md:hidden">
+<DataTable data={current_standings} rows=20>
+    <Column id=team_short_name title="Team"  />
+    <Column id=round_group     title="Group" />
+    <Column id=mp              title="MP"   align=center />
+    <Column id=pts             title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+</DataTable>
+</div>
+<div class="hidden md:block">
+<DataTable data={current_standings} rows=20>
+    <Column id=team_name   title="Team"  />
+    <Column id=round_group title="Group" />
+    <Column id=mp          title="MP"   align=center />
+    <Column id=pts         title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+</DataTable>
+</div>
+
+</div>
+
 </div>
 
 ---
@@ -352,36 +413,15 @@ order by min(possession_pct)
 
 ---
 
-## Top Scorers
+## Team Landscape & Radar
 
-<div class="hidden md:block">
-<DataTable data={top_scorers} rows=20>
-    <Column id=rank          title="#"           align=center />
-    <Column id=player_photo  title=""            contentType=image height=32 />
-    <Column id=player_name   title="Player"      />
-    <Column id=team_logo     title=""            contentType=image height=24 />
-    <Column id=team_name     title="Team"        />
-    <Column id=goals         title="Goals"       align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    <Column id=assists       title="Assists"     align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=matches       title="MP"          align=center />
-    <Column id=goals_per90   title="Goals/90"    contentType=colorscale colorPalette={['white','#22c55e']} />
-</DataTable>
-</div>
-<div class="block md:hidden">
-<DataTable data={top_scorers} rows=20>
-    <Column id=rank        title="#"       align=center />
-    <Column id=player_name title="Player"  />
-    <Column id=goals       title="G"       align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    <Column id=assists     title="A"       align=center />
-    <Column id=goals_per90 title="G/90"   />
-</DataTable>
-</div>
+*Where does each team sit on the attack vs defence spectrum? Teams to the right score more, teams lower down concede less. The bottom-right corner is where champions live.*
 
----
+*How does a team rank across six dimensions relative to the rest of the league? Each axis shows a percentile — 100 means best in the league for that metric. Click a team in the legend to isolate it.*
 
-## Team Landscape — Attack vs Defence
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-end">
 
-*Each team plotted by goals scored (x) vs goals conceded (y). Top-right = most exciting. Bottom-left = tight games. Top-left = defensively vulnerable, low-scoring attackers. Bottom-right = dominant.*
+<div>
 
 <ScatterPlot
     data={team_landscape}
@@ -392,7 +432,34 @@ order by min(possession_pct)
     yAxisTitle="Goals Conceded"
     title="Attack vs Defence — {inputs.season.value}"
     tooltipColumns={[{id: 'team_name', title: 'Team'}, {id: 'goals_for', title: 'Goals For'}, {id: 'goals_against', title: 'Goals Against'}, {id: 'points', title: 'Points'}, {id: 'win_pct', title: 'Win %', fmt: '0.0"%"'}]}
+    chartAreaHeight=320
+    legend=false
+    echartsOptions={{series: team_landscape.map((row, i) => ({name: row.team_name, itemStyle: {color: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db'}}))}}
 />
+<div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:2px;">
+  {#each team_landscape as row, i}
+  <div
+    on:click={() => toggleTeam(row.team_name)}
+    style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;transition:opacity 0.15s;
+           opacity:{selectedTeam === null || selectedTeam === row.team_name ? 1 : 0.35};
+           color:{selectedTeam === row.team_name ? scatterPalette[i % 12] : '#374151'};
+           font-weight:{selectedTeam === row.team_name ? '700' : '400'};"
+  >
+    <div style="width:10px;height:10px;border-radius:50%;background:{scatterPalette[i % 12]};flex-shrink:0;"></div>
+    {row.team_name}
+  </div>
+  {/each}
+</div>
+
+</div>
+
+<div>
+
+<TeamRadar data={radar_data} />
+
+</div>
+
+</div>
 
 ---
 
@@ -441,44 +508,6 @@ order by min(possession_pct)
 />
 
 </div>
-
----
-
-## Team Radar
-
-*Percentile rank vs all teams in the selected season. 100 = best in the league.*
-
-{#key radar_teams[0]?.team_name}
-<Dropdown data={radar_teams} name=radar_team value=team_name label=team_name defaultValue={radar_teams[0]?.team_name} />
-{/key}
-
-<div class="flex justify-center">
-  <div style="max-width:560px;width:100%;">
-    <TeamRadar data={radar_data} />
-  </div>
-</div>
-
----
-
-## Points Race
-
-{#if inputs.season.value !== 'All Seasons'}
-
-<LineChart
-    data={points_progression}
-    x=round
-    y=cumulative_points
-    series=team_name
-    xAxisTitle="Round"
-    yAxisTitle="Cumulative Points"
-    title="Points Race — {inputs.season.value}"
-    legend=false
-    chartAreaHeight=320
-/>
-
-{:else}
-<p class="text-sm text-gray-500 italic">Select a specific season to view the points race.</p>
-{/if}
 
 ---
 
