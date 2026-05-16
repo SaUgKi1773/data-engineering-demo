@@ -98,6 +98,11 @@ select
     goals_scored        as gf,
     goals_conceded      as ga,
     result,
+    case result
+        when 'Win'  then '<span style="background:#22c55e;color:white;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:700;">W</span>'
+        when 'Draw' then '<span style="background:#eab308;color:white;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:700;">D</span>'
+        when 'Loss' then '<span style="background:#ef4444;color:white;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:700;">L</span>'
+    end as result_badge,
     points_earned       as pts,
     possession_pct      as possession,
     shots_on_goal,
@@ -244,6 +249,7 @@ select
     match_round_type                                                                   as phase,
     count(distinct match_id)::int                                                      as matches,
     sum(points_earned)::int                                                            as points,
+    round(sum(points_earned)::double / count(distinct match_id), 2)                   as points_per_match,
     sum(goals_scored)::int                                                             as gf,
     sum(goals_conceded)::int                                                           as ga,
     round(sum(goals_scored)::double    / count(distinct match_id), 2)                 as goals_per_match
@@ -252,7 +258,12 @@ where season in ${inputs.season.value}
   and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
 group by match_round_type
-order by matches desc
+order by case match_round_type
+    when 'Regular Season'       then 1
+    when 'Championship Group'   then 2
+    when 'Relegation Group'     then 2
+    else 3
+end
 ```
 
 ---
@@ -386,7 +397,7 @@ order by matches desc
 ## Squad Contributors
 
 <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
-  <Dropdown data={attack_metrics}    name=attack_cols    value=value label=label defaultValue={['goals','assists','goal_contributions','goals_per90']} multiple=true title="Attack" />
+  <Dropdown data={attack_metrics}    name=attack_cols    value=value label=label defaultValue={[]} multiple=true title="Attack" />
   <Dropdown data={passing_metrics}   name=passing_cols   value=value label=label defaultValue={[]} multiple=true title="Passing" />
   <Dropdown data={defense_metrics}   name=defense_cols   value=value label=label defaultValue={[]} multiple=true title="Defense" />
   <Dropdown data={dribbling_metrics} name=dribbling_cols value=value label=label defaultValue={[]} multiple=true title="Dribbling" />
@@ -399,6 +410,7 @@ order by matches desc
     <Column id=player_name              title="Player"         />
     <Column id=player_position          title="Pos"            />
     <Column id=matches                  title="MP"             align=center />
+    <Column id=minutes                  title="Minutes"        align=center />
     <Column id=avg_rating               title="Rating"         contentType=colorscale colorPalette={['white','#8b5cf6']} />
     {#if inputs.attack_cols.value?.includes('goals')}
     <Column id=goals                    title="Goals"          align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
@@ -493,7 +505,6 @@ order by matches desc
     {#if inputs.discipline_cols.value?.includes('fouls_drawn')}
     <Column id=fouls_drawn              title="Fouls Drawn"    align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
-    <Column id=minutes                  title="Minutes"        align=center />
 </DataTable>
 </div>
 <div class="block md:hidden">
@@ -516,9 +527,11 @@ order by matches desc
 <BarChart
     data={phase_performance}
     x=phase
-    y=points
-    title="Points by Phase"
+    y=points_per_match
+    title="Points per Match by Phase"
+    yAxisTitle="Pts / Match"
     colorPalette={['#3b82f6']}
+    sort=false
 />
 
 <BarChart
@@ -527,6 +540,7 @@ order by matches desc
     y=goals_per_match
     title="Goals per Match by Phase"
     colorPalette={['#22c55e']}
+    sort=false
 />
 
 </div>
@@ -544,7 +558,7 @@ order by matches desc
     <Column id=opponent      title="Opponent"   />
     <Column id=gf            title="GF"         align=center />
     <Column id=ga            title="GA"         align=center />
-    <Column id=result        title="Result"     contentType=colorscale colorPalette={['#ef4444','#eab308','#22c55e']} />
+    <Column id=result_badge  title="Result"     contentType=html align=center />
     <Column id=pts           title="Pts"        align=center />
     <Column id=possession    title="Poss %"     fmt='0.0"%"' />
     <Column id=shots_on_goal title="SoG"        align=center />
@@ -553,10 +567,10 @@ order by matches desc
 </div>
 <div class="block md:hidden">
 <DataTable data={match_results} rows=20>
-    <Column id=match_date title="Date"     />
-    <Column id=opponent   title="Opponent" />
-    <Column id=gf         title="GF"      align=center />
-    <Column id=ga         title="GA"      align=center />
-    <Column id=result     title="Result"  />
+    <Column id=match_date   title="Date"     />
+    <Column id=opponent     title="Opponent" />
+    <Column id=gf           title="GF"      align=center />
+    <Column id=ga           title="GA"      align=center />
+    <Column id=result_badge title="Result"  contentType=html align=center />
 </DataTable>
 </div>
