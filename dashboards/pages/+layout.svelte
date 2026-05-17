@@ -13,9 +13,6 @@
   });
 
   onMount(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js');
-    }
     inject();
     const script = document.createElement('script');
     script.defer = true;
