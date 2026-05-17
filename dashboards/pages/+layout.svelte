@@ -34,7 +34,7 @@
   :global(.standings-table table th:nth-child(1)),
   :global(.standings-table table td:nth-child(1)) { width: 1.5rem; }
   :global(.standings-table table th:nth-child(n+3)),
-  :global(.standings-table table td:nth-child(n+3)) { width: 2.2rem; }
+  :global(.standings-table table td:nth-child(n+3)) { width: 1.8rem; }
   @media (min-width: 768px) {
     :global(.standings-table table th:nth-child(1)),
     :global(.standings-table table td:nth-child(1)) { width: 2.2rem; }
