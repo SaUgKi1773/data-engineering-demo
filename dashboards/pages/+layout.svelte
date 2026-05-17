@@ -35,6 +35,12 @@
 </EvidenceDefaultLayout>
 
 <style>
+  :global(header img[alt="Home"]) {
+    height: 2.5rem;
+  }
+  :global(header button[aria-label="Menu"]) {
+    display: none;
+  }
   :global(.standings-table table) {
     table-layout: fixed;
     width: 100%;
