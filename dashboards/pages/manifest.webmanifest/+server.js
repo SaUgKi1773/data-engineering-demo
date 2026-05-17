@@ -2,7 +2,7 @@ export const prerender = true;
 
 const webmanifest = {
 	name: 'Superliga Analytics',
-	short_name: 'Superliga',
+	short_name: 'Superligaen',
 	description: 'Danish Premier Football League — standings, match results, player & team intelligence.',
 	start_url: '/',
 	display: 'standalone',
