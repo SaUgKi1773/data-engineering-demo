@@ -30,11 +30,17 @@
   });
 </script>
 
-<EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true} hideMenu={true} title="🏠 Superliga Analytics">
+<EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true} hideMenu={true} logo="/header-logo.svg">
   <slot slot="content" />
 </EvidenceDefaultLayout>
 
 <style>
+  :global(header img[alt="Home"]) {
+    height: 2.5rem;
+  }
+  :global(header button[aria-label="Menu"]) {
+    display: none;
+  }
   :global(.standings-table table) {
     table-layout: fixed;
     width: 100%;
