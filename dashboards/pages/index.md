@@ -72,9 +72,9 @@ limit 1
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center"><BigValue data={kpis}    value=total_goals    title="Goals Scored"    /></div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4" style="grid-auto-rows: 7.5rem">
 
-<a href="/standings" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/standings" class="flex flex-col justify-center no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm h-full">
   <div class="flex items-start gap-4">
     <div class="text-3xl">🏆</div>
     <div>
@@ -84,7 +84,7 @@ limit 1
   </div>
 </a>
 
-<a href="/match-results" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/match-results" class="flex flex-col justify-center no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm h-full">
   <div class="flex items-start gap-4">
     <div class="text-3xl">⚽</div>
     <div>
@@ -94,7 +94,7 @@ limit 1
   </div>
 </a>
 
-<a href="/upcoming-matches" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/upcoming-matches" class="flex flex-col justify-center no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm h-full">
   <div class="flex items-start gap-4">
     <div class="text-3xl">📅</div>
     <div>
@@ -104,7 +104,7 @@ limit 1
   </div>
 </a>
 
-<a href="/league-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/league-analytics" class="flex flex-col justify-center no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm h-full">
   <div class="flex items-start gap-4">
     <div class="text-3xl">📈</div>
     <div>
@@ -114,7 +114,7 @@ limit 1
   </div>
 </a>
 
-<a href="/team-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/team-analytics" class="flex flex-col justify-center no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm h-full">
   <div class="flex items-start gap-4">
     <div class="text-3xl">👥</div>
     <div>
@@ -124,7 +124,7 @@ limit 1
   </div>
 </a>
 
-<a href="/player-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/player-analytics" class="flex flex-col justify-center no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm h-full">
   <div class="flex items-start gap-4">
     <div class="text-3xl">👟</div>
     <div>
@@ -134,7 +134,7 @@ limit 1
   </div>
 </a>
 
-<a href="/stadium-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/stadium-analytics" class="flex flex-col justify-center no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm h-full">
   <div class="flex items-start gap-4">
     <div class="text-3xl">🏟️</div>
     <div>
@@ -144,7 +144,7 @@ limit 1
   </div>
 </a>
 
-<a href="/referee-analytics" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/referee-analytics" class="flex flex-col justify-center no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm h-full">
   <div class="flex items-start gap-4">
     <div class="text-3xl">🟨</div>
     <div>
@@ -154,7 +154,7 @@ limit 1
   </div>
 </a>
 
-<a href="/glossary" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/glossary" class="flex flex-col justify-center no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm h-full">
   <div class="flex items-start gap-4">
     <div class="text-3xl">📖</div>
     <div>
@@ -164,7 +164,7 @@ limit 1
   </div>
 </a>
 
-<a href="/about" class="block no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm">
+<a href="/about" class="flex flex-col justify-center no-underline rounded-xl border border-gray-200 bg-white p-6 hover:border-blue-500 hover:shadow-lg transition-all duration-200 group shadow-sm h-full">
   <div class="flex items-start gap-4">
     <div class="text-3xl">👤</div>
     <div>
