@@ -49,6 +49,12 @@ Have a suggestion for the dashboard? Open an issue on GitHub — no account need
 </a>
 </div>
 
+## Install on Mobile
+
+Get quick access to Superligaen Analytics directly from your phone's home screen — no app store needed.
+
+<InstallGuide />
+
 ## Connect
 
 <div class="mt-2">
