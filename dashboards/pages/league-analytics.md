@@ -88,64 +88,55 @@ select
 from curr cross join prev
 ```
 
-```sql season_awards
-with goals_ranked as (
-    select player_name, player_photo, team_name, team_logo,
-           sum(goals_scored)::int as total_goals,
-           row_number() over (order by sum(goals_scored) desc) as rn
+```sql scorers
+with ranked as (
+    select
+        player_name, player_photo, team_name,
+        sum(goals_scored)::int                              as goals,
+        row_number() over (order by sum(goals_scored) desc) as rn
     from superligaen.mart_player_facts
     where season = '${inputs.season.value}'
       and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
-    group by player_name, player_photo, team_name, team_logo
+    group by player_name, player_photo, team_name
     having sum(goals_scored) > 0
-),
-assists_ranked as (
-    select player_name, player_photo, team_name, team_logo,
-           sum(assists)::int as total_assists,
-           row_number() over (order by sum(assists) desc) as rn
+)
+select * from ranked where rn <= 3 order by rn
+```
+
+```sql assisters
+with ranked as (
+    select
+        player_name, player_photo, team_name,
+        sum(assists)::int                              as assists,
+        row_number() over (order by sum(assists) desc) as rn
     from superligaen.mart_player_facts
     where season = '${inputs.season.value}'
       and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
-    group by player_name, player_photo, team_name, team_logo
+    group by player_name, player_photo, team_name
     having sum(assists) > 0
-),
-rating_ranked as (
-    select player_name, player_photo, team_name, team_logo,
-           round(avg(rating), 2) as avg_rating,
-           count(distinct match_id)::int as matches,
-           row_number() over (order by avg(rating) desc) as rn
+)
+select * from ranked where rn <= 3 order by rn
+```
+
+```sql top_rated
+with ranked as (
+    select
+        player_name, player_photo, team_name,
+        round(avg(rating), 2)                        as avg_rating,
+        count(distinct match_id)::int                as matches,
+        row_number() over (order by avg(rating) desc) as rn
     from superligaen.mart_player_facts
     where season = '${inputs.season.value}'
       and team_name in ${inputs.team.value}
       and result in ('Win', 'Draw', 'Loss')
       and rating is not null
       and rating > 0
-    group by player_name, player_photo, team_name, team_logo
+    group by player_name, player_photo, team_name
     having count(distinct match_id) >= 5
 )
-select
-    g.player_name  as top_scorer_name,
-    g.player_photo as top_scorer_photo,
-    g.team_name    as top_scorer_team,
-    g.team_logo    as top_scorer_logo,
-    g.total_goals,
-    a.player_name  as top_assister_name,
-    a.player_photo as top_assister_photo,
-    a.team_name    as top_assister_team,
-    a.team_logo    as top_assister_logo,
-    a.total_assists,
-    r.player_name  as best_rated_name,
-    r.player_photo as best_rated_photo,
-    r.team_name    as best_rated_team,
-    r.team_logo    as best_rated_logo,
-    r.avg_rating,
-    r.matches      as best_rated_matches
-from goals_ranked   g
-cross join assists_ranked a
-cross join rating_ranked  r
-where g.rn = 1 and a.rn = 1 and r.rn = 1
+select * from ranked where rn <= 3 order by rn
 ```
 
 ```sql current_standings
@@ -437,60 +428,164 @@ select * from ranked where team_name in ${inputs.team.value} order by team_name
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
-  {#each season_awards as award}
+{#if scorers.length > 0}
+<div style="position: relative;">
 
-  <!-- Top Scorer -->
-  <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-amber-50 to-yellow-100 border border-amber-200 shadow-md p-6">
-    <div class="absolute top-3 right-4 text-3xl">⚽</div>
-    <div class="text-xs uppercase tracking-widest text-amber-600 font-bold mb-4">Top Scorer</div>
+  <!-- Scorer rank 1 -->
+  <div class="rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-100 border border-amber-200 shadow-lg p-5" style="position: relative; z-index: 3;">
+    <div class="text-xs uppercase tracking-widest text-amber-600 font-bold mb-3">⚽ Top Scorer</div>
     <div class="flex items-center gap-4">
-      <img src="{award.top_scorer_photo}" alt="{award.top_scorer_name}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-300 shadow" onerror="this.style.display='none'" />
+      <img src="{scorers[0].player_photo}" alt="{scorers[0].player_name}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-300 shadow" onerror="this.style.display='none'" />
       <div>
-        <div class="text-xl font-extrabold text-gray-800 leading-tight">{award.top_scorer_name}</div>
-        <div class="flex items-center gap-2 mt-1">
-          <img src="{award.top_scorer_logo}" alt="{award.top_scorer_team}" class="h-5 w-5 object-contain" onerror="this.style.display='none'" />
-          <span class="text-sm text-gray-500">{award.top_scorer_team}</span>
-        </div>
+        <div class="text-xl font-extrabold text-gray-800 leading-tight">{scorers[0].player_name}</div>
+        <div class="text-sm text-gray-500 mt-0.5">{scorers[0].team_name}</div>
       </div>
     </div>
-    <div class="mt-4 text-4xl font-black text-amber-500">{award.total_goals} <span class="text-base font-normal text-gray-500">goals</span></div>
+    <div class="mt-3 text-3xl font-black text-amber-500 text-right">{scorers[0].goals} <span class="text-base font-normal text-gray-500">goals</span></div>
   </div>
 
-  <!-- Top Assister -->
-  <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50 to-sky-100 border border-blue-200 shadow-md p-6">
-    <div class="absolute top-3 right-4 text-3xl">🎯</div>
-    <div class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-4">Top Assister</div>
-    <div class="flex items-center gap-4">
-      <img src="{award.top_assister_photo}" alt="{award.top_assister_name}" class="w-16 h-16 rounded-full object-cover border-2 border-blue-300 shadow" onerror="this.style.display='none'" />
-      <div>
-        <div class="text-xl font-extrabold text-gray-800 leading-tight">{award.top_assister_name}</div>
-        <div class="flex items-center gap-2 mt-1">
-          <img src="{award.top_assister_logo}" alt="{award.top_assister_team}" class="h-5 w-5 object-contain" onerror="this.style.display='none'" />
-          <span class="text-sm text-gray-500">{award.top_assister_team}</span>
+  {#if scorers.length > 1}
+  <!-- Scorer rank 2 peek -->
+  <div style="position: relative; z-index: 2; margin-top: -10px; overflow: hidden; height: 60px; margin-left: 8px; margin-right: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.12); border-radius: 0 0 0.75rem 0.75rem;">
+    <div class="rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-100 border border-amber-200 shadow p-3" style="opacity: 0.88;">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-baseline gap-1.5 min-w-0">
+          <span class="text-xs font-black text-amber-400 flex-shrink-0">2</span>
+          <span class="text-sm font-bold text-gray-800 truncate">{scorers[1].player_name}</span>
         </div>
+        <span class="text-sm font-black text-amber-500 flex-shrink-0">{scorers[1].goals} <span class="text-xs font-normal text-gray-400">goals</span></span>
+      </div>
+      <div class="text-xs text-gray-400 mt-0.5 ml-4">{scorers[1].team_name}</div>
+    </div>
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 1.5px; background: #fde68a;"></div>
+  </div>
+  {/if}
+
+  {#if scorers.length > 2}
+  <!-- Scorer rank 3 peek -->
+  <div style="position: relative; z-index: 1; margin-top: -10px; overflow: hidden; height: 52px; margin-left: 24px; margin-right: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.08); border-radius: 0 0 0.75rem 0.75rem;">
+    <div class="rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-100 border border-amber-200 shadow-sm p-3" style="opacity: 0.72;">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-baseline gap-1.5 min-w-0">
+          <span class="text-xs font-black text-amber-300 flex-shrink-0">3</span>
+          <span class="text-sm font-bold text-gray-700 truncate">{scorers[2].player_name}</span>
+        </div>
+        <span class="text-sm font-black text-amber-400 flex-shrink-0">{scorers[2].goals} <span class="text-xs font-normal text-gray-400">goals</span></span>
+      </div>
+      <div class="text-xs text-gray-400 mt-0.5 ml-4">{scorers[2].team_name}</div>
+    </div>
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 1.5px; background: #fde68a;"></div>
+  </div>
+  {/if}
+
+</div>
+{/if}
+
+{#if assisters.length > 0}
+<div style="position: relative;">
+
+  <!-- Assister rank 1 -->
+  <div class="rounded-2xl bg-gradient-to-br from-blue-50 to-sky-100 border border-blue-200 shadow-lg p-5" style="position: relative; z-index: 3;">
+    <div class="text-xs uppercase tracking-widest text-blue-600 font-bold mb-3">🎯 Top Assister</div>
+    <div class="flex items-center gap-4">
+      <img src="{assisters[0].player_photo}" alt="{assisters[0].player_name}" class="w-16 h-16 rounded-full object-cover border-2 border-blue-300 shadow" onerror="this.style.display='none'" />
+      <div>
+        <div class="text-xl font-extrabold text-gray-800 leading-tight">{assisters[0].player_name}</div>
+        <div class="text-sm text-gray-500 mt-0.5">{assisters[0].team_name}</div>
       </div>
     </div>
-    <div class="mt-4 text-4xl font-black text-blue-500">{award.total_assists} <span class="text-base font-normal text-gray-500">assists</span></div>
+    <div class="mt-3 text-3xl font-black text-blue-500 text-right">{assisters[0].assists} <span class="text-base font-normal text-gray-500">assists</span></div>
   </div>
 
-  <!-- Best Rated -->
-  <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-50 to-violet-100 border border-purple-200 shadow-md p-6">
-    <div class="absolute top-3 right-4 text-3xl">⭐</div>
-    <div class="text-xs uppercase tracking-widest text-purple-600 font-bold mb-4">Best Rated</div>
-    <div class="flex items-center gap-4">
-      <img src="{award.best_rated_photo}" alt="{award.best_rated_name}" class="w-16 h-16 rounded-full object-cover border-2 border-purple-300 shadow" onerror="this.style.display='none'" />
-      <div>
-        <div class="text-xl font-extrabold text-gray-800 leading-tight">{award.best_rated_name}</div>
-        <div class="flex items-center gap-2 mt-1">
-          <img src="{award.best_rated_logo}" alt="{award.best_rated_team}" class="h-5 w-5 object-contain" onerror="this.style.display='none'" />
-          <span class="text-sm text-gray-500">{award.best_rated_team}</span>
+  {#if assisters.length > 1}
+  <!-- Assister rank 2 peek -->
+  <div style="position: relative; z-index: 2; margin-top: -10px; overflow: hidden; height: 60px; margin-left: 8px; margin-right: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.12); border-radius: 0 0 0.75rem 0.75rem;">
+    <div class="rounded-2xl bg-gradient-to-br from-blue-50 to-sky-100 border border-blue-200 shadow p-3" style="opacity: 0.88;">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-baseline gap-1.5 min-w-0">
+          <span class="text-xs font-black text-blue-400 flex-shrink-0">2</span>
+          <span class="text-sm font-bold text-gray-800 truncate">{assisters[1].player_name}</span>
         </div>
+        <span class="text-sm font-black text-blue-500 flex-shrink-0">{assisters[1].assists} <span class="text-xs font-normal text-gray-400">assists</span></span>
+      </div>
+      <div class="text-xs text-gray-400 mt-0.5 ml-4">{assisters[1].team_name}</div>
+    </div>
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 1.5px; background: #bfdbfe;"></div>
+  </div>
+  {/if}
+
+  {#if assisters.length > 2}
+  <!-- Assister rank 3 peek -->
+  <div style="position: relative; z-index: 1; margin-top: -10px; overflow: hidden; height: 52px; margin-left: 24px; margin-right: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.08); border-radius: 0 0 0.75rem 0.75rem;">
+    <div class="rounded-2xl bg-gradient-to-br from-blue-50 to-sky-100 border border-blue-200 shadow-sm p-3" style="opacity: 0.72;">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-baseline gap-1.5 min-w-0">
+          <span class="text-xs font-black text-blue-300 flex-shrink-0">3</span>
+          <span class="text-sm font-bold text-gray-700 truncate">{assisters[2].player_name}</span>
+        </div>
+        <span class="text-sm font-black text-blue-400 flex-shrink-0">{assisters[2].assists} <span class="text-xs font-normal text-gray-400">assists</span></span>
+      </div>
+      <div class="text-xs text-gray-400 mt-0.5 ml-4">{assisters[2].team_name}</div>
+    </div>
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 1.5px; background: #bfdbfe;"></div>
+  </div>
+  {/if}
+
+</div>
+{/if}
+
+{#if top_rated.length > 0}
+<div style="position: relative;">
+
+  <!-- Rated rank 1 -->
+  <div class="rounded-2xl bg-gradient-to-br from-purple-50 to-violet-100 border border-purple-200 shadow-lg p-5" style="position: relative; z-index: 3;">
+    <div class="text-xs uppercase tracking-widest text-purple-600 font-bold mb-3">⭐ Best Rated</div>
+    <div class="flex items-center gap-4">
+      <img src="{top_rated[0].player_photo}" alt="{top_rated[0].player_name}" class="w-16 h-16 rounded-full object-cover border-2 border-purple-300 shadow" onerror="this.style.display='none'" />
+      <div>
+        <div class="text-xl font-extrabold text-gray-800 leading-tight">{top_rated[0].player_name}</div>
+        <div class="text-sm text-gray-500 mt-0.5">{top_rated[0].team_name}</div>
       </div>
     </div>
-    <div class="mt-4 text-4xl font-black text-purple-500">{award.avg_rating} <span class="text-base font-normal text-gray-500">avg rating ({award.best_rated_matches} games)</span></div>
+    <div class="mt-3 text-3xl font-black text-purple-500 text-right">{top_rated[0].avg_rating} <span class="text-base font-normal text-gray-500">rating</span></div>
   </div>
 
-  {/each}
+  {#if top_rated.length > 1}
+  <!-- Rated rank 2 peek -->
+  <div style="position: relative; z-index: 2; margin-top: -10px; overflow: hidden; height: 60px; margin-left: 8px; margin-right: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.12); border-radius: 0 0 0.75rem 0.75rem;">
+    <div class="rounded-2xl bg-gradient-to-br from-purple-50 to-violet-100 border border-purple-200 shadow p-3" style="opacity: 0.88;">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-baseline gap-1.5 min-w-0">
+          <span class="text-xs font-black text-purple-400 flex-shrink-0">2</span>
+          <span class="text-sm font-bold text-gray-800 truncate">{top_rated[1].player_name}</span>
+        </div>
+        <span class="text-sm font-black text-purple-500 flex-shrink-0">{top_rated[1].avg_rating} <span class="text-xs font-normal text-gray-400">rating</span></span>
+      </div>
+      <div class="text-xs text-gray-400 mt-0.5 ml-4">{top_rated[1].team_name}</div>
+    </div>
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 1.5px; background: #ddd6fe;"></div>
+  </div>
+  {/if}
+
+  {#if top_rated.length > 2}
+  <!-- Rated rank 3 peek -->
+  <div style="position: relative; z-index: 1; margin-top: -10px; overflow: hidden; height: 52px; margin-left: 24px; margin-right: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.08); border-radius: 0 0 0.75rem 0.75rem;">
+    <div class="rounded-2xl bg-gradient-to-br from-purple-50 to-violet-100 border border-purple-200 shadow-sm p-3" style="opacity: 0.72;">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-baseline gap-1.5 min-w-0">
+          <span class="text-xs font-black text-purple-300 flex-shrink-0">3</span>
+          <span class="text-sm font-bold text-gray-700 truncate">{top_rated[2].player_name}</span>
+        </div>
+        <span class="text-sm font-black text-purple-400 flex-shrink-0">{top_rated[2].avg_rating} <span class="text-xs font-normal text-gray-400">rating</span></span>
+      </div>
+      <div class="text-xs text-gray-400 mt-0.5 ml-4">{top_rated[2].team_name}</div>
+    </div>
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 1.5px; background: #ddd6fe;"></div>
+  </div>
+  {/if}
+
+</div>
+{/if}
 
 </div>
 
