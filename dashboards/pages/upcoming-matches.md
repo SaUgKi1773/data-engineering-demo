@@ -11,6 +11,8 @@ where result = 'Pending'
 order by team_name asc
 ```
 
+{#if teams.length > 0}
+
 <Dropdown data={teams} name=team value=team_name label=team_name order="team_name asc" multiple=true selectAllByDefault=true />
 
 ```sql upcoming
@@ -275,3 +277,13 @@ limit 5
 </div>
 
 </div>
+
+{:else}
+
+<div class="flex flex-col items-center justify-center py-24 text-center">
+  <div class="text-5xl mb-4">📅</div>
+  <div class="text-xl font-bold text-gray-700 mb-2">No Upcoming Fixtures</div>
+  <div class="text-gray-400 text-sm">There are no scheduled matches at the moment. Check back soon.</div>
+</div>
+
+{/if}
