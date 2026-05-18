@@ -77,7 +77,12 @@ where result in ('Win', 'Draw', 'Loss')
   and stadium_longitude between 7.5 and 15.5
   and season = '${inputs.season.value}'
 group by stadium_surface
-order by matches desc
+order by
+    case
+        when stadium_surface ilike '%grass%' or stadium_surface ilike '%natural%' then 1
+        when stadium_surface ilike '%artif%' or stadium_surface ilike '%turf%'    then 2
+        else 3
+    end
 ```
 
 ```sql fortress_ranking
@@ -267,6 +272,7 @@ from (
     title="Pass Accuracy % by Surface"
     yAxisTitle="Pass Accuracy %"
     colorPalette={['#22c55e','#6366f1','#f59e0b']}
+    sort=false
 />
 
 <BarChart
@@ -276,6 +282,7 @@ from (
     title="Cross Accuracy % by Surface"
     yAxisTitle="Cross Accuracy %"
     colorPalette={['#22c55e','#6366f1','#f59e0b']}
+    sort=false
 />
 
 <BarChart
@@ -285,6 +292,7 @@ from (
     title="Shot Conversion % by Surface"
     yAxisTitle="Shot Conversion %"
     colorPalette={['#22c55e','#6366f1','#f59e0b']}
+    sort=false
 />
 
 <BarChart
@@ -294,6 +302,7 @@ from (
     title="Fouls per Match by Surface"
     yAxisTitle="Fouls / Match"
     colorPalette={['#22c55e','#6366f1','#f59e0b']}
+    sort=false
 />
 
 </div>
