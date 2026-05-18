@@ -5,15 +5,18 @@ title: Upcoming Fixtures
 ---
 
 ```sql teams
-select distinct team_name
-from superligaen.mart_match_facts
-where result = 'Pending'
-order by team_name asc
+select team_name from (
+  select 'All' as team_name, 0 as ord
+  union all
+  select distinct team_name, 1 as ord
+  from superligaen.mart_match_facts
+  where result = 'Pending'
+) order by ord, team_name
 ```
 
 {#if teams.length > 0}
 
-<Dropdown data={teams} name=team value=team_name label=team_name order="team_name asc" multiple=true selectAllByDefault=true />
+<Dropdown data={teams} name=team value=team_name label=team_name defaultValue="All" />
 
 ```sql upcoming
 with base as (
@@ -40,8 +43,8 @@ with base as (
     group by match_name, match_round_name, match_round_number, match_date, kick_off_time, stadium_name, referee_name, season
 )
 select * from base
-where home_team in ${inputs.team.value}
-   or away_team in ${inputs.team.value}
+where ('${inputs.team.value}' = 'All' OR home_team = '${inputs.team.value}')
+   or ('${inputs.team.value}' = 'All' OR away_team = '${inputs.team.value}')
 order by match_date asc, kick_off_time asc
 ```
 
@@ -90,14 +93,17 @@ limit 1
 ```
 
 ```sql h2h_seasons
-select distinct season
-from superligaen.mart_match_facts
-where result in ('Win', 'Draw', 'Loss')
-  and (
-      match_name = split_part('${inputs.match.value}', '|||', 1) || ' - ' || split_part('${inputs.match.value}', '|||', 2)
-   or match_name = split_part('${inputs.match.value}', '|||', 2) || ' - ' || split_part('${inputs.match.value}', '|||', 1)
-  )
-order by season desc
+select season from (
+  select 'All' as season, 0 as ord
+  union all
+  select distinct season, 1 as ord
+  from superligaen.mart_match_facts
+  where result in ('Win', 'Draw', 'Loss')
+    and (
+        match_name = split_part('${inputs.match.value}', '|||', 1) || ' - ' || split_part('${inputs.match.value}', '|||', 2)
+     or match_name = split_part('${inputs.match.value}', '|||', 2) || ' - ' || split_part('${inputs.match.value}', '|||', 1)
+    )
+) order by ord, season desc
 ```
 
 ```sql h2h
@@ -113,7 +119,7 @@ select
     sum(big_chances_created)                                                as total_big_chances
 from superligaen.mart_match_facts
 where result in ('Win', 'Draw', 'Loss')
-  and season in ${inputs.h2h_season.value}
+  and ('${inputs.h2h_season.value}' = 'All' OR season = '${inputs.h2h_season.value}')
   and (
       match_name = split_part('${inputs.match.value}', '|||', 1) || ' - ' || split_part('${inputs.match.value}', '|||', 2)
    or match_name = split_part('${inputs.match.value}', '|||', 2) || ' - ' || split_part('${inputs.match.value}', '|||', 1)
@@ -132,7 +138,7 @@ select
 from superligaen.mart_match_facts
 where team_side = 'Home'
   and result in ('Win', 'Draw', 'Loss')
-  and season in ${inputs.h2h_season.value}
+  and ('${inputs.h2h_season.value}' = 'All' OR season = '${inputs.h2h_season.value}')
   and (
       (team_name = split_part('${inputs.match.value}', '|||', 1) and opponent_team_name = split_part('${inputs.match.value}', '|||', 2))
    or (team_name = split_part('${inputs.match.value}', '|||', 2) and opponent_team_name = split_part('${inputs.match.value}', '|||', 1))
@@ -186,7 +192,7 @@ limit 5
 
 ### Head-to-Head History
 
-<Dropdown data={h2h_seasons} name=h2h_season value=season label=season multiple=true selectAllByDefault=true order="season desc" />
+<Dropdown data={h2h_seasons} name=h2h_season value=season label=season defaultValue="All" />
 
 <div class="grid grid-cols-3 gap-4 mb-6">
   <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center">
