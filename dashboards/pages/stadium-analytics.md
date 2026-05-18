@@ -209,6 +209,51 @@ from (
 
 ---
 
+## Full Fortress Ranking
+
+*Home record at each stadium. A true fortress keeps opponents at bay.*
+
+<BarChart
+    data={fortress_ranking}
+    x=stadium_name
+    y=home_win_pct
+    title="Home Win Rate by Stadium — {inputs.season.value}"
+    yAxisTitle="Home Win %"
+    yFmt='0.0'
+    sort=true
+    swapXY=true
+    colorPalette={['#3b82f6']}
+/>
+
+<div class="hidden md:block mt-4">
+<DataTable data={fortress_ranking} rows=20>
+    <Column id=home_team_col            title="Home Team"               contentType=html />
+    <Column id=stadium_name             title="Stadium"                 wrap=true />
+    <Column id=stadium_capacity         title="Capacity"                align=center />
+    <Column id=home_win_pct             title="Win %"                   fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=home_wins                title="W"                       align=center />
+    <Column id=home_draws               title="D"                       align=center />
+    <Column id=home_losses              title="L"                       align=center />
+    <Column id=goals_scored_per_match   title="Goals Scored/Match"      />
+    <Column id=goals_conceded_per_match title="Goals Conceded/Match"    />
+</DataTable>
+</div>
+<div class="block md:hidden mt-4">
+<DataTable data={fortress_ranking} rows=20>
+    <Column id=home_team_col_mobile     title="Home Team"               contentType=html width="max-content" />
+    <Column id=stadium_name             title="Stadium"                 wrap=true />
+    <Column id=stadium_capacity         title="Capacity"                align=center />
+    <Column id=home_win_pct             title="Win %"                   fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=home_wins                title="W"                       align=center />
+    <Column id=home_draws               title="D"                       align=center />
+    <Column id=home_losses              title="L"                       align=center />
+    <Column id=goals_scored_per_match   title="Goals Scored/Match"      />
+    <Column id=goals_conceded_per_match title="Goals Conceded/Match"    />
+</DataTable>
+</div>
+
+---
+
 ## Surface Analysis: Grass vs Artificial Turf
 
 *How does the playing surface shape the way football is played?*
@@ -262,49 +307,3 @@ from (
     <Column id=fouls_per_match  title="Fouls/Match"       contentType=colorscale colorPalette={['white','#f97316']} />
     <Column id=goals_per_match  title="Goals/Match"      fmt='0.00'   contentType=colorscale colorPalette={['white','#f59e0b']} />
 </DataTable>
-
----
-
-## Full Fortress Ranking
-
-*Home record at each stadium. A true fortress keeps opponents at bay.*
-
-<BarChart
-    data={fortress_ranking}
-    x=stadium_name
-    y=home_win_pct
-    title="Home Win Rate by Stadium — {inputs.season.value}"
-    yAxisTitle="Home Win %"
-    yFmt='0.0'
-    sort=true
-    swapXY=true
-    colorPalette={['#3b82f6']}
-/>
-
-<div class="hidden md:block mt-4">
-<DataTable data={fortress_ranking} rows=20>
-    <Column id=home_team_col            title="Home Team"               contentType=html />
-    <Column id=stadium_name             title="Stadium"                 wrap=true />
-    <Column id=stadium_capacity         title="Capacity"                align=center />
-    <Column id=home_win_pct             title="Win %"                   fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=home_wins                title="W"                       align=center />
-    <Column id=home_draws               title="D"                       align=center />
-    <Column id=home_losses              title="L"                       align=center />
-    <Column id=goals_scored_per_match   title="Goals Scored/Match"      />
-    <Column id=goals_conceded_per_match title="Goals Conceded/Match"    />
-</DataTable>
-</div>
-<div class="block md:hidden mt-4">
-<DataTable data={fortress_ranking} rows=20>
-    <Column id=home_team_col_mobile     title="Home Team"               contentType=html width="max-content" />
-    <Column id=stadium_name             title="Stadium"                 wrap=true />
-    <Column id=stadium_capacity         title="Capacity"                align=center />
-    <Column id=home_win_pct             title="Win %"                   fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=home_wins                title="W"                       align=center />
-    <Column id=home_draws               title="D"                       align=center />
-    <Column id=home_losses              title="L"                       align=center />
-    <Column id=goals_scored_per_match   title="Goals Scored/Match"      />
-    <Column id=goals_conceded_per_match title="Goals Conceded/Match"    />
-</DataTable>
-</div>
-
