@@ -620,7 +620,7 @@ select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inpu
     xMax={team_landscape_bounds[0].x_max}
     yMin={team_landscape_bounds[0].y_min}
     yMax={team_landscape_bounds[0].y_max}
-    echartsOptions={{series: team_landscape.map((row, i) => ({name: row.team_name, itemStyle: {color: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db'}}))}}
+    echartsOptions={{series: team_landscape.map((row, i) => ({name: row.team_name, symbolSize: 16, itemStyle: {color: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db', borderWidth: 2, borderColor: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db'}}))}}
 />
 <div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:2px;">
   {#each team_landscape as row, i}
