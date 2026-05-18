@@ -418,7 +418,7 @@ select * from ranked where player_name = '${inputs.player.value}'
 
   </div>
 
-  <TeamRadar data={league_context} metrics={playerMetrics} />
+  <TeamRadar data={league_context} metrics={playerMetrics} title="League Context" />
 
 </div>
 {/each}
