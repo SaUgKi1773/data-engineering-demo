@@ -236,28 +236,19 @@ where season = '${inputs.season.value}'
 group by team_name
 ```
 
-```sql attack_rankings
-select team_name, goals_for, shot_conversion_pct, on_target_conversion_pct
-from ${team_season_stats}
-order by goals_for desc
-```
-
-```sql defence_rankings
-select team_name, goals_against, clean_sheets, avg_saves, avg_goals_conceded
-from ${team_season_stats}
-order by clean_sheets desc
-```
-
-```sql possession_rankings
-select team_name, avg_possession, avg_pass_accuracy, avg_corners
-from ${team_season_stats}
-order by avg_possession desc
-```
-
-```sql discipline_rankings
-select team_name, yellow_cards, red_cards, avg_fouls, aggression_index
-from ${team_season_stats}
-order by aggression_index desc
+```sql team_domain_stats
+select
+    team_name,
+    round(sum(goals_scored)::double        / count(distinct match_id), 2)                          as goals_pm,
+    round(sum(big_chances_created)::double / count(distinct match_id), 2)                          as big_chances_pm,
+    sum(passes_accurate)::double           / nullif(sum(total_passes), 0)                          as pass_acc_pct,
+    round(sum(goals_conceded)::double      / count(distinct match_id), 2)                          as conceded_pm,
+    sum(duels_won)::double                 / nullif(sum(duels_total), 0)                           as duel_win_pct,
+    sum(case when result = 'Win' then 1 else 0 end)::double / count(distinct match_id)             as win_pct
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by team_name
 ```
 
 ```sql radar_data
@@ -707,29 +698,27 @@ order by team_name
 
 ---
 
-## Team Rankings
-
-### Attack — Who's Scoring?
+## Team Rankings by Domain
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
-    data={attack_rankings}
+    data={team_domain_stats}
     x=team_name
-    y=goals_for
-    title="Goals Scored"
-    yAxisTitle="Goals"
+    y=goals_pm
+    title="Attacking — Goals per Match"
+    yAxisTitle="Goals / Match"
     colorPalette={['#22c55e']}
     swapXY=true
     sort=true
 />
 
 <BarChart
-    data={attack_rankings}
+    data={team_domain_stats}
     x=team_name
-    y=shot_conversion_pct
-    title="Shot Conversion %"
-    yAxisTitle="Conversion %"
+    y=big_chances_pm
+    title="Creativity — Big Chances Created per Match"
+    yAxisTitle="Big Chances / Match"
     colorPalette={['#f59e0b']}
     swapXY=true
     sort=true
@@ -737,103 +726,57 @@ order by team_name
 
 </div>
 
----
-
-### Defence — Who's Keeping Clean Sheets?
-
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
-    data={defence_rankings}
+    data={team_domain_stats}
     x=team_name
-    y=clean_sheets
-    title="Clean Sheets"
-    yAxisTitle="Clean Sheets"
+    y=pass_acc_pct
+    title="Possession & Control — Pass Accuracy %"
+    yAxisTitle="Pass Accuracy %"
+    colorPalette={['#8b5cf6']}
+    swapXY=true
+    sort=true
+    fmt='0.0%'
+/>
+
+<BarChart
+    data={team_domain_stats}
+    x=team_name
+    y=conceded_pm
+    title="Defending — Goals Conceded per Match"
+    yAxisTitle="Goals Conceded / Match"
     colorPalette={['#14b8a6']}
     swapXY=true
     sort=true
 />
 
-<BarChart
-    data={defence_rankings}
-    x=team_name
-    y=goals_against
-    title="Goals Conceded"
-    yAxisTitle="Goals Conceded"
-    colorPalette={['#ef4444']}
-    swapXY=true
-    sort=true
-/>
-
 </div>
-
----
-
-### Possession & Passing
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
-    data={possession_rankings}
+    data={team_domain_stats}
     x=team_name
-    y=avg_possession
-    title="Average Possession %"
-    yAxisTitle="Possession %"
-    colorPalette={['#8b5cf6']}
-    swapXY=true
-    sort=true
-/>
-
-<BarChart
-    data={possession_rankings}
-    x=team_name
-    y=avg_pass_accuracy
-    title="Average Pass Accuracy %"
-    yAxisTitle="Pass Accuracy %"
-    colorPalette={['#0ea5e9']}
-    swapXY=true
-    sort=true
-/>
-
-</div>
-
----
-
-### Discipline
-
-<BarChart
-    data={discipline_rankings}
-    x=team_name
-    y=aggression_index
-    title="Aggression Index — Fouls + Cards Weighted"
-    yAxisTitle="Aggression Index"
+    y=duel_win_pct
+    title="Physicality — Duel Win %"
+    yAxisTitle="Duel Win %"
     colorPalette={['#f97316']}
     swapXY=true
     sort=true
-/>
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 mb-6">
-
-<BarChart
-    data={discipline_rankings}
-    x=team_name
-    y=yellow_cards
-    title="Yellow Cards"
-    yAxisTitle="Yellow Cards"
-    colorPalette={['#eab308']}
-    swapXY=true
-    sort=true
+    fmt='0.0%'
 />
 
 <BarChart
-    data={discipline_rankings}
+    data={team_domain_stats}
     x=team_name
-    y=red_cards
-    title="Red Cards"
-    yAxisTitle="Red Cards"
-    colorPalette={['#dc2626']}
+    y=win_pct
+    title="Winning — Win Rate %"
+    yAxisTitle="Win Rate %"
+    colorPalette={['#3b82f6']}
     swapXY=true
     sort=true
+    fmt='0.0%'
 />
 
 </div>
