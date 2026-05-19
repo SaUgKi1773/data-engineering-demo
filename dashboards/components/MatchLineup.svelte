@@ -86,6 +86,8 @@
     { key: 'big_chances_created', label: 'Big Chances'       },
     { key: 'big_chances_missed',  label: 'Big Chances Missed'},
     { key: 'dribbles_completed',  label: 'Dribbles'          },
+    { key: 'crosses_total',       label: 'Crosses'           },
+    { key: 'pass_accuracy',       label: 'Pass Accuracy %'   },
     // Defending
     { key: 'tackles',             label: 'Tackles'           },
     { key: 'interceptions',       label: 'Interceptions'     },
