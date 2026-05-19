@@ -53,7 +53,7 @@
   $: homePlayers    = computeLayout(lineup.filter(p => p.team_side === 'Home'), 'home');
   $: awayPlayers    = computeLayout(lineup.filter(p => p.team_side === 'Away'), 'away');
   $: allPlayers     = [...homePlayers, ...awayPlayers];
-  $: mvp = allPlayers.reduce((best, p) => (p.rating ?? 0) > (best?.rating ?? 0) ? p : best, null);
+  $: mvp = [...allPlayers, ...homeSubs, ...awaySubs].reduce((best, p) => (p.rating ?? 0) > (best?.rating ?? 0) ? p : best, null);
   $: homeSubs       = subs.filter(p => p.team_side === 'Home');
   $: awaySubs       = subs.filter(p => p.team_side === 'Away');
   $: homeRow        = lineup.find(p => p.team_side === 'Home');
@@ -245,8 +245,8 @@
       />
     {/each}
 
-    <!-- MVP star -->
-    {#if mvp?.rating}
+    <!-- MVP star (field players only) -->
+    {#if mvp?.rating && mvp?.cx}
       <text x={mvp.cx + 14} y={mvp.cy - 11} text-anchor="middle" font-size="14" fill="#fbbf24"
         paint-order="stroke" stroke="rgba(0,0,0,0.7)" stroke-width="2.5">★</text>
     {/if}
@@ -301,12 +301,17 @@
   <div>
     <div style="font-weight:700;color:#374151;margin-bottom:6px;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">🔄 {home_team} Subs</div>
     {#each homeSubs as p}
-      <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;">
+      <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;cursor:pointer;"
+        on:click={() => toggle(p)}
+        on:keydown={e => e.key === 'Enter' && toggle(p)}
+        role="button" tabindex="0" aria-label={p.player_name}>
         <img src={p.player_photo} alt={p.player_name}
           style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;"
           onerror="this.style.display='none'" />
         <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0;">{p.position_short_code ?? '—'}</span>
         <span style="color:#374151;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{p.player_name}</span>
+        {#if emojiRow(p)}<span style="flex-shrink:0;font-size:11px;">{emojiRow(p)}</span>{/if}
+        {#if mvp?.player_name === p.player_name && mvp?.team_side === p.team_side}<span style="color:#fbbf24;flex-shrink:0;">★</span>{/if}
         {#if p.rating}<span style="font-weight:700;color:{ratingColor(p.rating)};flex-shrink:0;">{p.rating}</span>{/if}
       </div>
     {/each}
@@ -314,12 +319,17 @@
   <div>
     <div style="font-weight:700;color:#374151;margin-bottom:6px;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">🔄 {away_team} Subs</div>
     {#each awaySubs as p}
-      <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;">
+      <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;cursor:pointer;"
+        on:click={() => toggle(p)}
+        on:keydown={e => e.key === 'Enter' && toggle(p)}
+        role="button" tabindex="0" aria-label={p.player_name}>
         <img src={p.player_photo} alt={p.player_name}
           style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;"
           onerror="this.style.display='none'" />
         <span style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0;">{p.position_short_code ?? '—'}</span>
         <span style="color:#374151;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{p.player_name}</span>
+        {#if emojiRow(p)}<span style="flex-shrink:0;font-size:11px;">{emojiRow(p)}</span>{/if}
+        {#if mvp?.player_name === p.player_name && mvp?.team_side === p.team_side}<span style="color:#fbbf24;flex-shrink:0;">★</span>{/if}
         {#if p.rating}<span style="font-weight:700;color:{ratingColor(p.rating)};flex-shrink:0;">{p.rating}</span>{/if}
       </div>
     {/each}

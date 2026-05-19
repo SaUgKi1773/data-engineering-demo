@@ -380,6 +380,23 @@ select
     position_name,
     position_short_code,
     formation,
+    minutes_played,
+    goals_scored,
+    assists,
+    shots_total,
+    shots_on_target,
+    key_passes,
+    big_chances_created,
+    dribbles_completed,
+    tackles,
+    interceptions,
+    clearances,
+    aerials_won,
+    blocks,
+    fouls_committed,
+    saves,
+    yellow_cards,
+    red_cards,
     round(rating, 2) as rating
 from superligaen.mart_player_facts
 where match_name                 = split_part('${inputs.match.value}', '|', 1)
