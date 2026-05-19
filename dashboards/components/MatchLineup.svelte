@@ -69,23 +69,31 @@
   }
 
   const statDefs = [
-    { key: 'goals_scored',        label: 'Goals'           },
-    { key: 'assists',             label: 'Assists'         },
-    { key: 'shots_total',         label: 'Shots'           },
-    { key: 'shots_on_target',     label: 'Shots on Target' },
-    { key: 'key_passes',          label: 'Key Passes'      },
-    { key: 'big_chances_created', label: 'Big Chances'     },
-    { key: 'dribbles_completed',  label: 'Dribbles'        },
-    { key: 'tackles',             label: 'Tackles'         },
-    { key: 'interceptions',       label: 'Interceptions'   },
-    { key: 'clearances',          label: 'Clearances'      },
-    { key: 'aerials_won',         label: 'Aerials Won'     },
-    { key: 'blocks',              label: 'Blocks'          },
-    { key: 'fouls_committed',     label: 'Fouls'           },
-    { key: 'saves',               label: 'Saves'           },
-    { key: 'yellow_cards',        label: 'Yellow Cards'    },
-    { key: 'red_cards',           label: 'Red Cards'       },
-    { key: 'minutes_played',      label: 'Minutes'         },
+    // Context
+    { key: 'minutes_played',      label: 'Minutes'           },
+    // Attacking
+    { key: 'goals_scored',        label: 'Goals'             },
+    { key: 'assists',             label: 'Assists'           },
+    { key: 'shots_total',         label: 'Shots'             },
+    { key: 'shots_on_target',     label: 'Shots on Target'   },
+    { key: 'woodwork_hits',       label: 'Woodwork Hits'     },
+    // Creativity
+    { key: 'key_passes',          label: 'Key Passes'        },
+    { key: 'big_chances_created', label: 'Big Chances'       },
+    { key: 'big_chances_missed',  label: 'Big Chances Missed'},
+    { key: 'dribbles_completed',  label: 'Dribbles'          },
+    // Defending
+    { key: 'tackles',             label: 'Tackles'           },
+    { key: 'interceptions',       label: 'Interceptions'     },
+    { key: 'clearances',          label: 'Clearances'        },
+    { key: 'aerials_won',         label: 'Aerials Won'       },
+    { key: 'blocks',              label: 'Blocks'            },
+    { key: 'saves',               label: 'Saves'             },
+    // Discipline
+    { key: 'fouls_committed',     label: 'Fouls'             },
+    { key: 'fouls_drawn',         label: 'Fouls Drawn'       },
+    { key: 'yellow_cards',        label: 'Yellow Cards'      },
+    { key: 'red_cards',           label: 'Red Cards'         },
   ];
   function visibleStats(p) { return statDefs.filter(s => p[s.key] > 0); }
 

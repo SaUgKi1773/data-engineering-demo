@@ -126,39 +126,45 @@ order by match_date desc
 
 ```sql mc
 select
-    max(case when team_side = 'Home' then team_name end)                         as home_team,
-    max(case when team_side = 'Away' then team_name end)                         as away_team,
-    max(case when team_side = 'Home' then team_short_name end)                   as home_team_short,
-    max(case when team_side = 'Away' then team_short_name end)                   as away_team_short,
-    max(score)                                                                   as score,
-    max(case when team_side = 'Home' then goals_scored end)                      as home_goals,
-    max(case when team_side = 'Away' then goals_scored end)                      as away_goals,
-    max(case when team_side = 'Home' then shots_on_goal end)                     as home_sog,
-    max(case when team_side = 'Away' then shots_on_goal end)                     as away_sog,
-    max(case when team_side = 'Home' then possession_pct end)                    as home_possession,
-    max(case when team_side = 'Away' then possession_pct end)                    as away_possession,
+    max(case when team_side = 'Home' then team_name end)                                        as home_team,
+    max(case when team_side = 'Away' then team_name end)                                        as away_team,
+    max(case when team_side = 'Home' then team_short_name end)                                  as home_team_short,
+    max(case when team_side = 'Away' then team_short_name end)                                  as away_team_short,
+    max(score)                                                                                  as score,
+    max(case when team_side = 'Home' then goals_scored end)                                     as home_goals,
+    max(case when team_side = 'Away' then goals_scored end)                                     as away_goals,
+    max(case when team_side = 'Home' then total_shots end)                                      as home_total_shots,
+    max(case when team_side = 'Away' then total_shots end)                                      as away_total_shots,
+    max(case when team_side = 'Home' then shots_on_goal end)                                    as home_sog,
+    max(case when team_side = 'Away' then shots_on_goal end)                                    as away_sog,
+    max(case when team_side = 'Home' then big_chances_created end)                              as home_big_chances,
+    max(case when team_side = 'Away' then big_chances_created end)                              as away_big_chances,
+    max(case when team_side = 'Home' then woodwork_hits end)                                    as home_woodwork,
+    max(case when team_side = 'Away' then woodwork_hits end)                                    as away_woodwork,
+    max(case when team_side = 'Home' then possession_pct end)                                   as home_possession,
+    max(case when team_side = 'Away' then possession_pct end)                                   as away_possession,
     round(max(case when team_side = 'Home' then passes_accurate end)::double / nullif(max(case when team_side = 'Home' then total_passes end), 0) * 100, 1) as home_pass_accuracy,
     round(max(case when team_side = 'Away' then passes_accurate end)::double / nullif(max(case when team_side = 'Away' then total_passes end), 0) * 100, 1) as away_pass_accuracy,
-    max(case when team_side = 'Home' then corner_kicks end)                      as home_corners,
-    max(case when team_side = 'Away' then corner_kicks end)                      as away_corners,
-    max(case when team_side = 'Home' then fouls end)                             as home_fouls,
-    max(case when team_side = 'Away' then fouls end)                             as away_fouls,
-    max(case when team_side = 'Home' then offsides end)                          as home_offsides,
-    max(case when team_side = 'Away' then offsides end)                          as away_offsides,
-    max(case when team_side = 'Home' then yellow_cards end)                      as home_yc,
-    max(case when team_side = 'Away' then yellow_cards end)                      as away_yc,
-    max(case when team_side = 'Home' then red_cards end)                         as home_rc,
-    max(case when team_side = 'Away' then red_cards end)                         as away_rc,
-    max(case when team_side = 'Home' then saves end)                             as home_saves,
-    max(case when team_side = 'Away' then saves end)                             as away_saves,
-    max(case when team_side = 'Home' then total_shots end)                       as home_total_shots,
-    max(case when team_side = 'Away' then total_shots end)                       as away_total_shots,
-    max(case when team_side = 'Home' then big_chances_created end)               as home_big_chances,
-    max(case when team_side = 'Away' then big_chances_created end)               as away_big_chances,
-    max(case when team_side = 'Home' then tackles end)                           as home_tackles,
-    max(case when team_side = 'Away' then tackles end)                           as away_tackles,
-    max(case when team_side = 'Home' then woodwork_hits end)                     as home_woodwork,
-    max(case when team_side = 'Away' then woodwork_hits end)                     as away_woodwork
+    max(case when team_side = 'Home' then key_passes end)                                       as home_key_passes,
+    max(case when team_side = 'Away' then key_passes end)                                       as away_key_passes,
+    max(case when team_side = 'Home' then crosses_total end)                                    as home_crosses,
+    max(case when team_side = 'Away' then crosses_total end)                                    as away_crosses,
+    max(case when team_side = 'Home' then corner_kicks end)                                     as home_corners,
+    max(case when team_side = 'Away' then corner_kicks end)                                     as away_corners,
+    max(case when team_side = 'Home' then tackles end)                                          as home_tackles,
+    max(case when team_side = 'Away' then tackles end)                                          as away_tackles,
+    max(case when team_side = 'Home' then interceptions end)                                    as home_interceptions,
+    max(case when team_side = 'Away' then interceptions end)                                    as away_interceptions,
+    max(case when team_side = 'Home' then clearances end)                                       as home_clearances,
+    max(case when team_side = 'Away' then clearances end)                                       as away_clearances,
+    max(case when team_side = 'Home' then saves end)                                            as home_saves,
+    max(case when team_side = 'Away' then saves end)                                            as away_saves,
+    max(case when team_side = 'Home' then fouls end)                                            as home_fouls,
+    max(case when team_side = 'Away' then fouls end)                                            as away_fouls,
+    max(case when team_side = 'Home' then yellow_cards end)                                     as home_yc,
+    max(case when team_side = 'Away' then yellow_cards end)                                     as away_yc,
+    max(case when team_side = 'Home' then red_cards end)                                        as home_rc,
+    max(case when team_side = 'Away' then red_cards end)                                        as away_rc
 from superligaen.mart_match_facts
 where match_name            = split_part('${inputs.match.value}', '|', 1)
   and cast(match_date as varchar) = split_part('${inputs.match.value}', '|', 2)
@@ -219,6 +225,17 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
 
   <div class="py-2 border-b border-gray-100">
     <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_woodwork}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Woodwork Hits</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_woodwork}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_woodwork ?? 0) + (mc[0]?.away_woodwork ?? 0) > 0 ? (mc[0]?.home_woodwork ?? 0) / ((mc[0]?.home_woodwork ?? 0) + (mc[0]?.away_woodwork ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2 border-b border-gray-100">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
       <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_possession}%</div>
       <div class="text-gray-400 text-xs uppercase tracking-wide">Possession</div>
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_possession}%</div>
@@ -241,56 +258,34 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
 
   <div class="py-2 border-b border-gray-100">
     <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_key_passes}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Key Passes</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_key_passes}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_key_passes ?? 0) + (mc[0]?.away_key_passes ?? 0) > 0 ? (mc[0]?.home_key_passes ?? 0) / ((mc[0]?.home_key_passes ?? 0) + (mc[0]?.away_key_passes ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2 border-b border-gray-100">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_crosses}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Crosses</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_crosses}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_crosses ?? 0) + (mc[0]?.away_crosses ?? 0) > 0 ? (mc[0]?.home_crosses ?? 0) / ((mc[0]?.home_crosses ?? 0) + (mc[0]?.away_crosses ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2 border-b border-gray-100">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
       <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_corners}</div>
       <div class="text-gray-400 text-xs uppercase tracking-wide">Corners</div>
       <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_corners}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
       <div class="bg-blue-500" style="width:{(mc[0]?.home_corners ?? 0) + (mc[0]?.away_corners ?? 0) > 0 ? (mc[0]?.home_corners ?? 0) / ((mc[0]?.home_corners ?? 0) + (mc[0]?.away_corners ?? 0)) * 100 : 50}%"></div>
-    </div>
-  </div>
-
-  <div class="py-2 border-b border-gray-100">
-    <div class="grid grid-cols-3 items-center text-center mb-1.5">
-      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_yc}</div>
-      <div class="text-gray-400 text-xs uppercase tracking-wide">Yellow Cards</div>
-      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_yc}</div>
-    </div>
-    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_yc ?? 0) + (mc[0]?.away_yc ?? 0) > 0 ? (mc[0]?.home_yc ?? 0) / ((mc[0]?.home_yc ?? 0) + (mc[0]?.away_yc ?? 0)) * 100 : 50}%"></div>
-    </div>
-  </div>
-
-  <div class="py-2 border-b border-gray-100">
-    <div class="grid grid-cols-3 items-center text-center mb-1.5">
-      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_rc}</div>
-      <div class="text-gray-400 text-xs uppercase tracking-wide">Red Cards</div>
-      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_rc}</div>
-    </div>
-    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_rc ?? 0) + (mc[0]?.away_rc ?? 0) > 0 ? (mc[0]?.home_rc ?? 0) / ((mc[0]?.home_rc ?? 0) + (mc[0]?.away_rc ?? 0)) * 100 : 50}%"></div>
-    </div>
-  </div>
-
-  <div class="py-2 border-b border-gray-100">
-    <div class="grid grid-cols-3 items-center text-center mb-1.5">
-      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_fouls}</div>
-      <div class="text-gray-400 text-xs uppercase tracking-wide">Fouls</div>
-      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_fouls}</div>
-    </div>
-    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_fouls ?? 0) + (mc[0]?.away_fouls ?? 0) > 0 ? (mc[0]?.home_fouls ?? 0) / ((mc[0]?.home_fouls ?? 0) + (mc[0]?.away_fouls ?? 0)) * 100 : 50}%"></div>
-    </div>
-  </div>
-
-  <div class="py-2 border-b border-gray-100">
-    <div class="grid grid-cols-3 items-center text-center mb-1.5">
-      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_saves}</div>
-      <div class="text-gray-400 text-xs uppercase tracking-wide">Saves</div>
-      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_saves}</div>
-    </div>
-    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_saves ?? 0) + (mc[0]?.away_saves ?? 0) > 0 ? (mc[0]?.home_saves ?? 0) / ((mc[0]?.home_saves ?? 0) + (mc[0]?.away_saves ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -307,23 +302,67 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
 
   <div class="py-2 border-b border-gray-100">
     <div class="grid grid-cols-3 items-center text-center mb-1.5">
-      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_offsides}</div>
-      <div class="text-gray-400 text-xs uppercase tracking-wide">Offsides</div>
-      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_offsides}</div>
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_interceptions}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Interceptions</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_interceptions}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_offsides ?? 0) + (mc[0]?.away_offsides ?? 0) > 0 ? (mc[0]?.home_offsides ?? 0) / ((mc[0]?.home_offsides ?? 0) + (mc[0]?.away_offsides ?? 0)) * 100 : 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_interceptions ?? 0) + (mc[0]?.away_interceptions ?? 0) > 0 ? (mc[0]?.home_interceptions ?? 0) / ((mc[0]?.home_interceptions ?? 0) + (mc[0]?.away_interceptions ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2 border-b border-gray-100">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_clearances}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Clearances</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_clearances}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_clearances ?? 0) + (mc[0]?.away_clearances ?? 0) > 0 ? (mc[0]?.home_clearances ?? 0) / ((mc[0]?.home_clearances ?? 0) + (mc[0]?.away_clearances ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2 border-b border-gray-100">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_saves}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Saves</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_saves}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_saves ?? 0) + (mc[0]?.away_saves ?? 0) > 0 ? (mc[0]?.home_saves ?? 0) / ((mc[0]?.home_saves ?? 0) + (mc[0]?.away_saves ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2 border-b border-gray-100">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_fouls}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Fouls</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_fouls}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_fouls ?? 0) + (mc[0]?.away_fouls ?? 0) > 0 ? (mc[0]?.home_fouls ?? 0) / ((mc[0]?.home_fouls ?? 0) + (mc[0]?.away_fouls ?? 0)) * 100 : 50}%"></div>
+    </div>
+  </div>
+
+  <div class="py-2 border-b border-gray-100">
+    <div class="grid grid-cols-3 items-center text-center mb-1.5">
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_yc}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Yellow Cards</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_yc}</div>
+    </div>
+    <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_yc ?? 0) + (mc[0]?.away_yc ?? 0) > 0 ? (mc[0]?.home_yc ?? 0) / ((mc[0]?.home_yc ?? 0) + (mc[0]?.away_yc ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
   <div class="py-2">
     <div class="grid grid-cols-3 items-center text-center mb-1.5">
-      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_woodwork}</div>
-      <div class="text-gray-400 text-xs uppercase tracking-wide">Woodwork Hits</div>
-      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_woodwork}</div>
+      <div class="font-semibold text-lg text-blue-600">{mc[0]?.home_rc}</div>
+      <div class="text-gray-400 text-xs uppercase tracking-wide">Red Cards</div>
+      <div class="font-semibold text-lg text-orange-500">{mc[0]?.away_rc}</div>
     </div>
     <div class="flex h-1 rounded-full overflow-hidden bg-orange-400">
-      <div class="bg-blue-500" style="width:{(mc[0]?.home_woodwork ?? 0) + (mc[0]?.away_woodwork ?? 0) > 0 ? (mc[0]?.home_woodwork ?? 0) / ((mc[0]?.home_woodwork ?? 0) + (mc[0]?.away_woodwork ?? 0)) * 100 : 50}%"></div>
+      <div class="bg-blue-500" style="width:{(mc[0]?.home_rc ?? 0) + (mc[0]?.away_rc ?? 0) > 0 ? (mc[0]?.home_rc ?? 0) / ((mc[0]?.home_rc ?? 0) + (mc[0]?.away_rc ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
 
@@ -349,8 +388,10 @@ select
     assists,
     shots_total,
     shots_on_target,
+    woodwork_hits,
     key_passes,
     big_chances_created,
+    big_chances_missed,
     dribbles_completed,
     tackles,
     interceptions,
@@ -358,6 +399,7 @@ select
     aerials_won,
     blocks,
     fouls_committed,
+    fouls_drawn,
     saves,
     yellow_cards,
     red_cards,
@@ -385,8 +427,10 @@ select
     assists,
     shots_total,
     shots_on_target,
+    woodwork_hits,
     key_passes,
     big_chances_created,
+    big_chances_missed,
     dribbles_completed,
     tackles,
     interceptions,
@@ -394,6 +438,7 @@ select
     aerials_won,
     blocks,
     fouls_committed,
+    fouls_drawn,
     saves,
     yellow_cards,
     red_cards,
