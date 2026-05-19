@@ -120,6 +120,12 @@ end
 select
     player_name,
     player_photo,
+    player_nationality,
+    player_detailed_position,
+    max(player_birth_date)                                                                 as birth_date,
+    date_diff('year', max(player_birth_date)::date, current_date)                         as age,
+    max(player_height)                                                                     as height,
+    max(player_weight)                                                                     as weight,
     team_name,
     team_logo,
     player_position,
@@ -140,6 +146,7 @@ select
     sum(passes_accurate)::int                                                             as passes_accurate,
     sum(passes_total)::int                                                                as passes_total,
     sum(yellow_cards)::int                                                                as yellow_cards,
+    sum(case when appearance_type = 'Starter' then 1 else 0 end)::int                    as starts,
     round(avg(rating), 2)                                                                 as avg_rating,
     round(sum(goals_scored)  * 90.0 / nullif(sum(minutes_played), 0), 2)                 as goals_per90,
     round(sum(assists)       * 90.0 / nullif(sum(minutes_played), 0), 2)                 as assists_per90,
@@ -155,7 +162,7 @@ from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
   and result in ('Win', 'Draw', 'Loss')
-group by player_name, player_photo, team_name, team_logo, player_position
+group by player_name, player_photo, player_nationality, player_detailed_position, team_name, team_logo, player_position
 ```
 
 ```sql player_trend
@@ -318,33 +325,14 @@ select * from ranked where player_name = '${inputs.player.value}'
         <span class="text-gray-500 text-sm">·</span>
         <span class="text-gray-400 text-sm">{p.player_position}</span>
       </div>
-      <div class="flex flex-wrap justify-center md:justify-start gap-6 mt-6">
-        <div class="text-center">
-          <div class="text-3xl font-black text-amber-400">{p.goals}</div>
-          <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Goals</div>
-        </div>
-        <div class="text-center">
-          <div class="text-3xl font-black text-blue-400">{p.assists}</div>
-          <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Assists</div>
-        </div>
-        <div class="text-center">
-          <div class="text-3xl font-black text-purple-400">{p.avg_rating ?? '—'}</div>
-          <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Avg Rating</div>
-        </div>
-        <div class="text-center">
-          <div class="text-3xl font-black text-white">{p.matches}</div>
-          <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Apps</div>
-        </div>
-        <div class="text-center">
-          <div class="text-3xl font-black text-green-400">{p.goals_per90}</div>
-          <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">G/90</div>
-        </div>
-        <div class="text-center">
-          <div class="text-3xl font-black text-teal-400">{p.contributions_per90}</div>
-          <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">G+A/90</div>
-        </div>
+      <div class="text-sm text-gray-400 mt-3">
+        {p.player_nationality ?? '—'} · {p.age != null ? p.age + ' yrs' : '—'} · {p.height ? p.height + ' cm' : '—'} · {p.weight ? p.weight + ' kg' : '—'}
       </div>
-      <div class="flex justify-center md:justify-start gap-3 mt-5">
+      <div class="text-xs text-gray-500 mt-1">{p.player_detailed_position ?? p.player_position}</div>
+      <div class="flex flex-wrap justify-center md:justify-start gap-3 mt-5">
+        {#if p.avg_rating != null}
+        <span class="px-3 py-1 rounded-full bg-white/10 text-white text-sm font-bold">★ {p.avg_rating}</span>
+        {/if}
         <span class="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-sm font-bold">{p.wins}W</span>
         <span class="px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-sm font-bold">{p.draws}D</span>
         <span class="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm font-bold">{p.losses}L</span>
@@ -405,9 +393,9 @@ select * from ranked where player_name = '${inputs.player.value}'
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Avg Rating</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.avg_rating ?? '—'}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.matches} appearances</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Appearances</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.matches}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.starts} starts</div>
   </div>
 
 </div>
