@@ -8,12 +8,12 @@ title: Player Intelligence
   import TeamRadar from '../../components/TeamRadar.svelte';
 
   const playerMetrics = [
-    { key: 'goals_per90_pct',   label: 'Attack Score'     },
-    { key: 'assists_per90_pct', label: 'Creativity Score' },
-    { key: 'pass_pct',          label: 'Passing Score'    },
-    { key: 'shot_conv_pct',     label: 'Efficiency Score' },
-    { key: 'rating_pct',        label: 'Overall Score'    },
-    { key: 'defense_pct',       label: 'Defensive Score'  },
+    { key: 'attacking_pct',   label: 'Attacking'   },
+    { key: 'creativity_pct',  label: 'Creativity'  },
+    { key: 'possession_pct',  label: 'Possession'  },
+    { key: 'defending_pct',   label: 'Defending'   },
+    { key: 'physicality_pct', label: 'Physicality' },
+    { key: 'impact_pct',      label: 'Impact'      },
   ];
 </script>
 
@@ -67,15 +67,15 @@ with base as (
         player_name,
         player_photo,
         player_position,
-        max(team_name)                                  as team_name,
-        max(team_logo)                                  as team_logo,
-        count(distinct match_id)                        as matches,
-        sum(goals_scored)                               as goals,
-        sum(assists)                                    as assists,
-        sum(dribbles_completed)                         as dribbles,
-        sum(tackles) + sum(interceptions)               as defensive_actions,
-        sum(crosses_total)                              as crosses,
-        sum(passes_accurate)                            as passes
+        max(team_name)                                              as team_name,
+        max(team_logo)                                             as team_logo,
+        count(distinct match_id)                                   as matches,
+        sum(goals_scored)                                          as goals,
+        sum(assists)                                               as assists,
+        sum(dribbles_completed)                                    as dribbles,
+        sum(tackles_won) + sum(interceptions) + sum(balls_recovered) as defensive_actions,
+        sum(key_passes) + sum(big_chances_created)                 as chances_created,
+        round(avg(rating), 2)                                      as avg_rating
     from superligaen.mart_player_facts
     where season = '${inputs.season.value}'
       and ('All' in ${inputs.team.value} OR team_name in ${inputs.team.value})
@@ -85,26 +85,26 @@ with base as (
 )
 select category, player_name, player_photo, player_position, team_name, team_logo, stat_value, stat_label
 from (
-    select 'Top Scorer'   as category, player_name, player_photo, player_position, team_name, team_logo, goals::int             as stat_value, 'Goals'        as stat_label, row_number() over (order by goals             desc) as rn from base
+    select 'Top Scorer'   as category, player_name, player_photo, player_position, team_name, team_logo, goals::int               as stat_value, 'Goals'          as stat_label, row_number() over (order by goals             desc) as rn from base
     union all
-    select 'Top Assister',              player_name, player_photo, player_position, team_name, team_logo, assists::int,              'Assists',      row_number() over (order by assists           desc) from base
+    select 'Top Assister',              player_name, player_photo, player_position, team_name, team_logo, assists::int,                'Assists',        row_number() over (order by assists           desc) from base
     union all
-    select 'Top Dribbler',              player_name, player_photo, player_position, team_name, team_logo, dribbles::int,             'Dribbles',     row_number() over (order by dribbles          desc) from base
+    select 'Top Creator',               player_name, player_photo, player_position, team_name, team_logo, chances_created::int,        'KP+BC Created',  row_number() over (order by chances_created   desc) from base
     union all
-    select 'Top Defender',              player_name, player_photo, player_position, team_name, team_logo, defensive_actions::int,    'Tkl+Int',      row_number() over (order by defensive_actions desc) from base
+    select 'Top Defender',              player_name, player_photo, player_position, team_name, team_logo, defensive_actions::int,      'Tkl+Int+Rec',    row_number() over (order by defensive_actions desc) from base
     union all
-    select 'Top Crosser',               player_name, player_photo, player_position, team_name, team_logo, crosses::int,              'Crosses',      row_number() over (order by crosses           desc) from base
+    select 'Top Dribbler',              player_name, player_photo, player_position, team_name, team_logo, dribbles::int,               'Dribbles',       row_number() over (order by dribbles          desc) from base
     union all
-    select 'Top Passer',                player_name, player_photo, player_position, team_name, team_logo, passes::int,               'Acc. Passes',  row_number() over (order by passes            desc) from base
+    select 'Top Rated',                 player_name, player_photo, player_position, team_name, team_logo, avg_rating::double,          'Avg Rating',     row_number() over (order by avg_rating        desc) from base where matches >= 5
 )
 where rn = 1
 order by case category
     when 'Top Scorer'   then 1
     when 'Top Assister' then 2
-    when 'Top Dribbler' then 3
+    when 'Top Creator'  then 3
     when 'Top Defender' then 4
-    when 'Top Crosser'  then 5
-    when 'Top Passer'   then 6
+    when 'Top Dribbler' then 5
+    when 'Top Rated'    then 6
 end
 ```
 
@@ -192,14 +192,34 @@ order by match_date desc
 with base as (
     select
         player_name,
-        sum(goals_scored)                                                          as goals,
-        sum(assists)                                                               as assists,
-        avg(rating)                                                                as avg_rating,
-        sum(goals_scored) * 90.0 / nullif(sum(minutes_played), 0)                 as goals_per90,
-        sum(assists)      * 90.0 / nullif(sum(minutes_played), 0)                 as assists_per90,
-        100.0 * sum(passes_accurate) / nullif(sum(passes_total),  0)              as pass_accuracy,
-        100.0 * sum(goals_scored)    / nullif(sum(shots_total),   0)              as shot_conversion,
-        sum(tackles)      * 90.0 / nullif(sum(minutes_played), 0)                 as tackles_per90
+        -- Attacking
+        sum(goals_scored)         * 90.0 / nullif(sum(minutes_played), 0)                           as goals_per90,
+        sum(shots_on_target)      * 90.0 / nullif(sum(minutes_played), 0)                           as sot_per90,
+        100.0 * sum(goals_scored)          / nullif(sum(shots_total), 0)                            as shot_acc_pct,
+        sum(woodwork_hits)        * 90.0 / nullif(sum(minutes_played), 0)                           as woodwork_per90,
+        -- Creativity
+        sum(big_chances_created)  * 90.0 / nullif(sum(minutes_played), 0)                           as big_chances_per90,
+        sum(chances_created)      * 90.0 / nullif(sum(minutes_played), 0)                           as chances_per90,
+        sum(key_passes)           * 90.0 / nullif(sum(minutes_played), 0)                           as key_passes_per90,
+        100.0 * sum(big_chances_created)   / nullif(sum(chances_created), 0)                        as chance_quality_pct,
+        100.0 * sum(crosses_accurate)      / nullif(sum(crosses_total), 0)                          as cross_acc_pct,
+        sum(passes_final_third)   * 90.0 / nullif(sum(minutes_played), 0)                           as passes_final_third_per90,
+        -- Possession
+        100.0 * sum(passes_accurate)       / nullif(sum(passes_total), 0)                           as pass_acc_pct,
+        100.0 * sum(dribbles_completed)    / nullif(sum(dribbles_attempts), 0)                      as dribble_success_pct,
+        100.0 * sum(long_balls_won)        / nullif(sum(long_balls), 0)                             as long_ball_success_pct,
+        -- Defending
+        (sum(tackles) + sum(interceptions)) * 90.0 / nullif(sum(minutes_played), 0)                as tkl_int_per90,
+        100.0 * sum(tackles_won)           / nullif(sum(tackles), 0)                               as tackle_success_pct,
+        sum(balls_recovered)      * 90.0 / nullif(sum(minutes_played), 0)                           as balls_recovered_per90,
+        sum(times_dribbled_past)  * 90.0 / nullif(sum(minutes_played), 0)                           as times_dribbled_past_per90,
+        sum(errors_leading_to_goal) * 90.0 / nullif(sum(minutes_played), 0)                         as errors_per90,
+        -- Physicality
+        100.0 * sum(duels_won)             / nullif(sum(duels_total), 0)                            as duel_win_pct,
+        sum(fouls_drawn)          * 90.0 / nullif(sum(minutes_played), 0)                           as fouls_drawn_per90,
+        100.0 * sum(aerials_won)           / nullif(sum(aerials_won) + sum(aerials_lost), 0)        as aerial_success_pct,
+        -- Impact
+        avg(rating)                                                                                  as avg_rating
     from superligaen.mart_player_facts
     where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
@@ -209,14 +229,34 @@ with base as (
 ranked as (
     select
         player_name,
-        round(percent_rank() over (order by goals)           * 100) as goals_pct,
-        round(percent_rank() over (order by assists)         * 100) as assists_pct,
-        round(percent_rank() over (order by avg_rating)      * 100) as rating_pct,
-        round(percent_rank() over (order by goals_per90)     * 100) as goals_per90_pct,
-        round(percent_rank() over (order by assists_per90)   * 100) as assists_per90_pct,
-        round(percent_rank() over (order by pass_accuracy)   * 100) as pass_pct,
-        round(percent_rank() over (order by shot_conversion) * 100) as shot_conv_pct,
-        round(percent_rank() over (order by tackles_per90)   * 100) as defense_pct
+        -- Attacking: anchor goals/90 (2×), + sot/90, shot_acc%, woodwork/90 → /5
+        round((2 * percent_rank() over (order by goals_per90)
+                 + percent_rank() over (order by sot_per90)
+                 + percent_rank() over (order by shot_acc_pct)
+                 + percent_rank() over (order by woodwork_per90)) / 5 * 100)                        as attacking_pct,
+        -- Creativity: anchor big_chances/90 (2×), + chances/90, key_passes/90, chance_quality%, cross_acc%, passes_final_third/90 → /7
+        round((  percent_rank() over (order by chances_per90)
+               + 2 * percent_rank() over (order by big_chances_per90)
+               + percent_rank() over (order by key_passes_per90)
+               + percent_rank() over (order by chance_quality_pct)
+               + percent_rank() over (order by cross_acc_pct)
+               + percent_rank() over (order by passes_final_third_per90)) / 7 * 100)               as creativity_pct,
+        -- Possession: anchor pass_acc% (2×), + dribble_success%, long_ball_success% → /4
+        round((2 * percent_rank() over (order by pass_acc_pct)
+                 + percent_rank() over (order by dribble_success_pct)
+                 + percent_rank() over (order by long_ball_success_pct)) / 4 * 100)                as possession_pct,
+        -- Defending: anchor (tkl+int)/90 (2×), + tackle_success%, balls_recovered/90, times_dribbled_past/90 ↓, errors/90 ↓ → /6
+        round((2 * percent_rank() over (order by tkl_int_per90)
+                 + percent_rank() over (order by tackle_success_pct)
+                 + percent_rank() over (order by balls_recovered_per90)
+                 + percent_rank() over (order by times_dribbled_past_per90 desc)
+                 + percent_rank() over (order by errors_per90 desc)) / 6 * 100)                    as defending_pct,
+        -- Physicality: anchor duel_win% (2×), + fouls_drawn/90, aerial_success% → /4
+        round((2 * percent_rank() over (order by duel_win_pct)
+                 + percent_rank() over (order by fouls_drawn_per90)
+                 + percent_rank() over (order by aerial_success_pct)) / 4 * 100)                   as physicality_pct,
+        -- Impact: avg_rating (single)
+        round(percent_rank() over (order by avg_rating) * 100)                                     as impact_pct
     from base
 )
 select * from ranked where player_name = '${inputs.player.value}'
@@ -375,51 +415,51 @@ select * from ranked where player_name = '${inputs.player.value}'
   <div class="flex flex-col gap-3">
 
     <div class="flex items-center gap-3">
-      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Goals / 90</div>
+      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Attacking</div>
       <div class="flex-1 bg-gray-100 rounded-full h-2.5">
-        <div class="h-2.5 rounded-full bg-amber-400" style="width:{lc.goals_per90_pct}%"></div>
+        <div class="h-2.5 rounded-full bg-amber-400" style="width:{lc.attacking_pct}%"></div>
       </div>
-      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.goals_per90_pct}</div>
+      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.attacking_pct}</div>
     </div>
 
     <div class="flex items-center gap-3">
-      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Assists / 90</div>
+      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Creativity</div>
       <div class="flex-1 bg-gray-100 rounded-full h-2.5">
-        <div class="h-2.5 rounded-full bg-sky-400" style="width:{lc.assists_per90_pct}%"></div>
+        <div class="h-2.5 rounded-full bg-sky-400" style="width:{lc.creativity_pct}%"></div>
       </div>
-      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.assists_per90_pct}</div>
+      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.creativity_pct}</div>
     </div>
 
     <div class="flex items-center gap-3">
-      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Pass Accuracy</div>
+      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Possession</div>
       <div class="flex-1 bg-gray-100 rounded-full h-2.5">
-        <div class="h-2.5 rounded-full bg-indigo-500" style="width:{lc.pass_pct}%"></div>
+        <div class="h-2.5 rounded-full bg-indigo-500" style="width:{lc.possession_pct}%"></div>
       </div>
-      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.pass_pct}</div>
+      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.possession_pct}</div>
     </div>
 
     <div class="flex items-center gap-3">
-      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Shot Conversion</div>
+      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Defending</div>
       <div class="flex-1 bg-gray-100 rounded-full h-2.5">
-        <div class="h-2.5 rounded-full bg-orange-400" style="width:{lc.shot_conv_pct}%"></div>
+        <div class="h-2.5 rounded-full bg-teal-500" style="width:{lc.defending_pct}%"></div>
       </div>
-      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.shot_conv_pct}</div>
+      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.defending_pct}</div>
     </div>
 
     <div class="flex items-center gap-3">
-      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Avg Rating</div>
+      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Physicality</div>
       <div class="flex-1 bg-gray-100 rounded-full h-2.5">
-        <div class="h-2.5 rounded-full bg-violet-500" style="width:{lc.rating_pct}%"></div>
+        <div class="h-2.5 rounded-full bg-orange-400" style="width:{lc.physicality_pct}%"></div>
       </div>
-      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.rating_pct}</div>
+      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.physicality_pct}</div>
     </div>
 
     <div class="flex items-center gap-3">
-      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Defensive</div>
+      <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Impact</div>
       <div class="flex-1 bg-gray-100 rounded-full h-2.5">
-        <div class="h-2.5 rounded-full bg-teal-500" style="width:{lc.defense_pct}%"></div>
+        <div class="h-2.5 rounded-full bg-violet-500" style="width:{lc.impact_pct}%"></div>
       </div>
-      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.defense_pct}</div>
+      <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.impact_pct}</div>
     </div>
 
   </div>
