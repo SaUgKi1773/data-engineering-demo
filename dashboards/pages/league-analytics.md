@@ -265,33 +265,30 @@ with all_teams as (
     select
         team_name,
         -- Attacking
-        sum(goals_scored)::double           / count(distinct match_id)  as goals_pm,
-        sum(shots_on_goal)::double          / count(distinct match_id)  as sog_pm,
-        sum(total_shots)::double            / count(distinct match_id)  as shots_pm,
-        sum(penalty_scored)::double         / count(distinct match_id)  as penalty_pm,
+        sum(goals_scored)::double                   / count(distinct match_id)               as goals_pm,
+        sum(shots_on_goal)::double                  / count(distinct match_id)               as sog_pm,
+        100.0 * sum(shots_on_goal)  / nullif(sum(total_shots), 0)                           as shot_acc_pct,
+        sum(corner_kicks)::double                   / count(distinct match_id)               as corners_pm,
         -- Creativity & Playmaking
-        sum(chances_created)::double        / count(distinct match_id)  as chances_pm,
-        sum(big_chances_created)::double    / count(distinct match_id)  as big_chances_pm,
-        sum(key_passes)::double             / count(distinct match_id)  as key_passes_pm,
-        sum(corner_kicks)::double           / count(distinct match_id)  as corners_pm,
+        sum(chances_created)::double                / count(distinct match_id)               as chances_pm,
+        sum(big_chances_created)::double            / count(distinct match_id)               as big_chances_pm,
+        sum(key_passes)::double                     / count(distinct match_id)               as key_passes_pm,
+        100.0 * sum(big_chances_created) / nullif(sum(chances_created), 0)                  as chance_quality_pct,
+        100.0 * sum(crosses_accurate)    / nullif(sum(crosses_total), 0)                    as cross_acc_pct,
         -- Possession & Control
-        avg(possession_pct)                                             as avg_possession,
-        100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0)    as pass_accuracy,
-        sum(dribbles_completed)::double     / count(distinct match_id)  as dribbles_pm,
+        avg(possession_pct)                                                                  as avg_possession,
+        100.0 * sum(passes_accurate)     / nullif(sum(total_passes), 0)                     as pass_acc_pct,
+        100.0 * sum(dribbles_completed)  / nullif(sum(dribbles_attempts), 0)                as dribble_success_pct,
         -- Defending
-        sum(tackles_won)::double            / count(distinct match_id)  as tackles_won_pm,
-        sum(interceptions)::double          / count(distinct match_id)  as interceptions_pm,
-        sum(blocks)::double                 / count(distinct match_id)  as blocks_pm,
-        sum(clearances)::double             / count(distinct match_id)  as clearances_pm,
-        sum(errors_leading_to_goal)::double / count(distinct match_id)  as errors_pm,
+        sum(goals_conceded)::double                 / count(distinct match_id)               as conceded_pm,
+        100.0 * sum(tackles_won)         / nullif(sum(tackles), 0)                          as tackle_success_pct,
+        sum(errors_leading_to_goal)::double         / count(distinct match_id)               as errors_pm,
         -- Physicality
-        100.0 * sum(duels_won) / nullif(sum(duels_total), 0)           as duel_win_pct,
-        sum(aerials_won)::double            / count(distinct match_id)  as aerials_pm,
-        sum(fouls_drawn)::double            / count(distinct match_id)  as fouls_drawn_pm,
-        sum(yellow_cards)::double           / count(distinct match_id)  as yc_pm,
-        sum(red_cards)::double              / count(distinct match_id)  as rc_pm,
+        100.0 * sum(duels_won)           / nullif(sum(duels_total), 0)                      as duel_win_pct,
+        sum(fouls_drawn)::double                    / count(distinct match_id)               as fouls_drawn_pm,
+        100.0 * sum(aerials_won)         / nullif(sum(aerials_won) + sum(aerials_lost), 0)  as aerial_success_pct,
         -- Winning
-        sum(points_earned)::double          / count(distinct match_id)  as points_pm
+        sum(case when result = 'Win' then 1 else 0 end)::double / count(distinct match_id)  as win_rate
     from superligaen.mart_match_facts
     where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
@@ -300,50 +297,56 @@ with all_teams as (
 ranked as (
     select
         team_name,
-        percent_rank() over (order by goals_pm)           as r_goals,
-        percent_rank() over (order by sog_pm)             as r_sog,
-        percent_rank() over (order by shots_pm)           as r_shots,
-        percent_rank() over (order by penalty_pm)         as r_penalty,
-        percent_rank() over (order by chances_pm)         as r_chances,
-        percent_rank() over (order by big_chances_pm)     as r_big_chances,
-        percent_rank() over (order by key_passes_pm)      as r_key_passes,
-        percent_rank() over (order by corners_pm)         as r_corners,
-        percent_rank() over (order by avg_possession)     as r_possession,
-        percent_rank() over (order by pass_accuracy)      as r_pass_accuracy,
-        percent_rank() over (order by dribbles_pm)        as r_dribbles,
-        percent_rank() over (order by tackles_won_pm)     as r_tackles_won,
-        percent_rank() over (order by interceptions_pm)   as r_interceptions,
-        percent_rank() over (order by blocks_pm)          as r_blocks,
-        percent_rank() over (order by clearances_pm)      as r_clearances,
-        percent_rank() over (order by errors_pm desc)     as r_errors,
-        percent_rank() over (order by duel_win_pct)       as r_duel_win,
-        percent_rank() over (order by aerials_pm)         as r_aerials,
-        percent_rank() over (order by fouls_drawn_pm)     as r_fouls_drawn,
-        percent_rank() over (order by yc_pm desc)         as r_yc,
-        percent_rank() over (order by rc_pm desc)         as r_rc,
-        percent_rank() over (order by points_pm)          as r_points
+        -- Attacking
+        percent_rank() over (order by goals_pm)            as r_goals,
+        percent_rank() over (order by sog_pm)              as r_sog,
+        percent_rank() over (order by shot_acc_pct)        as r_shot_acc,
+        percent_rank() over (order by corners_pm)          as r_corners,
+        -- Creativity
+        percent_rank() over (order by chances_pm)          as r_chances,
+        percent_rank() over (order by big_chances_pm)      as r_big_chances,
+        percent_rank() over (order by key_passes_pm)       as r_key_passes,
+        percent_rank() over (order by chance_quality_pct)  as r_chance_quality,
+        percent_rank() over (order by cross_acc_pct)       as r_cross_acc,
+        -- Possession
+        percent_rank() over (order by avg_possession)      as r_possession,
+        percent_rank() over (order by pass_acc_pct)        as r_pass_acc,
+        percent_rank() over (order by dribble_success_pct) as r_dribble_success,
+        -- Defending (lower conceded/errors = better → rank desc)
+        percent_rank() over (order by conceded_pm desc)    as r_conceded,
+        percent_rank() over (order by tackle_success_pct)  as r_tackle_success,
+        percent_rank() over (order by errors_pm desc)      as r_errors,
+        -- Physicality
+        percent_rank() over (order by duel_win_pct)        as r_duel_win,
+        percent_rank() over (order by fouls_drawn_pm)      as r_fouls_drawn,
+        percent_rank() over (order by aerial_success_pct)  as r_aerial_success,
+        -- Winning
+        percent_rank() over (order by win_rate)            as r_wins
     from all_teams
 ),
 composites as (
     select
         team_name,
-        (r_goals + r_sog + r_shots + r_penalty) / 4                              as raw_attacking,
-        (r_chances + r_big_chances + r_key_passes + r_corners) / 4               as raw_creativity,
-        (r_possession + r_pass_accuracy + r_dribbles) / 3                        as raw_possession,
-        (r_tackles_won + r_interceptions + r_blocks + r_clearances + r_errors) / 5 as raw_defending,
-        (r_duel_win + r_aerials + r_fouls_drawn + r_yc + r_rc) / 5              as raw_physicality,
-        r_points                                                                   as raw_winning
+        (2 * r_goals + r_sog + r_shot_acc + r_corners) / 5                                  as raw_attacking,
+        (r_chances + 2 * r_big_chances + r_key_passes + r_chance_quality + r_cross_acc) / 6 as raw_creativity,
+        (r_possession + 2 * r_pass_acc + r_dribble_success) / 4                              as raw_possession,
+        (2 * r_conceded + r_tackle_success + r_errors) / 4                                   as raw_defending,
+        (2 * r_duel_win + r_fouls_drawn + r_aerial_success) / 4                              as raw_physicality,
+        r_wins                                                                                as raw_winning
     from ranked
+),
+scores as (
+    select
+        team_name,
+        round((row_number() over (order by raw_attacking)   - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as attacking_score,
+        round((row_number() over (order by raw_creativity)  - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as creativity_score,
+        round((row_number() over (order by raw_possession)  - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as possession_score,
+        round((row_number() over (order by raw_defending)   - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as defending_score,
+        round((row_number() over (order by raw_physicality) - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as physicality_score,
+        round((row_number() over (order by raw_winning)     - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as winning_score
+    from composites
 )
-select
-    team_name,
-    round(percent_rank() over (order by raw_attacking)    * 100) as attacking_score,
-    round(percent_rank() over (order by raw_creativity)   * 100) as creativity_score,
-    round(percent_rank() over (order by raw_possession)   * 100) as possession_score,
-    round(percent_rank() over (order by raw_defending)    * 100) as defending_score,
-    round(percent_rank() over (order by raw_physicality)  * 100) as physicality_score,
-    round(percent_rank() over (order by raw_winning)      * 100) as winning_score
-from composites
+select * from scores
 where ('All' in ${inputs.team.value} OR team_name in ${inputs.team.value})
 order by team_name
 ```
