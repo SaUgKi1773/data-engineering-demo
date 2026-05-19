@@ -3,6 +3,7 @@
   export let subs   = [];   // substitutes
   export let home_team = '';
   export let away_team = '';
+  export let score = '';
 
   const W = 700, H = 560;
   const PX = 12, PY = 14, PW = 676, PH = 532;
@@ -128,6 +129,9 @@
     {#if homeLogo}<img src={homeLogo} alt={home_team} style="width:28px;height:28px;object-fit:contain;" onerror="this.style.display='none'" />{/if}
     <span style="font-size:13px;font-weight:700;color:#374151;">{homeFormation}</span>
   </div>
+  {#if score}
+  <div style="font-size:20px;font-weight:900;color:#111827;">{score}</div>
+  {/if}
   <div style="display:flex;align-items:center;gap:8px;">
     <span style="font-size:13px;font-weight:700;color:#374151;">{awayFormation}</span>
     {#if awayLogo}<img src={awayLogo} alt={away_team} style="width:28px;height:28px;object-fit:contain;" onerror="this.style.display='none'" />{/if}

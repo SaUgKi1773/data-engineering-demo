@@ -389,4 +389,4 @@ where match_name                 = split_part('${inputs.match.value}', '|', 1)
 order by team_side desc, position_group, position_name
 ```
 
-<MatchLineup {lineup} {subs} home_team={mc[0]?.home_team} away_team={mc[0]?.away_team} />
+<MatchLineup {lineup} {subs} home_team={mc[0]?.home_team} away_team={mc[0]?.away_team} score={mc[0]?.score} />
