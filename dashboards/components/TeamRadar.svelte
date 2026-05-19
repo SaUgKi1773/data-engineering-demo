@@ -2,12 +2,12 @@
   export let data = [];
   export let title = '';
   export let metrics = [
-    { key: 'attack_pct',      label: 'Attack Score'     },
-    { key: 'passing_pct',     label: 'Passing Score'    },
-    { key: 'efficiency_pct',  label: 'Efficiency Score' },
-    { key: 'wins_pct',        label: 'Win Score'        },
-    { key: 'defense_pct',     label: 'Defensive Score'  },
-    { key: 'possession_pct',  label: 'Possession Score' },
+    { key: 'attacking_score',    label: 'Attacking'          },
+    { key: 'creativity_score',   label: 'Creativity'         },
+    { key: 'possession_score',   label: 'Possession & Control' },
+    { key: 'defending_score',    label: 'Defending'          },
+    { key: 'physicality_score',  label: 'Physicality'        },
+    { key: 'winning_score',      label: 'Winning'            },
   ];
 
   function fmtPct(v) { return v != null ? Math.round(v) : '—'; }
@@ -27,7 +27,8 @@
 
   $: n = metrics.length;
 
-  let highlighted = null;
+  export let highlighted = null;
+  export let showLegend  = true;
 
   function toggle(teamName) {
     highlighted = highlighted === teamName ? null : teamName;
@@ -106,8 +107,8 @@
 
   </svg>
 
-  <!-- Legend — only when more than one team -->
-  {#if data.length > 1}
+  <!-- Legend — only when more than one team and showLegend is true -->
+  {#if showLegend && data.length > 1}
   <div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:2px;">
     {#each data as row, i}
     <div

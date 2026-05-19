@@ -8,9 +8,17 @@ title: League Intelligence
   import TeamRadar from '../../components/TeamRadar.svelte';
 
   const scatterPalette = ['#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7'];
-  let selectedTeam = null;
+  let selectedTeam    = null;
+  let radarHighlighted = null;
   function toggleTeam(name) { selectedTeam = selectedTeam === name ? null : name; }
 </script>
+
+<style>
+  @media (min-width: 768px) {
+    .md\:two-col-radar { grid-template-columns: repeat(2, 1fr) !important; }
+    .md\:order-reset   { order: 0 !important; }
+  }
+</style>
 
 ```sql seasons
 select season from (
@@ -47,11 +55,11 @@ with curr as (
         round(sum(goals_scored)::double / count(distinct match_id), 2)                                  as goals_per_match,
         round(100.0 * count(*) filter (where team_side='Home' and result='Win')
               / nullif(count(*) filter (where team_side='Home'), 0), 1)                                 as home_win_pct,
-        round(100.0 * sum(crosses_accurate) / nullif(sum(crosses_total), 0), 1)                          as cross_accuracy,
+        round(sum(big_chances_created)::double / count(distinct match_id), 2)                            as big_chances_pm,
         round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                               as shot_conversion,
         round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                           as pass_accuracy,
         round(sum(yellow_cards)::double / count(distinct match_id), 2)                                  as yc_per_match,
-        round(sum(red_cards)::double / count(distinct match_id), 2)                                    as rc_per_match,
+        round(100.0 * sum(penalty_scored) / nullif(sum(penalty_scored) + sum(penalty_missed), 0), 1)    as penalty_success,
         round(sum(shots_on_goal)::double / count(distinct match_id), 1)                                as sot_per_match
     from superligaen.mart_match_facts
     where season = '${inputs.season.value}'
@@ -62,11 +70,11 @@ prev as (
     select
         sum(goals_scored)                                                                               as prev_total_goals,
         round(sum(goals_scored)::double / count(distinct match_id), 2)                                  as prev_goals_per_match,
-        round(100.0 * sum(crosses_accurate) / nullif(sum(crosses_total), 0), 1)                          as prev_cross_accuracy,
+        round(sum(big_chances_created)::double / count(distinct match_id), 2)                            as prev_big_chances_pm,
         round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                               as prev_shot_conversion,
         round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                           as prev_pass_accuracy,
         round(sum(yellow_cards)::double / count(distinct match_id), 2)                                  as prev_yc_per_match,
-        round(sum(red_cards)::double / count(distinct match_id), 2)                                    as prev_rc_per_match,
+        round(100.0 * sum(penalty_scored) / nullif(sum(penalty_scored) + sum(penalty_missed), 0), 1)    as prev_penalty_success,
         round(sum(shots_on_goal)::double / count(distinct match_id), 1)                                as prev_sot_per_match
     from superligaen.mart_match_facts
     where season = (
@@ -82,11 +90,11 @@ select
     prev.*,
     round(curr.total_goals       / nullif(prev.prev_total_goals,       0), 2) as total_goals_ratio,
     round(curr.goals_per_match   / nullif(prev.prev_goals_per_match,   0), 2) as goals_ratio,
-    round(curr.cross_accuracy    / nullif(prev.prev_cross_accuracy,    0), 2) as cross_accuracy_ratio,
+    round(curr.big_chances_pm    / nullif(prev.prev_big_chances_pm,    0), 2) as big_chances_ratio,
     round(curr.shot_conversion   / nullif(prev.prev_shot_conversion,   0), 2) as shot_conv_ratio,
     round(curr.pass_accuracy     / nullif(prev.prev_pass_accuracy,     0), 2) as pass_ratio,
     round(curr.yc_per_match      / nullif(prev.prev_yc_per_match,      0), 2) as yc_ratio,
-    round(curr.rc_per_match      / nullif(prev.prev_rc_per_match,      0), 2) as rc_ratio,
+    round(curr.penalty_success   / nullif(prev.prev_penalty_success,   0), 2) as penalty_success_ratio,
     round(curr.sot_per_match     / nullif(prev.prev_sot_per_match,     0), 2) as sot_ratio
 from curr cross join prev
 ```
@@ -236,40 +244,50 @@ where season = '${inputs.season.value}'
 group by team_name
 ```
 
-```sql attack_rankings
-select team_name, goals_for, shot_conversion_pct, on_target_conversion_pct
-from ${team_season_stats}
-order by goals_for desc
-```
-
-```sql defence_rankings
-select team_name, goals_against, clean_sheets, avg_saves, avg_goals_conceded
-from ${team_season_stats}
-order by clean_sheets desc
-```
-
-```sql possession_rankings
-select team_name, avg_possession, avg_pass_accuracy, avg_corners
-from ${team_season_stats}
-order by avg_possession desc
-```
-
-```sql discipline_rankings
-select team_name, yellow_cards, red_cards, avg_fouls, aggression_index
-from ${team_season_stats}
-order by aggression_index desc
+```sql team_domain_stats
+select
+    team_name,
+    round(sum(goals_scored)::double        / count(distinct match_id), 2)                          as goals_pm,
+    round(sum(big_chances_created)::double / count(distinct match_id), 2)                          as big_chances_pm,
+    sum(passes_accurate)::double           / nullif(sum(total_passes), 0)                          as pass_acc_pct,
+    round(sum(goals_conceded)::double      / count(distinct match_id), 2)                          as conceded_pm,
+    sum(duels_won)::double                 / nullif(sum(duels_total), 0)                           as duel_win_pct,
+    sum(case when result = 'Win' then 1 else 0 end)::double / count(distinct match_id)             as win_pct
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by team_name
 ```
 
 ```sql radar_data
 with all_teams as (
     select
         team_name,
-        sum(goals_scored)::double       / count(distinct match_id)                         as goals_per_match,
-        sum(goals_conceded)::double     / count(distinct match_id)                         as conceded_per_match,
-        100.0 * sum(passes_accurate)    / nullif(sum(total_passes), 0)                     as pass_accuracy,
-        sum(possession_pct)::double     / count(distinct match_id)                         as avg_possession,
-        100.0 * sum(goals_scored)       / nullif(sum(total_shots), 0)                      as shot_conv,
-        100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id)  as win_rate
+        -- Attacking
+        sum(goals_scored)::double                   / count(distinct match_id)               as goals_pm,
+        sum(shots_on_goal)::double                  / count(distinct match_id)               as sog_pm,
+        100.0 * sum(shots_on_goal)  / nullif(sum(total_shots), 0)                           as shot_acc_pct,
+        sum(corner_kicks)::double                   / count(distinct match_id)               as corners_pm,
+        -- Creativity & Playmaking
+        sum(chances_created)::double                / count(distinct match_id)               as chances_pm,
+        sum(big_chances_created)::double            / count(distinct match_id)               as big_chances_pm,
+        sum(key_passes)::double                     / count(distinct match_id)               as key_passes_pm,
+        100.0 * sum(big_chances_created) / nullif(sum(chances_created), 0)                  as chance_quality_pct,
+        100.0 * sum(crosses_accurate)    / nullif(sum(crosses_total), 0)                    as cross_acc_pct,
+        -- Possession & Control
+        avg(possession_pct)                                                                  as avg_possession,
+        100.0 * sum(passes_accurate)     / nullif(sum(total_passes), 0)                     as pass_acc_pct,
+        100.0 * sum(dribbles_completed)  / nullif(sum(dribbles_attempts), 0)                as dribble_success_pct,
+        -- Defending
+        sum(goals_conceded)::double                 / count(distinct match_id)               as conceded_pm,
+        100.0 * sum(tackles_won)         / nullif(sum(tackles), 0)                          as tackle_success_pct,
+        sum(errors_leading_to_goal)::double         / count(distinct match_id)               as errors_pm,
+        -- Physicality
+        100.0 * sum(duels_won)           / nullif(sum(duels_total), 0)                      as duel_win_pct,
+        sum(fouls_drawn)::double                    / count(distinct match_id)               as fouls_drawn_pm,
+        100.0 * sum(aerials_won)         / nullif(sum(aerials_won) + sum(aerials_lost), 0)  as aerial_success_pct,
+        -- Winning
+        sum(case when result = 'Win' then 1 else 0 end)::double / count(distinct match_id)  as win_rate
     from superligaen.mart_match_facts
     where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
@@ -278,21 +296,58 @@ with all_teams as (
 ranked as (
     select
         team_name,
-        goals_per_match,
-        conceded_per_match,
-        pass_accuracy,
-        avg_possession,
-        shot_conv,
-        win_rate,
-        round(percent_rank() over (order by goals_per_match)         * 100) as attack_pct,
-        round(percent_rank() over (order by conceded_per_match desc)  * 100) as defense_pct,
-        round(percent_rank() over (order by pass_accuracy)           * 100) as passing_pct,
-        round(percent_rank() over (order by avg_possession)          * 100) as possession_pct,
-        round(percent_rank() over (order by shot_conv)               * 100) as efficiency_pct,
-        round(percent_rank() over (order by win_rate)                * 100) as wins_pct
+        -- Attacking
+        percent_rank() over (order by goals_pm)            as r_goals,
+        percent_rank() over (order by sog_pm)              as r_sog,
+        percent_rank() over (order by shot_acc_pct)        as r_shot_acc,
+        percent_rank() over (order by corners_pm)          as r_corners,
+        -- Creativity
+        percent_rank() over (order by chances_pm)          as r_chances,
+        percent_rank() over (order by big_chances_pm)      as r_big_chances,
+        percent_rank() over (order by key_passes_pm)       as r_key_passes,
+        percent_rank() over (order by chance_quality_pct)  as r_chance_quality,
+        percent_rank() over (order by cross_acc_pct)       as r_cross_acc,
+        -- Possession
+        percent_rank() over (order by avg_possession)      as r_possession,
+        percent_rank() over (order by pass_acc_pct)        as r_pass_acc,
+        percent_rank() over (order by dribble_success_pct) as r_dribble_success,
+        -- Defending (lower conceded/errors = better → rank desc)
+        percent_rank() over (order by conceded_pm desc)    as r_conceded,
+        percent_rank() over (order by tackle_success_pct)  as r_tackle_success,
+        percent_rank() over (order by errors_pm desc)      as r_errors,
+        -- Physicality
+        percent_rank() over (order by duel_win_pct)        as r_duel_win,
+        percent_rank() over (order by fouls_drawn_pm)      as r_fouls_drawn,
+        percent_rank() over (order by aerial_success_pct)  as r_aerial_success,
+        -- Winning
+        percent_rank() over (order by win_rate)            as r_wins
     from all_teams
+),
+composites as (
+    select
+        team_name,
+        (2 * r_goals + r_sog + r_shot_acc + r_corners) / 5                                  as raw_attacking,
+        (r_chances + 2 * r_big_chances + r_key_passes + r_chance_quality + r_cross_acc) / 6 as raw_creativity,
+        (r_possession + 2 * r_pass_acc + r_dribble_success) / 4                              as raw_possession,
+        (2 * r_conceded + r_tackle_success + r_errors) / 4                                   as raw_defending,
+        (2 * r_duel_win + r_fouls_drawn + r_aerial_success) / 4                              as raw_physicality,
+        r_wins                                                                                as raw_winning
+    from ranked
+),
+scores as (
+    select
+        team_name,
+        round((row_number() over (order by raw_attacking)   - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as attacking_score,
+        round((row_number() over (order by raw_creativity)  - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as creativity_score,
+        round((row_number() over (order by raw_possession)  - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as possession_score,
+        round((row_number() over (order by raw_defending)   - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as defending_score,
+        round((row_number() over (order by raw_physicality) - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as physicality_score,
+        round((row_number() over (order by raw_winning)     - 1) * 100.0 / nullif(count(*) over () - 1, 0)) as winning_score
+    from composites
 )
-select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inputs.team.value}) order by team_name
+select * from scores
+where ('All' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+order by team_name
 ```
 
 ---
@@ -321,11 +376,20 @@ select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inpu
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Cross Accuracy %</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.cross_accuracy}%</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Shots on Target / Match</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.sot_per_match}</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_cross_accuracy != null ? k.prev_cross_accuracy + '%' : '—'}</span>
-      {#if k.cross_accuracy_ratio != null}<span class="text-sm font-bold {k.cross_accuracy_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.cross_accuracy_ratio >= 1 ? '▲' : '▼'}</span>{/if}
+      <span class="text-xs text-gray-400">Prev season: {k.prev_sot_per_match ?? '—'}</span>
+      {#if k.sot_ratio != null}<span class="text-sm font-bold {k.sot_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.sot_ratio >= 1 ? '▲' : '▼'}</span>{/if}
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Big Chances / Match</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.big_chances_pm}</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">Prev season: {k.prev_big_chances_pm ?? '—'}</span>
+      {#if k.big_chances_ratio != null}<span class="text-sm font-bold {k.big_chances_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.big_chances_ratio >= 1 ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
 
@@ -348,6 +412,15 @@ select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inpu
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Penalty Success %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.penalty_success}%</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">Prev season: {k.prev_penalty_success != null ? k.prev_penalty_success + '%' : '—'}</span>
+      {#if k.penalty_success_ratio != null}<span class="text-sm font-bold {k.penalty_success_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.penalty_success_ratio >= 1 ? '▲' : '▼'}</span>{/if}
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">YC / Match</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.yc_per_match}</div>
     <div class="flex justify-between items-center mt-3">
@@ -356,74 +429,8 @@ select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inpu
     </div>
   </div>
 
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Shots on Target / Match</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.sot_per_match}</div>
-    <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_sot_per_match ?? '—'}</span>
-      {#if k.sot_ratio != null}<span class="text-sm font-bold {k.sot_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.sot_ratio >= 1 ? '▲' : '▼'}</span>{/if}
-    </div>
-  </div>
-
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">RC / Match</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.rc_per_match}</div>
-    <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_rc_per_match ?? '—'}</span>
-      {#if k.rc_ratio != null}<span class="text-sm font-bold {k.rc_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.rc_ratio >= 1 ? '▲' : '▼'}</span>{/if}
-    </div>
-  </div>
-
 </div>
 {/each}
-
----
-
-## Standings & Points Race
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
-
-<div>
-
-<LineChart
-    data={points_progression}
-    x=round
-    y=cumulative_points
-    series=team_name
-    xAxisTitle="Round"
-    yAxisTitle="Cumulative Points"
-    title="Points Race"
-    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; for (const row of points_progression) { if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const sorted = [...params].sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}}}
-    legend=false
-    chartAreaHeight=300
-/>
-
-</div>
-
-<div>
-
-#### League Table
-
-<div class="block md:hidden">
-<DataTable data={current_standings} rows=20>
-    <Column id=team_col_mobile title="Team"  contentType=html />
-    <Column id=round_group     title="Group" />
-    <Column id=mp              title="MP"   align=center />
-    <Column id=pts             title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-</DataTable>
-</div>
-<div class="hidden md:block">
-<DataTable data={current_standings} rows=20>
-    <Column id=team_col    title="Team"  contentType=html />
-    <Column id=round_group title="Group" />
-    <Column id=mp          title="MP"   align=center />
-    <Column id=pts         title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-</DataTable>
-</div>
-
-</div>
-
-</div>
 
 ---
 
@@ -592,6 +599,53 @@ select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inpu
 
 </div>
 
+---
+
+## Standings & Points Race
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
+
+<div>
+
+<LineChart
+    data={points_progression}
+    x=round
+    y=cumulative_points
+    series=team_name
+    xAxisTitle="Round"
+    yAxisTitle="Cumulative Points"
+    title="Points Race"
+    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; for (const row of points_progression) { if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const sorted = [...params].sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}}}
+    legend=false
+    chartAreaHeight=300
+/>
+
+</div>
+
+<div>
+
+#### League Table
+
+<div class="block md:hidden">
+<DataTable data={current_standings} rows=20>
+    <Column id=team_col_mobile title="Team"  contentType=html />
+    <Column id=round_group     title="Group" />
+    <Column id=mp              title="MP"   align=center />
+    <Column id=pts             title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+</DataTable>
+</div>
+<div class="hidden md:block">
+<DataTable data={current_standings} rows=20>
+    <Column id=team_col    title="Team"  contentType=html />
+    <Column id=round_group title="Group" />
+    <Column id=mp          title="MP"   align=center />
+    <Column id=pts         title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+</DataTable>
+</div>
+
+</div>
+
+</div>
 
 ---
 
@@ -601,10 +655,14 @@ select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inpu
 
 *How does a team rank across six dimensions relative to the rest of the league? Each axis is a score from 0 to 100 — 100 means best in the league. Click a team in the legend to isolate it.*
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-end">
+<div style="display:grid;grid-template-columns:repeat(1,1fr);gap:0 1.5rem;margin-bottom:1.5rem;" class="md:two-col-radar">
 
-<div>
+<!-- Titles: order 1 & 4 on mobile, reset to DOM order on desktop -->
+<p style="order:1;font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;" class="md:order-reset">Attack vs Defence — {inputs.season.value}</p>
+<p style="order:4;font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;" class="md:order-reset">Performance Radar</p>
 
+<!-- Charts: order 2 & 5 on mobile -->
+<div style="order:2;" class="md:order-reset">
 <ScatterPlot
     data={team_landscape}
     x=goals_for
@@ -612,7 +670,6 @@ select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inpu
     series=team_name
     xAxisTitle="Goals Scored"
     yAxisTitle="Goals Conceded"
-    title="Attack vs Defence — {inputs.season.value}"
     tooltipColumns={[{id: 'team_name', title: 'Team'}, {id: 'goals_for', title: 'Goals For'}, {id: 'goals_against', title: 'Goals Against'}, {id: 'points', title: 'Points'}, {id: 'win_pct', title: 'Win %', fmt: '0.0"%"'}]}
     chartAreaHeight=320
     legend=false
@@ -622,7 +679,13 @@ select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inpu
     yMax={team_landscape_bounds[0].y_max}
     echartsOptions={{series: team_landscape.map((row, i) => ({name: row.team_name, symbolSize: 16, itemStyle: {color: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db', borderWidth: 2, borderColor: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db'}}))}}
 />
-<div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:2px;">
+</div>
+<div style="order:5;" class="md:order-reset">
+<TeamRadar data={radar_data} showLegend={false} bind:highlighted={radarHighlighted} />
+</div>
+
+<!-- Legends: order 3 & 6 on mobile -->
+<div style="order:3;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:4px;" class="md:order-reset">
   {#each team_landscape as row, i}
   <div
     on:click={() => toggleTeam(row.team_name)}
@@ -636,42 +699,46 @@ select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inpu
   </div>
   {/each}
 </div>
-
-</div>
-
-<div>
-
-<TeamRadar data={radar_data} title="Performance Radar" />
-
+<div style="order:6;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:4px;" class="md:order-reset">
+  {#each radar_data as row, i}
+  <div
+    on:click={() => radarHighlighted = radarHighlighted === row.team_name ? null : row.team_name}
+    style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;transition:opacity 0.15s;
+           opacity:{radarHighlighted === null || radarHighlighted === row.team_name ? 1 : 0.35};
+           color:{radarHighlighted === row.team_name ? scatterPalette[i % scatterPalette.length] : '#374151'};
+           font-weight:{radarHighlighted === row.team_name ? '700' : '400'};"
+  >
+    <div style="width:10px;height:10px;border-radius:50%;background:{scatterPalette[i % scatterPalette.length]};flex-shrink:0;"></div>
+    {row.team_name}
+  </div>
+  {/each}
 </div>
 
 </div>
 
 ---
 
-## Team Rankings
-
-### Attack — Who's Scoring?
+## Team Rankings by Domain
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
-    data={attack_rankings}
+    data={team_domain_stats}
     x=team_name
-    y=goals_for
-    title="Goals Scored"
-    yAxisTitle="Goals"
+    y=goals_pm
+    title="Attacking — Goals per Match"
+    yAxisTitle="Goals / Match"
     colorPalette={['#22c55e']}
     swapXY=true
     sort=true
 />
 
 <BarChart
-    data={attack_rankings}
+    data={team_domain_stats}
     x=team_name
-    y=shot_conversion_pct
-    title="Shot Conversion %"
-    yAxisTitle="Conversion %"
+    y=big_chances_pm
+    title="Creativity — Big Chances Created per Match"
+    yAxisTitle="Big Chances / Match"
     colorPalette={['#f59e0b']}
     swapXY=true
     sort=true
@@ -679,103 +746,57 @@ select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inpu
 
 </div>
 
----
-
-### Defence — Who's Keeping Clean Sheets?
-
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
-    data={defence_rankings}
+    data={team_domain_stats}
     x=team_name
-    y=clean_sheets
-    title="Clean Sheets"
-    yAxisTitle="Clean Sheets"
+    y=pass_acc_pct
+    title="Possession & Control — Pass Accuracy %"
+    yAxisTitle="Pass Accuracy %"
+    colorPalette={['#8b5cf6']}
+    swapXY=true
+    sort=true
+    fmt='0.0%'
+/>
+
+<BarChart
+    data={team_domain_stats}
+    x=team_name
+    y=conceded_pm
+    title="Defending — Goals Conceded per Match"
+    yAxisTitle="Goals Conceded / Match"
     colorPalette={['#14b8a6']}
     swapXY=true
     sort=true
 />
 
-<BarChart
-    data={defence_rankings}
-    x=team_name
-    y=goals_against
-    title="Goals Conceded"
-    yAxisTitle="Goals Conceded"
-    colorPalette={['#ef4444']}
-    swapXY=true
-    sort=true
-/>
-
 </div>
-
----
-
-### Possession & Passing
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
-    data={possession_rankings}
+    data={team_domain_stats}
     x=team_name
-    y=avg_possession
-    title="Average Possession %"
-    yAxisTitle="Possession %"
-    colorPalette={['#8b5cf6']}
-    swapXY=true
-    sort=true
-/>
-
-<BarChart
-    data={possession_rankings}
-    x=team_name
-    y=avg_pass_accuracy
-    title="Average Pass Accuracy %"
-    yAxisTitle="Pass Accuracy %"
-    colorPalette={['#0ea5e9']}
-    swapXY=true
-    sort=true
-/>
-
-</div>
-
----
-
-### Discipline
-
-<BarChart
-    data={discipline_rankings}
-    x=team_name
-    y=aggression_index
-    title="Aggression Index — Fouls + Cards Weighted"
-    yAxisTitle="Aggression Index"
+    y=duel_win_pct
+    title="Physicality — Duel Win %"
+    yAxisTitle="Duel Win %"
     colorPalette={['#f97316']}
     swapXY=true
     sort=true
-/>
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 mb-6">
-
-<BarChart
-    data={discipline_rankings}
-    x=team_name
-    y=yellow_cards
-    title="Yellow Cards"
-    yAxisTitle="Yellow Cards"
-    colorPalette={['#eab308']}
-    swapXY=true
-    sort=true
+    fmt='0.0%'
 />
 
 <BarChart
-    data={discipline_rankings}
+    data={team_domain_stats}
     x=team_name
-    y=red_cards
-    title="Red Cards"
-    yAxisTitle="Red Cards"
-    colorPalette={['#dc2626']}
+    y=win_pct
+    title="Winning — Win Rate %"
+    yAxisTitle="Win Rate %"
+    colorPalette={['#3b82f6']}
     swapXY=true
     sort=true
+    fmt='0.0%'
 />
 
 </div>
