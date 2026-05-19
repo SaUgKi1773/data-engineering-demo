@@ -167,9 +167,12 @@ group by player_name, player_photo, player_nationality, player_detailed_position
 
 ```sql player_trend
 select
-    match_round_number                             as round,
-    goals_scored                                   as goals,
-    assists,
+    match_round_number                                                          as round,
+    goals_scored,
+    big_chances_created,
+    tackles + interceptions                                                     as tkl_int,
+    round(100.0 * passes_accurate / nullif(passes_total, 0), 1)                as pass_acc,
+    round(100.0 * duels_won       / nullif(duels_total,   0), 1)               as duel_win,
     rating
 from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
@@ -473,27 +476,83 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
-<LineChart
+<BarChart
     data={player_trend}
     x=round
-    y=rating
+    y=goals_scored
+    y2=rating
+    y2SeriesType=line
+    title="Attacking — Goals per Match"
     xAxisTitle="Round"
-    yAxisTitle="Match Rating"
-    title="Rating per Match"
-    lineColor="#8b5cf6"
+    yAxisTitle="Goals"
+    y2AxisTitle="Rating"
+    colorPalette={['#fbbf24','#94a3b8']}
+    y2Min=0
+    y2Max=10
+    chartAreaHeight=220
+    echartsOptions={{yAxis: [{minInterval: 1, max: 'dataMax'}, {min: 0, max: 10}]}}
+/>
+
+<BarChart
+    data={player_trend}
+    x=round
+    y=big_chances_created
+    y2=rating
+    y2SeriesType=line
+    title="Creativity — Big Chances Created"
+    xAxisTitle="Round"
+    yAxisTitle="Big Chances"
+    y2AxisTitle="Rating"
+    colorPalette={['#38bdf8','#94a3b8']}
+    chartAreaHeight=220
+    echartsOptions={{yAxis: [{minInterval: 1, max: 'dataMax'}, {min: 0, max: 10}]}}
+/>
+
+<BarChart
+    data={player_trend}
+    x=round
+    y=pass_acc
+    y2=rating
+    y2SeriesType=line
+    title="Possession — Pass Accuracy %"
+    xAxisTitle="Round"
+    yAxisTitle="Pass Acc %"
+    y2AxisTitle="Rating"
+    colorPalette={['#6366f1','#94a3b8']}
+    y2Min=0
+    y2Max=10
     chartAreaHeight=220
 />
 
 <BarChart
     data={player_trend}
     x=round
-    y={['goals','assists']}
+    y=tkl_int
+    y2=rating
+    y2SeriesType=line
+    title="Defending — Tackles + Interceptions"
     xAxisTitle="Round"
-    yAxisTitle="Contributions"
-    title="Goals & Assists per Match"
-    colorPalette={['#f59e0b','#3b82f6']}
+    yAxisTitle="Tkl + Int"
+    y2AxisTitle="Rating"
+    colorPalette={['#14b8a6','#94a3b8']}
     chartAreaHeight=220
-    stacked=true
+    echartsOptions={{yAxis: [{minInterval: 1, max: 'dataMax'}, {min: 0, max: 10}]}}
+/>
+
+<BarChart
+    data={player_trend}
+    x=round
+    y=duel_win
+    y2=rating
+    y2SeriesType=line
+    title="Physicality — Duel Win %"
+    xAxisTitle="Round"
+    yAxisTitle="Duel Win %"
+    y2AxisTitle="Rating"
+    colorPalette={['#fb923c','#94a3b8']}
+    y2Min=0
+    y2Max=10
+    chartAreaHeight=220
 />
 
 </div>
