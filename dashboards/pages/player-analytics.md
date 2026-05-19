@@ -130,7 +130,15 @@ select
     sum(shots_total)::int                                                                 as shots,
     sum(shots_on_target)::int                                                             as shots_on_target,
     sum(key_passes)::int                                                                  as key_passes,
+    sum(big_chances_created)::int                                                         as big_chances_created,
+    sum(chances_created)::int                                                             as chances_created,
     sum(tackles)::int                                                                     as tackles,
+    sum(interceptions)::int                                                               as interceptions,
+    sum(balls_recovered)::int                                                             as balls_recovered,
+    sum(duels_won)::int                                                                   as duels_won,
+    sum(duels_total)::int                                                                 as duels_total,
+    sum(passes_accurate)::int                                                             as passes_accurate,
+    sum(passes_total)::int                                                                as passes_total,
     sum(yellow_cards)::int                                                                as yellow_cards,
     round(avg(rating), 2)                                                                 as avg_rating,
     round(sum(goals_scored)  * 90.0 / nullif(sum(minutes_played), 0), 2)                 as goals_per90,
@@ -138,6 +146,8 @@ select
     round((sum(goals_scored) + sum(assists)) * 90.0 / nullif(sum(minutes_played), 0), 2) as contributions_per90,
     round(100.0 * sum(passes_accurate)  / nullif(sum(passes_total), 0), 1)               as pass_accuracy,
     round(100.0 * sum(goals_scored)     / nullif(sum(shots_total),  0), 1)               as shot_conversion,
+    round(100.0 * sum(duels_won)        / nullif(sum(duels_total),  0), 1)               as duel_win_pct,
+    (sum(tackles) + sum(interceptions) + sum(balls_recovered))::int                      as def_actions,
     sum(case when result = 'Win'  then 1 else 0 end)::int                                as wins,
     sum(case when result = 'Draw' then 1 else 0 end)::int                                as draws,
     sum(case when result = 'Loss' then 1 else 0 end)::int                                as losses
@@ -354,50 +364,50 @@ select * from ranked where player_name = '${inputs.player.value}'
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">Goals</div>
-    <div class="text-3xl font-black text-center text-amber-500 flex-1 flex items-center justify-center">{p.goals}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.shots} shots · {p.shots_on_target} on target</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.goals}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.shots} shots · {p.shot_conversion != null ? p.shot_conversion + '% conv.' : '—'}</div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">Assists</div>
-    <div class="text-3xl font-black text-center text-blue-500 flex-1 flex items-center justify-center">{p.assists}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.key_passes} key passes</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.assists}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.key_passes} key passes · {p.big_chances_created} big chances</div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Goals / 90</div>
-    <div class="text-3xl font-black text-center text-green-600 flex-1 flex items-center justify-center">{p.goals_per90}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">G+A/90: {p.contributions_per90}</div>
+    <div class="text-xs text-gray-500 text-center mb-2">G+A / 90</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.contributions_per90}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.goals_per90} G · {p.assists_per90} A per 90</div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Assists / 90</div>
-    <div class="text-3xl font-black text-center text-blue-600 flex-1 flex items-center justify-center">{p.assists_per90}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.matches} appearances</div>
-  </div>
-
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Pass Accuracy</div>
-    <div class="text-3xl font-black text-center text-purple-600 flex-1 flex items-center justify-center">{p.pass_accuracy}%</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.minutes} minutes played</div>
-  </div>
-
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Shot Conversion</div>
-    <div class="text-3xl font-black text-center text-orange-500 flex-1 flex items-center justify-center">{p.shot_conversion != null ? p.shot_conversion + '%' : '—'}</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Shots on Target</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.shots_on_target}</div>
     <div class="text-xs text-gray-400 text-center mt-3">{p.shots} total shots</div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Avg Rating</div>
-    <div class="text-3xl font-black text-center text-violet-600 flex-1 flex items-center justify-center">{p.avg_rating ?? '—'}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.matches} appearances</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Pass Accuracy</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.pass_accuracy != null ? p.pass_accuracy + '%' : '—'}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.passes_accurate} of {p.passes_total} passes</div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Minutes Played</div>
-    <div class="text-3xl font-black text-center text-gray-700 flex-1 flex items-center justify-center">{p.minutes}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.tackles} tackles · {p.yellow_cards} YC</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Duel Win %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.duel_win_pct != null ? p.duel_win_pct + '%' : '—'}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.duels_total} total duels</div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Defensive Actions</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.def_actions}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.tackles} tkl · {p.interceptions} int · {p.balls_recovered} rec</div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Avg Rating</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.avg_rating ?? '—'}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.matches} appearances</div>
   </div>
 
 </div>
