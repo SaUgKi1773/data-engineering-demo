@@ -8,9 +8,17 @@ title: League Intelligence
   import TeamRadar from '../../components/TeamRadar.svelte';
 
   const scatterPalette = ['#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7'];
-  let selectedTeam = null;
+  let selectedTeam    = null;
+  let radarHighlighted = null;
   function toggleTeam(name) { selectedTeam = selectedTeam === name ? null : name; }
 </script>
+
+<style>
+  @media (min-width: 768px) {
+    .md\:two-col-radar { grid-template-columns: repeat(2, 1fr) !important; }
+    .md\:order-reset   { order: 0 !important; }
+  }
+</style>
 
 ```sql seasons
 select season from (
@@ -647,12 +655,14 @@ order by team_name
 
 *How does a team rank across six dimensions relative to the rest of the league? Each axis is a score from 0 to 100 — 100 means best in the league. Click a team in the legend to isolate it.*
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
+<div style="display:grid;grid-template-columns:repeat(1,1fr);gap:0 1.5rem;margin-bottom:1.5rem;" class="md:two-col-radar">
 
-<div>
+<!-- Titles: order 1 & 4 on mobile, reset to DOM order on desktop -->
+<p style="order:1;font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;" class="md:order-reset">Attack vs Defence — {inputs.season.value}</p>
+<p style="order:4;font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;" class="md:order-reset">Performance Radar</p>
 
-<p style="font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;">Attack vs Defence — {inputs.season.value}</p>
-
+<!-- Charts: order 2 & 5 on mobile -->
+<div style="order:2;" class="md:order-reset">
 <ScatterPlot
     data={team_landscape}
     x=goals_for
@@ -669,7 +679,13 @@ order by team_name
     yMax={team_landscape_bounds[0].y_max}
     echartsOptions={{series: team_landscape.map((row, i) => ({name: row.team_name, symbolSize: 16, itemStyle: {color: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db', borderWidth: 2, borderColor: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db'}}))}}
 />
-<div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:2px;">
+</div>
+<div style="order:5;" class="md:order-reset">
+<TeamRadar data={radar_data} showLegend={false} bind:highlighted={radarHighlighted} />
+</div>
+
+<!-- Legends: order 3 & 6 on mobile -->
+<div style="order:3;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:4px;" class="md:order-reset">
   {#each team_landscape as row, i}
   <div
     on:click={() => toggleTeam(row.team_name)}
@@ -683,15 +699,19 @@ order by team_name
   </div>
   {/each}
 </div>
-
-</div>
-
-<div>
-
-<p style="font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;">Performance Radar</p>
-
-<TeamRadar data={radar_data} />
-
+<div style="order:6;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:4px;" class="md:order-reset">
+  {#each radar_data as row, i}
+  <div
+    on:click={() => radarHighlighted = radarHighlighted === row.team_name ? null : row.team_name}
+    style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;transition:opacity 0.15s;
+           opacity:{radarHighlighted === null || radarHighlighted === row.team_name ? 1 : 0.35};
+           color:{radarHighlighted === row.team_name ? scatterPalette[i % scatterPalette.length] : '#374151'};
+           font-weight:{radarHighlighted === row.team_name ? '700' : '400'};"
+  >
+    <div style="width:10px;height:10px;border-radius:50%;background:{scatterPalette[i % scatterPalette.length]};flex-shrink:0;"></div>
+    {row.team_name}
+  </div>
+  {/each}
 </div>
 
 </div>

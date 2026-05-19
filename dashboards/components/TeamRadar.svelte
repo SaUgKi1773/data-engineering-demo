@@ -27,7 +27,8 @@
 
   $: n = metrics.length;
 
-  let highlighted = null;
+  export let highlighted = null;
+  export let showLegend  = true;
 
   function toggle(teamName) {
     highlighted = highlighted === teamName ? null : teamName;
@@ -106,8 +107,8 @@
 
   </svg>
 
-  <!-- Legend — only when more than one team -->
-  {#if data.length > 1}
+  <!-- Legend — only when more than one team and showLegend is true -->
+  {#if showLegend && data.length > 1}
   <div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:2px;">
     {#each data as row, i}
     <div
