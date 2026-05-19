@@ -99,8 +99,8 @@ Rate metrics are preferred over volume metrics throughout — this avoids reward
   </div>
   <div class="p-3">
     <div class="font-semibold text-sm">Creativity</div>
-    <div class="text-sm text-gray-500 mt-0.5">Chance creation and delivery quality. Anchor: <strong>big chances created per match</strong> (2× weight). Supporting: chances created per match, key passes per match, chance quality % (big chances ÷ chances created), cross accuracy %.</div>
-    <div class="text-xs text-gray-400 mt-0.5">Formula weight: (chances + 2×big_chances + key_passes + chance_quality% + cross_acc%) ÷ 6</div>
+    <div class="text-sm text-gray-500 mt-0.5">Chance creation and delivery quality. Anchor: <strong>big chances created per match</strong> (2× weight). Supporting: chances created per match, key passes per match, chance quality % (big chances ÷ chances created), cross accuracy %, passes into final third per match.</div>
+    <div class="text-xs text-gray-400 mt-0.5">Formula weight: (chances + 2×big_chances + key_passes + chance_quality% + cross_acc% + passes_final_third) ÷ 7</div>
   </div>
   <div class="p-3">
     <div class="font-semibold text-sm">Possession & Control</div>
@@ -109,8 +109,8 @@ Rate metrics are preferred over volume metrics throughout — this avoids reward
   </div>
   <div class="p-3">
     <div class="font-semibold text-sm">Defending</div>
-    <div class="text-sm text-gray-500 mt-0.5">Defensive solidity and quality. Anchor: <strong>goals conceded per match</strong> (2× weight, inverted — fewer is better). Supporting: tackle success % (tackles won ÷ tackles), errors leading to goal per match (inverted).</div>
-    <div class="text-xs text-gray-400 mt-0.5">Formula weight: (2×conceded↓ + tackle_success% + errors↓) ÷ 4</div>
+    <div class="text-sm text-gray-500 mt-0.5">Defensive solidity and quality. Anchor: <strong>goals conceded per match</strong> (2× weight, inverted — fewer is better). Supporting: tackle success % (tackles won ÷ tackles), errors leading to goal per match (inverted), balls recovered per match, times dribbled past per match (inverted — fewer is better).</div>
+    <div class="text-xs text-gray-400 mt-0.5">Formula weight: (2×conceded↓ + tackle_success% + errors↓ + balls_recovered + times_dribbled_past↓) ÷ 6</div>
   </div>
   <div class="p-3">
     <div class="font-semibold text-sm">Physicality</div>

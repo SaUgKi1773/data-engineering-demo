@@ -274,6 +274,7 @@ with all_teams as (
         sum(key_passes)::double                     / count(distinct match_id)               as key_passes_pm,
         100.0 * sum(big_chances_created) / nullif(sum(chances_created), 0)                  as chance_quality_pct,
         100.0 * sum(crosses_accurate)    / nullif(sum(crosses_total), 0)                    as cross_acc_pct,
+        sum(passes_final_third)::double             / count(distinct match_id)               as passes_final_third_pm,
         -- Possession & Control
         avg(possession_pct)                                                                  as avg_possession,
         100.0 * sum(passes_accurate)     / nullif(sum(total_passes), 0)                     as pass_acc_pct,
@@ -282,6 +283,8 @@ with all_teams as (
         sum(goals_conceded)::double                 / count(distinct match_id)               as conceded_pm,
         100.0 * sum(tackles_won)         / nullif(sum(tackles), 0)                          as tackle_success_pct,
         sum(errors_leading_to_goal)::double         / count(distinct match_id)               as errors_pm,
+        sum(balls_recovered)::double                / count(distinct match_id)               as balls_recovered_pm,
+        sum(times_dribbled_past)::double            / count(distinct match_id)               as times_dribbled_past_pm,
         -- Physicality
         100.0 * sum(duels_won)           / nullif(sum(duels_total), 0)                      as duel_win_pct,
         sum(fouls_drawn)::double                    / count(distinct match_id)               as fouls_drawn_pm,
@@ -302,19 +305,22 @@ ranked as (
         percent_rank() over (order by shot_acc_pct)        as r_shot_acc,
         percent_rank() over (order by corners_pm)          as r_corners,
         -- Creativity
-        percent_rank() over (order by chances_pm)          as r_chances,
-        percent_rank() over (order by big_chances_pm)      as r_big_chances,
-        percent_rank() over (order by key_passes_pm)       as r_key_passes,
-        percent_rank() over (order by chance_quality_pct)  as r_chance_quality,
-        percent_rank() over (order by cross_acc_pct)       as r_cross_acc,
+        percent_rank() over (order by chances_pm)               as r_chances,
+        percent_rank() over (order by big_chances_pm)           as r_big_chances,
+        percent_rank() over (order by key_passes_pm)            as r_key_passes,
+        percent_rank() over (order by chance_quality_pct)       as r_chance_quality,
+        percent_rank() over (order by cross_acc_pct)            as r_cross_acc,
+        percent_rank() over (order by passes_final_third_pm)    as r_passes_final_third,
         -- Possession
         percent_rank() over (order by avg_possession)      as r_possession,
         percent_rank() over (order by pass_acc_pct)        as r_pass_acc,
         percent_rank() over (order by dribble_success_pct) as r_dribble_success,
-        -- Defending (lower conceded/errors = better → rank desc)
-        percent_rank() over (order by conceded_pm desc)    as r_conceded,
-        percent_rank() over (order by tackle_success_pct)  as r_tackle_success,
-        percent_rank() over (order by errors_pm desc)      as r_errors,
+        -- Defending (lower conceded/errors/times_dribbled_past = better → rank desc)
+        percent_rank() over (order by conceded_pm desc)          as r_conceded,
+        percent_rank() over (order by tackle_success_pct)        as r_tackle_success,
+        percent_rank() over (order by errors_pm desc)            as r_errors,
+        percent_rank() over (order by balls_recovered_pm)        as r_balls_recovered,
+        percent_rank() over (order by times_dribbled_past_pm desc) as r_times_dribbled_past,
         -- Physicality
         percent_rank() over (order by duel_win_pct)        as r_duel_win,
         percent_rank() over (order by fouls_drawn_pm)      as r_fouls_drawn,
@@ -327,9 +333,9 @@ composites as (
     select
         team_name,
         (2 * r_goals + r_sog + r_shot_acc + r_corners) / 5                                  as raw_attacking,
-        (r_chances + 2 * r_big_chances + r_key_passes + r_chance_quality + r_cross_acc) / 6 as raw_creativity,
-        (r_possession + 2 * r_pass_acc + r_dribble_success) / 4                              as raw_possession,
-        (2 * r_conceded + r_tackle_success + r_errors) / 4                                   as raw_defending,
+        (r_chances + 2 * r_big_chances + r_key_passes + r_chance_quality + r_cross_acc + r_passes_final_third) / 7 as raw_creativity,
+        (r_possession + 2 * r_pass_acc + r_dribble_success) / 4                                                   as raw_possession,
+        (2 * r_conceded + r_tackle_success + r_errors + r_balls_recovered + r_times_dribbled_past) / 6            as raw_defending,
         (2 * r_duel_win + r_fouls_drawn + r_aerial_success) / 4                              as raw_physicality,
         r_wins                                                                                as raw_winning
     from ranked
