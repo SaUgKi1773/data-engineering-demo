@@ -55,11 +55,11 @@ with curr as (
         round(sum(goals_scored)::double / count(distinct match_id), 2)                                  as goals_per_match,
         round(100.0 * count(*) filter (where team_side='Home' and result='Win')
               / nullif(count(*) filter (where team_side='Home'), 0), 1)                                 as home_win_pct,
-        round(100.0 * sum(crosses_accurate) / nullif(sum(crosses_total), 0), 1)                          as cross_accuracy,
+        round(sum(big_chances_created)::double / count(distinct match_id), 2)                            as big_chances_pm,
         round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                               as shot_conversion,
         round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                           as pass_accuracy,
         round(sum(yellow_cards)::double / count(distinct match_id), 2)                                  as yc_per_match,
-        round(sum(red_cards)::double / count(distinct match_id), 2)                                    as rc_per_match,
+        round(100.0 * sum(penalty_scored) / nullif(sum(penalty_scored) + sum(penalty_missed), 0), 1)    as penalty_success,
         round(sum(shots_on_goal)::double / count(distinct match_id), 1)                                as sot_per_match
     from superligaen.mart_match_facts
     where season = '${inputs.season.value}'
@@ -70,11 +70,11 @@ prev as (
     select
         sum(goals_scored)                                                                               as prev_total_goals,
         round(sum(goals_scored)::double / count(distinct match_id), 2)                                  as prev_goals_per_match,
-        round(100.0 * sum(crosses_accurate) / nullif(sum(crosses_total), 0), 1)                          as prev_cross_accuracy,
+        round(sum(big_chances_created)::double / count(distinct match_id), 2)                            as prev_big_chances_pm,
         round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                               as prev_shot_conversion,
         round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                           as prev_pass_accuracy,
         round(sum(yellow_cards)::double / count(distinct match_id), 2)                                  as prev_yc_per_match,
-        round(sum(red_cards)::double / count(distinct match_id), 2)                                    as prev_rc_per_match,
+        round(100.0 * sum(penalty_scored) / nullif(sum(penalty_scored) + sum(penalty_missed), 0), 1)    as prev_penalty_success,
         round(sum(shots_on_goal)::double / count(distinct match_id), 1)                                as prev_sot_per_match
     from superligaen.mart_match_facts
     where season = (
@@ -90,11 +90,11 @@ select
     prev.*,
     round(curr.total_goals       / nullif(prev.prev_total_goals,       0), 2) as total_goals_ratio,
     round(curr.goals_per_match   / nullif(prev.prev_goals_per_match,   0), 2) as goals_ratio,
-    round(curr.cross_accuracy    / nullif(prev.prev_cross_accuracy,    0), 2) as cross_accuracy_ratio,
+    round(curr.big_chances_pm    / nullif(prev.prev_big_chances_pm,    0), 2) as big_chances_ratio,
     round(curr.shot_conversion   / nullif(prev.prev_shot_conversion,   0), 2) as shot_conv_ratio,
     round(curr.pass_accuracy     / nullif(prev.prev_pass_accuracy,     0), 2) as pass_ratio,
     round(curr.yc_per_match      / nullif(prev.prev_yc_per_match,      0), 2) as yc_ratio,
-    round(curr.rc_per_match      / nullif(prev.prev_rc_per_match,      0), 2) as rc_ratio,
+    round(curr.penalty_success   / nullif(prev.prev_penalty_success,   0), 2) as penalty_success_ratio,
     round(curr.sot_per_match     / nullif(prev.prev_sot_per_match,     0), 2) as sot_ratio
 from curr cross join prev
 ```
@@ -376,11 +376,20 @@ order by team_name
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Cross Accuracy %</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.cross_accuracy}%</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Shots on Target / Match</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.sot_per_match}</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_cross_accuracy != null ? k.prev_cross_accuracy + '%' : '—'}</span>
-      {#if k.cross_accuracy_ratio != null}<span class="text-sm font-bold {k.cross_accuracy_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.cross_accuracy_ratio >= 1 ? '▲' : '▼'}</span>{/if}
+      <span class="text-xs text-gray-400">Prev season: {k.prev_sot_per_match ?? '—'}</span>
+      {#if k.sot_ratio != null}<span class="text-sm font-bold {k.sot_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.sot_ratio >= 1 ? '▲' : '▼'}</span>{/if}
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Big Chances / Match</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.big_chances_pm}</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">Prev season: {k.prev_big_chances_pm ?? '—'}</span>
+      {#if k.big_chances_ratio != null}<span class="text-sm font-bold {k.big_chances_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.big_chances_ratio >= 1 ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
 
@@ -403,29 +412,20 @@ order by team_name
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Penalty Success %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.penalty_success}%</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">Prev season: {k.prev_penalty_success != null ? k.prev_penalty_success + '%' : '—'}</span>
+      {#if k.penalty_success_ratio != null}<span class="text-sm font-bold {k.penalty_success_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.penalty_success_ratio >= 1 ? '▲' : '▼'}</span>{/if}
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">YC / Match</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.yc_per_match}</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-xs text-gray-400">Prev season: {k.prev_yc_per_match ?? '—'}</span>
       {#if k.yc_ratio != null}<span class="text-sm font-bold {k.yc_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.yc_ratio >= 1 ? '▲' : '▼'}</span>{/if}
-    </div>
-  </div>
-
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Shots on Target / Match</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.sot_per_match}</div>
-    <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_sot_per_match ?? '—'}</span>
-      {#if k.sot_ratio != null}<span class="text-sm font-bold {k.sot_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.sot_ratio >= 1 ? '▲' : '▼'}</span>{/if}
-    </div>
-  </div>
-
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">RC / Match</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.rc_per_match}</div>
-    <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_rc_per_match ?? '—'}</span>
-      {#if k.rc_ratio != null}<span class="text-sm font-bold {k.rc_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.rc_ratio >= 1 ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
 
