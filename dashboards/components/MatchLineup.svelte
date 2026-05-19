@@ -3,13 +3,15 @@
   export let subs   = [];   // substitutes
   export let home_team = '';
   export let away_team = '';
+  export let score = '';
 
   const W = 700, H = 560;
   const PX = 12, PY = 14, PW = 676, PH = 532;
   const CX = PX + PW / 2;   // 350
   const CY = PY + PH / 2;   // 280
   const R  = 20;
-  const VPAD = 10;           // vertical padding for player spread
+  const MIN_VPAD      = R + 30;  // 50px — keeps circle + emoji above just inside pitch
+  const TARGET_SPACING = 85;     // ideal px gap between adjacent player centers
 
   // Fixed X column per position tier (as fraction of PW) — home stays left of 0.5, away right
   const posX = {
@@ -41,8 +43,11 @@
         return side === 'away' ? -d : d;
       });
       const n = sorted.length;
+      const vpad = n <= 1 ? PH / 2 : Math.max(MIN_VPAD, (PH - (n - 1) * TARGET_SPACING) / 2);
       sorted.forEach((p, i) => {
-        const y = PY + VPAD + ((i + 1) / (n + 1)) * (PH - 2 * VPAD);
+        const y = n <= 1
+          ? PY + PH / 2
+          : PY + vpad + (i / (n - 1)) * (PH - 2 * vpad);
         out.push({ ...p, cx: x, cy: y });
       });
     }
@@ -52,6 +57,7 @@
   $: homePlayers    = computeLayout(lineup.filter(p => p.team_side === 'Home'), 'home');
   $: awayPlayers    = computeLayout(lineup.filter(p => p.team_side === 'Away'), 'away');
   $: allPlayers     = [...homePlayers, ...awayPlayers];
+  $: mvp = [...allPlayers, ...homeSubs, ...awaySubs].reduce((best, p) => (p.rating ?? 0) > (best?.rating ?? 0) ? p : best, null);
   $: homeSubs       = subs.filter(p => p.team_side === 'Home');
   $: awaySubs       = subs.filter(p => p.team_side === 'Away');
   $: homeRow        = lineup.find(p => p.team_side === 'Home');
@@ -67,23 +73,33 @@
   }
 
   const statDefs = [
-    { key: 'goals_scored',        label: 'Goals'           },
-    { key: 'assists',             label: 'Assists'         },
-    { key: 'shots_total',         label: 'Shots'           },
-    { key: 'shots_on_target',     label: 'Shots on Target' },
-    { key: 'key_passes',          label: 'Key Passes'      },
-    { key: 'big_chances_created', label: 'Big Chances'     },
-    { key: 'dribbles_completed',  label: 'Dribbles'        },
-    { key: 'tackles',             label: 'Tackles'         },
-    { key: 'interceptions',       label: 'Interceptions'   },
-    { key: 'clearances',          label: 'Clearances'      },
-    { key: 'aerials_won',         label: 'Aerials Won'     },
-    { key: 'blocks',              label: 'Blocks'          },
-    { key: 'fouls_committed',     label: 'Fouls'           },
-    { key: 'saves',               label: 'Saves'           },
-    { key: 'yellow_cards',        label: 'Yellow Cards'    },
-    { key: 'red_cards',           label: 'Red Cards'       },
-    { key: 'minutes_played',      label: 'Minutes'         },
+    // Context
+    { key: 'minutes_played',      label: 'Minutes'           },
+    // Attacking
+    { key: 'goals_scored',        label: 'Goals'             },
+    { key: 'assists',             label: 'Assists'           },
+    { key: 'shots_total',         label: 'Shots'             },
+    { key: 'shots_on_target',     label: 'Shots on Target'   },
+    { key: 'woodwork_hits',       label: 'Woodwork Hits'     },
+    // Creativity
+    { key: 'key_passes',          label: 'Key Passes'        },
+    { key: 'big_chances_created', label: 'Big Chances'       },
+    { key: 'big_chances_missed',  label: 'Big Chances Missed'},
+    { key: 'dribbles_completed',  label: 'Dribbles'          },
+    { key: 'crosses_total',       label: 'Crosses'           },
+    { key: 'pass_accuracy',       label: 'Pass Accuracy %'   },
+    // Defending
+    { key: 'tackles',             label: 'Tackles'           },
+    { key: 'interceptions',       label: 'Interceptions'     },
+    { key: 'clearances',          label: 'Clearances'        },
+    { key: 'aerials_won',         label: 'Aerials Won'       },
+    { key: 'blocks',              label: 'Blocks'            },
+    { key: 'saves',               label: 'Saves'             },
+    // Discipline
+    { key: 'fouls_committed',     label: 'Fouls'             },
+    { key: 'fouls_drawn',         label: 'Fouls Drawn'       },
+    { key: 'yellow_cards',        label: 'Yellow Cards'      },
+    { key: 'red_cards',           label: 'Red Cards'         },
   ];
   function visibleStats(p) { return statDefs.filter(s => p[s.key] > 0); }
 
@@ -128,6 +144,9 @@
     {#if homeLogo}<img src={homeLogo} alt={home_team} style="width:28px;height:28px;object-fit:contain;" onerror="this.style.display='none'" />{/if}
     <span style="font-size:13px;font-weight:700;color:#374151;">{homeFormation}</span>
   </div>
+  {#if score}
+  <div style="font-size:20px;font-weight:900;color:#111827;">{score}</div>
+  {/if}
   <div style="display:flex;align-items:center;gap:8px;">
     <span style="font-size:13px;font-weight:700;color:#374151;">{awayFormation}</span>
     {#if awayLogo}<img src={awayLogo} alt={away_team} style="width:28px;height:28px;object-fit:contain;" onerror="this.style.display='none'" />{/if}
@@ -226,10 +245,10 @@
         >{p.rating}</text>
       {/if}
 
-      <!-- Goal / assist / card emojis -->
+      <!-- Goal / assist / card emojis (above the circle so they never overflow bottom) -->
       {@const emojis = emojiRow(p)}
       {#if emojis}
-        <text x={p.cx} y={p.cy + R + 40} text-anchor="middle" font-size="15">{emojis}</text>
+        <text x={p.cx} y={p.cy - R - 6} text-anchor="middle" font-size="13">{emojis}</text>
       {/if}
 
       <!-- Click target -->
@@ -239,6 +258,12 @@
         role="button" tabindex="0" aria-label={p.player_name}
       />
     {/each}
+
+    <!-- MVP star (field players only) -->
+    {#if mvp?.rating && mvp?.cx}
+      <text x={mvp.cx + 14} y={mvp.cy - 11} text-anchor="middle" font-size="14" fill="#fbbf24"
+        paint-order="stroke" stroke="rgba(0,0,0,0.7)" stroke-width="2.5">★</text>
+    {/if}
   </svg>
 
   <!-- Bottom-sheet tooltip -->
@@ -290,12 +315,17 @@
   <div>
     <div style="font-weight:700;color:#374151;margin-bottom:6px;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">🔄 {home_team} Subs</div>
     {#each homeSubs as p}
-      <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;">
+      <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;cursor:pointer;"
+        on:click={() => toggle(p)}
+        on:keydown={e => e.key === 'Enter' && toggle(p)}
+        role="button" tabindex="0" aria-label={p.player_name}>
         <img src={p.player_photo} alt={p.player_name}
           style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;"
           onerror="this.style.display='none'" />
         <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0;">{p.position_short_code ?? '—'}</span>
         <span style="color:#374151;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{p.player_name}</span>
+        {#if emojiRow(p)}<span style="flex-shrink:0;font-size:11px;">{emojiRow(p)}</span>{/if}
+        {#if mvp?.player_name === p.player_name && mvp?.team_side === p.team_side}<span style="color:#fbbf24;flex-shrink:0;">★</span>{/if}
         {#if p.rating}<span style="font-weight:700;color:{ratingColor(p.rating)};flex-shrink:0;">{p.rating}</span>{/if}
       </div>
     {/each}
@@ -303,12 +333,17 @@
   <div>
     <div style="font-weight:700;color:#374151;margin-bottom:6px;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">🔄 {away_team} Subs</div>
     {#each awaySubs as p}
-      <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;">
+      <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;cursor:pointer;"
+        on:click={() => toggle(p)}
+        on:keydown={e => e.key === 'Enter' && toggle(p)}
+        role="button" tabindex="0" aria-label={p.player_name}>
         <img src={p.player_photo} alt={p.player_name}
           style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;"
           onerror="this.style.display='none'" />
         <span style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0;">{p.position_short_code ?? '—'}</span>
         <span style="color:#374151;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{p.player_name}</span>
+        {#if emojiRow(p)}<span style="flex-shrink:0;font-size:11px;">{emojiRow(p)}</span>{/if}
+        {#if mvp?.player_name === p.player_name && mvp?.team_side === p.team_side}<span style="color:#fbbf24;flex-shrink:0;">★</span>{/if}
         {#if p.rating}<span style="font-weight:700;color:{ratingColor(p.rating)};flex-shrink:0;">{p.rating}</span>{/if}
       </div>
     {/each}
