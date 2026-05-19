@@ -407,7 +407,7 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 ## League Standing
 
-*Percentile rank among all players with 450+ minutes in {inputs.season.value}. 100 = best in the league.*
+*Composite percentile score among all players with 450+ minutes in {inputs.season.value}. Each axis combines multiple rate metrics weighted by their importance to that dimension. Higher = better relative to the league.*
 
 {#each league_context as lc}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-center">
