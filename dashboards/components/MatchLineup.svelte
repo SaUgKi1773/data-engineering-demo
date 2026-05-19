@@ -10,7 +10,8 @@
   const CX = PX + PW / 2;   // 350
   const CY = PY + PH / 2;   // 280
   const R  = 20;
-  const VPAD = 10;           // vertical padding for player spread
+  const MIN_VPAD      = R + 30;  // 50px — keeps circle + emoji above just inside pitch
+  const TARGET_SPACING = 85;     // ideal px gap between adjacent player centers
 
   // Fixed X column per position tier (as fraction of PW) — home stays left of 0.5, away right
   const posX = {
@@ -42,8 +43,11 @@
         return side === 'away' ? -d : d;
       });
       const n = sorted.length;
+      const vpad = n <= 1 ? PH / 2 : Math.max(MIN_VPAD, (PH - (n - 1) * TARGET_SPACING) / 2);
       sorted.forEach((p, i) => {
-        const y = PY + VPAD + ((i + 1) / (n + 1)) * (PH - 2 * VPAD);
+        const y = n <= 1
+          ? PY + PH / 2
+          : PY + vpad + (i / (n - 1)) * (PH - 2 * vpad);
         out.push({ ...p, cx: x, cy: y });
       });
     }
@@ -239,10 +243,10 @@
         >{p.rating}</text>
       {/if}
 
-      <!-- Goal / assist / card emojis -->
+      <!-- Goal / assist / card emojis (above the circle so they never overflow bottom) -->
       {@const emojis = emojiRow(p)}
       {#if emojis}
-        <text x={p.cx} y={p.cy + R + 40} text-anchor="middle" font-size="15">{emojis}</text>
+        <text x={p.cx} y={p.cy - R - 6} text-anchor="middle" font-size="13">{emojis}</text>
       {/if}
 
       <!-- Click target -->
