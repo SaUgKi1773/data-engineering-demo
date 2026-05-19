@@ -28,7 +28,11 @@ WITH player_agg AS (
         SUM(big_chances_missed)    AS big_chances_missed,
         SUM(woodwork_hits)         AS woodwork_hits,
         SUM(crosses_total)         AS crosses_total,
-        SUM(crosses_accurate)      AS crosses_accurate
+        SUM(crosses_accurate)      AS crosses_accurate,
+        SUM(chances_created)       AS chances_created,
+        SUM(penalty_scored)        AS penalty_scored,
+        SUM(penalty_missed)        AS penalty_missed,
+        SUM(errors_leading_to_goal) AS errors_leading_to_goal
     FROM superligaen.gold.fct_player_appearances
     GROUP BY match_sk, team_sk
 )
@@ -97,8 +101,12 @@ SELECT
     COALESCE(pa.big_chances_created, 0)                                    AS big_chances_created,
     COALESCE(pa.big_chances_missed,  0)                                    AS big_chances_missed,
     COALESCE(pa.woodwork_hits,     0)                                      AS woodwork_hits,
-    COALESCE(pa.crosses_total,     0)                                      AS crosses_total,
-    COALESCE(pa.crosses_accurate,  0)                                      AS crosses_accurate,
+    COALESCE(pa.crosses_total,          0)                                 AS crosses_total,
+    COALESCE(pa.crosses_accurate,       0)                                 AS crosses_accurate,
+    COALESCE(pa.chances_created,        0)                                 AS chances_created,
+    COALESCE(pa.penalty_scored,         0)                                 AS penalty_scored,
+    COALESCE(pa.penalty_missed,         0)                                 AS penalty_missed,
+    COALESCE(pa.errors_leading_to_goal, 0)                                 AS errors_leading_to_goal,
     CASE
         WHEN MAX(CASE WHEN m.match_round_type = 'Championship Round' THEN 1 ELSE 0 END) OVER (PARTITION BY f.team_sk, d.season) = 1
             THEN 'Championship Group'

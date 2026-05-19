@@ -264,12 +264,34 @@ order by aggression_index desc
 with all_teams as (
     select
         team_name,
-        sum(goals_scored)::double       / count(distinct match_id)                         as goals_per_match,
-        sum(goals_conceded)::double     / count(distinct match_id)                         as conceded_per_match,
-        100.0 * sum(passes_accurate)    / nullif(sum(total_passes), 0)                     as pass_accuracy,
-        sum(possession_pct)::double     / count(distinct match_id)                         as avg_possession,
-        100.0 * sum(goals_scored)       / nullif(sum(total_shots), 0)                      as shot_conv,
-        100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id)  as win_rate
+        -- Attacking
+        sum(goals_scored)::double           / count(distinct match_id)  as goals_pm,
+        sum(shots_on_goal)::double          / count(distinct match_id)  as sog_pm,
+        sum(total_shots)::double            / count(distinct match_id)  as shots_pm,
+        sum(penalty_scored)::double         / count(distinct match_id)  as penalty_pm,
+        -- Creativity & Playmaking
+        sum(chances_created)::double        / count(distinct match_id)  as chances_pm,
+        sum(big_chances_created)::double    / count(distinct match_id)  as big_chances_pm,
+        sum(key_passes)::double             / count(distinct match_id)  as key_passes_pm,
+        sum(corner_kicks)::double           / count(distinct match_id)  as corners_pm,
+        -- Possession & Control
+        avg(possession_pct)                                             as avg_possession,
+        100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0)    as pass_accuracy,
+        sum(dribbles_completed)::double     / count(distinct match_id)  as dribbles_pm,
+        -- Defending
+        sum(tackles_won)::double            / count(distinct match_id)  as tackles_won_pm,
+        sum(interceptions)::double          / count(distinct match_id)  as interceptions_pm,
+        sum(blocks)::double                 / count(distinct match_id)  as blocks_pm,
+        sum(clearances)::double             / count(distinct match_id)  as clearances_pm,
+        sum(errors_leading_to_goal)::double / count(distinct match_id)  as errors_pm,
+        -- Physicality
+        100.0 * sum(duels_won) / nullif(sum(duels_total), 0)           as duel_win_pct,
+        sum(aerials_won)::double            / count(distinct match_id)  as aerials_pm,
+        sum(fouls_drawn)::double            / count(distinct match_id)  as fouls_drawn_pm,
+        sum(yellow_cards)::double           / count(distinct match_id)  as yc_pm,
+        sum(red_cards)::double              / count(distinct match_id)  as rc_pm,
+        -- Winning
+        sum(points_earned)::double          / count(distinct match_id)  as points_pm
     from superligaen.mart_match_facts
     where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
@@ -278,21 +300,52 @@ with all_teams as (
 ranked as (
     select
         team_name,
-        goals_per_match,
-        conceded_per_match,
-        pass_accuracy,
-        avg_possession,
-        shot_conv,
-        win_rate,
-        round(percent_rank() over (order by goals_per_match)         * 100) as attack_pct,
-        round(percent_rank() over (order by conceded_per_match desc)  * 100) as defense_pct,
-        round(percent_rank() over (order by pass_accuracy)           * 100) as passing_pct,
-        round(percent_rank() over (order by avg_possession)          * 100) as possession_pct,
-        round(percent_rank() over (order by shot_conv)               * 100) as efficiency_pct,
-        round(percent_rank() over (order by win_rate)                * 100) as wins_pct
+        percent_rank() over (order by goals_pm)           as r_goals,
+        percent_rank() over (order by sog_pm)             as r_sog,
+        percent_rank() over (order by shots_pm)           as r_shots,
+        percent_rank() over (order by penalty_pm)         as r_penalty,
+        percent_rank() over (order by chances_pm)         as r_chances,
+        percent_rank() over (order by big_chances_pm)     as r_big_chances,
+        percent_rank() over (order by key_passes_pm)      as r_key_passes,
+        percent_rank() over (order by corners_pm)         as r_corners,
+        percent_rank() over (order by avg_possession)     as r_possession,
+        percent_rank() over (order by pass_accuracy)      as r_pass_accuracy,
+        percent_rank() over (order by dribbles_pm)        as r_dribbles,
+        percent_rank() over (order by tackles_won_pm)     as r_tackles_won,
+        percent_rank() over (order by interceptions_pm)   as r_interceptions,
+        percent_rank() over (order by blocks_pm)          as r_blocks,
+        percent_rank() over (order by clearances_pm)      as r_clearances,
+        percent_rank() over (order by errors_pm desc)     as r_errors,
+        percent_rank() over (order by duel_win_pct)       as r_duel_win,
+        percent_rank() over (order by aerials_pm)         as r_aerials,
+        percent_rank() over (order by fouls_drawn_pm)     as r_fouls_drawn,
+        percent_rank() over (order by yc_pm desc)         as r_yc,
+        percent_rank() over (order by rc_pm desc)         as r_rc,
+        percent_rank() over (order by points_pm)          as r_points
     from all_teams
+),
+composites as (
+    select
+        team_name,
+        (r_goals + r_sog + r_shots + r_penalty) / 4                              as raw_attacking,
+        (r_chances + r_big_chances + r_key_passes + r_corners) / 4               as raw_creativity,
+        (r_possession + r_pass_accuracy + r_dribbles) / 3                        as raw_possession,
+        (r_tackles_won + r_interceptions + r_blocks + r_clearances + r_errors) / 5 as raw_defending,
+        (r_duel_win + r_aerials + r_fouls_drawn + r_yc + r_rc) / 5              as raw_physicality,
+        r_points                                                                   as raw_winning
+    from ranked
 )
-select * from ranked where ('All' in ${inputs.team.value} OR team_name in ${inputs.team.value}) order by team_name
+select
+    team_name,
+    round(percent_rank() over (order by raw_attacking)    * 100) as attacking_score,
+    round(percent_rank() over (order by raw_creativity)   * 100) as creativity_score,
+    round(percent_rank() over (order by raw_possession)   * 100) as possession_score,
+    round(percent_rank() over (order by raw_defending)    * 100) as defending_score,
+    round(percent_rank() over (order by raw_physicality)  * 100) as physicality_score,
+    round(percent_rank() over (order by raw_winning)      * 100) as winning_score
+from composites
+where ('All' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+order by team_name
 ```
 
 ---
