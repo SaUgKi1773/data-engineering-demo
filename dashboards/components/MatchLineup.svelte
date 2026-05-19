@@ -53,6 +53,7 @@
   $: homePlayers    = computeLayout(lineup.filter(p => p.team_side === 'Home'), 'home');
   $: awayPlayers    = computeLayout(lineup.filter(p => p.team_side === 'Away'), 'away');
   $: allPlayers     = [...homePlayers, ...awayPlayers];
+  $: mvp = allPlayers.reduce((best, p) => (p.rating ?? 0) > (best?.rating ?? 0) ? p : best, null);
   $: homeSubs       = subs.filter(p => p.team_side === 'Home');
   $: awaySubs       = subs.filter(p => p.team_side === 'Away');
   $: homeRow        = lineup.find(p => p.team_side === 'Home');
@@ -243,6 +244,12 @@
         role="button" tabindex="0" aria-label={p.player_name}
       />
     {/each}
+
+    <!-- MVP star -->
+    {#if mvp?.rating}
+      <text x={mvp.cx + 14} y={mvp.cy - 11} text-anchor="middle" font-size="14" fill="#fbbf24"
+        paint-order="stroke" stroke="rgba(0,0,0,0.7)" stroke-width="2.5">★</text>
+    {/if}
   </svg>
 
   <!-- Bottom-sheet tooltip -->
