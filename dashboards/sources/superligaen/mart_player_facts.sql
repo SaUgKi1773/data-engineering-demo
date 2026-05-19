@@ -123,8 +123,7 @@ JOIN superligaen.gold.dim_stadium             st   ON st.stadium_sk       = f.st
 JOIN superligaen.gold.dim_appearance_type     at_dim ON at_dim.appearance_type_sk = f.appearance_type_sk
 JOIN superligaen.gold.dim_formation           df     ON df.formation_sk           = f.formation_sk
 JOIN superligaen.gold.dim_position            dpos   ON dpos.position_sk          = f.position_sk
-LEFT JOIN superligaen.gold.dim_coach          dc     ON dc.coach_sk               = f.coach_sk
-WHERE f.player_sk > 0
-  AND f.match_result_sk > 0
-  AND m.match_round_number IS NOT NULL
+JOIN superligaen.gold.dim_coach               dc     ON dc.coach_sk               = f.coach_sk
+WHERE f.match_result_sk > 0
+  AND m.match_type = 'Group Stage'
   AND d.season >= '2020/21'

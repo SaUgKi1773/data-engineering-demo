@@ -179,10 +179,10 @@ JOIN superligaen.gold.dim_match_result   r   ON r.match_result_sk   = f.match_re
 JOIN superligaen.gold.dim_team_side      ts  ON ts.team_side_sk     = f.team_side_sk
 JOIN superligaen.gold.dim_referee        ref ON ref.referee_sk      = f.referee_sk
 JOIN superligaen.gold.dim_stadium        st  ON st.stadium_sk       = f.stadium_sk
-LEFT JOIN superligaen.gold.dim_coach     dc  ON dc.coach_sk         = f.coach_sk
-LEFT JOIN superligaen.gold.dim_formation df  ON df.formation_sk     = f.formation_sk
+JOIN superligaen.gold.dim_coach          dc  ON dc.coach_sk         = f.coach_sk
+JOIN superligaen.gold.dim_formation      df  ON df.formation_sk     = f.formation_sk
 LEFT JOIN player_agg                     pa  ON pa.match_sk         = f.match_sk
                                            AND pa.team_sk           = f.team_sk
 WHERE f.match_result_sk > 0
-  AND m.match_round_number IS NOT NULL
+  AND m.match_type = 'Group Stage'
   AND d.season >= '2020/21'
