@@ -432,54 +432,6 @@ order by team_name
 
 ---
 
-## Standings & Points Race
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
-
-<div>
-
-<LineChart
-    data={points_progression}
-    x=round
-    y=cumulative_points
-    series=team_name
-    xAxisTitle="Round"
-    yAxisTitle="Cumulative Points"
-    title="Points Race"
-    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; for (const row of points_progression) { if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const sorted = [...params].sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}}}
-    legend=false
-    chartAreaHeight=300
-/>
-
-</div>
-
-<div>
-
-#### League Table
-
-<div class="block md:hidden">
-<DataTable data={current_standings} rows=20>
-    <Column id=team_col_mobile title="Team"  contentType=html />
-    <Column id=round_group     title="Group" />
-    <Column id=mp              title="MP"   align=center />
-    <Column id=pts             title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-</DataTable>
-</div>
-<div class="hidden md:block">
-<DataTable data={current_standings} rows=20>
-    <Column id=team_col    title="Team"  contentType=html />
-    <Column id=round_group title="Group" />
-    <Column id=mp          title="MP"   align=center />
-    <Column id=pts         title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-</DataTable>
-</div>
-
-</div>
-
-</div>
-
----
-
 ## Season Awards
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -645,6 +597,53 @@ order by team_name
 
 </div>
 
+---
+
+## Standings & Points Race
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
+
+<div>
+
+<LineChart
+    data={points_progression}
+    x=round
+    y=cumulative_points
+    series=team_name
+    xAxisTitle="Round"
+    yAxisTitle="Cumulative Points"
+    title="Points Race"
+    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; for (const row of points_progression) { if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const sorted = [...params].sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}}}
+    legend=false
+    chartAreaHeight=300
+/>
+
+</div>
+
+<div>
+
+#### League Table
+
+<div class="block md:hidden">
+<DataTable data={current_standings} rows=20>
+    <Column id=team_col_mobile title="Team"  contentType=html />
+    <Column id=round_group     title="Group" />
+    <Column id=mp              title="MP"   align=center />
+    <Column id=pts             title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+</DataTable>
+</div>
+<div class="hidden md:block">
+<DataTable data={current_standings} rows=20>
+    <Column id=team_col    title="Team"  contentType=html />
+    <Column id=round_group title="Group" />
+    <Column id=mp          title="MP"   align=center />
+    <Column id=pts         title="Pts"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+</DataTable>
+</div>
+
+</div>
+
+</div>
 
 ---
 
