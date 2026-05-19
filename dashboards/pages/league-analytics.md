@@ -656,9 +656,11 @@ order by team_name
 
 *How does a team rank across six dimensions relative to the rest of the league? Each axis is a score from 0 to 100 — 100 means best in the league. Click a team in the legend to isolate it.*
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-end">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
 
 <div>
+
+<p style="font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;">Attack vs Defence — {inputs.season.value}</p>
 
 <ScatterPlot
     data={team_landscape}
@@ -667,7 +669,6 @@ order by team_name
     series=team_name
     xAxisTitle="Goals Scored"
     yAxisTitle="Goals Conceded"
-    title="Attack vs Defence — {inputs.season.value}"
     tooltipColumns={[{id: 'team_name', title: 'Team'}, {id: 'goals_for', title: 'Goals For'}, {id: 'goals_against', title: 'Goals Against'}, {id: 'points', title: 'Points'}, {id: 'win_pct', title: 'Win %', fmt: '0.0"%"'}]}
     chartAreaHeight=320
     legend=false
@@ -696,7 +697,9 @@ order by team_name
 
 <div>
 
-<TeamRadar data={radar_data} title="Performance Radar" />
+<p style="font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;">Performance Radar</p>
+
+<TeamRadar data={radar_data} />
 
 </div>
 
