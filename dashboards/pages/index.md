@@ -68,7 +68,7 @@ limit 1
           <span class="text-white/50 text-xs uppercase tracking-widest">Denmark</span>
         </div>
         <div class="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">Superligaen</div>
-        <div class="text-white/50 text-xs mt-1 uppercase tracking-widest">Premier Football League</div>
+        <div class="text-white/50 text-xs mt-1 tracking-wide italic">Powered by data. Built for football.</div>
       </div>
     </div>
 
