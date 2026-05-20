@@ -104,6 +104,96 @@ from ${results}
 </DataTable>
 </div>
 
+```sql potw
+with base as (
+  select
+    player_name,
+    player_photo,
+    team_name,
+    team_logo,
+    goals_scored,
+    assists,
+    dribbles_completed,
+    rating,
+    position_group,
+    minutes_played
+  from superligaen.mart_player_facts
+  where season = '${inputs.season.value}'
+    and cast(match_round_number as integer) = ${inputs.round.value}
+    and result in ('Win', 'Draw', 'Loss')
+    and appearance_type in ('Starter', 'Substitute')
+    and minutes_played > 0
+),
+mvp as (
+  select 'MVP' as category, '⭐' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 1 as sort_order
+  from base where rating is not null and minutes_played >= 30
+  order by rating desc, minutes_played desc limit 1
+),
+top_scorer as (
+  select 'Top Scorer' as category, '⚽' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(goals_scored::int as varchar) as stat_value, 'Goals' as stat_label, 2 as sort_order
+  from base where goals_scored > 0
+  order by goals_scored desc, rating desc nulls last, minutes_played desc limit 1
+),
+top_assister as (
+  select 'Top Assister' as category, '🎯' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(assists::int as varchar) as stat_value, 'Assists' as stat_label, 3 as sort_order
+  from base where assists > 0
+  order by assists desc, rating desc nulls last, minutes_played desc limit 1
+),
+best_gk as (
+  select 'Best GK' as category, '🧤' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 4 as sort_order
+  from base where position_group = 'Goalkeeper' and rating is not null
+  order by rating desc, minutes_played desc limit 1
+),
+best_defender as (
+  select 'Best Defender' as category, '🛡️' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 5 as sort_order
+  from base where position_group = 'Defender' and rating is not null
+  order by rating desc, minutes_played desc limit 1
+),
+best_dribbler as (
+  select 'Best Dribbler' as category, '🪄' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(dribbles_completed::int as varchar) as stat_value, 'Dribbles' as stat_label, 6 as sort_order
+  from base where dribbles_completed > 0
+  order by dribbles_completed desc, rating desc nulls last, minutes_played desc limit 1
+)
+select * from mvp
+union all select * from top_scorer
+union all select * from top_assister
+union all select * from best_gk
+union all select * from best_defender
+union all select * from best_dribbler
+order by sort_order
+```
+
+{#if potw.length > 0}
+## Player of the Round
+
+<div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+  {#each potw as p}
+  <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:14px 10px;text-align:center;">
+    <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px;">{p.icon} {p.category}</div>
+    <img src={p.player_photo} alt={p.player_name}
+      style="width:52px;height:52px;border-radius:50%;object-fit:cover;margin:0 auto 8px;display:block;"
+      onerror="this.style.display='none'" />
+    <div style="font-weight:800;font-size:12px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{p.player_name}</div>
+    <div style="font-size:10px;color:#9ca3af;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{p.team_name}</div>
+    <div style="font-size:22px;font-weight:900;color:#111827;margin-top:8px;">{p.stat_value}</div>
+    <div style="font-size:10px;color:#9ca3af;">{p.stat_label}</div>
+  </div>
+  {/each}
+</div>
+{/if}
+
 ---
 
 ## Match Analysis
