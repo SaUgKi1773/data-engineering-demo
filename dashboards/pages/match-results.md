@@ -176,19 +176,20 @@ order by sort_order
 ```
 
 {#if potw.length > 0}
-## Player of the Round
+## Players of the Week
 
 <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
   {#each potw as p}
-  <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:14px 10px;text-align:center;">
-    <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px;">{p.icon} {p.category}</div>
+  <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;">
+    <div style="font-size:16px;height:22px;display:flex;align-items:center;justify-content:center;">{p.icon}</div>
+    <div style="font-size:10px;font-weight:700;color:#6b7280;height:28px;display:flex;align-items:center;justify-content:center;line-height:1.3;margin-bottom:6px;">{p.category}</div>
     <img src={p.player_photo} alt={p.player_name}
-      style="width:52px;height:52px;border-radius:50%;object-fit:cover;margin:0 auto 8px;display:block;"
+      style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;margin-bottom:8px;"
       onerror="this.style.display='none'" />
-    <div style="font-weight:800;font-size:12px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{p.player_name}</div>
-    <div style="font-size:10px;color:#9ca3af;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{p.team_name}</div>
-    <div style="font-size:22px;font-weight:900;color:#111827;margin-top:8px;">{p.stat_value}</div>
-    <div style="font-size:10px;color:#9ca3af;">{p.stat_label}</div>
+    <div style="font-weight:800;font-size:11px;color:#111827;height:16px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">{p.player_name}</div>
+    <div style="font-size:10px;color:#9ca3af;height:14px;line-height:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">{p.team_name}</div>
+    <div style="font-size:20px;font-weight:900;color:#111827;margin-top:8px;line-height:1;">{p.stat_value}</div>
+    <div style="font-size:10px;color:#9ca3af;margin-top:2px;">{p.stat_label}</div>
   </div>
   {/each}
 </div>
