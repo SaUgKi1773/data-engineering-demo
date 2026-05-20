@@ -6,8 +6,6 @@ title: Stadium Intelligence
 
 ```sql season_options
 select season from (
-  select 'All Seasons' as season, 2 as is_current
-  union all
   select season, max(is_current_season::int) as is_current
   from superligaen.mart_match_facts
   where result in ('Win', 'Draw', 'Loss')
@@ -16,7 +14,7 @@ select season from (
 ```
 
 {#key season_options[0]?.season}
-<Dropdown data={season_options} name=season value=season label=season multiple=true defaultValue={['All Seasons']} />
+<Dropdown data={season_options} name=season value=season label=season order="season desc" defaultValue={season_options[0]?.season} />
 {/key}
 
 ```sql stadium_stats
@@ -49,7 +47,7 @@ where result in ('Win', 'Draw', 'Loss')
   and stadium_longitude between 7.5 and 15.5
   and stadium_name not like '%Unknown%'
   and stadium_name not like '%Applicable%'
-  and ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+  and season = '${inputs.season.value}'
 group by stadium_name
 having count(distinct match_id) >= 4
 order by home_win_pct desc
@@ -77,7 +75,7 @@ where result in ('Win', 'Draw', 'Loss')
   and stadium_surface != ''
   and stadium_latitude between 54.5 and 57.8
   and stadium_longitude between 7.5 and 15.5
-  and ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+  and season = '${inputs.season.value}'
 group by stadium_surface
 order by
     case
@@ -112,7 +110,7 @@ where result in ('Win', 'Draw', 'Loss')
   and stadium_name not like '%Applicable%'
   and stadium_latitude between 54.5 and 57.8
   and stadium_longitude between 7.5 and 15.5
-  and ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+  and season = '${inputs.season.value}'
 group by stadium_name
 having count(distinct match_id) filter (where team_side='Home') >= 4
 order by home_win_pct desc
@@ -134,7 +132,7 @@ from (
       and stadium_name not like '%Unknown%'
       and stadium_latitude between 54.5 and 57.8
       and stadium_longitude between 7.5 and 15.5
-      and ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+      and season = '${inputs.season.value}'
     group by stadium_name
     having count(distinct match_id) >= 4
 ) t

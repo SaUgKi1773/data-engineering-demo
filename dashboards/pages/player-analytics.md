@@ -19,8 +19,6 @@ title: Player Intelligence
 
 ```sql seasons
 select season from (
-  select 'All Seasons' as season, 2 as is_current
-  union all
   select season, max(is_current_season::int) as is_current
   from superligaen.mart_player_facts
   where result in ('Win', 'Draw', 'Loss')
@@ -34,7 +32,7 @@ select team_name from (
   union all
   select distinct team_name, 1 as ord
   from superligaen.mart_player_facts
-  where ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+  where season = '${inputs.season.value}'
     and result in ('Win', 'Draw', 'Loss')
 ) order by ord, team_name
 ```
@@ -45,7 +43,7 @@ select player_position from (
   union all
   select distinct player_position, 1 as ord
   from superligaen.mart_player_facts
-  where ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+  where season = '${inputs.season.value}'
     and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
     and result in ('Win', 'Draw', 'Loss')
     and player_position is not null
@@ -55,7 +53,7 @@ select player_position from (
 ```sql players_in_team
 select distinct player_name
 from superligaen.mart_player_facts
-where ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+where season = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and ('All' in ${inputs.position.value} OR player_position in ${inputs.position.value})
   and result in ('Win', 'Draw', 'Loss')
@@ -79,7 +77,7 @@ with base as (
         sum(key_passes) + sum(big_chances_created)                 as chances_created,
         round(avg(rating), 2)                                      as avg_rating
     from superligaen.mart_player_facts
-    where ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+    where season = '${inputs.season.value}'
       and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, player_position
@@ -111,7 +109,7 @@ end
 ```
 
 {#key seasons[0]?.season}
-<Dropdown data={seasons} name=season value=season label=season multiple=true defaultValue={['All Seasons']} />
+<Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
 {/key}
 
 {#key teams[0]?.team_name}
@@ -161,7 +159,7 @@ select
     sum(case when result = 'Draw' then 1 else 0 end)::int                                as draws,
     sum(case when result = 'Loss' then 1 else 0 end)::int                                as losses
 from superligaen.mart_player_facts
-where ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
   and result in ('Win', 'Draw', 'Loss')
 group by player_name, player_photo, player_nationality, player_detailed_position, team_name, team_logo, player_position
@@ -177,7 +175,7 @@ select
     round(100.0 * duels_won       / nullif(duels_total,   0), 1)               as duel_win,
     rating
 from superligaen.mart_player_facts
-where ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
   and result in ('Win', 'Draw', 'Loss')
 order by match_round_number
@@ -204,7 +202,7 @@ select
     yellow_cards,
     rating
 from superligaen.mart_player_facts
-where ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
   and result in ('Win', 'Draw', 'Loss')
 order by match_date desc
@@ -243,7 +241,7 @@ with base as (
         -- Impact
         avg(rating)                                                                                  as avg_rating
     from superligaen.mart_player_facts
-    where ('All Seasons' in ${inputs.season.value} OR season in ${inputs.season.value})
+    where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
     group by player_name
     having sum(minutes_played) >= 450
