@@ -48,30 +48,58 @@ order by
 limit 1
 ```
 
-<div class="relative rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 md:p-10 mb-6 shadow-xl overflow-hidden">
-  <div class="absolute inset-0 opacity-[0.06]" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 22px 22px;"></div>
-  <div class="absolute top-4 right-4 bg-white/10 rounded-xl p-2 backdrop-blur">
-    <img src="{league[0].league_logo}" alt="Superligaen" class="h-8 md:h-12" />
+<div class="relative rounded-2xl overflow-hidden mb-6 shadow-lg" style="background: linear-gradient(135deg, #1e3a5f 0%, #1a5276 40%, #1a6b4a 100%);">
+  <!-- pitch lines overlay -->
+  <div class="absolute inset-0 opacity-[0.08]" style="background-image: repeating-linear-gradient(90deg, white 0px, white 1px, transparent 1px, transparent 80px), repeating-linear-gradient(0deg, white 0px, white 1px, transparent 1px, transparent 80px);"></div>
+  <!-- center circle hint -->
+  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+    <div class="rounded-full border border-white opacity-[0.06]" style="width:320px;height:320px;"></div>
   </div>
-  <div class="flex items-center justify-center gap-4 md:gap-6 relative">
-    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-7 md:h-10 rounded-lg shadow-lg opacity-90" />
-    <div class="text-center">
-      <div class="text-3xl md:text-5xl font-extrabold tracking-tight text-white">Superligaen</div>
-      <div class="text-gray-400 text-xs md:text-sm mt-2 md:mt-3 uppercase tracking-widest">Danish Premier Football League</div>
-      <div class="flex items-center justify-center gap-2 mt-3">
-        <div class="inline-block px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-sm font-semibold">{kpis[0].season}</div>
-        <div class="inline-block px-3 py-1 rounded-full bg-green-500/20 border border-green-400/30 text-green-300 text-xs font-semibold uppercase tracking-wide">Live</div>
+
+  <div class="relative px-6 py-8 md:px-12 md:py-10 flex flex-col md:flex-row items-center justify-between gap-6">
+    <!-- left: league identity -->
+    <div class="flex items-center gap-5">
+      <div class="bg-white/10 backdrop-blur rounded-2xl p-3 shadow-inner flex-shrink-0">
+        <img src="{league[0].league_logo}" alt="Superligaen" class="h-14 md:h-20 w-auto" />
+      </div>
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <img src="{league[0].league_country_flag}" alt="Denmark" class="h-4 rounded opacity-90" />
+          <span class="text-white/50 text-xs uppercase tracking-widest">Denmark</span>
+        </div>
+        <div class="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">Superligaen</div>
+        <div class="text-white/50 text-xs mt-1 uppercase tracking-widest">Premier Football League</div>
       </div>
     </div>
-    <img src="{league[0].league_country_flag}" alt="Denmark" class="h-7 md:h-10 rounded-lg shadow-lg opacity-90" />
+
+    <!-- right: live stats pills -->
+    <div class="flex flex-wrap justify-center md:justify-end gap-3">
+      <div class="rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-3 text-center min-w-[80px]">
+        <div class="text-white text-xl font-black leading-none">{kpis[0].total_goals}</div>
+        <div class="text-white/50 text-xs mt-1 uppercase tracking-wide">Goals</div>
+      </div>
+      <div class="rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-3 text-center min-w-[80px]">
+        <div class="text-white text-xl font-black leading-none">{kpis[0].total_matches}</div>
+        <div class="text-white/50 text-xs mt-1 uppercase tracking-wide">Matches</div>
+      </div>
+      <div class="rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-3 text-center min-w-[80px]">
+        <div class="text-white text-xl font-black leading-none">{kpis[0].total_teams}</div>
+        <div class="text-white/50 text-xs mt-1 uppercase tracking-wide">Teams</div>
+      </div>
+      <div class="rounded-xl bg-green-500/20 backdrop-blur border border-green-400/30 px-4 py-3 text-center min-w-[80px]">
+        <div class="text-green-300 text-sm font-black leading-none">{kpis[0].season}</div>
+        <div class="text-green-400/70 text-xs mt-1 uppercase tracking-wide">Live</div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center"><BigValue data={leader} value=team_short_name title="Season Leader" /></div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center"><BigValue data={kpis}   value=total_teams   title="Teams"          /></div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center"><BigValue data={kpis}   value=total_matches title="Matches Played"  /></div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center"><BigValue data={kpis}   value=total_goals   title="Goals Scored"    /></div>
+<div class="rounded-xl border border-amber-200 bg-amber-50 shadow-sm p-4 mb-8 flex items-center gap-3">
+  <div class="text-amber-400 text-2xl">🏆</div>
+  <div class="text-xs font-semibold text-amber-600 uppercase tracking-widest flex-shrink-0">Season Leader</div>
+  <div class="flex-1 h-px bg-amber-200"></div>
+  <div class="text-sm font-bold text-amber-800">{leader[0]?.team_name}</div>
+  <div class="text-xs text-amber-600 font-semibold">{leader[0]?.pts} pts</div>
 </div>
 
 <div class="flex items-center gap-3 mb-4">
