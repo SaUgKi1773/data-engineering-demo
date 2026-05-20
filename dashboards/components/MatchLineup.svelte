@@ -74,32 +74,64 @@
 
   const statDefs = [
     // Context
-    { key: 'minutes_played',      label: 'Minutes'           },
+    { key: 'minutes_played',          label: 'Minutes'               },
     // Attacking
-    { key: 'goals_scored',        label: 'Goals'             },
-    { key: 'assists',             label: 'Assists'           },
-    { key: 'shots_total',         label: 'Shots'             },
-    { key: 'shots_on_target',     label: 'Shots on Target'   },
-    { key: 'woodwork_hits',       label: 'Woodwork Hits'     },
+    { key: 'goals_scored',            label: 'Goals'                 },
+    { key: 'own_goals',               label: 'Own Goals'             },
+    { key: 'assists',                 label: 'Assists'               },
+    { key: 'shots_total',             label: 'Shots'                 },
+    { key: 'shots_on_target',         label: 'Shots on Target'       },
+    { key: 'woodwork_hits',           label: 'Woodwork Hits'         },
     // Creativity
-    { key: 'key_passes',          label: 'Key Passes'        },
-    { key: 'big_chances_created', label: 'Big Chances'       },
-    { key: 'big_chances_missed',  label: 'Big Chances Missed'},
-    { key: 'dribbles_completed',  label: 'Dribbles'          },
-    { key: 'crosses_total',       label: 'Crosses'           },
-    { key: 'pass_accuracy',       label: 'Pass Accuracy %'   },
+    { key: 'key_passes',              label: 'Key Passes'            },
+    { key: 'big_chances_created',     label: 'Big Chances Created'   },
+    { key: 'big_chances_missed',      label: 'Big Chances Missed'    },
+    { key: 'dribbles_completed',      label: 'Dribbles'              },
+    { key: 'dribbles_attempts',       label: 'Dribble Attempts'      },
+    { key: 'crosses_total',           label: 'Crosses'               },
+    { key: 'pass_accuracy',           label: 'Pass Accuracy %'       },
+    { key: 'passes_final_third',      label: 'Passes (Final 3rd)'    },
+    { key: 'long_balls',              label: 'Long Balls'            },
+    { key: 'long_balls_won',          label: 'Long Balls Won'        },
     // Defending
-    { key: 'tackles',             label: 'Tackles'           },
-    { key: 'interceptions',       label: 'Interceptions'     },
-    { key: 'clearances',          label: 'Clearances'        },
-    { key: 'aerials_won',         label: 'Aerials Won'       },
-    { key: 'blocks',              label: 'Blocks'            },
-    { key: 'saves',               label: 'Saves'             },
+    { key: 'tackles',                 label: 'Tackles'               },
+    { key: 'tackles_won',             label: 'Tackles Won'           },
+    { key: 'interceptions',           label: 'Interceptions'         },
+    { key: 'clearances',              label: 'Clearances'            },
+    { key: 'aerials_won',             label: 'Aerials Won'           },
+    { key: 'aerials_lost',            label: 'Aerials Lost'          },
+    { key: 'blocks',                  label: 'Blocks'                },
+    { key: 'balls_recovered',         label: 'Balls Recovered'       },
+    { key: 'last_man_tackle',         label: 'Last Man Tackle'       },
+    { key: 'clearances_off_line',     label: 'Clearances Off Line'   },
+    // Duels
+    { key: 'duels_total',             label: 'Duels'                 },
+    { key: 'duels_won',               label: 'Duels Won'             },
+    { key: 'times_dribbled_past',     label: 'Times Dribbled Past'   },
+    { key: 'dispossessed',            label: 'Dispossessed'          },
+    { key: 'possession_losses',       label: 'Possession Losses'     },
+    // Goalkeeping
+    { key: 'saves',                   label: 'Saves'                 },
+    { key: 'saves_inside_box',        label: 'Saves (Inside Box)'    },
+    { key: 'high_ball_claims',        label: 'High Ball Claims'      },
+    { key: 'goalkeeper_punches',      label: 'GK Punches'            },
+    { key: 'goals_conceded',          label: 'Goals Conceded'        },
+    // Penalties
+    { key: 'penalty_won',             label: 'Penalty Won'           },
+    { key: 'penalty_committed',       label: 'Penalty Conceded'      },
+    { key: 'penalty_scored',          label: 'Penalty Scored'        },
+    { key: 'penalty_missed',          label: 'Penalty Missed'        },
+    { key: 'penalty_saved',           label: 'Penalty Saved'         },
     // Discipline
-    { key: 'fouls_committed',     label: 'Fouls'             },
-    { key: 'fouls_drawn',         label: 'Fouls Drawn'       },
-    { key: 'yellow_cards',        label: 'Yellow Cards'      },
-    { key: 'red_cards',           label: 'Red Cards'         },
+    { key: 'fouls_committed',         label: 'Fouls'                 },
+    { key: 'fouls_drawn',             label: 'Fouls Drawn'           },
+    { key: 'offsides',                label: 'Offsides'              },
+    { key: 'yellow_cards',            label: 'Yellow Cards'          },
+    { key: 'yellow_red_cards',        label: '2nd Yellow'            },
+    { key: 'red_cards',               label: 'Red Cards'             },
+    // Errors
+    { key: 'errors_leading_to_goal',  label: 'Error (Led to Goal)'   },
+    { key: 'errors_leading_to_shot',  label: 'Error (Led to Shot)'   },
   ];
   function visibleStats(p) { return statDefs.filter(s => p[s.key] > 0); }
 
@@ -119,10 +151,14 @@
 
   function emojiRow(p) {
     const parts = [];
-    if (p.goals_scored > 0)  parts.push('⚽'.repeat(Math.min(p.goals_scored, 3)) + (p.goals_scored > 3 ? p.goals_scored : ''));
-    if (p.assists > 0)       parts.push('🎯'.repeat(Math.min(p.assists, 2))       + (p.assists > 2 ? p.assists : ''));
-    if (p.yellow_cards > 0)  parts.push('🟨');
-    if (p.red_cards > 0)     parts.push('🟥');
+    if (p.goals_scored > 0)           parts.push('⚽'.repeat(Math.min(p.goals_scored, 3)) + (p.goals_scored > 3 ? p.goals_scored : ''));
+    if (p.assists > 0)                parts.push('🎯'.repeat(Math.min(p.assists, 2)) + (p.assists > 2 ? p.assists : ''));
+    if (p.own_goals > 0)              parts.push('🙈');
+    if (p.penalty_missed > 0)         parts.push('❌');
+    if (p.yellow_red_cards > 0)       parts.push('🟨🟥');
+    if (p.yellow_cards > 0)           parts.push('🟨');
+    if (p.red_cards > 0)              parts.push('🟥');
+    if (p.errors_leading_to_goal > 0) parts.push('💀');
     return parts.join(' ');
   }
 
