@@ -29,7 +29,7 @@ order by 1 desc
 ```
 
 {#key `${inputs.season.value}|${rounds[0]?.round_number}`}
-<Dropdown data={rounds} name=round value=round_number label=round_number multiple=true defaultValue={[rounds[0]?.round_number]} order="round_number desc" />
+<Dropdown data={rounds} name=round value=round_number label=round_number defaultValue={rounds[0]?.round_number} order="round_number desc" />
 {/key}
 
 ```sql results
@@ -51,7 +51,7 @@ select
     season
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
-  and cast(match_round_number as integer) in ${inputs.round.value}
+  and cast(match_round_number as integer) = ${inputs.round.value}
   and result in ('Win', 'Draw', 'Loss')
 group by match_id, match_date, match_round_name, match_round_number, match_name, match_short_name, score, referee_name, season
 order by match_date desc
@@ -66,7 +66,7 @@ select
 from ${results}
 ```
 
-## Match Results — {inputs.season.value}
+## Match Results — {inputs.season.value} — Round {inputs.round.value}
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=total_goals          title="Goals Scored"       /></div>
@@ -114,7 +114,7 @@ select
     match_date
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
-  and cast(match_round_number as integer) in ${inputs.round.value}
+  and cast(match_round_number as integer) = ${inputs.round.value}
   and result in ('Win', 'Draw', 'Loss')
 group by match_name, match_short_name, match_date, score
 order by match_date desc
