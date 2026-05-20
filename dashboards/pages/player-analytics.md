@@ -28,7 +28,7 @@ select season from (
 
 ```sql teams
 select team_name from (
-  select 'All' as team_name, 0 as ord
+  select 'All Teams' as team_name, 0 as ord
   union all
   select distinct team_name, 1 as ord
   from superligaen.mart_player_facts
@@ -44,7 +44,7 @@ select player_position from (
   select distinct player_position, 1 as ord
   from superligaen.mart_player_facts
   where season = '${inputs.season.value}'
-    and ('All' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+    and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
     and result in ('Win', 'Draw', 'Loss')
     and player_position is not null
 ) order by ord, player_position
@@ -54,7 +54,7 @@ select player_position from (
 select distinct player_name
 from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
-  and ('All' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+  and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and ('All' in ${inputs.position.value} OR player_position in ${inputs.position.value})
   and result in ('Win', 'Draw', 'Loss')
 order by player_name
@@ -78,7 +78,7 @@ with base as (
         round(avg(rating), 2)                                      as avg_rating
     from superligaen.mart_player_facts
     where season = '${inputs.season.value}'
-      and ('All' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+      and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, player_position
     having count(distinct match_id) >= 3
@@ -113,7 +113,7 @@ end
 {/key}
 
 {#key teams[0]?.team_name}
-<Dropdown data={teams} name=team value=team_name label=team_name multiple=true defaultValue={['All']} />
+<Dropdown data={teams} name=team value=team_name label=team_name multiple=true defaultValue={['All Teams']} />
 {/key}
 
 ```sql player_profile
