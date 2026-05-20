@@ -29,7 +29,7 @@ order by 1 desc
 ```
 
 {#key `${inputs.season.value}|${rounds[0]?.round_number}`}
-<Dropdown data={rounds} name=round value=round_number label=round_number multiple=true defaultValue={[rounds[0]?.round_number]} order="round_number desc" />
+<Dropdown data={rounds} name=round value=round_number label=round_number defaultValue={rounds[0]?.round_number} order="round_number desc" />
 {/key}
 
 ```sql results
@@ -51,7 +51,7 @@ select
     season
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
-  and cast(match_round_number as integer) in ${inputs.round.value}
+  and cast(match_round_number as integer) = ${inputs.round.value}
   and result in ('Win', 'Draw', 'Loss')
 group by match_id, match_date, match_round_name, match_round_number, match_name, match_short_name, score, referee_name, season
 order by match_date desc
@@ -66,7 +66,7 @@ select
 from ${results}
 ```
 
-## Match Results — {inputs.season.value}
+## Match Results — {inputs.season.value} — Round {inputs.round.value}
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=total_goals          title="Goals Scored"       /></div>
@@ -78,6 +78,7 @@ from ${results}
 <div class="block md:hidden">
 <DataTable data={results} rows=20>
     <Column id=match_date          title="Date"           />
+    <Column id=round               title="Round"          />
     <Column id=match_short_name    title="Match"          wrap=true />
     <Column id=referee             title="Referee"        />
     <Column id=score               title="Score"          align=center />
@@ -103,9 +104,102 @@ from ${results}
 </DataTable>
 </div>
 
+```sql potw
+with base as (
+  select
+    player_name,
+    player_photo,
+    team_name,
+    team_logo,
+    goals_scored,
+    assists,
+    dribbles_completed,
+    rating,
+    position_group,
+    minutes_played
+  from superligaen.mart_player_facts
+  where season = '${inputs.season.value}'
+    and cast(match_round_number as integer) = ${inputs.round.value}
+    and result in ('Win', 'Draw', 'Loss')
+    and appearance_type in ('Starter', 'Substitute')
+    and minutes_played > 0
+),
+mvp as (
+  select 'MVP' as category, '⭐' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 1 as sort_order
+  from base where rating is not null and minutes_played >= 30
+  order by rating desc, minutes_played desc limit 1
+),
+top_scorer as (
+  select 'Top Scorer' as category, '⚽' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(goals_scored::int as varchar) as stat_value, 'Goals' as stat_label, 2 as sort_order
+  from base where goals_scored > 0
+  order by goals_scored desc, rating desc nulls last, minutes_played desc limit 1
+),
+top_assister as (
+  select 'Top Assister' as category, '🎯' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(assists::int as varchar) as stat_value, 'Assists' as stat_label, 3 as sort_order
+  from base where assists > 0
+  order by assists desc, rating desc nulls last, minutes_played desc limit 1
+),
+best_gk as (
+  select 'Best GK' as category, '🧤' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 4 as sort_order
+  from base where position_group = 'Goalkeeper' and rating is not null
+  order by rating desc, minutes_played desc limit 1
+),
+best_defender as (
+  select 'Best Defender' as category, '🛡️' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 5 as sort_order
+  from base where position_group = 'Defender' and rating is not null
+  order by rating desc, minutes_played desc limit 1
+),
+best_dribbler as (
+  select 'Best Dribbler' as category, '🪄' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(dribbles_completed::int as varchar) as stat_value, 'Dribbles' as stat_label, 6 as sort_order
+  from base where dribbles_completed > 0
+  order by dribbles_completed desc, rating desc nulls last, minutes_played desc limit 1
+)
+select * from mvp
+union all select * from top_scorer
+union all select * from top_assister
+union all select * from best_gk
+union all select * from best_defender
+union all select * from best_dribbler
+order by sort_order
+```
+
+{#if potw.length > 0}
+## Players of the Week
+
+<div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+  {#each potw as p}
+  <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;">
+    <div style="font-size:16px;height:22px;display:flex;align-items:center;justify-content:center;">{p.icon}</div>
+    <div style="font-size:10px;font-weight:700;color:#6b7280;height:28px;display:flex;align-items:center;justify-content:center;line-height:1.3;margin-bottom:6px;">{p.category}</div>
+    <img src={p.player_photo} alt={p.player_name}
+      style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;margin-bottom:8px;"
+      onerror="this.style.display='none'" />
+    <div style="font-weight:800;font-size:11px;color:#111827;height:16px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">{p.player_name}</div>
+    <div style="font-size:10px;color:#9ca3af;height:14px;line-height:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">{p.team_name}</div>
+    <div style="font-size:20px;font-weight:900;color:#111827;margin-top:8px;line-height:1;">{p.stat_value}</div>
+    <div style="font-size:10px;color:#9ca3af;margin-top:2px;">{p.stat_label}</div>
+  </div>
+  {/each}
+</div>
+{/if}
+
 ---
 
 ## Match Analysis
+
+<p style="font-size:13px;color:#6b7280;margin:-8px 0 16px;">Select a match to analyze head-to-head stats, formations, and player performance.</p>
 
 ```sql match_options
 select
@@ -114,7 +208,7 @@ select
     match_date
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
-  and cast(match_round_number as integer) in ${inputs.round.value}
+  and cast(match_round_number as integer) = ${inputs.round.value}
   and result in ('Win', 'Draw', 'Loss')
 group by match_name, match_short_name, match_date, score
 order by match_date desc
@@ -405,6 +499,35 @@ select
     saves,
     yellow_cards,
     red_cards,
+    own_goals,
+    tackles_won,
+    aerials_lost,
+    balls_recovered,
+    last_man_tackle,
+    clearances_off_line,
+    duels_total,
+    duels_won,
+    duels_lost,
+    dribbles_attempts,
+    times_dribbled_past,
+    dispossessed,
+    possession_losses,
+    passes_final_third,
+    long_balls,
+    long_balls_won,
+    saves_inside_box,
+    goalkeeper_punches,
+    high_ball_claims,
+    goals_conceded,
+    penalty_won,
+    penalty_committed,
+    penalty_scored,
+    penalty_missed,
+    penalty_saved,
+    offsides,
+    yellow_red_cards,
+    errors_leading_to_goal,
+    errors_leading_to_shot,
     round(rating, 2) as rating
 from superligaen.mart_player_facts
 where match_name                 = split_part('${inputs.match.value}', '|', 1)
@@ -446,6 +569,35 @@ select
     saves,
     yellow_cards,
     red_cards,
+    own_goals,
+    tackles_won,
+    aerials_lost,
+    balls_recovered,
+    last_man_tackle,
+    clearances_off_line,
+    duels_total,
+    duels_won,
+    duels_lost,
+    dribbles_attempts,
+    times_dribbled_past,
+    dispossessed,
+    possession_losses,
+    passes_final_third,
+    long_balls,
+    long_balls_won,
+    saves_inside_box,
+    goalkeeper_punches,
+    high_ball_claims,
+    goals_conceded,
+    penalty_won,
+    penalty_committed,
+    penalty_scored,
+    penalty_missed,
+    penalty_saved,
+    offsides,
+    yellow_red_cards,
+    errors_leading_to_goal,
+    errors_leading_to_shot,
     round(rating, 2) as rating
 from superligaen.mart_player_facts
 where match_name                 = split_part('${inputs.match.value}', '|', 1)
