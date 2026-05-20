@@ -199,6 +199,8 @@ order by sort_order
 
 ## Match Analysis
 
+<p style="font-size:13px;color:#6b7280;margin:-8px 0 16px;">Select a match to analyze head-to-head stats, formations, and player performance.</p>
+
 ```sql match_options
 select
     match_name || '|' || cast(match_date as varchar) as match_key,
