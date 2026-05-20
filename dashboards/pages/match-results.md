@@ -78,6 +78,7 @@ from ${results}
 <div class="block md:hidden">
 <DataTable data={results} rows=20>
     <Column id=match_date          title="Date"           />
+    <Column id=round               title="Round"          />
     <Column id=match_short_name    title="Match"          wrap=true />
     <Column id=referee             title="Referee"        />
     <Column id=score               title="Score"          align=center />
