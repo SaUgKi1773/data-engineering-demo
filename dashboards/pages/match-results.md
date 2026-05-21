@@ -111,9 +111,6 @@ with base as (
     player_photo,
     team_name,
     team_logo,
-    goals_scored,
-    assists,
-    dribbles_completed,
     rating,
     position_group,
     minutes_played
@@ -122,56 +119,63 @@ with base as (
     and cast(match_round_number as integer) = ${inputs.round.value}
     and result in ('Win', 'Draw', 'Loss')
     and appearance_type in ('Starter', 'Substitute')
-    and minutes_played > 0
+    and rating is not null
+    and minutes_played >= 30
+),
+overall_ranked as (
+  select *,
+    ROW_NUMBER() OVER (ORDER BY rating DESC, minutes_played DESC) as rn_best,
+    ROW_NUMBER() OVER (ORDER BY rating ASC,  minutes_played DESC) as rn_worst
+  from base
+),
+position_ranked as (
+  select *,
+    ROW_NUMBER() OVER (PARTITION BY position_group ORDER BY rating DESC, minutes_played DESC) as rn
+  from base
+  where player_name not in (select player_name from overall_ranked where rn_best = 1)
 ),
 mvp as (
   select 'MVP' as category, '⭐' as icon,
          player_name, player_photo, team_name, team_logo,
          cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 1 as sort_order
-  from base where rating is not null and minutes_played >= 30
-  order by rating desc, minutes_played desc limit 1
+  from overall_ranked where rn_best = 1
 ),
-top_scorer as (
-  select 'Top Scorer' as category, '⚽' as icon,
+best_attacker as (
+  select 'Best Attacker' as category, '⚽' as icon,
          player_name, player_photo, team_name, team_logo,
-         cast(goals_scored::int as varchar) as stat_value, 'Goals' as stat_label, 2 as sort_order
-  from base where goals_scored > 0
-  order by goals_scored desc, rating desc nulls last, minutes_played desc limit 1
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 2 as sort_order
+  from position_ranked where position_group = 'Attacker' and rn = 1
 ),
-top_assister as (
-  select 'Top Assister' as category, '🎯' as icon,
+best_midfielder as (
+  select 'Best Midfielder' as category, '🎯' as icon,
          player_name, player_photo, team_name, team_logo,
-         cast(assists::int as varchar) as stat_value, 'Assists' as stat_label, 3 as sort_order
-  from base where assists > 0
-  order by assists desc, rating desc nulls last, minutes_played desc limit 1
-),
-best_gk as (
-  select 'Best GK' as category, '🧤' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 4 as sort_order
-  from base where position_group = 'Goalkeeper' and rating is not null
-  order by rating desc, minutes_played desc limit 1
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 3 as sort_order
+  from position_ranked where position_group = 'Midfielder' and rn = 1
 ),
 best_defender as (
   select 'Best Defender' as category, '🛡️' as icon,
          player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 5 as sort_order
-  from base where position_group = 'Defender' and rating is not null
-  order by rating desc, minutes_played desc limit 1
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 4 as sort_order
+  from position_ranked where position_group = 'Defender' and rn = 1
 ),
-best_dribbler as (
-  select 'Best Dribbler' as category, '🪄' as icon,
+best_gk as (
+  select 'Best GK' as category, '🧤' as icon,
          player_name, player_photo, team_name, team_logo,
-         cast(dribbles_completed::int as varchar) as stat_value, 'Dribbles' as stat_label, 6 as sort_order
-  from base where dribbles_completed > 0
-  order by dribbles_completed desc, rating desc nulls last, minutes_played desc limit 1
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 5 as sort_order
+  from position_ranked where position_group = 'Goalkeeper' and rn = 1
+),
+lvp as (
+  select 'LVP' as category, '📉' as icon,
+         player_name, player_photo, team_name, team_logo,
+         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 6 as sort_order
+  from overall_ranked where rn_worst = 1
 )
 select * from mvp
-union all select * from top_scorer
-union all select * from top_assister
-union all select * from best_gk
+union all select * from best_attacker
+union all select * from best_midfielder
 union all select * from best_defender
-union all select * from best_dribbler
+union all select * from best_gk
+union all select * from lvp
 order by sort_order
 ```
 
