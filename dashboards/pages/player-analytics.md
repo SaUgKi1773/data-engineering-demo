@@ -657,6 +657,7 @@ select * from (values
   <Dropdown data={physicality_measures} name=phy value=value label=label multiple=true defaultValue={['duel_win']}            title="Physicality" />
 </div>
 
+{#key `${inputs.imp.value}|${inputs.atk.value}|${inputs.cre.value}|${inputs.pos.value}|${inputs.def.value}|${inputs.phy.value}`}
 <div class="hidden md:block">
 <DataTable data={player_match_log} rows=20>
     <Column id=match_date   title="Date"     />
@@ -805,3 +806,5 @@ select * from (values
     {/if}
 </DataTable>
 </div>
+
+{/key}
