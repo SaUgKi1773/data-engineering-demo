@@ -468,6 +468,8 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
 
 ## Lineup
 
+<p style="font-size:13px;color:#6b7280;margin:-8px 0 16px;">Click on a player to see their stats for this match.</p>
+
 ```sql lineup
 select
     player_name,
