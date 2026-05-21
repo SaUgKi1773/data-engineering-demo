@@ -7,6 +7,10 @@ title: Match Results
 <script>
   import MatchLineup from '../../components/MatchLineup.svelte';
   import { goto } from '$app/navigation';
+  import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
+
+  const evidenceInputs = getInputContext();
+  let clickedMatch = null;
 
   let pendingScrollY = 0;
   let hasPendingScroll = false;
@@ -34,6 +38,19 @@ title: Match Results
     'Best GK':        { border: 'hover:border-emerald-300', label: 'group-hover:text-emerald-500', name: 'group-hover:text-emerald-700', stat: 'group-hover:text-emerald-600' },
     'LVP':            { border: 'hover:border-slate-300',   label: 'group-hover:text-slate-500',   name: 'group-hover:text-slate-700',   stat: 'group-hover:text-slate-600'   },
   };
+
+  function goToMatch(r) {
+    evidenceInputs.update(i => ({
+      ...i,
+      match: { label: r.match_label, value: r.match_key, rawValues: [{ label: r.match_label, value: r.match_key, selected: true }] }
+    }));
+    clickedMatch = r.match_key;
+    requestAnimationFrame(() => {
+      const el = document.getElementById('match-analysis');
+      const navHeight = (document.querySelector('header')?.offsetHeight ?? 64) + 16;
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - navHeight, behavior: 'smooth' });
+    });
+  }
 
   function goToPlayer(name) {
     sessionStorage.setItem('pendingPlayer', name);
@@ -76,6 +93,8 @@ select
     match_name,
     match_short_name,
     score,
+    match_name || '|' || cast(match_date as varchar)     as match_key,
+    match_short_name || '  (' || score || ')'            as match_label,
     sum(goals_scored)               as total_goals,
     sum(shots_on_goal)              as total_shots_on_goal,
     sum(total_shots)                as total_shots,
@@ -110,7 +129,16 @@ from ${results}
   <div class="rounded-xl border border-gray-300 bg-gray-100 p-4 text-center"><BigValue data={round_kpis} value=goals_per_big_chance   title="Goals / Big Chance"  fmt="0.00" /></div>
 </div>
 
-<div class="block md:hidden">
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<div class="block md:hidden results-table-mobile" on:click={e => {
+  const td = e.target.closest('td');
+  if (!td) return;
+  const cells = [...td.closest('tr').querySelectorAll('td')];
+  if (cells.indexOf(td) !== 1) return;
+  const row = results.find(r => r.match_short_name === td.textContent.trim());
+  if (row) goToMatch(row);
+}}>
 <DataTable data={results} rows=20>
     <Column id=match_date          title="Date"           />
     <Column id=match_short_name    title="Match"          wrap=true />
@@ -123,7 +151,17 @@ from ${results}
     <Column id=total_red_cards     title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
 </DataTable>
 </div>
-<div class="hidden md:block">
+
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<div class="hidden md:block results-table-desktop" on:click={e => {
+  const td = e.target.closest('td');
+  if (!td) return;
+  const cells = [...td.closest('tr').querySelectorAll('td')];
+  if (cells.indexOf(td) !== 1) return;
+  const row = results.find(r => r.match_name === td.textContent.trim());
+  if (row) goToMatch(row);
+}}>
 <DataTable data={results} rows=20>
     <Column id=match_date          title="Date"           />
     <Column id=match_name          title="Match"          wrap=true />
@@ -238,9 +276,11 @@ order by sort_order
 
 ---
 
+<div id="match-analysis"></div>
+
 ## Match Analysis
 
-<p style="font-size:13px;color:#6b7280;margin:-8px 0 16px;">Select a match to analyze head-to-head stats, formations, and player performance.</p>
+<p style="font-size:13px;color:#6b7280;margin:-8px 0 16px;">Click a match name in the table above, or use the dropdown to select a match and explore head-to-head stats, formations, and player performance.</p>
 
 ```sql match_options
 select
@@ -255,8 +295,8 @@ group by match_name, match_short_name, match_date, score
 order by match_date desc
 ```
 
-{#key match_options[0]?.match_key}
-<Dropdown data={match_options} name=match value=match_key label=match_label defaultValue={match_options[0]?.match_key} order="match_date desc" />
+{#key `${clickedMatch ?? ''}|${match_options[0]?.match_key ?? ''}`}
+<Dropdown data={match_options} name=match value=match_key label=match_label defaultValue={clickedMatch ?? match_options[0]?.match_key} order="match_date desc" />
 {/key}
 
 ```sql mc
@@ -651,3 +691,16 @@ order by team_side desc, position_group, position_name
 ```
 
 <MatchLineup {lineup} {subs} home_team={mc[0]?.home_team} away_team={mc[0]?.away_team} score={mc[0]?.score} />
+
+
+<style>
+  :global(.results-table-mobile table td:nth-child(2)),
+  :global(.results-table-desktop table td:nth-child(2)) {
+    cursor: pointer;
+    color: #2563eb;
+  }
+  :global(.results-table-mobile table td:nth-child(2):hover),
+  :global(.results-table-desktop table td:nth-child(2):hover) {
+    text-decoration: underline;
+  }
+</style>
