@@ -11,7 +11,7 @@ title: Match Results
   let pendingScrollY = 0;
   let hasPendingScroll = false;
 
-  $: if (potw?.length > 0 && hasPendingScroll) {
+  $: if (lineup?.length > 0 && hasPendingScroll) {
     hasPendingScroll = false;
     const y = pendingScrollY;
     requestAnimationFrame(() => window.scrollTo({ top: y, behavior: 'instant' }));

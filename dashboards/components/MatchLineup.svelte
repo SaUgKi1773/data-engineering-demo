@@ -1,9 +1,19 @@
 <script>
+  import { goto } from '$app/navigation';
+
   export let lineup = [];   // starters only
   export let subs   = [];   // substitutes
   export let home_team = '';
   export let away_team = '';
   export let score = '';
+
+  function goToPlayerAnalytics(name) {
+    sessionStorage.setItem('pendingPlayer', name);
+    sessionStorage.setItem('cameFrom', 'match-results');
+    sessionStorage.setItem('matchResultsScrollY', String(window.scrollY));
+    selected = null;
+    goto('/player-analytics');
+  }
 
   const W = 700, H = 560;
   const PX = 12, PY = 14, PW = 676, PH = 532;
@@ -311,9 +321,16 @@
     <div style="background:white;border-radius:1rem 1rem 0 0;padding:1.25rem 1rem 2rem;width:100%;max-width:480px;max-height:65vh;overflow-y:auto;">
       <div style="width:36px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 1rem;"></div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-        <img src={selected.player_photo} alt={selected.player_name}
-          style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid {selected.team_side === 'Home' ? '#3b82f6' : '#ef4444'};"
-          onerror="this.style.display='none'" />
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex-shrink:0;"
+          on:click={() => goToPlayerAnalytics(selected.player_name)}
+          title="View Player Analytics">
+          <img src={selected.player_photo} alt={selected.player_name}
+            style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid {selected.team_side === 'Home' ? '#3b82f6' : '#ef4444'};"
+            onerror="this.style.display='none'" />
+          <span style="font-size:9px;color:#6b7280;white-space:nowrap;">View profile →</span>
+        </div>
         <div style="flex:1;min-width:0;">
           <div style="font-weight:800;font-size:15px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{selected.player_name}</div>
           <div style="font-size:12px;color:#6b7280;margin-top:2px;">
