@@ -215,6 +215,8 @@ order by sort_order
 {#if potw.length > 0}
 ## Players of the Week
 
+<p style="font-size:13px;color:#6b7280;margin:-8px 0 16px;">Click a card to open that player's full season profile in Player Intelligence.</p>
+
 <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
   {#each potw as p}
   <div class="rounded-xl border border-gray-200 bg-white p-3 flex flex-col items-center text-center cursor-pointer {potwTheme[p.category]?.border} hover:shadow-md transition-all duration-200 group"
@@ -505,7 +507,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
 
 ## Lineup
 
-<p style="font-size:13px;color:#6b7280;margin:-8px 0 16px;">Click on a player to see their stats for this match.</p>
+<p style="font-size:13px;color:#6b7280;margin:-8px 0 16px;">Click a player to see their match stats. Then click their photo in the popup to open their full profile in Player Intelligence.</p>
 
 ```sql lineup
 select

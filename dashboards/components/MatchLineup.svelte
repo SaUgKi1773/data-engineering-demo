@@ -325,7 +325,7 @@
         <!-- svelte-ignore a11y-no-static-element-interactions -->
         <div style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex-shrink:0;"
           on:click={() => goToPlayerAnalytics(selected.player_name)}
-          title="View Player Analytics">
+          title="View Player Intelligence">
           <img src={selected.player_photo} alt={selected.player_name}
             style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid {selected.team_side === 'Home' ? '#3b82f6' : '#ef4444'};"
             onerror="this.style.display='none'" />
