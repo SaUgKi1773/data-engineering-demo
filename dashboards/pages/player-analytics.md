@@ -186,20 +186,40 @@ select
     strftime(match_date, '%Y-%m-%d')              as match_date,
     match_round_name                              as round,
     opponent_team_name                            as opponent,
+    opponent_team_short_name                      as opponent_short,
     team_side                                     as home_away,
     case result
         when 'Win'  then '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;background:#22c55e;color:white;border-radius:4px;font-size:12px;font-weight:700;">W</span>'
         when 'Draw' then '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;background:#eab308;color:white;border-radius:4px;font-size:12px;font-weight:700;">D</span>'
         else             '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;background:#ef4444;color:white;border-radius:4px;font-size:12px;font-weight:700;">L</span>'
     end                                           as result_badge,
-    minutes_played,
-    goals_scored                                  as goals,
+    -- Attacking
+    goals_scored                                                                    as goals,
     assists,
-    shots_total                                   as shots,
     shots_on_target,
+    round(100.0 * goals_scored / nullif(shots_total, 0), 1)                         as shot_conv,
+    woodwork_hits,
+    -- Creativity
+    big_chances_created,
+    chances_created,
     key_passes,
-    tackles,
-    yellow_cards,
+    round(100.0 * crosses_accurate / nullif(crosses_total, 0), 1)                   as cross_acc,
+    passes_final_third,
+    -- Possession
+    round(100.0 * passes_accurate / nullif(passes_total, 0), 1)                     as pass_acc,
+    round(100.0 * dribbles_completed / nullif(dribbles_attempts, 0), 1)             as dribble_success,
+    round(100.0 * long_balls_won / nullif(long_balls, 0), 1)                        as long_ball_success,
+    -- Defending
+    tackles + interceptions                                                          as tkl_int,
+    round(100.0 * tackles_won / nullif(tackles, 0), 1)                              as tackle_success,
+    balls_recovered,
+    times_dribbled_past,
+    errors_leading_to_goal,
+    -- Physicality
+    round(100.0 * duels_won / nullif(duels_total, 0), 1)                            as duel_win,
+    fouls_drawn,
+    round(100.0 * aerials_won / nullif(aerials_won + aerials_lost, 0), 1)           as aerial_success,
+    -- Impact
     rating
 from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
@@ -214,6 +234,7 @@ with base as (
         player_name,
         -- Attacking
         sum(goals_scored)         * 90.0 / nullif(sum(minutes_played), 0)                           as goals_per90,
+        sum(assists)              * 90.0 / nullif(sum(minutes_played), 0)                           as assists_per90,
         sum(shots_on_target)      * 90.0 / nullif(sum(minutes_played), 0)                           as sot_per90,
         100.0 * sum(goals_scored)          / nullif(sum(shots_total), 0)                            as shot_acc_pct,
         sum(woodwork_hits)        * 90.0 / nullif(sum(minutes_played), 0)                           as woodwork_per90,
@@ -249,11 +270,12 @@ with base as (
 ranked as (
     select
         player_name,
-        -- Attacking: anchor goals/90 (2×), + sot/90, shot_acc%, woodwork/90 → /5
+        -- Attacking: anchor goals/90 (2×), + assists/90, sot/90, shot_acc%, woodwork/90 → /6
         round((2 * percent_rank() over (order by goals_per90)
+                 + percent_rank() over (order by assists_per90)
                  + percent_rank() over (order by sot_per90)
                  + percent_rank() over (order by shot_acc_pct)
-                 + percent_rank() over (order by woodwork_per90)) / 5 * 100)                        as attacking_pct,
+                 + percent_rank() over (order by woodwork_per90)) / 6 * 100)                        as attacking_pct,
         -- Creativity: anchor big_chances/90 (2×), + chances/90, key_passes/90, chance_quality%, cross_acc%, passes_final_third/90 → /7
         round((  percent_rank() over (order by chances_per90)
                + 2 * percent_rank() over (order by big_chances_per90)
@@ -303,6 +325,8 @@ select * from ranked where player_name = '${inputs.player.value}'
 ---
 
 ## Player Deep Dive
+
+*Filter by position and team, then select a player to explore their profile, season stats, player characteristics, performance timeline, and match log.*
 
 {#key positions.map(p => p.player_position).join(',')}
 <Dropdown data={positions} name=position value=player_position label=player_position multiple=true defaultValue={['All']} />
@@ -406,7 +430,7 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 ---
 
-## League Standing
+## Player Characteristics
 
 *Composite percentile score among all players with 450+ minutes in {inputs.season.value}. Each axis combines multiple rate metrics weighted by their importance to that dimension. Higher = better relative to the league.*
 
@@ -474,8 +498,21 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 ## Performance Timeline
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+*Select a measure to see how it evolved across rounds. Rating is always shown as the secondary axis.*
 
+```sql timeline_measures
+select * from (values
+  ('goals_scored',        'Goals'),
+  ('big_chances_created', 'Big Chances Created'),
+  ('pass_acc',            'Pass Accuracy %'),
+  ('tkl_int',             'Tkl + Interceptions'),
+  ('duel_win',            'Duel Win %')
+) t(value, label)
+```
+
+<Dropdown data={timeline_measures} name=measure value=value label=label defaultValue="goals_scored" />
+
+{#if inputs.measure.value === 'goals_scored'}
 <BarChart
     data={player_trend}
     x=round
@@ -489,10 +526,9 @@ select * from ranked where player_name = '${inputs.player.value}'
     colorPalette={['#fbbf24','#94a3b8']}
     y2Min=0
     y2Max=10
-    chartAreaHeight=220
-    echartsOptions={{yAxis: [{minInterval: 1, max: 'dataMax'}, {min: 0, max: 10}]}}
+    echartsOptions={{yAxis: [{minInterval: 1}, {min: 0, max: 10}]}}
 />
-
+{:else if inputs.measure.value === 'big_chances_created'}
 <BarChart
     data={player_trend}
     x=round
@@ -504,10 +540,9 @@ select * from ranked where player_name = '${inputs.player.value}'
     yAxisTitle="Big Chances"
     y2AxisTitle="Rating"
     colorPalette={['#38bdf8','#94a3b8']}
-    chartAreaHeight=220
-    echartsOptions={{yAxis: [{minInterval: 1, max: 'dataMax'}, {min: 0, max: 10}]}}
+    echartsOptions={{yAxis: [{minInterval: 1}, {min: 0, max: 10}]}}
 />
-
+{:else if inputs.measure.value === 'pass_acc'}
 <BarChart
     data={player_trend}
     x=round
@@ -521,9 +556,9 @@ select * from ranked where player_name = '${inputs.player.value}'
     colorPalette={['#6366f1','#94a3b8']}
     y2Min=0
     y2Max=10
-    chartAreaHeight=220
+    echartsOptions={{yAxis: [{minInterval: 1}, {min: 0, max: 10}]}}
 />
-
+{:else if inputs.measure.value === 'tkl_int'}
 <BarChart
     data={player_trend}
     x=round
@@ -535,10 +570,9 @@ select * from ranked where player_name = '${inputs.player.value}'
     yAxisTitle="Tkl + Int"
     y2AxisTitle="Rating"
     colorPalette={['#14b8a6','#94a3b8']}
-    chartAreaHeight=220
-    echartsOptions={{yAxis: [{minInterval: 1, max: 'dataMax'}, {min: 0, max: 10}]}}
+    echartsOptions={{yAxis: [{minInterval: 1}, {min: 0, max: 10}]}}
 />
-
+{:else if inputs.measure.value === 'duel_win'}
 <BarChart
     data={player_trend}
     x=round
@@ -552,40 +586,225 @@ select * from ranked where player_name = '${inputs.player.value}'
     colorPalette={['#fb923c','#94a3b8']}
     y2Min=0
     y2Max=10
-    chartAreaHeight=220
+    echartsOptions={{yAxis: [{minInterval: 1}, {min: 0, max: 10}]}}
 />
-
-</div>
+{/if}
 
 ---
 
 ## Match Log
 
+*Use the selectors below to add or remove columns per domain.*
+
+```sql impact_measures
+select * from (values
+  ('rating', 'Rating')
+) t(value, label)
+```
+
+```sql attacking_measures
+select * from (values
+  ('goals',           'Goals'),
+  ('assists',         'Assists'),
+  ('shots_on_target', 'Shots on Target'),
+  ('shot_conv',       'Shot Conv %'),
+  ('woodwork_hits',   'Woodwork Hits')
+) t(value, label)
+```
+
+```sql creativity_measures
+select * from (values
+  ('big_chances_created', 'Big Chances Created'),
+  ('all_chances',         'Chances Created'),
+  ('key_passes',          'Key Passes'),
+  ('cross_acc',           'Cross Acc %'),
+  ('passes_final_third',  'Passes Final Third')
+) t(value, label)
+```
+
+```sql possession_measures
+select * from (values
+  ('pass_acc',          'Pass Acc %'),
+  ('dribble_success',   'Dribble Success %'),
+  ('long_ball_success', 'Long Ball Success %')
+) t(value, label)
+```
+
+```sql defending_measures
+select * from (values
+  ('tkl_int',             'Tkl + Int'),
+  ('tackle_success',      'Tackle Success %'),
+  ('balls_recovered',     'Balls Recovered'),
+  ('times_dribbled_past', 'Times Dribbled Past'),
+  ('errors_leading_to_goal', 'Errors Leading to Goal')
+) t(value, label)
+```
+
+```sql physicality_measures
+select * from (values
+  ('duel_win',       'Duel Win %'),
+  ('fouls_drawn',    'Fouls Drawn'),
+  ('aerial_success', 'Aerial Success %')
+) t(value, label)
+```
+
+<div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+  <Dropdown data={impact_measures}      name=imp value=value label=label multiple=true defaultValue={['rating']}              title="Impact"      />
+  <Dropdown data={attacking_measures}   name=atk value=value label=label multiple=true defaultValue={['goals']}               title="Attacking"   />
+  <Dropdown data={creativity_measures}  name=cre value=value label=label multiple=true defaultValue={['big_chances_created']} title="Creativity"  />
+  <Dropdown data={possession_measures}  name=pos value=value label=label multiple=true defaultValue={['pass_acc']}            title="Possession"  />
+  <Dropdown data={defending_measures}   name=def value=value label=label multiple=true defaultValue={['tkl_int']}             title="Defending"   />
+  <Dropdown data={physicality_measures} name=phy value=value label=label multiple=true defaultValue={['duel_win']}            title="Physicality" />
+</div>
+
+{#key `${inputs.imp.value}|${inputs.atk.value}|${inputs.cre.value}|${inputs.pos.value}|${inputs.def.value}|${inputs.phy.value}`}
 <div class="hidden md:block">
 <DataTable data={player_match_log} rows=20>
-    <Column id=match_date      title="Date"     />
-    <Column id=round           title="Round"    />
-    <Column id=home_away       title="H/A"      align=center />
-    <Column id=opponent        title="Opponent" />
-    <Column id=result_badge    title="Result"   contentType=html align=center />
-    <Column id=minutes_played  title="Mins"     align=center />
-    <Column id=goals           title="Goals"    align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    <Column id=assists         title="Assists"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=shots           title="Shots"    align=center />
-    <Column id=shots_on_target title="SoT"      align=center />
-    <Column id=key_passes      title="KP"       align=center />
-    <Column id=tackles         title="Tackles"  align=center />
-    <Column id=yellow_cards    title="YC"       align=center />
-    <Column id=rating          title="Rating"   contentType=colorscale colorPalette={['white','#8b5cf6']} />
+    <Column id=match_date   title="Date"     />
+    <Column id=round        title="Round"    />
+    <Column id=home_away    title="H/A"      align=center />
+    <Column id=opponent     title="Opponent" />
+    <Column id=result_badge title="Result"   contentType=html align=center />
+    {#if inputs.imp.value?.includes('rating')}
+    <Column id=rating              title="Rating"         align=center contentType=colorscale colorPalette={['white','#8b5cf6']} />
+    {/if}
+    {#if inputs.atk.value?.includes('goals')}
+    <Column id=goals           title="Goals"       align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    {/if}
+    {#if inputs.atk.value?.includes('assists')}
+    <Column id=assists         title="Assists"     align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    {/if}
+    {#if inputs.atk.value?.includes('shots_on_target')}
+    <Column id=shots_on_target title="SoT"         align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    {/if}
+    {#if inputs.atk.value?.includes('shot_conv')}
+    <Column id=shot_conv       title="Shot Conv %"  align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    {/if}
+    {#if inputs.atk.value?.includes('woodwork_hits')}
+    <Column id=woodwork_hits   title="Woodwork"    align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    {/if}
+    {#if inputs.cre.value?.includes('big_chances_created')}
+    <Column id=big_chances_created title="Big Chances"    align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
+    {/if}
+    {#if inputs.cre.value?.includes('all_chances')}
+    <Column id=chances_created     title="Chances"        align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
+    {/if}
+    {#if inputs.cre.value?.includes('key_passes')}
+    <Column id=key_passes          title="Key Passes"     align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
+    {/if}
+    {#if inputs.cre.value?.includes('cross_acc')}
+    <Column id=cross_acc           title="Cross Acc %"    align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
+    {/if}
+    {#if inputs.cre.value?.includes('passes_final_third')}
+    <Column id=passes_final_third  title="Final 3rd Pass" align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
+    {/if}
+    {#if inputs.pos.value?.includes('pass_acc')}
+    <Column id=pass_acc          title="Pass Acc %"       align=center contentType=colorscale colorPalette={['white','#6366f1']} />
+    {/if}
+    {#if inputs.pos.value?.includes('dribble_success')}
+    <Column id=dribble_success   title="Dribble %"        align=center contentType=colorscale colorPalette={['white','#6366f1']} />
+    {/if}
+    {#if inputs.pos.value?.includes('long_ball_success')}
+    <Column id=long_ball_success title="Long Ball %"      align=center contentType=colorscale colorPalette={['white','#6366f1']} />
+    {/if}
+    {#if inputs.def.value?.includes('tkl_int')}
+    <Column id=tkl_int             title="Tkl+Int"        align=center contentType=colorscale colorPalette={['white','#14b8a6']} />
+    {/if}
+    {#if inputs.def.value?.includes('tackle_success')}
+    <Column id=tackle_success      title="Tackle %"       align=center contentType=colorscale colorPalette={['white','#14b8a6']} />
+    {/if}
+    {#if inputs.def.value?.includes('balls_recovered')}
+    <Column id=balls_recovered     title="Balls Rec."     align=center contentType=colorscale colorPalette={['white','#14b8a6']} />
+    {/if}
+    {#if inputs.def.value?.includes('times_dribbled_past')}
+    <Column id=times_dribbled_past title="Drib. Past"     align=center />
+    {/if}
+    {#if inputs.def.value?.includes('errors_leading_to_goal')}
+    <Column id=errors_leading_to_goal title="Errors"      align=center />
+    {/if}
+    {#if inputs.phy.value?.includes('duel_win')}
+    <Column id=duel_win       title="Duel Win %"  align=center contentType=colorscale colorPalette={['white','#fb923c']} />
+    {/if}
+    {#if inputs.phy.value?.includes('fouls_drawn')}
+    <Column id=fouls_drawn    title="Fouls Drawn" align=center contentType=colorscale colorPalette={['white','#fb923c']} />
+    {/if}
+    {#if inputs.phy.value?.includes('aerial_success')}
+    <Column id=aerial_success title="Aerial %"    align=center contentType=colorscale colorPalette={['white','#fb923c']} />
+    {/if}
 </DataTable>
 </div>
 <div class="block md:hidden">
 <DataTable data={player_match_log} rows=20>
-    <Column id=match_date   title="Date"     />
-    <Column id=opponent     title="Opponent" />
-    <Column id=result_badge title=""         contentType=html align=center />
-    <Column id=goals        title="G"        align=center />
-    <Column id=assists      title="A"        align=center />
-    <Column id=rating       title="Rating"   />
+    <Column id=match_date      title="Date"     />
+    <Column id=opponent_short  title="Opponent" />
+    <Column id=result_badge title="Result"   contentType=html align=center />
+    {#if inputs.imp.value?.includes('rating')}
+    <Column id=rating              title="Rating"         align=center contentType=colorscale colorPalette={['white','#8b5cf6']} />
+    {/if}
+    {#if inputs.atk.value?.includes('goals')}
+    <Column id=goals           title="Goals"       align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    {/if}
+    {#if inputs.atk.value?.includes('assists')}
+    <Column id=assists         title="Assists"     align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    {/if}
+    {#if inputs.atk.value?.includes('shots_on_target')}
+    <Column id=shots_on_target title="SoT"         align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    {/if}
+    {#if inputs.atk.value?.includes('shot_conv')}
+    <Column id=shot_conv       title="Shot Conv %"  align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    {/if}
+    {#if inputs.atk.value?.includes('woodwork_hits')}
+    <Column id=woodwork_hits   title="Woodwork"    align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    {/if}
+    {#if inputs.cre.value?.includes('big_chances_created')}
+    <Column id=big_chances_created title="Big Chances"    align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
+    {/if}
+    {#if inputs.cre.value?.includes('all_chances')}
+    <Column id=chances_created     title="Chances"        align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
+    {/if}
+    {#if inputs.cre.value?.includes('key_passes')}
+    <Column id=key_passes          title="Key Passes"     align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
+    {/if}
+    {#if inputs.cre.value?.includes('cross_acc')}
+    <Column id=cross_acc           title="Cross Acc %"    align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
+    {/if}
+    {#if inputs.cre.value?.includes('passes_final_third')}
+    <Column id=passes_final_third  title="Final 3rd Pass" align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
+    {/if}
+    {#if inputs.pos.value?.includes('pass_acc')}
+    <Column id=pass_acc          title="Pass Acc %"       align=center contentType=colorscale colorPalette={['white','#6366f1']} />
+    {/if}
+    {#if inputs.pos.value?.includes('dribble_success')}
+    <Column id=dribble_success   title="Dribble %"        align=center contentType=colorscale colorPalette={['white','#6366f1']} />
+    {/if}
+    {#if inputs.pos.value?.includes('long_ball_success')}
+    <Column id=long_ball_success title="Long Ball %"      align=center contentType=colorscale colorPalette={['white','#6366f1']} />
+    {/if}
+    {#if inputs.def.value?.includes('tkl_int')}
+    <Column id=tkl_int             title="Tkl+Int"        align=center contentType=colorscale colorPalette={['white','#14b8a6']} />
+    {/if}
+    {#if inputs.def.value?.includes('tackle_success')}
+    <Column id=tackle_success      title="Tackle %"       align=center contentType=colorscale colorPalette={['white','#14b8a6']} />
+    {/if}
+    {#if inputs.def.value?.includes('balls_recovered')}
+    <Column id=balls_recovered     title="Balls Rec."     align=center contentType=colorscale colorPalette={['white','#14b8a6']} />
+    {/if}
+    {#if inputs.def.value?.includes('times_dribbled_past')}
+    <Column id=times_dribbled_past title="Drib. Past"     align=center />
+    {/if}
+    {#if inputs.def.value?.includes('errors_leading_to_goal')}
+    <Column id=errors_leading_to_goal title="Errors"      align=center />
+    {/if}
+    {#if inputs.phy.value?.includes('duel_win')}
+    <Column id=duel_win       title="Duel Win %"  align=center contentType=colorscale colorPalette={['white','#fb923c']} />
+    {/if}
+    {#if inputs.phy.value?.includes('fouls_drawn')}
+    <Column id=fouls_drawn    title="Fouls Drawn" align=center contentType=colorscale colorPalette={['white','#fb923c']} />
+    {/if}
+    {#if inputs.phy.value?.includes('aerial_success')}
+    <Column id=aerial_success title="Aerial %"    align=center contentType=colorscale colorPalette={['white','#fb923c']} />
+    {/if}
 </DataTable>
 </div>
+
+{/key}
