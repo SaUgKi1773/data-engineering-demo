@@ -8,6 +8,24 @@ title: Match Results
   import MatchLineup from '../../components/MatchLineup.svelte';
   import { goto } from '$app/navigation';
 
+  let pendingScrollY = 0;
+  let hasPendingScroll = false;
+
+  $: if (potw?.length > 0 && hasPendingScroll) {
+    hasPendingScroll = false;
+    const y = pendingScrollY;
+    requestAnimationFrame(() => window.scrollTo({ top: y, behavior: 'instant' }));
+  }
+
+  onMount(() => {
+    const saved = sessionStorage.getItem('matchResultsScrollY');
+    if (saved) {
+      sessionStorage.removeItem('matchResultsScrollY');
+      pendingScrollY = parseInt(saved, 10);
+      hasPendingScroll = true;
+    }
+  });
+
   const potwTheme = {
     'MVP':            { border: 'hover:border-amber-300',   label: 'group-hover:text-amber-500',   name: 'group-hover:text-amber-700',   stat: 'group-hover:text-amber-600'   },
     'Best Attacker':  { border: 'hover:border-red-300',     label: 'group-hover:text-red-500',     name: 'group-hover:text-red-700',     stat: 'group-hover:text-red-600'     },
@@ -19,6 +37,8 @@ title: Match Results
 
   function goToPlayer(name) {
     sessionStorage.setItem('pendingPlayer', name);
+    sessionStorage.setItem('cameFrom', 'match-results');
+    sessionStorage.setItem('matchResultsScrollY', String(window.scrollY));
     goto('/player-analytics');
   }
 </script>

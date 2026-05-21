@@ -11,13 +11,14 @@ title: Player Intelligence
   const evidenceInputs = getInputContext();
   let clickedPlayer = null;
   let pendingScrollToDeepDive = false;
+  let showBackLink = false;
 
   $: if (top_players?.length > 0 && pendingScrollToDeepDive) {
     pendingScrollToDeepDive = false;
     requestAnimationFrame(() => {
       const el = document.getElementById('player-deep-dive');
       const navHeight = (document.querySelector('header')?.offsetHeight ?? 64) + 16;
-      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - navHeight, behavior: 'smooth' });
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - navHeight, behavior: 'instant' });
     });
   }
 
@@ -31,6 +32,10 @@ title: Player Intelligence
       }));
       clickedPlayer = pending;
       pendingScrollToDeepDive = true;
+    }
+    if (sessionStorage.getItem('cameFrom') === 'match-results') {
+      sessionStorage.removeItem('cameFrom');
+      showBackLink = true;
     }
   });
 
@@ -372,6 +377,10 @@ select * from ranked where player_name = '${inputs.player.value}'
 </div>
 
 ---
+
+{#if showBackLink}
+<a href="/match-results" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-4">← Match Results</a>
+{/if}
 
 <div id="player-deep-dive"></div>
 
