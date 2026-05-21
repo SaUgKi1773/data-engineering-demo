@@ -17,7 +17,12 @@
 
   export let data;
 
-  afterNavigate(() => {
+  afterNavigate(({ to }) => {
+    if (to?.url?.pathname === '/') {
+      sessionStorage.removeItem('matchResultsScrollY');
+      sessionStorage.removeItem('pendingPlayer');
+      sessionStorage.removeItem('cameFrom');
+    }
     setTimeout(() => window.scrollTo(0, 0), 0);
   });
 
