@@ -6,6 +6,21 @@ title: Match Results
 
 <script>
   import MatchLineup from '../../components/MatchLineup.svelte';
+  import { goto } from '$app/navigation';
+
+  const potwTheme = {
+    'MVP':            { border: 'hover:border-amber-300',   label: 'group-hover:text-amber-500',   name: 'group-hover:text-amber-700',   stat: 'group-hover:text-amber-600'   },
+    'Best Attacker':  { border: 'hover:border-red-300',     label: 'group-hover:text-red-500',     name: 'group-hover:text-red-700',     stat: 'group-hover:text-red-600'     },
+    'Best Midfielder':{ border: 'hover:border-blue-300',    label: 'group-hover:text-blue-500',    name: 'group-hover:text-blue-700',    stat: 'group-hover:text-blue-600'    },
+    'Best Defender':  { border: 'hover:border-sky-300',     label: 'group-hover:text-sky-500',     name: 'group-hover:text-sky-700',     stat: 'group-hover:text-sky-600'     },
+    'Best GK':        { border: 'hover:border-emerald-300', label: 'group-hover:text-emerald-500', name: 'group-hover:text-emerald-700', stat: 'group-hover:text-emerald-600' },
+    'LVP':            { border: 'hover:border-slate-300',   label: 'group-hover:text-slate-500',   name: 'group-hover:text-slate-700',   stat: 'group-hover:text-slate-600'   },
+  };
+
+  function goToPlayer(name) {
+    sessionStorage.setItem('pendingPlayer', name);
+    goto('/player-analytics');
+  }
 </script>
 
 ```sql seasons
@@ -182,16 +197,18 @@ order by sort_order
 
 <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
   {#each potw as p}
-  <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;">
-    <div style="font-size:16px;height:22px;display:flex;align-items:center;justify-content:center;">{p.icon}</div>
-    <div style="font-size:10px;font-weight:700;color:#6b7280;height:28px;display:flex;align-items:center;justify-content:center;line-height:1.3;margin-bottom:6px;">{p.category}</div>
+  <div class="rounded-xl border border-gray-200 bg-white p-3 flex flex-col items-center text-center cursor-pointer {potwTheme[p.category]?.border} hover:shadow-md transition-all duration-200 group"
+       on:click={() => goToPlayer(p.player_name)} role="button" tabindex="0"
+       on:keypress={(e) => e.key === 'Enter' && goToPlayer(p.player_name)}>
+    <div class="text-base h-6 flex items-center justify-center">{p.icon}</div>
+    <div class="text-[10px] font-bold text-gray-500 h-7 flex items-center justify-center leading-tight mb-1.5 transition-colors {potwTheme[p.category]?.label}">{p.category}</div>
     <img src={p.player_photo} alt={p.player_name}
-      style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;margin-bottom:8px;"
+      class="w-12 h-12 rounded-full object-cover flex-shrink-0 mb-2 border-2 border-gray-100 group-hover:border-opacity-60 transition-colors"
       onerror="this.style.display='none'" />
-    <div style="font-weight:800;font-size:11px;color:#111827;height:16px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">{p.player_name}</div>
-    <div style="font-size:10px;color:#9ca3af;height:14px;line-height:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">{p.team_name}</div>
-    <div style="font-size:20px;font-weight:900;color:#111827;margin-top:8px;line-height:1;">{p.stat_value}</div>
-    <div style="font-size:10px;color:#9ca3af;margin-top:2px;">{p.stat_label}</div>
+    <div class="font-extrabold text-[11px] text-gray-900 leading-none w-full truncate transition-colors {potwTheme[p.category]?.name}">{p.player_name}</div>
+    <div class="text-[10px] text-gray-400 mt-0.5 w-full truncate">{p.team_name}</div>
+    <div class="text-xl font-black text-gray-800 mt-2 leading-none transition-colors {potwTheme[p.category]?.stat}">{p.stat_value}</div>
+    <div class="text-[10px] text-gray-400 mt-0.5">{p.stat_label}</div>
   </div>
   {/each}
 </div>

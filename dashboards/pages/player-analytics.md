@@ -10,6 +10,29 @@ title: Player Intelligence
 
   const evidenceInputs = getInputContext();
   let clickedPlayer = null;
+  let pendingScrollToDeepDive = false;
+
+  $: if (top_players?.length > 0 && pendingScrollToDeepDive) {
+    pendingScrollToDeepDive = false;
+    requestAnimationFrame(() => {
+      const el = document.getElementById('player-deep-dive');
+      const navHeight = (document.querySelector('header')?.offsetHeight ?? 64) + 16;
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - navHeight, behavior: 'smooth' });
+    });
+  }
+
+  onMount(() => {
+    const pending = sessionStorage.getItem('pendingPlayer');
+    if (pending) {
+      sessionStorage.removeItem('pendingPlayer');
+      evidenceInputs.update(i => ({
+        ...i,
+        player: { label: pending, value: pending, rawValues: [{ label: pending, value: pending, selected: true }] }
+      }));
+      clickedPlayer = pending;
+      pendingScrollToDeepDive = true;
+    }
+  });
 
   const cardTheme = {
     'Top Rated':    { emoji: '⭐', label: 'group-hover:text-amber-500',   border: 'hover:border-amber-300',   photo: 'group-hover:border-amber-200',   name: 'group-hover:text-amber-700',   stat: 'group-hover:text-amber-600'   },
