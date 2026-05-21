@@ -6,6 +6,19 @@ title: Player Intelligence
 
 <script>
   import TeamRadar from '../../components/TeamRadar.svelte';
+  import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
+
+  const evidenceInputs = getInputContext();
+  let clickedPlayer = null;
+
+  function goToPlayer(name) {
+    evidenceInputs.update(i => ({
+      ...i,
+      player: { label: name, value: name, rawValues: [{ label: name, value: name, selected: true }] }
+    }));
+    clickedPlayer = name;
+    setTimeout(() => document.getElementById('player-deep-dive')?.scrollIntoView({ behavior: 'smooth' }), 100);
+  }
 
   const playerMetrics = [
     { key: 'attacking_pct',   label: 'Attacking'   },
@@ -310,10 +323,10 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
 {#each top_players as tp}
-<div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col items-center text-center">
-  <div class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">{tp.category}</div>
-  <img src="{tp.player_photo}" alt="{tp.player_name}" class="h-16 w-16 rounded-full object-cover mb-3 border-2 border-gray-100" onerror="this.style.display='none'" />
-  <div class="text-sm font-bold text-gray-900 leading-tight min-h-10 flex items-start justify-center">{tp.player_name}</div>
+<div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col items-center text-center cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 group" on:click={() => goToPlayer(tp.player_name)} role="button" tabindex="0" on:keypress={(e) => e.key === 'Enter' && goToPlayer(tp.player_name)}>
+  <div class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 group-hover:text-blue-500 transition-colors">{tp.category}</div>
+  <img src="{tp.player_photo}" alt="{tp.player_name}" class="h-16 w-16 rounded-full object-cover mb-3 border-2 border-gray-100 group-hover:border-blue-200 transition-colors" onerror="this.style.display='none'" />
+  <div class="text-sm font-bold text-gray-900 leading-tight min-h-10 flex items-start justify-center group-hover:text-blue-700 transition-colors">{tp.player_name}</div>
   <div class="text-xs text-gray-400 mt-1">{tp.player_position}</div>
   <img src="{tp.team_logo}" alt="{tp.team_name}" class="h-7 w-7 object-contain mt-1" onerror="this.style.display='none'" />
   <div class="mt-auto pt-3 text-2xl font-black text-blue-600">{tp.stat_value}</div>
@@ -324,6 +337,8 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 ---
 
+<div id="player-deep-dive"></div>
+
 ## Player Deep Dive
 
 *Filter by position and team, then select a player to explore their profile, season stats, player characteristics, performance timeline, and match log.*
@@ -332,7 +347,7 @@ select * from ranked where player_name = '${inputs.player.value}'
 <Dropdown data={positions} name=position value=player_position label=player_position multiple=true defaultValue={['All']} />
 {/key}
 
-{#key players_in_team[0]?.player_name}
+{#key `${clickedPlayer ?? ''}|${players_in_team[0]?.player_name ?? ''}`}
 <Dropdown data={players_in_team} name=player value=player_name label=player_name defaultValue={players_in_team[0]?.player_name} />
 {/key}
 
