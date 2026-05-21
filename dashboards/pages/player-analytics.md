@@ -11,6 +11,15 @@ title: Player Intelligence
   const evidenceInputs = getInputContext();
   let clickedPlayer = null;
 
+  const cardTheme = {
+    'Top Rated':    { emoji: '⭐', label: 'group-hover:text-amber-500',   border: 'hover:border-amber-300',   photo: 'group-hover:border-amber-200',   name: 'group-hover:text-amber-700',   stat: 'group-hover:text-amber-600'   },
+    'Top Scorer':   { emoji: '⚽', label: 'group-hover:text-red-500',     border: 'hover:border-red-300',     photo: 'group-hover:border-red-200',     name: 'group-hover:text-red-700',     stat: 'group-hover:text-red-600'     },
+    'Top Assister': { emoji: '🎯', label: 'group-hover:text-blue-500',    border: 'hover:border-blue-300',    photo: 'group-hover:border-blue-200',    name: 'group-hover:text-blue-700',    stat: 'group-hover:text-blue-600'    },
+    'Top Creator':  { emoji: '✨', label: 'group-hover:text-emerald-500', border: 'hover:border-emerald-300', photo: 'group-hover:border-emerald-200', name: 'group-hover:text-emerald-700', stat: 'group-hover:text-emerald-600' },
+    'Top Dribbler': { emoji: '💨', label: 'group-hover:text-violet-500',  border: 'hover:border-violet-300',  photo: 'group-hover:border-violet-200',  name: 'group-hover:text-violet-700',  stat: 'group-hover:text-violet-600'  },
+    'Top Defender': { emoji: '🛡️', label: 'group-hover:text-sky-500',     border: 'hover:border-sky-300',     photo: 'group-hover:border-sky-200',     name: 'group-hover:text-sky-700',     stat: 'group-hover:text-sky-600'     },
+  };
+
   function goToPlayer(name) {
     evidenceInputs.update(i => ({
       ...i,
@@ -116,12 +125,12 @@ from (
 )
 where rn = 1
 order by case category
-    when 'Top Scorer'   then 1
-    when 'Top Assister' then 2
-    when 'Top Creator'  then 3
-    when 'Top Defender' then 4
+    when 'Top Rated'    then 1
+    when 'Top Scorer'   then 2
+    when 'Top Assister' then 3
+    when 'Top Creator'  then 4
     when 'Top Dribbler' then 5
-    when 'Top Rated'    then 6
+    when 'Top Defender' then 6
 end
 ```
 
@@ -327,13 +336,13 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
 {#each top_players as tp}
-<div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col items-center text-center cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 group" on:click={() => goToPlayer(tp.player_name)} role="button" tabindex="0" on:keypress={(e) => e.key === 'Enter' && goToPlayer(tp.player_name)}>
-  <div class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 group-hover:text-blue-500 transition-colors">{tp.category}</div>
-  <img src="{tp.player_photo}" alt="{tp.player_name}" class="h-16 w-16 rounded-full object-cover mb-3 border-2 border-gray-100 group-hover:border-blue-200 transition-colors" onerror="this.style.display='none'" />
-  <div class="text-sm font-bold text-gray-900 leading-tight min-h-10 flex items-start justify-center group-hover:text-blue-700 transition-colors">{tp.player_name}</div>
+<div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col items-center text-center cursor-pointer {cardTheme[tp.category]?.border} hover:shadow-md transition-all duration-200 group" on:click={() => goToPlayer(tp.player_name)} role="button" tabindex="0" on:keypress={(e) => e.key === 'Enter' && goToPlayer(tp.player_name)}>
+  <div class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 transition-colors {cardTheme[tp.category]?.label}">{cardTheme[tp.category]?.emoji} {tp.category}</div>
+  <img src="{tp.player_photo}" alt="{tp.player_name}" class="h-16 w-16 rounded-full object-cover mb-3 border-2 border-gray-100 transition-colors {cardTheme[tp.category]?.photo}" onerror="this.style.display='none'" />
+  <div class="text-sm font-bold text-gray-900 leading-tight min-h-10 flex items-start justify-center transition-colors {cardTheme[tp.category]?.name}">{tp.player_name}</div>
   <div class="text-xs text-gray-400 mt-1">{tp.player_position}</div>
   <img src="{tp.team_logo}" alt="{tp.team_name}" class="h-7 w-7 object-contain mt-1" onerror="this.style.display='none'" />
-  <div class="mt-auto pt-3 text-2xl font-black text-blue-600">{tp.stat_value}</div>
+  <div class="mt-auto pt-3 text-2xl font-black text-gray-800 transition-colors {cardTheme[tp.category]?.stat}">{tp.stat_value}</div>
   <div class="text-xs text-gray-400">{tp.stat_label}</div>
 </div>
 {/each}
