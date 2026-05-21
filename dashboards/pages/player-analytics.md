@@ -378,11 +378,11 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 ---
 
+<div id="player-deep-dive"></div>
+
 {#if showBackLink}
 <a href="/match-results" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-4">← Match Results</a>
 {/if}
-
-<div id="player-deep-dive"></div>
 
 ## Player Deep Dive
 
