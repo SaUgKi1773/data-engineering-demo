@@ -17,7 +17,11 @@ title: Player Intelligence
       player: { label: name, value: name, rawValues: [{ label: name, value: name, selected: true }] }
     }));
     clickedPlayer = name;
-    setTimeout(() => document.getElementById('player-deep-dive')?.scrollIntoView({ behavior: 'smooth' }), 100);
+    setTimeout(() => {
+      const el = document.getElementById('player-deep-dive');
+      const navHeight = (document.querySelector('header')?.offsetHeight ?? 64) + 16;
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - navHeight, behavior: 'smooth' });
+    }, 100);
   }
 
   const playerMetrics = [
