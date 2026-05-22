@@ -308,14 +308,17 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 
 | Page | Description |
 |---|---|
-| **Home** | Season KPIs, current leader, navigation |
+| **Home** | Season KPIs, current leader, and navigation |
 | **Standings** | Championship, Relegation & Regular Season tables |
-| **Match Results** | Full match history, scorelines and analytics by round |
+| **Match Results** | Results by round with scorelines, Players of the Week, and per-match analysis |
 | **Upcoming Fixtures** | Next fixtures with head-to-head history and last-5 form guide |
-| **League Analytics** | Cross-team benchmarks, rankings and league-wide trends |
-| **Team Analytics** | Deep-dive per-team KPIs, form, shooting, possession, discipline |
-| **Referee Analytics** | Cards, fouls, team exposure and match logs by referee |
-| **Glossary** | Definitions of all metrics and KPIs used across the dashboard |
+| **League Intelligence** | Season awards podium, standings race, cross-team landscape and radar benchmarks |
+| **Team Intelligence** | Per-team KPIs, form, performance vs previous season, shooting and possession breakdowns |
+| **Referee Intelligence** | Cards and fouls by referee, strictness rankings, and per-match discipline logs |
+| **Stadium Intelligence** | Interactive stadium map, fortress rankings, and home-advantage stats |
+| **Player Intelligence** | League top-player podium by any measure, individual player deep dive with profile, characteristics radar, performance timeline, and match log |
+| **About** | Project background, stack overview, and the full build journey |
+| **Data Glossary** | Definitions of all metrics and KPIs used across the dashboard |
 
 ---
 
