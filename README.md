@@ -279,25 +279,26 @@ erDiagram
 
 ### Dimensional model bus matrix
 
-The bus matrix shows which dimensions are conformed (shared) across fact tables — the foundation of Kimball integration.
+The bus matrix shows which dimensions are conformed (shared) across business processes — the foundation of Kimball integration.
 
-| Dimension | `fct_team_matches` | `fct_player_appearances` |
+| **BUSINESS PROCESSES →** | Team Match Performance | Player Appearance |
 |---|:---:|:---:|
-| dim_date | ✓ | ✓ |
-| dim_time | ✓ | ✓ |
-| dim_match | ✓ | ✓ |
-| dim_team | ✓ | ✓ |
-| dim_opponent_team | ✓ | ✓ |
-| dim_league | ✓ | ✓ |
-| dim_stadium | ✓ | ✓ |
-| dim_referee | ✓ | ✓ |
-| dim_coach | ✓ | ✓ |
-| dim_formation | ✓ | ✓ |
-| dim_team_side | ✓ | ✓ |
-| dim_match_result | ✓ | ✓ |
-| dim_player | | ✓ |
-| dim_position | | ✓ |
-| dim_appearance_type | | ✓ |
+| **COMMON DIMENSIONS ↓** | | |
+| Date | X | X |
+| Time of Day | X | X |
+| Match | X | X |
+| Team | X | X |
+| Opponent Team | X | X |
+| League | X | X |
+| Stadium / Venue | X | X |
+| Referee | X | X |
+| Coach | X | X |
+| Formation | X | X |
+| Home / Away | X | X |
+| Match Result | X | X |
+| Player | | X |
+| Playing Position | | X |
+| Appearance Type | | X |
 
 All dimension surrogate keys are **stable across runs** — new records get new SKs, existing records keep theirs. Sentinel rows (`-1 Unknown`, `-2 Not Applicable`) handle missing lookups, with all VARCHAR attributes filled with descriptive defaults (e.g. `'Unknown Stadium Country'`).
 
@@ -307,14 +308,17 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 
 | Page | Description |
 |---|---|
-| **Home** | Season KPIs, current leader, navigation |
+| **Home** | Season KPIs, current leader, and navigation |
 | **Standings** | Championship, Relegation & Regular Season tables |
-| **Match Results** | Full match history, scorelines and analytics by round |
+| **Match Results** | Results by round with scorelines, Players of the Week, and per-match analysis |
 | **Upcoming Fixtures** | Next fixtures with head-to-head history and last-5 form guide |
-| **League Analytics** | Cross-team benchmarks, rankings and league-wide trends |
-| **Team Analytics** | Deep-dive per-team KPIs, form, shooting, possession, discipline |
-| **Referee Analytics** | Cards, fouls, team exposure and match logs by referee |
-| **Glossary** | Definitions of all metrics and KPIs used across the dashboard |
+| **League Intelligence** | Season awards podium, standings race, cross-team landscape and radar benchmarks |
+| **Team Intelligence** | Per-team KPIs, form, performance vs previous season, shooting and possession breakdowns |
+| **Referee Intelligence** | Cards and fouls by referee, strictness rankings, and per-match discipline logs |
+| **Stadium Intelligence** | Interactive stadium map, fortress rankings, and home-advantage stats |
+| **Player Intelligence** | League top-player podium by any measure, individual player deep dive with profile, characteristics radar, performance timeline, and match log |
+| **About** | Project background, stack overview, and the full build journey |
+| **Data Glossary** | Definitions of all metrics and KPIs used across the dashboard |
 
 ---
 
