@@ -572,7 +572,7 @@ end
     data={formation_performance}
     x=formation
     y={['goals_per_match','conceded_per_match']}
-    title="Goals Scored vs Conceded per Match"
+    title="Goals per Match by Formation"
     colorPalette={['#22c55e','#ef4444']}
     type=grouped
     sort=false
