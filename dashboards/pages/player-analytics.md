@@ -688,7 +688,7 @@ select * from (values
   <Dropdown data={possession_measures}  name=pos value=value label=label multiple=true defaultValue={['pass_acc']}            title="Possession"  />
   <Dropdown data={defending_measures}   name=def value=value label=label multiple=true defaultValue={['tkl_int']}             title="Defending"   />
   <Dropdown data={physicality_measures} name=phy value=value label=label multiple=true defaultValue={['duel_win']}            title="Physicality" />
-  <Dropdown data={other_measures}       name=oth value=value label=label multiple=true defaultValue={[]}                      title="Other"       />
+  <Dropdown data={other_measures}       name=oth value=value label=label multiple=true defaultValue={['minutes_played']}    title="Other"       />
 </div>
 
 {#key `${inputs.atk.value}|${inputs.cre.value}|${inputs.pos.value}|${inputs.def.value}|${inputs.phy.value}|${inputs.oth.value}`}
