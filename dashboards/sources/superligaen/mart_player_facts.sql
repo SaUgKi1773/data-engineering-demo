@@ -14,6 +14,7 @@ SELECT
     m.match_result                                        AS score,
     m.match_status,
     m.kick_off_time,
+    dt.period_of_day,
     p.player_id,
     p.player_name,
     p.player_firstname,
@@ -124,5 +125,6 @@ JOIN superligaen.gold.dim_appearance_type     at_dim ON at_dim.appearance_type_s
 JOIN superligaen.gold.dim_formation           df     ON df.formation_sk           = f.formation_sk
 JOIN superligaen.gold.dim_position            dpos   ON dpos.position_sk          = f.position_sk
 JOIN superligaen.gold.dim_coach               dc     ON dc.coach_sk               = f.coach_sk
+JOIN superligaen.gold.dim_time                dt     ON dt.time_sk                = f.time_sk
 WHERE m.match_type = 'Group Stage'
   AND d.season >= '2020/21'

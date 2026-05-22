@@ -261,25 +261,71 @@ group by team_side
 order by team_side desc
 ```
 
-```sql phase_performance
+```sql formation_performance
 select
-    match_round_type                                                                   as phase,
+    formation,
     count(distinct match_id)::int                                                      as matches,
-    sum(points_earned)::int                                                            as points,
-    round(sum(points_earned)::double / count(distinct match_id), 2)                   as points_per_match,
-    sum(goals_scored)::int                                                             as gf,
-    sum(goals_conceded)::int                                                           as ga,
-    round(sum(goals_scored)::double    / count(distinct match_id), 2)                 as goals_per_match
+    sum(case when result='Win'  then 1 else 0 end)::int                               as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int                               as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int                               as losses,
+    round(sum(points_earned)::double      / count(distinct match_id), 2)              as points_per_match,
+    round(sum(goals_scored)::double       / count(distinct match_id), 2)              as goals_per_match,
+    round(sum(goals_conceded)::double     / count(distinct match_id), 2)              as conceded_per_match
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
-group by match_round_type
-order by case match_round_type
-    when 'Regular Season'       then 1
-    when 'Championship Group'   then 2
-    when 'Relegation Group'     then 2
-    else 3
+group by formation
+order by points_per_match desc
+```
+
+```sql kickoff_performance
+select
+    period_of_day,
+    count(distinct match_id)::int                                                      as matches,
+    sum(case when result='Win'  then 1 else 0 end)::int                               as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int                               as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int                               as losses,
+    round(sum(points_earned)::double      / count(distinct match_id), 2)              as points_per_match,
+    round(sum(goals_scored)::double       / count(distinct match_id), 2)              as goals_per_match,
+    round(sum(goals_conceded)::double     / count(distinct match_id), 2)              as conceded_per_match
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by period_of_day
+order by case period_of_day
+    when 'Morning'   then 1
+    when 'Afternoon' then 2
+    when 'Evening'   then 3
+    when 'Night'     then 4
+    else 5
+end
+```
+
+```sql matchday_performance
+select
+    day_name,
+    count(distinct match_id)::int                                                      as matches,
+    sum(case when result='Win'  then 1 else 0 end)::int                               as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int                               as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int                               as losses,
+    round(sum(points_earned)::double      / count(distinct match_id), 2)              as points_per_match,
+    round(sum(goals_scored)::double       / count(distinct match_id), 2)              as goals_per_match,
+    round(sum(goals_conceded)::double     / count(distinct match_id), 2)              as conceded_per_match
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by day_name
+order by case day_name
+    when 'Monday'    then 1
+    when 'Tuesday'   then 2
+    when 'Wednesday' then 3
+    when 'Thursday'  then 4
+    when 'Friday'    then 5
+    when 'Saturday'  then 6
+    when 'Sunday'    then 7
 end
 ```
 
@@ -478,32 +524,79 @@ end
 
 ---
 
-## Phase Performance
+## Formation
 
-{#if phase_performance.length > 1}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
-    data={phase_performance}
-    x=phase
+    data={formation_performance}
+    x=formation
+    y={['wins','draws','losses']}
+    title="W/D/L by Formation"
+    colorPalette={['#22c55e','#eab308','#ef4444']}
+    type=stacked
+    sort=false
+/>
+
+<BarChart
+    data={formation_performance}
+    x=formation
+    y={['goals_per_match','conceded_per_match']}
+    title="Goals Scored vs Conceded per Match"
+    colorPalette={['#22c55e','#ef4444']}
+    type=grouped
+    sort=false
+/>
+
+</div>
+
+---
+
+## When We Play Best
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={matchday_performance}
+    x=day_name
     y=points_per_match
-    title="Points per Match by Phase"
+    title="Points per Match by Day"
     yAxisTitle="Pts / Match"
     colorPalette={['#3b82f6']}
     sort=false
 />
 
 <BarChart
-    data={phase_performance}
-    x=phase
-    y=goals_per_match
-    title="Goals per Match by Phase"
-    colorPalette={['#22c55e']}
+    data={matchday_performance}
+    x=day_name
+    y={['wins','draws','losses']}
+    title="W/D/L by Day"
+    colorPalette={['#22c55e','#eab308','#ef4444']}
+    type=stacked
+    sort=false
+/>
+
+<BarChart
+    data={kickoff_performance}
+    x=period_of_day
+    y=points_per_match
+    title="Points per Match by Time of Day"
+    yAxisTitle="Pts / Match"
+    colorPalette={['#3b82f6']}
+    sort=false
+/>
+
+<BarChart
+    data={kickoff_performance}
+    x=period_of_day
+    y={['wins','draws','losses']}
+    title="W/D/L by Time of Day"
+    colorPalette={['#22c55e','#eab308','#ef4444']}
+    type=stacked
     sort=false
 />
 
 </div>
-{/if}
 
 ---
 
