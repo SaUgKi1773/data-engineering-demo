@@ -510,34 +510,32 @@ end
 ## Match Log
 
 <div class="hidden md:block">
-<DataTable data={match_results} rows=20>
-    <Column id=match_date    title="Date"       />
-    <Column id=round         title="Round"      />
-    <Column id=home_away     title="H/A"        align=center />
-    <Column id=opponent      title="Opponent"   />
-    <Column id=gf            title="GF"         align=center />
-    <Column id=ga            title="GA"         align=center />
-    <Column id=result_badge  title="Result"     contentType=html align=center />
-    <Column id=pts           title="Pts"        align=center />
-    <Column id=possession    title="Poss %"     fmt='0.0"%"' align=center />
-    <Column id=pass_accuracy title="Pass Acc %" fmt='0.0"%"' align=center />
-    <Column id=shots_on_goal title="SoG"        align=center />
-    <Column id=shot_conv     title="Shot Conv %" fmt='0.0"%"' align=center />
-    <Column id=yellow_cards  title="YC"         align=center />
+<DataTable data={match_results} rows=20 search=true downloadable=true>
+    <Column id=match_date    title="Date"        />
+    <Column id=round         title="Round"       />
+    <Column id=home_away     title="H/A"         align=center />
+    <Column id=opponent      title="Opponent"    />
+    <Column id=result_badge  title="Result"      contentType=html align=center />
+    <Column id=gf            title="GF"          align=center contentType=colorscale colorPalette={['white','#22c55e']} />
+    <Column id=ga            title="GA"          align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    <Column id=possession    title="Poss %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
+    <Column id=pass_accuracy title="Pass Acc %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=shots_on_goal title="SoG"         align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
+    <Column id=shot_conv     title="Shot Conv %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#f59e0b']} />
+    <Column id=yellow_cards  title="YC"          align=center contentType=colorscale colorPalette={['white','#eab308']} />
 </DataTable>
 </div>
 <div class="block md:hidden">
-<DataTable data={match_results} rows=20>
-    <Column id=match_date    title="Date"       />
-    <Column id=opponent      title="Opponent"   />
-    <Column id=gf            title="GF"         align=center />
-    <Column id=ga            title="GA"         align=center />
-    <Column id=result_badge  title="Result"     contentType=html align=center />
-    <Column id=pts           title="Pts"        align=center />
-    <Column id=possession    title="Poss %"     fmt='0.0"%"' align=center />
-    <Column id=pass_accuracy title="Pass Acc %" fmt='0.0"%"' align=center />
-    <Column id=shots_on_goal title="SoG"        align=center />
-    <Column id=shot_conv     title="Shot Conv %" fmt='0.0"%"' align=center />
-    <Column id=yellow_cards  title="YC"         align=center />
+<DataTable data={match_results} rows=20 search=true>
+    <Column id=match_date    title="Date"        />
+    <Column id=opponent      title="Opponent"    />
+    <Column id=result_badge  title="Result"      contentType=html align=center />
+    <Column id=gf            title="GF"          align=center contentType=colorscale colorPalette={['white','#22c55e']} />
+    <Column id=ga            title="GA"          align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    <Column id=possession    title="Poss %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
+    <Column id=pass_accuracy title="Pass Acc %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=shots_on_goal title="SoG"         align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
+    <Column id=shot_conv     title="Shot Conv %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#f59e0b']} />
+    <Column id=yellow_cards  title="YC"          align=center contentType=colorscale colorPalette={['white','#eab308']} />
 </DataTable>
 </div>
