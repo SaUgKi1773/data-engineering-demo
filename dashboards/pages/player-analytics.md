@@ -570,7 +570,7 @@ select * from ranked where player_name = '${inputs.player.value}'
     <img src="{podium_players[1]?.team_logo}" alt="{podium_players[1]?.team_name}" style="height:1.375rem;width:1.375rem;object-fit:contain;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
     <div style="background:#f1f5f9;border-radius:8px;padding:0.2rem 0.625rem 0.3rem;text-align:center;margin-bottom:0.625rem;">
       <div style="font-size:1.375rem;font-weight:900;color:#475569;line-height:1.15;">{podium_players[1]?.measure_value % 1 === 0 ? Math.round(podium_players[1].measure_value) : podium_players[1].measure_value}</div>
-      <div style="font-size:0.55rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">{inputs.podium_measure.label}</div>
+      <div style="font-size:0.55rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;word-break:break-word;line-height:1.3;">{inputs.podium_measure.label}</div>
     </div>
     <div style="width:100%;height:68px;background:linear-gradient(to bottom,#b0bec5,#90a4ae);border-radius:4px 4px 0 0;"></div>
   </div>
@@ -584,7 +584,7 @@ select * from ranked where player_name = '${inputs.player.value}'
     <img src="{podium_players[0]?.team_logo}" alt="{podium_players[0]?.team_name}" style="height:1.625rem;width:1.625rem;object-fit:contain;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
     <div style="background:#fef9c3;border-radius:8px;padding:0.2rem 0.75rem 0.3rem;text-align:center;margin-bottom:0.625rem;">
       <div style="font-size:1.875rem;font-weight:900;color:#ca8a04;line-height:1.15;">{podium_players[0]?.measure_value % 1 === 0 ? Math.round(podium_players[0].measure_value) : podium_players[0].measure_value}</div>
-      <div style="font-size:0.6rem;color:#a16207;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">{inputs.podium_measure.label}</div>
+      <div style="font-size:0.6rem;color:#a16207;text-transform:uppercase;letter-spacing:0.04em;word-break:break-word;line-height:1.3;">{inputs.podium_measure.label}</div>
     </div>
     <div style="width:100%;height:100px;background:linear-gradient(to bottom,#fbbf24,#d97706);border-radius:4px 4px 0 0;"></div>
   </div>
@@ -598,7 +598,7 @@ select * from ranked where player_name = '${inputs.player.value}'
     <img src="{podium_players[2]?.team_logo}" alt="{podium_players[2]?.team_name}" style="height:1.25rem;width:1.25rem;object-fit:contain;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
     <div style="background:#fdf4e7;border-radius:8px;padding:0.2rem 0.625rem 0.3rem;text-align:center;margin-bottom:0.625rem;">
       <div style="font-size:1.125rem;font-weight:900;color:#92400e;line-height:1.15;">{podium_players[2]?.measure_value % 1 === 0 ? Math.round(podium_players[2].measure_value) : podium_players[2].measure_value}</div>
-      <div style="font-size:0.55rem;color:#b45309;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">{inputs.podium_measure.label}</div>
+      <div style="font-size:0.55rem;color:#b45309;text-transform:uppercase;letter-spacing:0.04em;word-break:break-word;line-height:1.3;">{inputs.podium_measure.label}</div>
     </div>
     <div style="width:100%;height:44px;background:linear-gradient(to bottom,#cd7c2f,#a05c24);border-radius:4px 4px 0 0;"></div>
   </div>
