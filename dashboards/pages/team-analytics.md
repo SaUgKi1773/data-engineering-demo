@@ -387,7 +387,7 @@ end
 
 ---
 
-## Performance vs Previous Season
+## Season Overview
 
 {#each team_kpis as k}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -546,7 +546,7 @@ end
     x=venue
     y=pass_accuracy
     title="Pass Accuracy %"
-    colorPalette={['#0ea5e9']}
+    colorPalette={['#3b82f6']}
     sort=false
 />
 
@@ -589,30 +589,10 @@ end
 <BarChart
     data={matchday_performance}
     x=day_name
-    y=points_per_match
-    title="Points per Match by Day"
-    yAxisTitle="Pts / Match"
-    colorPalette={['#3b82f6']}
-    sort=false
-/>
-
-<BarChart
-    data={matchday_performance}
-    x=day_name
     y={['wins','draws','losses']}
     title="W/D/L by Day"
     colorPalette={['#22c55e','#eab308','#ef4444']}
     type=stacked
-    sort=false
-/>
-
-<BarChart
-    data={kickoff_performance}
-    x=period_of_day
-    y=points_per_match
-    title="Points per Match by Time of Day"
-    yAxisTitle="Pts / Match"
-    colorPalette={['#3b82f6']}
     sort=false
 />
 
@@ -643,8 +623,8 @@ end
     <Column id=ga            title="GA"          align=center contentType=colorscale colorPalette={['white','#ef4444']} />
     <Column id=possession    title="Poss %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
     <Column id=pass_accuracy title="Pass Acc %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=shots_on_goal title="SoG"         align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    <Column id=shot_conv     title="Shot Conv %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#f59e0b']} />
+    <Column id=shots_on_goal title="SoG"         align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=shot_conv     title="Shot Conv %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
     <Column id=yellow_cards  title="YC"          align=center contentType=colorscale colorPalette={['white','#eab308']} />
 </DataTable>
 </div>
@@ -657,8 +637,8 @@ end
     <Column id=ga            title="GA"          align=center contentType=colorscale colorPalette={['white','#ef4444']} />
     <Column id=possession    title="Poss %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
     <Column id=pass_accuracy title="Pass Acc %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
-    <Column id=shots_on_goal title="SoG"         align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    <Column id=shot_conv     title="Shot Conv %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#f59e0b']} />
+    <Column id=shots_on_goal title="SoG"         align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=shot_conv     title="Shot Conv %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
     <Column id=yellow_cards  title="YC"          align=center contentType=colorscale colorPalette={['white','#eab308']} />
 </DataTable>
 </div>
