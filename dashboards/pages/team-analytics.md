@@ -488,6 +488,7 @@ end
     colorPalette={['#22c55e','#ef4444']}
     markers=true
     chartAreaHeight=280
+    echartsOptions={{series: [{markLine: {silent: true, symbol: ['none','none'], label: {show: false}, data: goals_per_round.map(r => ([{coord: [r.round, r.goals_scored]}, {coord: [r.round, r.goals_conceded], lineStyle: {color: r.goals_scored >= r.goals_conceded ? '#22c55e' : '#ef4444', width: 2, opacity: 0.5}}]))}}]}}
 />
 
 ## Goals by Opponent
