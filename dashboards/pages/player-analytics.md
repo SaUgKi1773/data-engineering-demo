@@ -107,7 +107,21 @@ select * from (values
   ('saves',                  'Saves'),
   ('goals_conceded',         'Goals Conceded'),
   ('own_goals',              'Own Goals'),
-  ('penalty_missed',         'Penalty Missed')
+  ('penalty_missed',         'Penalty Missed'),
+  ('shots_blocked',          'Shots Blocked'),
+  ('clearances_off_line',    'Clearances Off Line'),
+  ('last_man_tackle',        'Last Man Tackle'),
+  ('red_cards',              'Red Cards'),
+  ('yellow_red_cards',       'Yellow-Red Cards'),
+  ('penalty_won',            'Penalty Won'),
+  ('penalty_committed',      'Penalty Committed'),
+  ('penalty_scored',         'Penalty Scored'),
+  ('penalty_saved',          'Penalty Saved'),
+  ('saves_inside_box',       'Saves Inside Box'),
+  ('goalkeeper_punches',     'GK Punches'),
+  ('high_ball_claims',       'High Ball Claims'),
+  ('errors_leading_to_shot', 'Errors Leading to Shot'),
+  ('dribbles_completed',     'Dribbles Completed')
 ) t(value, label)
 ```
 
@@ -164,7 +178,21 @@ with base as (
         sum(saves)::double                                                                     as saves,
         sum(goals_conceded)::double                                                            as goals_conceded,
         sum(own_goals)::double                                                                 as own_goals,
-        sum(penalty_missed)::double                                                            as penalty_missed
+        sum(penalty_missed)::double                                                            as penalty_missed,
+        sum(shots_blocked)::double                                                             as shots_blocked,
+        sum(clearances_off_line)::double                                                       as clearances_off_line,
+        sum(last_man_tackle)::double                                                           as last_man_tackle,
+        sum(red_cards)::double                                                                 as red_cards,
+        sum(yellow_red_cards)::double                                                          as yellow_red_cards,
+        sum(penalty_won)::double                                                               as penalty_won,
+        sum(penalty_committed)::double                                                         as penalty_committed,
+        sum(penalty_scored)::double                                                            as penalty_scored,
+        sum(penalty_saved)::double                                                             as penalty_saved,
+        sum(saves_inside_box)::double                                                          as saves_inside_box,
+        sum(goalkeeper_punches)::double                                                        as goalkeeper_punches,
+        sum(high_ball_claims)::double                                                          as high_ball_claims,
+        sum(errors_leading_to_shot)::double                                                    as errors_leading_to_shot,
+        sum(dribbles_completed)::double                                                        as dribbles_completed
     from superligaen.mart_player_facts
     where season = '${inputs.season.value}'
       and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
@@ -214,6 +242,20 @@ ranked as (
             when 'goals_conceded'         then goals_conceded
             when 'own_goals'              then own_goals
             when 'penalty_missed'         then penalty_missed
+            when 'shots_blocked'          then shots_blocked
+            when 'clearances_off_line'    then clearances_off_line
+            when 'last_man_tackle'        then last_man_tackle
+            when 'red_cards'              then red_cards
+            when 'yellow_red_cards'       then yellow_red_cards
+            when 'penalty_won'            then penalty_won
+            when 'penalty_committed'      then penalty_committed
+            when 'penalty_scored'         then penalty_scored
+            when 'penalty_saved'          then penalty_saved
+            when 'saves_inside_box'       then saves_inside_box
+            when 'goalkeeper_punches'     then goalkeeper_punches
+            when 'high_ball_claims'       then high_ball_claims
+            when 'errors_leading_to_shot' then errors_leading_to_shot
+            when 'dribbles_completed'     then dribbles_completed
             else goals
         end as measure_value,
         row_number() over (
@@ -257,6 +299,20 @@ ranked as (
                 when 'goals_conceded'         then goals_conceded
                 when 'own_goals'              then own_goals
                 when 'penalty_missed'         then penalty_missed
+                when 'shots_blocked'          then shots_blocked
+                when 'clearances_off_line'    then clearances_off_line
+                when 'last_man_tackle'        then last_man_tackle
+                when 'red_cards'              then red_cards
+                when 'yellow_red_cards'       then yellow_red_cards
+                when 'penalty_won'            then penalty_won
+                when 'penalty_committed'      then penalty_committed
+                when 'penalty_scored'         then penalty_scored
+                when 'penalty_saved'          then penalty_saved
+                when 'saves_inside_box'       then saves_inside_box
+                when 'goalkeeper_punches'     then goalkeeper_punches
+                when 'high_ball_claims'       then high_ball_claims
+                when 'errors_leading_to_shot' then errors_leading_to_shot
+                when 'dribbles_completed'     then dribbles_completed
                 else goals
             end desc nulls last
         ) as rn
@@ -399,7 +455,21 @@ select
     saves,
     goals_conceded,
     own_goals,
-    penalty_missed
+    penalty_missed,
+    shots_blocked,
+    clearances_off_line,
+    last_man_tackle,
+    red_cards,
+    yellow_red_cards,
+    penalty_won,
+    penalty_committed,
+    penalty_scored,
+    penalty_saved,
+    saves_inside_box,
+    goalkeeper_punches,
+    high_ball_claims,
+    errors_leading_to_shot,
+    dribbles_completed
 from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
@@ -816,9 +886,23 @@ select * from (values
   ('interceptions',     'Interceptions'),
   ('tackles',           'Tackles'),
   ('saves',             'Saves'),
-  ('goals_conceded',    'Goals Conceded'),
-  ('own_goals',         'Own Goals'),
-  ('penalty_missed',    'Penalty Missed')
+  ('goals_conceded',         'Goals Conceded'),
+  ('own_goals',              'Own Goals'),
+  ('penalty_missed',         'Penalty Missed'),
+  ('shots_blocked',          'Shots Blocked'),
+  ('clearances_off_line',    'Clearances Off Line'),
+  ('last_man_tackle',        'Last Man Tackle'),
+  ('red_cards',              'Red Cards'),
+  ('yellow_red_cards',       'Yellow-Red Cards'),
+  ('penalty_won',            'Penalty Won'),
+  ('penalty_committed',      'Penalty Committed'),
+  ('penalty_scored',         'Penalty Scored'),
+  ('penalty_saved',          'Penalty Saved'),
+  ('saves_inside_box',       'Saves Inside Box'),
+  ('goalkeeper_punches',     'GK Punches'),
+  ('high_ball_claims',       'High Ball Claims'),
+  ('errors_leading_to_shot', 'Errors Leading to Shot'),
+  ('dribbles_completed',     'Dribbles Completed')
 ) t(value, label)
 ```
 
@@ -998,7 +1082,49 @@ select * from (values
     <Column id=own_goals         title="Own Goals"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
     {/if}
     {#if inputs.oth.value?.includes('penalty_missed')}
-    <Column id=penalty_missed    title="Pen. Missed"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    <Column id=penalty_missed          title="Pen. Missed"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_blocked')}
+    <Column id=shots_blocked           title="Shots Blocked"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('clearances_off_line')}
+    <Column id=clearances_off_line     title="Clr. Off Line"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('last_man_tackle')}
+    <Column id=last_man_tackle         title="Last Man Tkl"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('red_cards')}
+    <Column id=red_cards               title="RC"                align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    {/if}
+    {#if inputs.oth.value?.includes('yellow_red_cards')}
+    <Column id=yellow_red_cards        title="YRC"               align=center contentType=colorscale colorPalette={['white','#f97316']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_won')}
+    <Column id=penalty_won             title="Pen. Won"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_committed')}
+    <Column id=penalty_committed       title="Pen. Com."         align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_scored')}
+    <Column id=penalty_scored          title="Pen. Scored"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_saved')}
+    <Column id=penalty_saved           title="Pen. Saved"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('saves_inside_box')}
+    <Column id=saves_inside_box        title="Saves IB"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('goalkeeper_punches')}
+    <Column id=goalkeeper_punches      title="GK Punches"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('high_ball_claims')}
+    <Column id=high_ball_claims        title="High Ball Clms"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('errors_leading_to_shot')}
+    <Column id=errors_leading_to_shot  title="Errors to Shot"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('dribbles_completed')}
+    <Column id=dribbles_completed      title="Dribbles"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
     {/if}
 </DataTable>
 </div>
@@ -1120,7 +1246,49 @@ select * from (values
     <Column id=own_goals         title="Own Goals"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
     {/if}
     {#if inputs.oth.value?.includes('penalty_missed')}
-    <Column id=penalty_missed    title="Pen. Missed"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    <Column id=penalty_missed          title="Pen. Missed"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_blocked')}
+    <Column id=shots_blocked           title="Shots Blocked"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('clearances_off_line')}
+    <Column id=clearances_off_line     title="Clr. Off Line"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('last_man_tackle')}
+    <Column id=last_man_tackle         title="Last Man Tkl"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('red_cards')}
+    <Column id=red_cards               title="RC"                align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    {/if}
+    {#if inputs.oth.value?.includes('yellow_red_cards')}
+    <Column id=yellow_red_cards        title="YRC"               align=center contentType=colorscale colorPalette={['white','#f97316']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_won')}
+    <Column id=penalty_won             title="Pen. Won"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_committed')}
+    <Column id=penalty_committed       title="Pen. Com."         align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_scored')}
+    <Column id=penalty_scored          title="Pen. Scored"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_saved')}
+    <Column id=penalty_saved           title="Pen. Saved"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('saves_inside_box')}
+    <Column id=saves_inside_box        title="Saves IB"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('goalkeeper_punches')}
+    <Column id=goalkeeper_punches      title="GK Punches"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('high_ball_claims')}
+    <Column id=high_ball_claims        title="High Ball Clms"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('errors_leading_to_shot')}
+    <Column id=errors_leading_to_shot  title="Errors to Shot"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('dribbles_completed')}
+    <Column id=dribbles_completed      title="Dribbles"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
     {/if}
 </DataTable>
 </div>
