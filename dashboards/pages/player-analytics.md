@@ -725,7 +725,7 @@ select * from ranked where player_name = '${inputs.player.value}'
     <div class="flex items-center gap-3">
       <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Attacking</div>
       <div class="flex-1 bg-gray-100 rounded-full h-2.5">
-        <div class="h-2.5 rounded-full bg-amber-400" style="width:{lc.attacking_pct}%"></div>
+        <div class="h-2.5 rounded-full bg-blue-500" style="width:{lc.attacking_pct}%"></div>
       </div>
       <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.attacking_pct}</div>
     </div>
@@ -757,7 +757,7 @@ select * from ranked where player_name = '${inputs.player.value}'
     <div class="flex items-center gap-3">
       <div class="text-xs text-gray-500 w-28 shrink-0 text-right">Physicality</div>
       <div class="flex-1 bg-gray-100 rounded-full h-2.5">
-        <div class="h-2.5 rounded-full bg-orange-400" style="width:{lc.physicality_pct}%"></div>
+        <div class="h-2.5 rounded-full bg-amber-400" style="width:{lc.physicality_pct}%"></div>
       </div>
       <div class="text-xs font-bold text-gray-700 w-8 shrink-0 text-right">{lc.physicality_pct}</div>
     </div>
@@ -806,7 +806,7 @@ select * from (values
     xAxisTitle="Round"
     yAxisTitle="Goals"
     y2AxisTitle="Rating"
-    colorPalette={['#fbbf24','#94a3b8']}
+    colorPalette={['#3b82f6','#94a3b8']}
     y2Min=0
     y2Max=10
     echartsOptions={{yAxis: [{minInterval: 1}, {min: 0, max: 10}]}}
@@ -866,7 +866,7 @@ select * from (values
     xAxisTitle="Round"
     yAxisTitle="Duel Win %"
     y2AxisTitle="Rating"
-    colorPalette={['#fb923c','#94a3b8']}
+    colorPalette={['#f59e0b','#94a3b8']}
     y2Min=0
     y2Max=10
     echartsOptions={{yAxis: [{minInterval: 1}, {min: 0, max: 10}]}}
@@ -980,19 +980,19 @@ select * from (values
     <Column id=result_badge title="Result"   contentType=html align=center />
     <Column id=rating              title="Rating"         align=center contentType=colorscale colorPalette={['white','#8b5cf6']} />
     {#if inputs.atk.value?.includes('goals')}
-    <Column id=goals           title="Goals"       align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    <Column id=goals           title="Goals"       align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
     {#if inputs.atk.value?.includes('assists')}
-    <Column id=assists         title="Assists"     align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    <Column id=assists         title="Assists"     align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
     {#if inputs.atk.value?.includes('shots_on_target')}
-    <Column id=shots_on_target title="SoT"         align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    <Column id=shots_on_target title="SoT"         align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
     {#if inputs.atk.value?.includes('shot_conv')}
-    <Column id=shot_conv       title="Shot Conv %"  align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    <Column id=shot_conv       title="Shot Conv %"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
     {#if inputs.atk.value?.includes('woodwork_hits')}
-    <Column id=woodwork_hits   title="Woodwork"    align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    <Column id=woodwork_hits   title="Woodwork"    align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
     {#if inputs.cre.value?.includes('big_chances_created')}
     <Column id=big_chances_created title="Big Chances"    align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
@@ -1144,19 +1144,19 @@ select * from (values
     <Column id=result_badge title="Result"   contentType=html align=center />
     <Column id=rating              title="Rating"         align=center contentType=colorscale colorPalette={['white','#8b5cf6']} />
     {#if inputs.atk.value?.includes('goals')}
-    <Column id=goals           title="Goals"       align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    <Column id=goals           title="Goals"       align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
     {#if inputs.atk.value?.includes('assists')}
-    <Column id=assists         title="Assists"     align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    <Column id=assists         title="Assists"     align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
     {#if inputs.atk.value?.includes('shots_on_target')}
-    <Column id=shots_on_target title="SoT"         align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    <Column id=shots_on_target title="SoT"         align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
     {#if inputs.atk.value?.includes('shot_conv')}
-    <Column id=shot_conv       title="Shot Conv %"  align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    <Column id=shot_conv       title="Shot Conv %"  align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
     {#if inputs.atk.value?.includes('woodwork_hits')}
-    <Column id=woodwork_hits   title="Woodwork"    align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
+    <Column id=woodwork_hits   title="Woodwork"    align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
     {/if}
     {#if inputs.cre.value?.includes('big_chances_created')}
     <Column id=big_chances_created title="Big Chances"    align=center contentType=colorscale colorPalette={['white','#38bdf8']} />
