@@ -153,6 +153,7 @@
     const parts = [];
     if (p.goals_scored > 0)           parts.push('⚽'.repeat(Math.min(p.goals_scored, 3)) + (p.goals_scored > 3 ? p.goals_scored : ''));
     if (p.assists > 0)                parts.push('🎯'.repeat(Math.min(p.assists, 2)) + (p.assists > 2 ? p.assists : ''));
+    if (p.woodwork_hits > 0)          parts.push('💥'.repeat(Math.min(p.woodwork_hits, 2)) + (p.woodwork_hits > 2 ? p.woodwork_hits : ''));
     if (p.own_goals > 0)              parts.push('🙈');
     if (p.penalty_missed > 0)         parts.push('❌');
     if (p.yellow_red_cards > 0)       parts.push('🟨🟥');
