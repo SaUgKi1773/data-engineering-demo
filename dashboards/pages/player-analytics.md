@@ -61,51 +61,212 @@ order by player_name
 ```
 
 
-```sql top_players
+```sql podium_measures
+select * from (values
+  -- Attacking
+  ('goals',                  'Goals'),
+  ('assists',                'Assists'),
+  ('shots_on_target',        'Shots on Target'),
+  ('shot_conv',              'Shot Conv %'),
+  ('woodwork_hits',          'Woodwork Hits'),
+  -- Creativity
+  ('big_chances_created',    'Big Chances Created'),
+  ('all_chances',            'Chances Created'),
+  ('key_passes',             'Key Passes'),
+  ('cross_acc',              'Cross Acc %'),
+  ('passes_final_third',     'Passes Final Third'),
+  -- Possession
+  ('pass_acc',               'Pass Acc %'),
+  ('dribble_success',        'Dribble Success %'),
+  ('long_ball_success',      'Long Ball Success %'),
+  -- Defending
+  ('tkl_int',                'Tkl + Int'),
+  ('tackle_success',         'Tackle Success %'),
+  ('balls_recovered',        'Balls Recovered'),
+  ('times_dribbled_past',    'Times Dribbled Past'),
+  ('errors_leading_to_goal', 'Errors Leading to Goal'),
+  -- Physicality
+  ('duel_win',               'Duel Win %'),
+  ('fouls_drawn',            'Fouls Drawn'),
+  ('aerial_success',         'Aerial Success %'),
+  -- Impact & Other
+  ('avg_rating',             'Avg Rating'),
+  ('minutes_played',         'Minutes Played'),
+  ('yellow_cards',           'Yellow Cards'),
+  ('shots_total',            'Total Shots'),
+  ('shots_off_target',       'Shots Off Target'),
+  ('big_chances_missed',     'Big Chances Missed'),
+  ('fouls_committed',        'Fouls Committed'),
+  ('offsides',               'Offsides'),
+  ('dispossessed',           'Dispossessed'),
+  ('possession_losses',      'Possession Losses'),
+  ('clearances',             'Clearances'),
+  ('blocks',                 'Blocks'),
+  ('interceptions',          'Interceptions'),
+  ('tackles',                'Tackles'),
+  ('saves',                  'Saves'),
+  ('goals_conceded',         'Goals Conceded'),
+  ('own_goals',              'Own Goals'),
+  ('penalty_missed',         'Penalty Missed')
+) t(value, label)
+```
+
+```sql podium_players
 with base as (
     select
         player_name,
         player_photo,
         player_position,
-        max(team_name)                                              as team_name,
-        max(team_logo)                                             as team_logo,
-        count(distinct match_id)                                   as matches,
-        sum(goals_scored)                                          as goals,
-        sum(assists)                                               as assists,
-        sum(dribbles_completed)                                    as dribbles,
-        sum(tackles_won) + sum(interceptions) + sum(balls_recovered) as defensive_actions,
-        sum(key_passes) + sum(big_chances_created)                 as chances_created,
-        round(avg(rating), 2)                                      as avg_rating
+        max(team_name)                                                                         as team_name,
+        max(team_logo)                                                                         as team_logo,
+        count(distinct match_id)                                                               as matches,
+        -- Attacking
+        sum(goals_scored)::double                                                              as goals,
+        sum(assists)::double                                                                   as assists,
+        sum(shots_on_target)::double                                                           as shots_on_target,
+        round(100.0 * sum(goals_scored) / nullif(sum(shots_total), 0), 1)                     as shot_conv,
+        sum(woodwork_hits)::double                                                             as woodwork_hits,
+        -- Creativity
+        sum(big_chances_created)::double                                                       as big_chances_created,
+        sum(chances_created)::double                                                           as all_chances,
+        sum(key_passes)::double                                                                as key_passes,
+        round(100.0 * sum(crosses_accurate) / nullif(sum(crosses_total), 0), 1)               as cross_acc,
+        sum(passes_final_third)::double                                                        as passes_final_third,
+        -- Possession
+        round(100.0 * sum(passes_accurate) / nullif(sum(passes_total), 0), 1)                 as pass_acc,
+        round(100.0 * sum(dribbles_completed) / nullif(sum(dribbles_attempts), 0), 1)         as dribble_success,
+        round(100.0 * sum(long_balls_won) / nullif(sum(long_balls), 0), 1)                    as long_ball_success,
+        -- Defending
+        (sum(tackles) + sum(interceptions))::double                                            as tkl_int,
+        round(100.0 * sum(tackles_won) / nullif(sum(tackles), 0), 1)                          as tackle_success,
+        sum(balls_recovered)::double                                                           as balls_recovered,
+        sum(times_dribbled_past)::double                                                       as times_dribbled_past,
+        sum(errors_leading_to_goal)::double                                                    as errors_leading_to_goal,
+        -- Physicality
+        round(100.0 * sum(duels_won) / nullif(sum(duels_total), 0), 1)                        as duel_win,
+        sum(fouls_drawn)::double                                                               as fouls_drawn,
+        round(100.0 * sum(aerials_won) / nullif(sum(aerials_won) + sum(aerials_lost), 0), 1)  as aerial_success,
+        -- Impact & Other
+        round(avg(rating), 2)::double                                                          as avg_rating,
+        sum(minutes_played)::double                                                            as minutes_played,
+        sum(yellow_cards)::double                                                              as yellow_cards,
+        sum(shots_total)::double                                                               as shots_total,
+        sum(shots_off_target)::double                                                          as shots_off_target,
+        sum(big_chances_missed)::double                                                        as big_chances_missed,
+        sum(fouls_committed)::double                                                           as fouls_committed,
+        sum(offsides)::double                                                                  as offsides,
+        sum(dispossessed)::double                                                              as dispossessed,
+        sum(possession_losses)::double                                                         as possession_losses,
+        sum(clearances)::double                                                                as clearances,
+        sum(blocks)::double                                                                    as blocks,
+        sum(interceptions)::double                                                             as interceptions,
+        sum(tackles)::double                                                                   as tackles,
+        sum(saves)::double                                                                     as saves,
+        sum(goals_conceded)::double                                                            as goals_conceded,
+        sum(own_goals)::double                                                                 as own_goals,
+        sum(penalty_missed)::double                                                            as penalty_missed
     from superligaen.mart_player_facts
     where season = '${inputs.season.value}'
       and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, player_position
-    having count(distinct match_id) >= 3
+    having count(distinct match_id) >= 5
+),
+ranked as (
+    select *,
+        case '${inputs.podium_measure.value}'
+            when 'goals'                  then goals
+            when 'assists'                then assists
+            when 'shots_on_target'        then shots_on_target
+            when 'shot_conv'              then shot_conv
+            when 'woodwork_hits'          then woodwork_hits
+            when 'big_chances_created'    then big_chances_created
+            when 'all_chances'            then all_chances
+            when 'key_passes'             then key_passes
+            when 'cross_acc'              then cross_acc
+            when 'passes_final_third'     then passes_final_third
+            when 'pass_acc'               then pass_acc
+            when 'dribble_success'        then dribble_success
+            when 'long_ball_success'      then long_ball_success
+            when 'tkl_int'                then tkl_int
+            when 'tackle_success'         then tackle_success
+            when 'balls_recovered'        then balls_recovered
+            when 'times_dribbled_past'    then times_dribbled_past
+            when 'errors_leading_to_goal' then errors_leading_to_goal
+            when 'duel_win'               then duel_win
+            when 'fouls_drawn'            then fouls_drawn
+            when 'aerial_success'         then aerial_success
+            when 'avg_rating'             then avg_rating
+            when 'minutes_played'         then minutes_played
+            when 'yellow_cards'           then yellow_cards
+            when 'shots_total'            then shots_total
+            when 'shots_off_target'       then shots_off_target
+            when 'big_chances_missed'     then big_chances_missed
+            when 'fouls_committed'        then fouls_committed
+            when 'offsides'               then offsides
+            when 'dispossessed'           then dispossessed
+            when 'possession_losses'      then possession_losses
+            when 'clearances'             then clearances
+            when 'blocks'                 then blocks
+            when 'interceptions'          then interceptions
+            when 'tackles'                then tackles
+            when 'saves'                  then saves
+            when 'goals_conceded'         then goals_conceded
+            when 'own_goals'              then own_goals
+            when 'penalty_missed'         then penalty_missed
+            else goals
+        end as measure_value,
+        row_number() over (
+            order by case '${inputs.podium_measure.value}'
+                when 'goals'                  then goals
+                when 'assists'                then assists
+                when 'shots_on_target'        then shots_on_target
+                when 'shot_conv'              then shot_conv
+                when 'woodwork_hits'          then woodwork_hits
+                when 'big_chances_created'    then big_chances_created
+                when 'all_chances'            then all_chances
+                when 'key_passes'             then key_passes
+                when 'cross_acc'              then cross_acc
+                when 'passes_final_third'     then passes_final_third
+                when 'pass_acc'               then pass_acc
+                when 'dribble_success'        then dribble_success
+                when 'long_ball_success'      then long_ball_success
+                when 'tkl_int'                then tkl_int
+                when 'tackle_success'         then tackle_success
+                when 'balls_recovered'        then balls_recovered
+                when 'times_dribbled_past'    then times_dribbled_past
+                when 'errors_leading_to_goal' then errors_leading_to_goal
+                when 'duel_win'               then duel_win
+                when 'fouls_drawn'            then fouls_drawn
+                when 'aerial_success'         then aerial_success
+                when 'avg_rating'             then avg_rating
+                when 'minutes_played'         then minutes_played
+                when 'yellow_cards'           then yellow_cards
+                when 'shots_total'            then shots_total
+                when 'shots_off_target'       then shots_off_target
+                when 'big_chances_missed'     then big_chances_missed
+                when 'fouls_committed'        then fouls_committed
+                when 'offsides'               then offsides
+                when 'dispossessed'           then dispossessed
+                when 'possession_losses'      then possession_losses
+                when 'clearances'             then clearances
+                when 'blocks'                 then blocks
+                when 'interceptions'          then interceptions
+                when 'tackles'                then tackles
+                when 'saves'                  then saves
+                when 'goals_conceded'         then goals_conceded
+                when 'own_goals'              then own_goals
+                when 'penalty_missed'         then penalty_missed
+                else goals
+            end desc nulls last
+        ) as rn
+    from base
 )
-select category, player_name, player_photo, player_position, team_name, team_logo, stat_value, stat_label
-from (
-    select 'Top Scorer'   as category, player_name, player_photo, player_position, team_name, team_logo, goals::int               as stat_value, 'Goals'          as stat_label, row_number() over (order by goals             desc) as rn from base
-    union all
-    select 'Top Assister',              player_name, player_photo, player_position, team_name, team_logo, assists::int,                'Assists',        row_number() over (order by assists           desc) from base
-    union all
-    select 'Top Creator',               player_name, player_photo, player_position, team_name, team_logo, chances_created::int,        'KP+BC Created',  row_number() over (order by chances_created   desc) from base
-    union all
-    select 'Top Defender',              player_name, player_photo, player_position, team_name, team_logo, defensive_actions::int,      'Tkl+Int+Rec',    row_number() over (order by defensive_actions desc) from base
-    union all
-    select 'Top Dribbler',              player_name, player_photo, player_position, team_name, team_logo, dribbles::int,               'Dribbles',       row_number() over (order by dribbles          desc) from base
-    union all
-    select 'Top Rated',                 player_name, player_photo, player_position, team_name, team_logo, avg_rating::double,          'Avg Rating',     row_number() over (order by avg_rating        desc) from base where matches >= 5
-)
-where rn = 1
-order by case category
-    when 'Top Scorer'   then 1
-    when 'Top Assister' then 2
-    when 'Top Creator'  then 3
-    when 'Top Defender' then 4
-    when 'Top Dribbler' then 5
-    when 'Top Rated'    then 6
-end
+select player_name, player_photo, player_position, team_name, team_logo,
+       measure_value, rn
+from ranked
+where rn <= 3
+order by rn
 ```
 
 {#key seasons[0]?.season}
@@ -326,18 +487,43 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 ## Top Players
 
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-{#each top_players as tp}
-<div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col items-center text-center">
-  <div class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">{tp.category}</div>
-  <img src="{tp.player_photo}" alt="{tp.player_name}" class="h-16 w-16 rounded-full object-cover mb-3 border-2 border-gray-100" onerror="this.style.display='none'" />
-  <div class="text-sm font-bold text-gray-900 leading-tight min-h-10 flex items-start justify-center">{tp.player_name}</div>
-  <div class="text-xs text-gray-400 mt-1">{tp.player_position}</div>
-  <img src="{tp.team_logo}" alt="{tp.team_name}" class="h-7 w-7 object-contain mt-1" onerror="this.style.display='none'" />
-  <div class="mt-auto pt-3 text-2xl font-black text-blue-600">{tp.stat_value}</div>
-  <div class="text-xs text-gray-400">{tp.stat_label}</div>
-</div>
-{/each}
+<Dropdown data={podium_measures} name=podium_measure value=value label=label defaultValue="goals" title="Measure" />
+
+<div style="display:flex;align-items:flex-end;justify-content:center;gap:0.75rem;margin-top:2rem;border-bottom:3px solid #e5e7eb;">
+
+  <!-- 2nd place – Silver -->
+  <div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:160px;">
+    <div style="font-size:1.75rem;">🥈</div>
+    <img src="{podium_players[1]?.player_photo}" alt="{podium_players[1]?.player_name}" style="height:3.5rem;width:3.5rem;border-radius:50%;object-fit:cover;border:3px solid #94a3b8;margin:0.375rem 0;" onerror="this.style.display='none'" />
+    <div style="font-size:0.7rem;font-weight:700;text-align:center;line-height:1.2;">{podium_players[1]?.player_name}</div>
+    <div style="font-size:0.625rem;color:#6b7280;margin:0.125rem 0;">{podium_players[1]?.player_position}</div>
+    <img src="{podium_players[1]?.team_logo}" alt="{podium_players[1]?.team_name}" style="height:1.25rem;width:1.25rem;object-fit:contain;margin:0.25rem 0;" onerror="this.style.display='none'" />
+    <div style="font-size:1.25rem;font-weight:900;color:#475569;margin:0.25rem 0;">{podium_players[1]?.measure_value}</div>
+    <div style="width:100%;height:68px;background:linear-gradient(to bottom,#b0bec5,#90a4ae);border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.5rem;">2</div>
+  </div>
+
+  <!-- 1st place – Gold -->
+  <div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:160px;">
+    <div style="font-size:2rem;">🥇</div>
+    <img src="{podium_players[0]?.player_photo}" alt="{podium_players[0]?.player_name}" style="height:4.5rem;width:4.5rem;border-radius:50%;object-fit:cover;border:3px solid #eab308;margin:0.375rem 0;" onerror="this.style.display='none'" />
+    <div style="font-size:0.8rem;font-weight:700;text-align:center;line-height:1.2;">{podium_players[0]?.player_name}</div>
+    <div style="font-size:0.65rem;color:#6b7280;margin:0.125rem 0;">{podium_players[0]?.player_position}</div>
+    <img src="{podium_players[0]?.team_logo}" alt="{podium_players[0]?.team_name}" style="height:1.5rem;width:1.5rem;object-fit:contain;margin:0.25rem 0;" onerror="this.style.display='none'" />
+    <div style="font-size:1.75rem;font-weight:900;color:#ca8a04;margin:0.25rem 0;">{podium_players[0]?.measure_value}</div>
+    <div style="width:100%;height:100px;background:linear-gradient(to bottom,#fbbf24,#d97706);border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:2rem;">1</div>
+  </div>
+
+  <!-- 3rd place – Bronze -->
+  <div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:160px;">
+    <div style="font-size:1.75rem;">🥉</div>
+    <img src="{podium_players[2]?.player_photo}" alt="{podium_players[2]?.player_name}" style="height:3rem;width:3rem;border-radius:50%;object-fit:cover;border:3px solid #cd7c2f;margin:0.375rem 0;" onerror="this.style.display='none'" />
+    <div style="font-size:0.7rem;font-weight:700;text-align:center;line-height:1.2;">{podium_players[2]?.player_name}</div>
+    <div style="font-size:0.625rem;color:#6b7280;margin:0.125rem 0;">{podium_players[2]?.player_position}</div>
+    <img src="{podium_players[2]?.team_logo}" alt="{podium_players[2]?.team_name}" style="height:1.25rem;width:1.25rem;object-fit:contain;margin:0.25rem 0;" onerror="this.style.display='none'" />
+    <div style="font-size:1.1rem;font-weight:900;color:#92400e;margin:0.25rem 0;">{podium_players[2]?.measure_value}</div>
+    <div style="width:100%;height:44px;background:linear-gradient(to bottom,#cd7c2f,#a05c24);border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.25rem;">3</div>
+  </div>
+
 </div>
 
 ---
