@@ -358,6 +358,38 @@ where ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
 order by team_name
 ```
 
+```sql match_schedule
+select
+    day_name,
+    period_of_day,
+    count(distinct match_id)::int as matches
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+  and result in ('Win', 'Draw', 'Loss')
+group by day_name, period_of_day
+order by case day_name
+    when 'Monday'    then 1 when 'Tuesday'  then 2 when 'Wednesday' then 3
+    when 'Thursday'  then 4 when 'Friday'   then 5 when 'Saturday'  then 6
+    when 'Sunday'    then 7 end,
+    case period_of_day
+    when 'Morning' then 1 when 'Noon' then 2 when 'Evening' then 3 when 'Night' then 4 else 5 end
+```
+
+```sql goals_by_slot
+select
+    period_of_day,
+    count(distinct match_id)::int                                              as matches,
+    round(sum(goals_scored)::double / count(distinct match_id), 2)             as goals_per_match
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+  and result in ('Win', 'Draw', 'Loss')
+group by period_of_day
+order by case period_of_day
+    when 'Morning' then 1 when 'Noon' then 2 when 'Evening' then 3 when 'Night' then 4 else 5 end
+```
+
 ---
 
 ## League Intelligence — {inputs.season.value}
@@ -736,7 +768,7 @@ order by team_name
     y=goals_pm
     title="Attacking — Goals per Match"
     yAxisTitle="Goals / Match"
-    colorPalette={['#22c55e']}
+    colorPalette={['#3b82f6']}
     swapXY=true
     sort=true
 />
@@ -747,7 +779,7 @@ order by team_name
     y=big_chances_pm
     title="Creativity — Big Chances Created per Match"
     yAxisTitle="Big Chances / Match"
-    colorPalette={['#f59e0b']}
+    colorPalette={['#06b6d4']}
     swapXY=true
     sort=true
 />
@@ -774,7 +806,7 @@ order by team_name
     y=conceded_pm
     title="Defending — Goals Conceded per Match"
     yAxisTitle="Goals Conceded / Match"
-    colorPalette={['#14b8a6']}
+    colorPalette={['#f97316']}
     swapXY=true
     sort=true
 />
@@ -789,7 +821,7 @@ order by team_name
     y=duel_win_pct
     title="Physicality — Duel Win %"
     yAxisTitle="Duel Win %"
-    colorPalette={['#f97316']}
+    colorPalette={['#14b8a6']}
     swapXY=true
     sort=true
     fmt='0.0%'
@@ -801,10 +833,46 @@ order by team_name
     y=win_pct
     title="Winning — Win Rate %"
     yAxisTitle="Win Rate %"
-    colorPalette={['#3b82f6']}
+    colorPalette={['#22c55e']}
     swapXY=true
     sort=true
     fmt='0.0%'
+/>
+
+</div>
+
+---
+
+## Match Schedule
+
+<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When are Superligaen matches played? The left chart breaks down fixtures by day of week and time of day; the right shows whether kick-off time influences scoring. Time slots: Morning 05:00–10:59 · Afternoon 11:00–15:59 · Evening 16:00–20:59 · Night 21:00–04:59.</p>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={match_schedule}
+    x=day_name
+    y=matches
+    series=period_of_day
+    title="Matches by Day & Time of Day"
+    xAxisTitle="Day"
+    yAxisTitle="Matches"
+    colorPalette={['#fbbf24','#3b82f6','#f97316','#6366f1']}
+    type=stacked
+    sort=false
+    echartsOptions={{xAxis: {data: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']}}}
+/>
+
+<BarChart
+    data={goals_by_slot}
+    x=period_of_day
+    y=goals_per_match
+    title="Goals per Match by Time of Day"
+    xAxisTitle="Time of Day"
+    yAxisTitle="Goals / Match"
+    colorPalette={['#fbbf24','#3b82f6','#f97316','#6366f1']}
+    sort=false
+    echartsOptions={{xAxis: {data: ['Morning', 'Noon', 'Evening', 'Night']}}}
 />
 
 </div>

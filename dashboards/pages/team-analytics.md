@@ -485,9 +485,10 @@ end
     y={['goals_scored','goals_conceded']}
     xAxisTitle="Round"
     yAxisTitle="Goals"
-    colorPalette={['#22c55e','#ef4444']}
+    colorPalette={['#3b82f6','#f97316']}
     markers=true
     chartAreaHeight=280
+    echartsOptions={{series: [{markLine: {silent: true, symbol: ['none','none'], label: {show: false}, data: goals_per_round.map(r => ([{coord: [r.round, r.goals_scored]}, {coord: [r.round, r.goals_conceded], lineStyle: {color: r.goals_scored >= r.goals_conceded ? '#3b82f6' : '#f97316', width: 2, opacity: 0.5}}]))}}]}}
 />
 
 ## Goals by Opponent
@@ -498,7 +499,7 @@ end
     y={['goals_scored','goals_conceded']}
     type=grouped
     swapXY=true
-    colorPalette={['#22c55e','#ef4444']}
+    colorPalette={['#3b82f6','#f97316']}
     seriesOptions={{"barGap": "0%"}}
     xAxisTitle="Goals"
     yAxisTitle="Opponent"
@@ -527,7 +528,7 @@ end
     x=venue
     y={['goals_per_match','conceded_per_match']}
     title="Goals Scored vs Conceded per Match"
-    colorPalette={['#22c55e','#ef4444']}
+    colorPalette={['#3b82f6','#f97316']}
     type=grouped
     sort=false
 />
@@ -573,7 +574,7 @@ end
     x=formation
     y={['goals_per_match','conceded_per_match']}
     title="Goals per Match by Formation"
-    colorPalette={['#22c55e','#ef4444']}
+    colorPalette={['#3b82f6','#f97316']}
     type=grouped
     sort=false
 />
@@ -619,8 +620,8 @@ end
     <Column id=home_away     title="H/A"         align=center />
     <Column id=opponent      title="Opponent"    />
     <Column id=result_badge  title="Result"      contentType=html align=center />
-    <Column id=gf            title="GF"          align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    <Column id=ga            title="GA"          align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    <Column id=gf            title="GF"          align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=ga            title="GA"          align=center contentType=colorscale colorPalette={['white','#f97316']} />
     <Column id=possession    title="Poss %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
     <Column id=pass_accuracy title="Pass Acc %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
     <Column id=shots_on_goal title="SoG"         align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
@@ -633,8 +634,8 @@ end
     <Column id=match_date    title="Date"        />
     <Column id=opponent      title="Opponent"    />
     <Column id=result_badge  title="Result"      contentType=html align=center />
-    <Column id=gf            title="GF"          align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    <Column id=ga            title="GA"          align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    <Column id=gf            title="GF"          align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=ga            title="GA"          align=center contentType=colorscale colorPalette={['white','#f97316']} />
     <Column id=possession    title="Poss %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
     <Column id=pass_accuracy title="Pass Acc %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
     <Column id=shots_on_goal title="SoG"         align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
