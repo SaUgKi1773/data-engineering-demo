@@ -220,7 +220,25 @@ select
     fouls_drawn,
     round(100.0 * aerials_won / nullif(aerials_won + aerials_lost, 0), 1)           as aerial_success,
     -- Impact
-    rating
+    rating,
+    -- Other
+    minutes_played,
+    yellow_cards,
+    shots_total,
+    shots_off_target,
+    big_chances_missed,
+    fouls_committed,
+    offsides,
+    dispossessed,
+    possession_losses,
+    clearances,
+    blocks,
+    interceptions,
+    tackles,
+    saves,
+    goals_conceded,
+    own_goals,
+    penalty_missed
 from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
@@ -596,9 +614,25 @@ select * from (values
 
 *Use the selectors below to add or remove columns per domain.*
 
-```sql impact_measures
+```sql other_measures
 select * from (values
-  ('rating', 'Rating')
+  ('minutes_played',    'Minutes Played'),
+  ('yellow_cards',      'Yellow Cards'),
+  ('shots_total',       'Total Shots'),
+  ('shots_off_target',  'Shots Off Target'),
+  ('big_chances_missed','Big Chances Missed'),
+  ('fouls_committed',   'Fouls Committed'),
+  ('offsides',          'Offsides'),
+  ('dispossessed',      'Dispossessed'),
+  ('possession_losses', 'Possession Losses'),
+  ('clearances',        'Clearances'),
+  ('blocks',            'Blocks'),
+  ('interceptions',     'Interceptions'),
+  ('tackles',           'Tackles'),
+  ('saves',             'Saves'),
+  ('goals_conceded',    'Goals Conceded'),
+  ('own_goals',         'Own Goals'),
+  ('penalty_missed',    'Penalty Missed')
 ) t(value, label)
 ```
 
@@ -649,15 +683,15 @@ select * from (values
 ```
 
 <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-  <Dropdown data={impact_measures}      name=imp value=value label=label multiple=true defaultValue={['rating']}              title="Impact"      />
   <Dropdown data={attacking_measures}   name=atk value=value label=label multiple=true defaultValue={['goals']}               title="Attacking"   />
   <Dropdown data={creativity_measures}  name=cre value=value label=label multiple=true defaultValue={['big_chances_created']} title="Creativity"  />
   <Dropdown data={possession_measures}  name=pos value=value label=label multiple=true defaultValue={['pass_acc']}            title="Possession"  />
   <Dropdown data={defending_measures}   name=def value=value label=label multiple=true defaultValue={['tkl_int']}             title="Defending"   />
   <Dropdown data={physicality_measures} name=phy value=value label=label multiple=true defaultValue={['duel_win']}            title="Physicality" />
+  <Dropdown data={other_measures}       name=oth value=value label=label multiple=true defaultValue={[]}                      title="Other"       />
 </div>
 
-{#key `${inputs.imp.value}|${inputs.atk.value}|${inputs.cre.value}|${inputs.pos.value}|${inputs.def.value}|${inputs.phy.value}`}
+{#key `${inputs.atk.value}|${inputs.cre.value}|${inputs.pos.value}|${inputs.def.value}|${inputs.phy.value}|${inputs.oth.value}`}
 <div class="hidden md:block">
 <DataTable data={player_match_log} rows=20>
     <Column id=match_date   title="Date"     />
@@ -665,9 +699,7 @@ select * from (values
     <Column id=home_away    title="H/A"      align=center />
     <Column id=opponent     title="Opponent" />
     <Column id=result_badge title="Result"   contentType=html align=center />
-    {#if inputs.imp.value?.includes('rating')}
     <Column id=rating              title="Rating"         align=center contentType=colorscale colorPalette={['white','#8b5cf6']} />
-    {/if}
     {#if inputs.atk.value?.includes('goals')}
     <Column id=goals           title="Goals"       align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
     {/if}
@@ -730,6 +762,57 @@ select * from (values
     {/if}
     {#if inputs.phy.value?.includes('aerial_success')}
     <Column id=aerial_success title="Aerial %"    align=center contentType=colorscale colorPalette={['white','#fb923c']} />
+    {/if}
+    {#if inputs.oth.value?.includes('minutes_played')}
+    <Column id=minutes_played    title="Minutes"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('yellow_cards')}
+    <Column id=yellow_cards      title="YC"               align=center contentType=colorscale colorPalette={['white','#eab308']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_total')}
+    <Column id=shots_total       title="Total Shots"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_off_target')}
+    <Column id=shots_off_target  title="Off Target"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('big_chances_missed')}
+    <Column id=big_chances_missed title="Big Ch. Missed"  align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('fouls_committed')}
+    <Column id=fouls_committed   title="Fouls Com."       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('offsides')}
+    <Column id=offsides          title="Offsides"         align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('dispossessed')}
+    <Column id=dispossessed      title="Dispossessed"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('possession_losses')}
+    <Column id=possession_losses title="Poss. Losses"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('clearances')}
+    <Column id=clearances        title="Clearances"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('blocks')}
+    <Column id=blocks            title="Blocks"           align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('interceptions')}
+    <Column id=interceptions     title="Interceptions"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('tackles')}
+    <Column id=tackles           title="Tackles"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('saves')}
+    <Column id=saves             title="Saves"            align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('goals_conceded')}
+    <Column id=goals_conceded    title="Goals Conceded"   align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('own_goals')}
+    <Column id=own_goals         title="Own Goals"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_missed')}
+    <Column id=penalty_missed    title="Pen. Missed"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
     {/if}
 </DataTable>
 </div>
@@ -738,9 +821,7 @@ select * from (values
     <Column id=match_date      title="Date"     />
     <Column id=opponent_short  title="Opponent" />
     <Column id=result_badge title="Result"   contentType=html align=center />
-    {#if inputs.imp.value?.includes('rating')}
     <Column id=rating              title="Rating"         align=center contentType=colorscale colorPalette={['white','#8b5cf6']} />
-    {/if}
     {#if inputs.atk.value?.includes('goals')}
     <Column id=goals           title="Goals"       align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
     {/if}
@@ -803,6 +884,57 @@ select * from (values
     {/if}
     {#if inputs.phy.value?.includes('aerial_success')}
     <Column id=aerial_success title="Aerial %"    align=center contentType=colorscale colorPalette={['white','#fb923c']} />
+    {/if}
+    {#if inputs.oth.value?.includes('minutes_played')}
+    <Column id=minutes_played    title="Minutes"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('yellow_cards')}
+    <Column id=yellow_cards      title="YC"               align=center contentType=colorscale colorPalette={['white','#eab308']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_total')}
+    <Column id=shots_total       title="Total Shots"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_off_target')}
+    <Column id=shots_off_target  title="Off Target"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('big_chances_missed')}
+    <Column id=big_chances_missed title="Big Ch. Missed"  align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('fouls_committed')}
+    <Column id=fouls_committed   title="Fouls Com."       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('offsides')}
+    <Column id=offsides          title="Offsides"         align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('dispossessed')}
+    <Column id=dispossessed      title="Dispossessed"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('possession_losses')}
+    <Column id=possession_losses title="Poss. Losses"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('clearances')}
+    <Column id=clearances        title="Clearances"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('blocks')}
+    <Column id=blocks            title="Blocks"           align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('interceptions')}
+    <Column id=interceptions     title="Interceptions"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('tackles')}
+    <Column id=tackles           title="Tackles"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('saves')}
+    <Column id=saves             title="Saves"            align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('goals_conceded')}
+    <Column id=goals_conceded    title="Goals Conceded"   align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('own_goals')}
+    <Column id=own_goals         title="Own Goals"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_missed')}
+    <Column id=penalty_missed    title="Pen. Missed"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
     {/if}
 </DataTable>
 </div>
