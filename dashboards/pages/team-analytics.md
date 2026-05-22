@@ -196,6 +196,20 @@ where season = '${inputs.season.value}'
 order by match_round_number
 ```
 
+```sql goals_vs_opponent
+select
+    opponent_team_name                                                                 as opponent,
+    count(distinct match_id)::int                                                      as matches,
+    sum(goals_scored)::int                                                             as goals_scored,
+    sum(goals_conceded)::int                                                           as goals_conceded
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by opponent_team_name
+order by goals_scored desc
+```
+
 ```sql match_results
 select
     match_date,
@@ -474,6 +488,22 @@ end
     colorPalette={['#22c55e','#ef4444']}
     markers=true
     chartAreaHeight=280
+/>
+
+## Goals by Opponent
+
+<BarChart
+    data={goals_vs_opponent}
+    x=opponent
+    y={['goals_scored','goals_conceded']}
+    type=grouped
+    swapXY=true
+    colorPalette={['#22c55e','#ef4444']}
+    seriesOptions={{"barGap": "0%"}}
+    xAxisTitle="Goals"
+    yAxisTitle="Opponent"
+    chartAreaHeight=400
+    sort=false
 />
 
 ---
