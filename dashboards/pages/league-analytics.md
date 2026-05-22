@@ -657,18 +657,18 @@ order by team_name
 
 ## Team Landscape & Radar
 
-*Where does each team sit on the attack vs defence spectrum? Teams to the right score more, teams lower down concede less. The bottom-right corner is where champions live.*
-
-*How does a team rank across six dimensions relative to the rest of the league? Each axis is a score from 0 to 100 — 100 means best in the league. Click a team in the legend to isolate it.*
-
 <div style="display:grid;grid-template-columns:repeat(1,1fr);gap:0 1.5rem;margin-bottom:1.5rem;" class="md:two-col-radar">
 
-<!-- Titles: order 1 & 4 on mobile, reset to DOM order on desktop -->
-<p style="order:1;font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;" class="md:order-reset">Attack vs Defence — {inputs.season.value}</p>
-<p style="order:4;font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;" class="md:order-reset">Performance Radar</p>
+<!-- Explanations: order 1 & 5 on mobile, reset to DOM order on desktop -->
+<p style="order:1;font-size:0.8125rem;color:#6b7280;margin:1rem 0 0.5rem 0;font-style:italic;" class="md:order-reset">Where does each team sit on the attack vs defence spectrum? Teams to the right score more, teams lower down concede less. The bottom-right corner is where champions live.</p>
+<p style="order:5;font-size:0.8125rem;color:#6b7280;margin:1rem 0 0.5rem 0;font-style:italic;" class="md:order-reset">How does a team rank across six dimensions relative to the rest of the league? Each axis is a score from 0 to 100 — 100 means best in the league. Click a team in the legend to isolate it.</p>
 
-<!-- Charts: order 2 & 5 on mobile -->
-<div style="order:2;" class="md:order-reset">
+<!-- Titles: order 2 & 6 on mobile, reset to DOM order on desktop -->
+<p style="order:2;font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;" class="md:order-reset">Attack vs Defence — {inputs.season.value}</p>
+<p style="order:6;font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;" class="md:order-reset">Performance Radar</p>
+
+<!-- Charts: order 3 & 7 on mobile -->
+<div style="order:3;" class="md:order-reset">
 <ScatterPlot
     data={team_landscape}
     x=goals_for
@@ -686,12 +686,12 @@ order by team_name
     echartsOptions={{series: team_landscape.map((row, i) => ({name: row.team_name, symbolSize: 16, itemStyle: {color: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db', borderWidth: 2, borderColor: selectedTeam === null || row.team_name === selectedTeam ? scatterPalette[i % 12] : '#d1d5db'}}))}}
 />
 </div>
-<div style="order:5;" class="md:order-reset">
+<div style="order:7;" class="md:order-reset">
 <TeamRadar data={radar_data} showLegend={false} bind:highlighted={radarHighlighted} />
 </div>
 
-<!-- Legends: order 3 & 6 on mobile -->
-<div style="order:3;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:4px;" class="md:order-reset">
+<!-- Legends: order 4 & 8 on mobile -->
+<div style="order:4;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:4px;" class="md:order-reset">
   {#each team_landscape as row, i}
   <div
     on:click={() => toggleTeam(row.team_name)}
@@ -705,7 +705,7 @@ order by team_name
   </div>
   {/each}
 </div>
-<div style="order:6;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:4px;" class="md:order-reset">
+<div style="order:8;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:4px;" class="md:order-reset">
   {#each radar_data as row, i}
   <div
     on:click={() => radarHighlighted = radarHighlighted === row.team_name ? null : row.team_name}
