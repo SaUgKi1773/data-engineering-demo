@@ -358,6 +358,38 @@ where ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
 order by team_name
 ```
 
+```sql match_schedule
+select
+    day_name,
+    period_of_day,
+    count(distinct match_id)::int as matches
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+  and result in ('Win', 'Draw', 'Loss')
+group by day_name, period_of_day
+order by case day_name
+    when 'Monday'    then 1 when 'Tuesday'  then 2 when 'Wednesday' then 3
+    when 'Thursday'  then 4 when 'Friday'   then 5 when 'Saturday'  then 6
+    when 'Sunday'    then 7 end,
+    case period_of_day
+    when 'Morning' then 1 when 'Noon' then 2 when 'Evening' then 3 when 'Night' then 4 else 5 end
+```
+
+```sql goals_by_slot
+select
+    period_of_day,
+    count(distinct match_id)::int                                              as matches,
+    round(sum(goals_scored)::double / count(distinct match_id), 2)             as goals_per_match
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+  and result in ('Win', 'Draw', 'Loss')
+group by period_of_day
+order by case period_of_day
+    when 'Morning' then 1 when 'Noon' then 2 when 'Evening' then 3 when 'Night' then 4 else 5 end
+```
+
 ---
 
 ## League Intelligence — {inputs.season.value}
@@ -805,6 +837,40 @@ order by team_name
     swapXY=true
     sort=true
     fmt='0.0%'
+/>
+
+</div>
+
+---
+
+## Match Schedule
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={match_schedule}
+    x=day_name
+    y=matches
+    series=period_of_day
+    title="Matches by Day & Time of Day"
+    xAxisTitle="Day"
+    yAxisTitle="Matches"
+    colorPalette={['#fbbf24','#3b82f6','#f97316','#6366f1']}
+    type=stacked
+    sort=false
+    echartsOptions={{xAxis: {data: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']}, legend: {data: ['Morning','Noon','Evening','Night']}}}
+/>
+
+<BarChart
+    data={goals_by_slot}
+    x=period_of_day
+    y=goals_per_match
+    title="Goals per Match by Time of Day"
+    xAxisTitle="Time of Day"
+    yAxisTitle="Goals / Match"
+    colorPalette={['#fbbf24','#3b82f6','#f97316','#6366f1']}
+    sort=false
+    echartsOptions={{xAxis: {data: ['Morning', 'Noon', 'Evening', 'Night']}}}
 />
 
 </div>
