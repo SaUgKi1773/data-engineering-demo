@@ -660,8 +660,8 @@ order by team_name
 <div style="display:grid;grid-template-columns:repeat(1,1fr);gap:0 1.5rem;margin-bottom:1.5rem;" class="md:two-col-radar">
 
 <!-- Explanations: order 1 & 5 on mobile, reset to DOM order on desktop -->
-<p style="order:1;font-size:0.8125rem;color:#6b7280;margin:0 0 0.5rem 0;font-style:italic;" class="md:order-reset">Where does each team sit on the attack vs defence spectrum? Teams to the right score more, teams lower down concede less. The bottom-right corner is where champions live.</p>
-<p style="order:5;font-size:0.8125rem;color:#6b7280;margin:0 0 0.5rem 0;font-style:italic;" class="md:order-reset">How does a team rank across six dimensions relative to the rest of the league? Each axis is a score from 0 to 100 — 100 means best in the league. Click a team in the legend to isolate it.</p>
+<p style="order:1;font-size:0.8125rem;color:#6b7280;margin:1rem 0 0.5rem 0;font-style:italic;" class="md:order-reset">Where does each team sit on the attack vs defence spectrum? Teams to the right score more, teams lower down concede less. The bottom-right corner is where champions live.</p>
+<p style="order:5;font-size:0.8125rem;color:#6b7280;margin:1rem 0 0.5rem 0;font-style:italic;" class="md:order-reset">How does a team rank across six dimensions relative to the rest of the league? Each axis is a score from 0 to 100 — 100 means best in the league. Click a team in the legend to isolate it.</p>
 
 <!-- Titles: order 2 & 6 on mobile, reset to DOM order on desktop -->
 <p style="order:2;font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;" class="md:order-reset">Attack vs Defence — {inputs.season.value}</p>
