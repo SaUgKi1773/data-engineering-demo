@@ -59,7 +59,8 @@ with current_stats as (
         round(sum(possession_pct)::double       / count(distinct match_id), 1)               as avg_possession,
         round(100.0 * sum(goals_scored)         / nullif(sum(total_shots), 0), 1)            as shot_conv,
         round(sum(yellow_cards)::double         / count(distinct match_id), 2)               as yc_per_match,
-        round(100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id), 1) as win_rate
+        round(100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id), 1) as win_rate,
+        sum(red_cards)::int                                                                         as total_red_cards
     from superligaen.mart_match_facts
     where season = '${inputs.season.value}'
       and team_name = '${inputs.team.value}'
@@ -98,7 +99,8 @@ prev_stats as (
         round(sum(possession_pct)::double       / count(distinct match_id), 1)               as prev_avg_possession,
         round(100.0 * sum(goals_scored)         / nullif(sum(total_shots), 0), 1)            as prev_shot_conv,
         round(sum(yellow_cards)::double         / count(distinct match_id), 2)               as prev_yc_per_match,
-        round(100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id), 1) as prev_win_rate
+        round(100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id), 1) as prev_win_rate,
+        sum(red_cards)::int                                                                         as prev_total_red_cards
     from superligaen.mart_match_facts
     where season = (select season from prev_season)
       and team_name = '${inputs.team.value}'
@@ -144,6 +146,42 @@ left join prev_stats ps on true
 left join prev_ranking pr on pr.team_name = '${inputs.team.value}'
 ```
 
+```sql avg_age
+with prev_season as (
+    select max(season) as season
+    from superligaen.mart_player_facts
+    where season < '${inputs.season.value}'
+),
+current_age as (
+    select round(avg(cast(left('${inputs.season.value}', 4) as integer) - year(player_birth_date)), 1) as avg_age
+    from (
+        select distinct player_id, player_birth_date
+        from superligaen.mart_player_facts
+        where season = '${inputs.season.value}'
+          and team_name = '${inputs.team.value}'
+          and result in ('Win', 'Draw', 'Loss')
+          and player_birth_date is not null
+    )
+),
+prev_age as (
+    select round(avg(cast(left(ps.season, 4) as integer) - year(p.player_birth_date)), 1) as prev_avg_age
+    from (
+        select distinct player_id, player_birth_date
+        from superligaen.mart_player_facts
+        where season = (select season from prev_season)
+          and team_name = '${inputs.team.value}'
+          and result in ('Win', 'Draw', 'Loss')
+          and player_birth_date is not null
+    ) p
+    cross join prev_season ps
+)
+select
+    ca.avg_age,
+    pa.prev_avg_age
+from current_age ca
+left join prev_age pa on true
+```
+
 ```sql all_teams_points
 select
     match_round_number  as round,
@@ -184,7 +222,7 @@ where season = '${inputs.season.value}'
 order by match_date desc
 ```
 
-```sql form_last10
+```sql form_last5
 select * from (
     select
         match_date,
@@ -197,7 +235,7 @@ select * from (
       and team_name = '${inputs.team.value}'
       and result in ('Win', 'Draw', 'Loss')
     order by match_date desc
-    limit 10
+    limit 5
 ) order by match_date asc
 ```
 
@@ -364,9 +402,9 @@ end
 {/each}
 
 <div class="mb-6">
-  <div class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-3">Last 10 Results</div>
+  <div class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-3">Last 5 Results</div>
   <div class="flex gap-2 flex-wrap">
-    {#each form_last10 as m}
+    {#each form_last5 as m}
       <div class="relative group">
         <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-extrabold shadow-md {m.result === 'Win' ? 'bg-green-500 text-white' : m.result === 'Draw' ? 'bg-yellow-400 text-gray-800' : 'bg-red-500 text-white'}">
           {m.result === 'Win' ? 'W' : m.result === 'Draw' ? 'D' : 'L'}
@@ -416,11 +454,13 @@ end
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Pass Accuracy %</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.pass_accuracy}%</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Win Rate %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.win_rate}%</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_pass_accuracy != null ? k.prev_pass_accuracy + '%' : '—'}</span>
-      <span class="text-sm font-bold {k.pass_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.pass_ratio >= 1 ? '▲' : '▼'}</span>
+      <span class="text-xs text-gray-400">Prev season: {k.prev_win_rate != null ? k.prev_win_rate + '%' : '—'}</span>
+      {#if k.win_rate_ratio != null}
+      <span class="text-sm font-bold {k.win_rate_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.win_rate_ratio >= 1 ? '▲' : '▼'}</span>
+      {/if}
     </div>
   </div>
 
@@ -434,30 +474,32 @@ end
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Shot Conversion %</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.shot_conv}%</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Pass Accuracy %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.pass_accuracy}%</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_shot_conv != null ? k.prev_shot_conv + '%' : '—'}</span>
-      <span class="text-sm font-bold {k.shot_conv_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.shot_conv_ratio >= 1 ? '▲' : '▼'}</span>
+      <span class="text-xs text-gray-400">Prev season: {k.prev_pass_accuracy != null ? k.prev_pass_accuracy + '%' : '—'}</span>
+      <span class="text-sm font-bold {k.pass_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.pass_ratio >= 1 ? '▲' : '▼'}</span>
     </div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">YC / Match</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.yc_per_match}</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Avg Squad Age</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{avg_age[0]?.avg_age ?? '—'}</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_yc_per_match ?? '—'}</span>
-      <span class="text-sm font-bold {k.yc_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.yc_ratio >= 1 ? '▲' : '▼'}</span>
+      <span class="text-xs text-gray-400">Prev season: {avg_age[0]?.prev_avg_age ?? '—'}</span>
+      {#if avg_age[0]?.prev_avg_age != null && avg_age[0]?.avg_age != null}
+      <span class="text-sm font-bold {avg_age[0].avg_age >= avg_age[0].prev_avg_age ? 'text-green-600' : 'text-red-500'}">{avg_age[0].avg_age >= avg_age[0].prev_avg_age ? '▲' : '▼'}</span>
+      {/if}
     </div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Win Rate %</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.win_rate}%</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Red Cards</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.total_red_cards}</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_win_rate != null ? k.prev_win_rate + '%' : '—'}</span>
-      {#if k.win_rate_ratio != null}
-      <span class="text-sm font-bold {k.win_rate_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.win_rate_ratio >= 1 ? '▲' : '▼'}</span>
+      <span class="text-xs text-gray-400">Prev season: {k.prev_total_red_cards ?? '—'}</span>
+      {#if k.prev_total_red_cards != null}
+      <span class="text-sm font-bold {k.total_red_cards >= k.prev_total_red_cards ? 'text-green-600' : 'text-red-500'}">{k.total_red_cards >= k.prev_total_red_cards ? '▲' : '▼'}</span>
       {/if}
     </div>
   </div>
