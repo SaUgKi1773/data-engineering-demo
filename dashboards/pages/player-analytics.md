@@ -559,39 +559,48 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 <Dropdown data={podium_measures} name=podium_measure value=value label=label defaultValue="goals" title="Measure" />
 
-<div style="display:flex;align-items:flex-end;justify-content:center;gap:0.75rem;margin-top:2rem;border-bottom:3px solid #e5e7eb;">
+<div style="display:flex;align-items:flex-end;justify-content:center;gap:1rem;margin-top:2rem;border-bottom:3px solid #e5e7eb;">
 
-  <!-- 2nd place – Silver -->
+  <!-- 2nd – Silver -->
   <div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:160px;">
-    <div style="font-size:1.75rem;">🥈</div>
-    <img src="{podium_players[1]?.player_photo}" alt="{podium_players[1]?.player_name}" style="height:3.5rem;width:3.5rem;border-radius:50%;object-fit:cover;border:3px solid #94a3b8;margin:0.375rem 0;" onerror="this.style.display='none'" />
-    <div style="font-size:0.7rem;font-weight:700;text-align:center;line-height:1.2;">{podium_players[1]?.player_name}</div>
-    <div style="font-size:0.625rem;color:#6b7280;margin:0.125rem 0;">{podium_players[1]?.player_position}</div>
-    <img src="{podium_players[1]?.team_logo}" alt="{podium_players[1]?.team_name}" style="height:1.25rem;width:1.25rem;object-fit:contain;margin:0.25rem 0;" onerror="this.style.display='none'" />
-    <div style="font-size:1.25rem;font-weight:900;color:#475569;margin:0.25rem 0;">{podium_players[1]?.measure_value}</div>
-    <div style="width:100%;height:68px;background:linear-gradient(to bottom,#b0bec5,#90a4ae);border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.5rem;">2</div>
+    <span style="font-size:1.5rem;margin-bottom:0.25rem;">🥈</span>
+    <img src="{podium_players[1]?.player_photo}" alt="{podium_players[1]?.player_name}" style="height:4rem;width:4rem;border-radius:50%;object-fit:cover;border:3px solid #94a3b8;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="font-size:0.75rem;font-weight:700;text-align:center;line-height:1.3;">{podium_players[1]?.player_name}</div>
+    <div style="font-size:0.625rem;color:#9ca3af;margin:0.1rem 0 0.25rem;">{podium_players[1]?.player_position}</div>
+    <img src="{podium_players[1]?.team_logo}" alt="{podium_players[1]?.team_name}" style="height:1.375rem;width:1.375rem;object-fit:contain;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="background:#f1f5f9;border-radius:8px;padding:0.2rem 0.625rem 0.3rem;text-align:center;margin-bottom:0.625rem;">
+      <div style="font-size:1.375rem;font-weight:900;color:#475569;line-height:1.15;">{podium_players[1]?.measure_value % 1 === 0 ? Math.round(podium_players[1].measure_value) : podium_players[1].measure_value}</div>
+      <div style="font-size:0.55rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">{inputs.podium_measure.label}</div>
+    </div>
+    <div style="width:100%;height:68px;background:linear-gradient(to bottom,#b0bec5,#90a4ae);border-radius:4px 4px 0 0;"></div>
   </div>
 
-  <!-- 1st place – Gold -->
+  <!-- 1st – Gold -->
   <div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:160px;">
-    <div style="font-size:2rem;">🥇</div>
-    <img src="{podium_players[0]?.player_photo}" alt="{podium_players[0]?.player_name}" style="height:4.5rem;width:4.5rem;border-radius:50%;object-fit:cover;border:3px solid #eab308;margin:0.375rem 0;" onerror="this.style.display='none'" />
-    <div style="font-size:0.8rem;font-weight:700;text-align:center;line-height:1.2;">{podium_players[0]?.player_name}</div>
-    <div style="font-size:0.65rem;color:#6b7280;margin:0.125rem 0;">{podium_players[0]?.player_position}</div>
-    <img src="{podium_players[0]?.team_logo}" alt="{podium_players[0]?.team_name}" style="height:1.5rem;width:1.5rem;object-fit:contain;margin:0.25rem 0;" onerror="this.style.display='none'" />
-    <div style="font-size:1.75rem;font-weight:900;color:#ca8a04;margin:0.25rem 0;">{podium_players[0]?.measure_value}</div>
-    <div style="width:100%;height:100px;background:linear-gradient(to bottom,#fbbf24,#d97706);border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:2rem;">1</div>
+    <span style="font-size:2rem;margin-bottom:0.25rem;">🥇</span>
+    <img src="{podium_players[0]?.player_photo}" alt="{podium_players[0]?.player_name}" style="height:5rem;width:5rem;border-radius:50%;object-fit:cover;border:3px solid #eab308;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="font-size:0.875rem;font-weight:700;text-align:center;line-height:1.3;">{podium_players[0]?.player_name}</div>
+    <div style="font-size:0.65rem;color:#9ca3af;margin:0.1rem 0 0.25rem;">{podium_players[0]?.player_position}</div>
+    <img src="{podium_players[0]?.team_logo}" alt="{podium_players[0]?.team_name}" style="height:1.625rem;width:1.625rem;object-fit:contain;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="background:#fef9c3;border-radius:8px;padding:0.2rem 0.75rem 0.3rem;text-align:center;margin-bottom:0.625rem;">
+      <div style="font-size:1.875rem;font-weight:900;color:#ca8a04;line-height:1.15;">{podium_players[0]?.measure_value % 1 === 0 ? Math.round(podium_players[0].measure_value) : podium_players[0].measure_value}</div>
+      <div style="font-size:0.6rem;color:#a16207;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">{inputs.podium_measure.label}</div>
+    </div>
+    <div style="width:100%;height:100px;background:linear-gradient(to bottom,#fbbf24,#d97706);border-radius:4px 4px 0 0;"></div>
   </div>
 
-  <!-- 3rd place – Bronze -->
+  <!-- 3rd – Bronze -->
   <div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:160px;">
-    <div style="font-size:1.75rem;">🥉</div>
-    <img src="{podium_players[2]?.player_photo}" alt="{podium_players[2]?.player_name}" style="height:3rem;width:3rem;border-radius:50%;object-fit:cover;border:3px solid #cd7c2f;margin:0.375rem 0;" onerror="this.style.display='none'" />
-    <div style="font-size:0.7rem;font-weight:700;text-align:center;line-height:1.2;">{podium_players[2]?.player_name}</div>
-    <div style="font-size:0.625rem;color:#6b7280;margin:0.125rem 0;">{podium_players[2]?.player_position}</div>
-    <img src="{podium_players[2]?.team_logo}" alt="{podium_players[2]?.team_name}" style="height:1.25rem;width:1.25rem;object-fit:contain;margin:0.25rem 0;" onerror="this.style.display='none'" />
-    <div style="font-size:1.1rem;font-weight:900;color:#92400e;margin:0.25rem 0;">{podium_players[2]?.measure_value}</div>
-    <div style="width:100%;height:44px;background:linear-gradient(to bottom,#cd7c2f,#a05c24);border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.25rem;">3</div>
+    <span style="font-size:1.5rem;margin-bottom:0.25rem;">🥉</span>
+    <img src="{podium_players[2]?.player_photo}" alt="{podium_players[2]?.player_name}" style="height:3.5rem;width:3.5rem;border-radius:50%;object-fit:cover;border:3px solid #cd7c2f;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="font-size:0.7rem;font-weight:700;text-align:center;line-height:1.3;">{podium_players[2]?.player_name}</div>
+    <div style="font-size:0.6rem;color:#9ca3af;margin:0.1rem 0 0.25rem;">{podium_players[2]?.player_position}</div>
+    <img src="{podium_players[2]?.team_logo}" alt="{podium_players[2]?.team_name}" style="height:1.25rem;width:1.25rem;object-fit:contain;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="background:#fdf4e7;border-radius:8px;padding:0.2rem 0.625rem 0.3rem;text-align:center;margin-bottom:0.625rem;">
+      <div style="font-size:1.125rem;font-weight:900;color:#92400e;line-height:1.15;">{podium_players[2]?.measure_value % 1 === 0 ? Math.round(podium_players[2].measure_value) : podium_players[2].measure_value}</div>
+      <div style="font-size:0.55rem;color:#b45309;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">{inputs.podium_measure.label}</div>
+    </div>
+    <div style="width:100%;height:44px;background:linear-gradient(to bottom,#cd7c2f,#a05c24);border-radius:4px 4px 0 0;"></div>
   </div>
 
 </div>
