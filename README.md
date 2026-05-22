@@ -51,14 +51,16 @@ The gold layer follows **Kimball dimensional modelling**. Main fact grain: **one
 ```mermaid
 erDiagram
     fct_team_matches {
-        int match_sk FK
         int date_sk FK
         int time_sk FK
+        int match_sk FK
         int team_sk FK
         int opponent_team_sk FK
         int league_sk FK
         int stadium_sk FK
         int referee_sk FK
+        int coach_sk FK
+        int formation_sk FK
         int team_side_sk FK
         int match_result_sk FK
         int goals_scored
@@ -76,21 +78,37 @@ erDiagram
     }
 
     fct_player_appearances {
+        int date_sk FK
+        int time_sk FK
         int match_sk FK
         int player_sk FK
         int team_sk FK
+        int opponent_team_sk FK
+        int league_sk FK
+        int stadium_sk FK
+        int referee_sk FK
+        int coach_sk FK
+        int formation_sk FK
         int position_sk FK
+        int team_side_sk FK
+        int match_result_sk FK
         int appearance_type_sk FK
-        int shots_on_target
-        int shots_off_target
+        int minutes_played
+        int goals_scored
+        int assists
         int shots_total
-        int shots_blocked
+        int shots_on_target
         int passes_total
         int passes_accurate
-        int fouls_committed
+        int key_passes
+        int tackles
+        int interceptions
+        int clearances
         int saves
-        int offsides
-        int minutes_played
+        int yellow_cards
+        int red_cards
+        int fouls_committed
+        decimal rating
     }
 
     dim_date {
@@ -113,6 +131,20 @@ erDiagram
         int hour
         int minute
         varchar period_of_day
+    }
+
+    dim_match {
+        int match_sk PK
+        int match_id
+        varchar match_round_type
+        varchar match_round_name
+        int match_round_number
+        varchar match_name
+        varchar match_short_name
+        varchar match_type
+        varchar match_status
+        varchar match_result
+        varchar kick_off_time
     }
 
     dim_team {
@@ -139,20 +171,6 @@ erDiagram
         varchar opponent_team_logo
     }
 
-    dim_match {
-        int match_sk PK
-        int match_id
-        varchar match_round_type
-        varchar match_round_name
-        int match_round_number
-        varchar match_name
-        varchar match_short_name
-        varchar match_type
-        varchar match_status
-        varchar match_result
-        varchar kick_off_time
-    }
-
     dim_league {
         int league_sk PK
         int league_id
@@ -170,7 +188,6 @@ erDiagram
         varchar stadium_name
         varchar stadium_city
         varchar stadium_country
-        varchar stadium_address
         varchar stadium_surface
         int stadium_capacity
     }
@@ -181,8 +198,19 @@ erDiagram
         varchar referee_common_name
         varchar referee_firstname
         varchar referee_lastname
-        varchar referee_display_name
         varchar referee_nationality
+    }
+
+    dim_coach {
+        int coach_sk PK
+        int coach_id
+        varchar coach_display_name
+        varchar coach_nationality
+    }
+
+    dim_formation {
+        int formation_sk PK
+        varchar formation
     }
 
     dim_player {
@@ -195,6 +223,7 @@ erDiagram
         varchar player_detailed_position
         int player_height
         int player_weight
+        varchar player_photo
     }
 
     dim_position {
@@ -202,13 +231,6 @@ erDiagram
         varchar position_name
         varchar position_short_code
         varchar position_group
-    }
-
-    dim_coach {
-        int coach_sk PK
-        int coach_id
-        varchar coach_display_name
-        varchar coach_nationality
     }
 
     dim_team_side {
@@ -221,21 +243,61 @@ erDiagram
         varchar match_result
     }
 
+    dim_appearance_type {
+        int appearance_type_sk PK
+        varchar appearance_type
+    }
+
     fct_team_matches }o--|| dim_date : "date_sk"
     fct_team_matches }o--|| dim_time : "time_sk"
+    fct_team_matches }o--|| dim_match : "match_sk"
     fct_team_matches }o--|| dim_team : "team_sk"
     fct_team_matches }o--|| dim_opponent_team : "opponent_team_sk"
-    fct_team_matches }o--|| dim_match : "match_sk"
     fct_team_matches }o--|| dim_league : "league_sk"
     fct_team_matches }o--|| dim_stadium : "stadium_sk"
     fct_team_matches }o--|| dim_referee : "referee_sk"
+    fct_team_matches }o--|| dim_coach : "coach_sk"
+    fct_team_matches }o--|| dim_formation : "formation_sk"
     fct_team_matches }o--|| dim_team_side : "team_side_sk"
     fct_team_matches }o--|| dim_match_result : "match_result_sk"
+    fct_player_appearances }o--|| dim_date : "date_sk"
+    fct_player_appearances }o--|| dim_time : "time_sk"
     fct_player_appearances }o--|| dim_match : "match_sk"
     fct_player_appearances }o--|| dim_player : "player_sk"
     fct_player_appearances }o--|| dim_team : "team_sk"
+    fct_player_appearances }o--|| dim_opponent_team : "opponent_team_sk"
+    fct_player_appearances }o--|| dim_league : "league_sk"
+    fct_player_appearances }o--|| dim_stadium : "stadium_sk"
+    fct_player_appearances }o--|| dim_referee : "referee_sk"
+    fct_player_appearances }o--|| dim_coach : "coach_sk"
+    fct_player_appearances }o--|| dim_formation : "formation_sk"
     fct_player_appearances }o--|| dim_position : "position_sk"
+    fct_player_appearances }o--|| dim_team_side : "team_side_sk"
+    fct_player_appearances }o--|| dim_match_result : "match_result_sk"
+    fct_player_appearances }o--|| dim_appearance_type : "appearance_type_sk"
 ```
+
+### Dimensional model bus matrix
+
+The bus matrix shows which dimensions are conformed (shared) across fact tables — the foundation of Kimball integration.
+
+| Dimension | `fct_team_matches` | `fct_player_appearances` |
+|---|:---:|:---:|
+| dim_date | ✓ | ✓ |
+| dim_time | ✓ | ✓ |
+| dim_match | ✓ | ✓ |
+| dim_team | ✓ | ✓ |
+| dim_opponent_team | ✓ | ✓ |
+| dim_league | ✓ | ✓ |
+| dim_stadium | ✓ | ✓ |
+| dim_referee | ✓ | ✓ |
+| dim_coach | ✓ | ✓ |
+| dim_formation | ✓ | ✓ |
+| dim_team_side | ✓ | ✓ |
+| dim_match_result | ✓ | ✓ |
+| dim_player | | ✓ |
+| dim_position | | ✓ |
+| dim_appearance_type | | ✓ |
 
 All dimension surrogate keys are **stable across runs** — new records get new SKs, existing records keep theirs. Sentinel rows (`-1 Unknown`, `-2 Not Applicable`) handle missing lookups, with all VARCHAR attributes filled with descriptive defaults (e.g. `'Unknown Stadium Country'`).
 
