@@ -358,6 +358,39 @@ where ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
 order by team_name
 ```
 
+```sql match_log
+select
+    season,
+    match_date,
+    month_name,
+    day_name,
+    is_weekend,
+    kick_off_time,
+    period_of_day,
+    match_round_name,
+    match_round_type,
+    standings_type,
+    match_name,
+    score,
+    match_status,
+    max(case when team_side = 'Home' then formation end) as home_formation,
+    max(case when team_side = 'Away' then formation end) as away_formation,
+    max(case when team_side = 'Home' then coach_name end) as home_coach,
+    max(case when team_side = 'Away' then coach_name end) as away_coach,
+    referee_name,
+    referee_nationality,
+    stadium_name,
+    stadium_city,
+    stadium_surface
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by season, match_date, month_name, day_name, is_weekend, kick_off_time, period_of_day,
+         match_round_name, match_round_type, standings_type, match_name, score, match_status,
+         referee_name, referee_nationality, stadium_name, stadium_city, stadium_surface
+order by match_date desc
+```
+
 ```sql match_schedule
 select
     day_name,
@@ -876,4 +909,35 @@ order by case period_of_day
 />
 
 </div>
+
+---
+
+## Match Log
+
+<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">All matches for the selected season. Use the search box to drill into a specific team, time slot, day, or round.</p>
+
+<DataTable data={match_log} search=true rows=15>
+    <Column id=season              title="Season"           />
+    <Column id=match_date          title="Date"             />
+    <Column id=month_name          title="Month"            />
+    <Column id=day_name            title="Day"              />
+    <Column id=is_weekend          title="Weekend"          />
+    <Column id=kick_off_time       title="Kick-off"         />
+    <Column id=period_of_day       title="Time Slot"        />
+    <Column id=match_round_name    title="Round"            />
+    <Column id=match_round_type    title="Round Type"       />
+    <Column id=standings_type      title="Phase"            />
+    <Column id=match_name          title="Match"            wrap=true />
+    <Column id=score               title="Score"            align=center />
+    <Column id=match_status        title="Status"           />
+    <Column id=home_formation      title="Home Formation"   />
+    <Column id=away_formation      title="Away Formation"   />
+    <Column id=home_coach          title="Home Coach"       />
+    <Column id=away_coach          title="Away Coach"       />
+    <Column id=referee_name        title="Referee"          />
+    <Column id=referee_nationality title="Ref. Nationality" />
+    <Column id=stadium_name        title="Stadium"          />
+    <Column id=stadium_city        title="City"             />
+    <Column id=stadium_surface     title="Surface"          />
+</DataTable>
 
