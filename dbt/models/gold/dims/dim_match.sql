@@ -66,9 +66,9 @@ src AS (
         CASE WHEN f.state_developer_name IN ('FT', 'FT_PEN', 'AET')
              THEN sp.goals_home::VARCHAR || ' - ' || sp.goals_away::VARCHAR
         END                                                                      AS match_result,
-        lpad(EXTRACT(hour   FROM f.starting_at::TIMESTAMPTZ AT TIME ZONE 'Europe/Copenhagen')::VARCHAR, 2, '0')
+        lpad(EXTRACT(hour   FROM (f.starting_at::TIMESTAMP AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Copenhagen')::VARCHAR, 2, '0')
             || ':'
-            || lpad(EXTRACT(minute FROM f.starting_at::TIMESTAMPTZ AT TIME ZONE 'Europe/Copenhagen')::VARCHAR, 2, '0')
+            || lpad(EXTRACT(minute FROM (f.starting_at::TIMESTAMP AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Copenhagen')::VARCHAR, 2, '0')
                                                                                  AS kick_off_time,
         f.state_name                                                             AS match_status
     FROM {{ ref('fixtures') }} f

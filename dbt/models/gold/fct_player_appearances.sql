@@ -391,7 +391,7 @@ SELECT
     src.rating
 FROM src
 LEFT JOIN {{ ref('dim_date') }}          dd      ON dd.date              = src.starting_at::DATE
-LEFT JOIN {{ ref('dim_time') }}          dt_time ON dt_time.time_sk      = EXTRACT(hour FROM src.starting_at::TIMESTAMPTZ AT TIME ZONE 'Europe/Copenhagen')::INTEGER
+LEFT JOIN {{ ref('dim_time') }}          dt_time ON dt_time.time_sk      = EXTRACT(hour FROM (src.starting_at::TIMESTAMP AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Copenhagen')::INTEGER
 LEFT JOIN {{ ref('dim_match') }}         dm      ON dm.match_id          = src.fixture_id
 LEFT JOIN {{ ref('dim_player') }}        dp      ON dp.player_id         = src.player_id
 LEFT JOIN {{ ref('dim_team') }}          dteam   ON dteam.team_id        = src.team_id
