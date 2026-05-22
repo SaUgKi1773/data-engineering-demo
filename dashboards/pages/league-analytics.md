@@ -111,6 +111,7 @@ with ranked as (
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, team_name
     having sum(goals_scored) > 0
+      and count(distinct match_id) >= 5
 )
 select * from ranked where rn <= 3 order by rn
 ```
@@ -127,6 +128,7 @@ with ranked as (
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, team_name
     having sum(assists) > 0
+      and count(distinct match_id) >= 5
 )
 select * from ranked where rn <= 3 order by rn
 ```

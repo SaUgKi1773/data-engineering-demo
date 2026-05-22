@@ -61,51 +61,268 @@ order by player_name
 ```
 
 
-```sql top_players
+```sql podium_measures
+select * from (values
+  -- Attacking
+  ('goals',                  'Goals'),
+  ('assists',                'Assists'),
+  ('shots_on_target',        'Shots on Target'),
+  ('shot_conv',              'Shot Conv %'),
+  ('woodwork_hits',          'Woodwork Hits'),
+  -- Creativity
+  ('big_chances_created',    'Big Chances Created'),
+  ('all_chances',            'Chances Created'),
+  ('key_passes',             'Key Passes'),
+  ('cross_acc',              'Cross Acc %'),
+  ('passes_final_third',     'Passes Final Third'),
+  -- Possession
+  ('pass_acc',               'Pass Acc %'),
+  ('dribble_success',        'Dribble Success %'),
+  ('long_ball_success',      'Long Ball Success %'),
+  -- Defending
+  ('tkl_int',                'Tkl + Int'),
+  ('tackle_success',         'Tackle Success %'),
+  ('balls_recovered',        'Balls Recovered'),
+  ('times_dribbled_past',    'Times Dribbled Past'),
+  ('errors_leading_to_goal', 'Errors Leading to Goal'),
+  -- Physicality
+  ('duel_win',               'Duel Win %'),
+  ('fouls_drawn',            'Fouls Drawn'),
+  ('aerial_success',         'Aerial Success %'),
+  -- Impact & Other
+  ('avg_rating',             'Avg Rating'),
+  ('minutes_played',         'Minutes Played'),
+  ('yellow_cards',           'Yellow Cards'),
+  ('shots_total',            'Total Shots'),
+  ('shots_off_target',       'Shots Off Target'),
+  ('big_chances_missed',     'Big Chances Missed'),
+  ('fouls_committed',        'Fouls Committed'),
+  ('offsides',               'Offsides'),
+  ('dispossessed',           'Dispossessed'),
+  ('possession_losses',      'Possession Losses'),
+  ('clearances',             'Clearances'),
+  ('blocks',                 'Blocks'),
+  ('interceptions',          'Interceptions'),
+  ('tackles',                'Tackles'),
+  ('saves',                  'Saves'),
+  ('goals_conceded',         'Goals Conceded'),
+  ('own_goals',              'Own Goals'),
+  ('penalty_missed',         'Penalty Missed'),
+  ('shots_blocked',          'Shots Blocked'),
+  ('clearances_off_line',    'Clearances Off Line'),
+  ('last_man_tackle',        'Last Man Tackle'),
+  ('red_cards',              'Red Cards'),
+  ('yellow_red_cards',       'Yellow-Red Cards'),
+  ('penalty_won',            'Penalty Won'),
+  ('penalty_committed',      'Penalty Committed'),
+  ('penalty_scored',         'Penalty Scored'),
+  ('penalty_saved',          'Penalty Saved'),
+  ('saves_inside_box',       'Saves Inside Box'),
+  ('goalkeeper_punches',     'GK Punches'),
+  ('high_ball_claims',       'High Ball Claims'),
+  ('errors_leading_to_shot', 'Errors Leading to Shot'),
+  ('dribbles_completed',     'Dribbles Completed')
+) t(value, label)
+```
+
+```sql podium_players
 with base as (
     select
         player_name,
         player_photo,
         player_position,
-        max(team_name)                                              as team_name,
-        max(team_logo)                                             as team_logo,
-        count(distinct match_id)                                   as matches,
-        sum(goals_scored)                                          as goals,
-        sum(assists)                                               as assists,
-        sum(dribbles_completed)                                    as dribbles,
-        sum(tackles_won) + sum(interceptions) + sum(balls_recovered) as defensive_actions,
-        sum(key_passes) + sum(big_chances_created)                 as chances_created,
-        round(avg(rating), 2)                                      as avg_rating
+        max(team_name)                                                                         as team_name,
+        max(team_logo)                                                                         as team_logo,
+        count(distinct match_id)                                                               as matches,
+        -- Attacking
+        sum(goals_scored)::double                                                              as goals,
+        sum(assists)::double                                                                   as assists,
+        sum(shots_on_target)::double                                                           as shots_on_target,
+        round(100.0 * sum(goals_scored) / nullif(sum(shots_total), 0), 1)                     as shot_conv,
+        sum(woodwork_hits)::double                                                             as woodwork_hits,
+        -- Creativity
+        sum(big_chances_created)::double                                                       as big_chances_created,
+        sum(chances_created)::double                                                           as all_chances,
+        sum(key_passes)::double                                                                as key_passes,
+        round(100.0 * sum(crosses_accurate) / nullif(sum(crosses_total), 0), 1)               as cross_acc,
+        sum(passes_final_third)::double                                                        as passes_final_third,
+        -- Possession
+        round(100.0 * sum(passes_accurate) / nullif(sum(passes_total), 0), 1)                 as pass_acc,
+        round(100.0 * sum(dribbles_completed) / nullif(sum(dribbles_attempts), 0), 1)         as dribble_success,
+        round(100.0 * sum(long_balls_won) / nullif(sum(long_balls), 0), 1)                    as long_ball_success,
+        -- Defending
+        (sum(tackles) + sum(interceptions))::double                                            as tkl_int,
+        round(100.0 * sum(tackles_won) / nullif(sum(tackles), 0), 1)                          as tackle_success,
+        sum(balls_recovered)::double                                                           as balls_recovered,
+        sum(times_dribbled_past)::double                                                       as times_dribbled_past,
+        sum(errors_leading_to_goal)::double                                                    as errors_leading_to_goal,
+        -- Physicality
+        round(100.0 * sum(duels_won) / nullif(sum(duels_total), 0), 1)                        as duel_win,
+        sum(fouls_drawn)::double                                                               as fouls_drawn,
+        round(100.0 * sum(aerials_won) / nullif(sum(aerials_won) + sum(aerials_lost), 0), 1)  as aerial_success,
+        -- Impact & Other
+        round(avg(rating), 2)::double                                                          as avg_rating,
+        sum(minutes_played)::double                                                            as minutes_played,
+        sum(yellow_cards)::double                                                              as yellow_cards,
+        sum(shots_total)::double                                                               as shots_total,
+        sum(shots_off_target)::double                                                          as shots_off_target,
+        sum(big_chances_missed)::double                                                        as big_chances_missed,
+        sum(fouls_committed)::double                                                           as fouls_committed,
+        sum(offsides)::double                                                                  as offsides,
+        sum(dispossessed)::double                                                              as dispossessed,
+        sum(possession_losses)::double                                                         as possession_losses,
+        sum(clearances)::double                                                                as clearances,
+        sum(blocks)::double                                                                    as blocks,
+        sum(interceptions)::double                                                             as interceptions,
+        sum(tackles)::double                                                                   as tackles,
+        sum(saves)::double                                                                     as saves,
+        sum(goals_conceded)::double                                                            as goals_conceded,
+        sum(own_goals)::double                                                                 as own_goals,
+        sum(penalty_missed)::double                                                            as penalty_missed,
+        sum(shots_blocked)::double                                                             as shots_blocked,
+        sum(clearances_off_line)::double                                                       as clearances_off_line,
+        sum(last_man_tackle)::double                                                           as last_man_tackle,
+        sum(red_cards)::double                                                                 as red_cards,
+        sum(yellow_red_cards)::double                                                          as yellow_red_cards,
+        sum(penalty_won)::double                                                               as penalty_won,
+        sum(penalty_committed)::double                                                         as penalty_committed,
+        sum(penalty_scored)::double                                                            as penalty_scored,
+        sum(penalty_saved)::double                                                             as penalty_saved,
+        sum(saves_inside_box)::double                                                          as saves_inside_box,
+        sum(goalkeeper_punches)::double                                                        as goalkeeper_punches,
+        sum(high_ball_claims)::double                                                          as high_ball_claims,
+        sum(errors_leading_to_shot)::double                                                    as errors_leading_to_shot,
+        sum(dribbles_completed)::double                                                        as dribbles_completed
     from superligaen.mart_player_facts
     where season = '${inputs.season.value}'
       and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
       and result in ('Win', 'Draw', 'Loss')
     group by player_name, player_photo, player_position
-    having count(distinct match_id) >= 3
+    having count(distinct match_id) >= 5
+),
+ranked as (
+    select *,
+        case '${inputs.podium_measure.value}'
+            when 'goals'                  then goals
+            when 'assists'                then assists
+            when 'shots_on_target'        then shots_on_target
+            when 'shot_conv'              then shot_conv
+            when 'woodwork_hits'          then woodwork_hits
+            when 'big_chances_created'    then big_chances_created
+            when 'all_chances'            then all_chances
+            when 'key_passes'             then key_passes
+            when 'cross_acc'              then cross_acc
+            when 'passes_final_third'     then passes_final_third
+            when 'pass_acc'               then pass_acc
+            when 'dribble_success'        then dribble_success
+            when 'long_ball_success'      then long_ball_success
+            when 'tkl_int'                then tkl_int
+            when 'tackle_success'         then tackle_success
+            when 'balls_recovered'        then balls_recovered
+            when 'times_dribbled_past'    then times_dribbled_past
+            when 'errors_leading_to_goal' then errors_leading_to_goal
+            when 'duel_win'               then duel_win
+            when 'fouls_drawn'            then fouls_drawn
+            when 'aerial_success'         then aerial_success
+            when 'avg_rating'             then avg_rating
+            when 'minutes_played'         then minutes_played
+            when 'yellow_cards'           then yellow_cards
+            when 'shots_total'            then shots_total
+            when 'shots_off_target'       then shots_off_target
+            when 'big_chances_missed'     then big_chances_missed
+            when 'fouls_committed'        then fouls_committed
+            when 'offsides'               then offsides
+            when 'dispossessed'           then dispossessed
+            when 'possession_losses'      then possession_losses
+            when 'clearances'             then clearances
+            when 'blocks'                 then blocks
+            when 'interceptions'          then interceptions
+            when 'tackles'                then tackles
+            when 'saves'                  then saves
+            when 'goals_conceded'         then goals_conceded
+            when 'own_goals'              then own_goals
+            when 'penalty_missed'         then penalty_missed
+            when 'shots_blocked'          then shots_blocked
+            when 'clearances_off_line'    then clearances_off_line
+            when 'last_man_tackle'        then last_man_tackle
+            when 'red_cards'              then red_cards
+            when 'yellow_red_cards'       then yellow_red_cards
+            when 'penalty_won'            then penalty_won
+            when 'penalty_committed'      then penalty_committed
+            when 'penalty_scored'         then penalty_scored
+            when 'penalty_saved'          then penalty_saved
+            when 'saves_inside_box'       then saves_inside_box
+            when 'goalkeeper_punches'     then goalkeeper_punches
+            when 'high_ball_claims'       then high_ball_claims
+            when 'errors_leading_to_shot' then errors_leading_to_shot
+            when 'dribbles_completed'     then dribbles_completed
+            else goals
+        end as measure_value,
+        row_number() over (
+            order by case '${inputs.podium_measure.value}'
+                when 'goals'                  then goals
+                when 'assists'                then assists
+                when 'shots_on_target'        then shots_on_target
+                when 'shot_conv'              then shot_conv
+                when 'woodwork_hits'          then woodwork_hits
+                when 'big_chances_created'    then big_chances_created
+                when 'all_chances'            then all_chances
+                when 'key_passes'             then key_passes
+                when 'cross_acc'              then cross_acc
+                when 'passes_final_third'     then passes_final_third
+                when 'pass_acc'               then pass_acc
+                when 'dribble_success'        then dribble_success
+                when 'long_ball_success'      then long_ball_success
+                when 'tkl_int'                then tkl_int
+                when 'tackle_success'         then tackle_success
+                when 'balls_recovered'        then balls_recovered
+                when 'times_dribbled_past'    then times_dribbled_past
+                when 'errors_leading_to_goal' then errors_leading_to_goal
+                when 'duel_win'               then duel_win
+                when 'fouls_drawn'            then fouls_drawn
+                when 'aerial_success'         then aerial_success
+                when 'avg_rating'             then avg_rating
+                when 'minutes_played'         then minutes_played
+                when 'yellow_cards'           then yellow_cards
+                when 'shots_total'            then shots_total
+                when 'shots_off_target'       then shots_off_target
+                when 'big_chances_missed'     then big_chances_missed
+                when 'fouls_committed'        then fouls_committed
+                when 'offsides'               then offsides
+                when 'dispossessed'           then dispossessed
+                when 'possession_losses'      then possession_losses
+                when 'clearances'             then clearances
+                when 'blocks'                 then blocks
+                when 'interceptions'          then interceptions
+                when 'tackles'                then tackles
+                when 'saves'                  then saves
+                when 'goals_conceded'         then goals_conceded
+                when 'own_goals'              then own_goals
+                when 'penalty_missed'         then penalty_missed
+                when 'shots_blocked'          then shots_blocked
+                when 'clearances_off_line'    then clearances_off_line
+                when 'last_man_tackle'        then last_man_tackle
+                when 'red_cards'              then red_cards
+                when 'yellow_red_cards'       then yellow_red_cards
+                when 'penalty_won'            then penalty_won
+                when 'penalty_committed'      then penalty_committed
+                when 'penalty_scored'         then penalty_scored
+                when 'penalty_saved'          then penalty_saved
+                when 'saves_inside_box'       then saves_inside_box
+                when 'goalkeeper_punches'     then goalkeeper_punches
+                when 'high_ball_claims'       then high_ball_claims
+                when 'errors_leading_to_shot' then errors_leading_to_shot
+                when 'dribbles_completed'     then dribbles_completed
+                else goals
+            end desc nulls last
+        ) as rn
+    from base
 )
-select category, player_name, player_photo, player_position, team_name, team_logo, stat_value, stat_label
-from (
-    select 'Top Scorer'   as category, player_name, player_photo, player_position, team_name, team_logo, goals::int               as stat_value, 'Goals'          as stat_label, row_number() over (order by goals             desc) as rn from base
-    union all
-    select 'Top Assister',              player_name, player_photo, player_position, team_name, team_logo, assists::int,                'Assists',        row_number() over (order by assists           desc) from base
-    union all
-    select 'Top Creator',               player_name, player_photo, player_position, team_name, team_logo, chances_created::int,        'KP+BC Created',  row_number() over (order by chances_created   desc) from base
-    union all
-    select 'Top Defender',              player_name, player_photo, player_position, team_name, team_logo, defensive_actions::int,      'Tkl+Int+Rec',    row_number() over (order by defensive_actions desc) from base
-    union all
-    select 'Top Dribbler',              player_name, player_photo, player_position, team_name, team_logo, dribbles::int,               'Dribbles',       row_number() over (order by dribbles          desc) from base
-    union all
-    select 'Top Rated',                 player_name, player_photo, player_position, team_name, team_logo, avg_rating::double,          'Avg Rating',     row_number() over (order by avg_rating        desc) from base where matches >= 5
-)
-where rn = 1
-order by case category
-    when 'Top Scorer'   then 1
-    when 'Top Assister' then 2
-    when 'Top Creator'  then 3
-    when 'Top Defender' then 4
-    when 'Top Dribbler' then 5
-    when 'Top Rated'    then 6
-end
+select player_name, player_photo, player_position, team_name, team_logo,
+       measure_value, rn
+from ranked
+where rn <= 3
+order by rn
 ```
 
 {#key seasons[0]?.season}
@@ -220,7 +437,39 @@ select
     fouls_drawn,
     round(100.0 * aerials_won / nullif(aerials_won + aerials_lost, 0), 1)           as aerial_success,
     -- Impact
-    rating
+    rating,
+    -- Other
+    minutes_played,
+    yellow_cards,
+    shots_total,
+    shots_off_target,
+    big_chances_missed,
+    fouls_committed,
+    offsides,
+    dispossessed,
+    possession_losses,
+    clearances,
+    blocks,
+    interceptions,
+    tackles,
+    saves,
+    goals_conceded,
+    own_goals,
+    penalty_missed,
+    shots_blocked,
+    clearances_off_line,
+    last_man_tackle,
+    red_cards,
+    yellow_red_cards,
+    penalty_won,
+    penalty_committed,
+    penalty_scored,
+    penalty_saved,
+    saves_inside_box,
+    goalkeeper_punches,
+    high_ball_claims,
+    errors_leading_to_shot,
+    dribbles_completed
 from superligaen.mart_player_facts
 where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
@@ -308,18 +557,52 @@ select * from ranked where player_name = '${inputs.player.value}'
 
 ## Top Players
 
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-{#each top_players as tp}
-<div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col items-center text-center">
-  <div class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">{tp.category}</div>
-  <img src="{tp.player_photo}" alt="{tp.player_name}" class="h-16 w-16 rounded-full object-cover mb-3 border-2 border-gray-100" onerror="this.style.display='none'" />
-  <div class="text-sm font-bold text-gray-900 leading-tight min-h-10 flex items-start justify-center">{tp.player_name}</div>
-  <div class="text-xs text-gray-400 mt-1">{tp.player_position}</div>
-  <img src="{tp.team_logo}" alt="{tp.team_name}" class="h-7 w-7 object-contain mt-1" onerror="this.style.display='none'" />
-  <div class="mt-auto pt-3 text-2xl font-black text-blue-600">{tp.stat_value}</div>
-  <div class="text-xs text-gray-400">{tp.stat_label}</div>
-</div>
-{/each}
+<Dropdown data={podium_measures} name=podium_measure value=value label=label defaultValue="goals" title="Measure" />
+
+<div style="display:flex;align-items:flex-end;justify-content:center;gap:1rem;margin-top:2rem;border-bottom:3px solid #e5e7eb;">
+
+  <!-- 2nd – Silver -->
+  <div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:160px;">
+    <span style="font-size:1.5rem;margin-bottom:0.25rem;">🥈</span>
+    <img src="{podium_players[1]?.player_photo}" alt="{podium_players[1]?.player_name}" style="height:4rem;width:4rem;border-radius:50%;object-fit:cover;border:3px solid #94a3b8;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="font-size:0.75rem;font-weight:700;text-align:center;line-height:1.3;">{podium_players[1]?.player_name}</div>
+    <div style="font-size:0.625rem;color:#9ca3af;margin:0.1rem 0 0.25rem;">{podium_players[1]?.player_position}</div>
+    <img src="{podium_players[1]?.team_logo}" alt="{podium_players[1]?.team_name}" style="height:1.375rem;width:1.375rem;object-fit:contain;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="background:#f1f5f9;border-radius:8px;padding:0.2rem 0.625rem 0.3rem;text-align:center;margin-bottom:0.625rem;">
+      <div style="font-size:1.375rem;font-weight:900;color:#475569;line-height:1.15;">{podium_players[1]?.measure_value % 1 === 0 ? Math.round(podium_players[1].measure_value) : podium_players[1].measure_value}</div>
+      <div style="font-size:0.55rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">{inputs.podium_measure.label}</div>
+    </div>
+    <div style="width:100%;height:68px;background:linear-gradient(to bottom,#b0bec5,#90a4ae);border-radius:4px 4px 0 0;"></div>
+  </div>
+
+  <!-- 1st – Gold -->
+  <div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:160px;">
+    <span style="font-size:2rem;margin-bottom:0.25rem;">🥇</span>
+    <img src="{podium_players[0]?.player_photo}" alt="{podium_players[0]?.player_name}" style="height:5rem;width:5rem;border-radius:50%;object-fit:cover;border:3px solid #eab308;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="font-size:0.875rem;font-weight:700;text-align:center;line-height:1.3;">{podium_players[0]?.player_name}</div>
+    <div style="font-size:0.65rem;color:#9ca3af;margin:0.1rem 0 0.25rem;">{podium_players[0]?.player_position}</div>
+    <img src="{podium_players[0]?.team_logo}" alt="{podium_players[0]?.team_name}" style="height:1.625rem;width:1.625rem;object-fit:contain;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="background:#fef9c3;border-radius:8px;padding:0.2rem 0.75rem 0.3rem;text-align:center;margin-bottom:0.625rem;">
+      <div style="font-size:1.875rem;font-weight:900;color:#ca8a04;line-height:1.15;">{podium_players[0]?.measure_value % 1 === 0 ? Math.round(podium_players[0].measure_value) : podium_players[0].measure_value}</div>
+      <div style="font-size:0.6rem;color:#a16207;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">{inputs.podium_measure.label}</div>
+    </div>
+    <div style="width:100%;height:100px;background:linear-gradient(to bottom,#fbbf24,#d97706);border-radius:4px 4px 0 0;"></div>
+  </div>
+
+  <!-- 3rd – Bronze -->
+  <div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:160px;">
+    <span style="font-size:1.5rem;margin-bottom:0.25rem;">🥉</span>
+    <img src="{podium_players[2]?.player_photo}" alt="{podium_players[2]?.player_name}" style="height:3.5rem;width:3.5rem;border-radius:50%;object-fit:cover;border:3px solid #cd7c2f;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="font-size:0.7rem;font-weight:700;text-align:center;line-height:1.3;">{podium_players[2]?.player_name}</div>
+    <div style="font-size:0.6rem;color:#9ca3af;margin:0.1rem 0 0.25rem;">{podium_players[2]?.player_position}</div>
+    <img src="{podium_players[2]?.team_logo}" alt="{podium_players[2]?.team_name}" style="height:1.25rem;width:1.25rem;object-fit:contain;margin-bottom:0.5rem;" onerror="this.style.display='none'" />
+    <div style="background:#fdf4e7;border-radius:8px;padding:0.2rem 0.625rem 0.3rem;text-align:center;margin-bottom:0.625rem;">
+      <div style="font-size:1.125rem;font-weight:900;color:#92400e;line-height:1.15;">{podium_players[2]?.measure_value % 1 === 0 ? Math.round(podium_players[2].measure_value) : podium_players[2].measure_value}</div>
+      <div style="font-size:0.55rem;color:#b45309;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">{inputs.podium_measure.label}</div>
+    </div>
+    <div style="width:100%;height:44px;background:linear-gradient(to bottom,#cd7c2f,#a05c24);border-radius:4px 4px 0 0;"></div>
+  </div>
+
 </div>
 
 ---
@@ -596,9 +879,39 @@ select * from (values
 
 *Use the selectors below to add or remove columns per domain.*
 
-```sql impact_measures
+```sql other_measures
 select * from (values
-  ('rating', 'Rating')
+  ('minutes_played',    'Minutes Played'),
+  ('yellow_cards',      'Yellow Cards'),
+  ('shots_total',       'Total Shots'),
+  ('shots_off_target',  'Shots Off Target'),
+  ('big_chances_missed','Big Chances Missed'),
+  ('fouls_committed',   'Fouls Committed'),
+  ('offsides',          'Offsides'),
+  ('dispossessed',      'Dispossessed'),
+  ('possession_losses', 'Possession Losses'),
+  ('clearances',        'Clearances'),
+  ('blocks',            'Blocks'),
+  ('interceptions',     'Interceptions'),
+  ('tackles',           'Tackles'),
+  ('saves',             'Saves'),
+  ('goals_conceded',         'Goals Conceded'),
+  ('own_goals',              'Own Goals'),
+  ('penalty_missed',         'Penalty Missed'),
+  ('shots_blocked',          'Shots Blocked'),
+  ('clearances_off_line',    'Clearances Off Line'),
+  ('last_man_tackle',        'Last Man Tackle'),
+  ('red_cards',              'Red Cards'),
+  ('yellow_red_cards',       'Yellow-Red Cards'),
+  ('penalty_won',            'Penalty Won'),
+  ('penalty_committed',      'Penalty Committed'),
+  ('penalty_scored',         'Penalty Scored'),
+  ('penalty_saved',          'Penalty Saved'),
+  ('saves_inside_box',       'Saves Inside Box'),
+  ('goalkeeper_punches',     'GK Punches'),
+  ('high_ball_claims',       'High Ball Claims'),
+  ('errors_leading_to_shot', 'Errors Leading to Shot'),
+  ('dribbles_completed',     'Dribbles Completed')
 ) t(value, label)
 ```
 
@@ -649,15 +962,15 @@ select * from (values
 ```
 
 <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-  <Dropdown data={impact_measures}      name=imp value=value label=label multiple=true defaultValue={['rating']}              title="Impact"      />
   <Dropdown data={attacking_measures}   name=atk value=value label=label multiple=true defaultValue={['goals']}               title="Attacking"   />
   <Dropdown data={creativity_measures}  name=cre value=value label=label multiple=true defaultValue={['big_chances_created']} title="Creativity"  />
   <Dropdown data={possession_measures}  name=pos value=value label=label multiple=true defaultValue={['pass_acc']}            title="Possession"  />
   <Dropdown data={defending_measures}   name=def value=value label=label multiple=true defaultValue={['tkl_int']}             title="Defending"   />
   <Dropdown data={physicality_measures} name=phy value=value label=label multiple=true defaultValue={['duel_win']}            title="Physicality" />
+  <Dropdown data={other_measures}       name=oth value=value label=label multiple=true defaultValue={['minutes_played']}    title="Other"       />
 </div>
 
-{#key `${inputs.imp.value}|${inputs.atk.value}|${inputs.cre.value}|${inputs.pos.value}|${inputs.def.value}|${inputs.phy.value}`}
+{#key `${inputs.atk.value}|${inputs.cre.value}|${inputs.pos.value}|${inputs.def.value}|${inputs.phy.value}|${inputs.oth.value}`}
 <div class="hidden md:block">
 <DataTable data={player_match_log} rows=20>
     <Column id=match_date   title="Date"     />
@@ -665,9 +978,7 @@ select * from (values
     <Column id=home_away    title="H/A"      align=center />
     <Column id=opponent     title="Opponent" />
     <Column id=result_badge title="Result"   contentType=html align=center />
-    {#if inputs.imp.value?.includes('rating')}
     <Column id=rating              title="Rating"         align=center contentType=colorscale colorPalette={['white','#8b5cf6']} />
-    {/if}
     {#if inputs.atk.value?.includes('goals')}
     <Column id=goals           title="Goals"       align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
     {/if}
@@ -730,6 +1041,99 @@ select * from (values
     {/if}
     {#if inputs.phy.value?.includes('aerial_success')}
     <Column id=aerial_success title="Aerial %"    align=center contentType=colorscale colorPalette={['white','#fb923c']} />
+    {/if}
+    {#if inputs.oth.value?.includes('minutes_played')}
+    <Column id=minutes_played    title="Minutes"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('yellow_cards')}
+    <Column id=yellow_cards      title="YC"               align=center contentType=colorscale colorPalette={['white','#eab308']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_total')}
+    <Column id=shots_total       title="Total Shots"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_off_target')}
+    <Column id=shots_off_target  title="Off Target"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('big_chances_missed')}
+    <Column id=big_chances_missed title="Big Ch. Missed"  align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('fouls_committed')}
+    <Column id=fouls_committed   title="Fouls Com."       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('offsides')}
+    <Column id=offsides          title="Offsides"         align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('dispossessed')}
+    <Column id=dispossessed      title="Dispossessed"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('possession_losses')}
+    <Column id=possession_losses title="Poss. Losses"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('clearances')}
+    <Column id=clearances        title="Clearances"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('blocks')}
+    <Column id=blocks            title="Blocks"           align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('interceptions')}
+    <Column id=interceptions     title="Interceptions"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('tackles')}
+    <Column id=tackles           title="Tackles"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('saves')}
+    <Column id=saves             title="Saves"            align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('goals_conceded')}
+    <Column id=goals_conceded    title="Goals Conceded"   align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('own_goals')}
+    <Column id=own_goals         title="Own Goals"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_missed')}
+    <Column id=penalty_missed          title="Pen. Missed"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_blocked')}
+    <Column id=shots_blocked           title="Shots Blocked"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('clearances_off_line')}
+    <Column id=clearances_off_line     title="Clr. Off Line"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('last_man_tackle')}
+    <Column id=last_man_tackle         title="Last Man Tkl"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('red_cards')}
+    <Column id=red_cards               title="RC"                align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    {/if}
+    {#if inputs.oth.value?.includes('yellow_red_cards')}
+    <Column id=yellow_red_cards        title="YRC"               align=center contentType=colorscale colorPalette={['white','#f97316']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_won')}
+    <Column id=penalty_won             title="Pen. Won"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_committed')}
+    <Column id=penalty_committed       title="Pen. Com."         align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_scored')}
+    <Column id=penalty_scored          title="Pen. Scored"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_saved')}
+    <Column id=penalty_saved           title="Pen. Saved"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('saves_inside_box')}
+    <Column id=saves_inside_box        title="Saves IB"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('goalkeeper_punches')}
+    <Column id=goalkeeper_punches      title="GK Punches"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('high_ball_claims')}
+    <Column id=high_ball_claims        title="High Ball Clms"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('errors_leading_to_shot')}
+    <Column id=errors_leading_to_shot  title="Errors to Shot"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('dribbles_completed')}
+    <Column id=dribbles_completed      title="Dribbles"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
     {/if}
 </DataTable>
 </div>
@@ -738,9 +1142,7 @@ select * from (values
     <Column id=match_date      title="Date"     />
     <Column id=opponent_short  title="Opponent" />
     <Column id=result_badge title="Result"   contentType=html align=center />
-    {#if inputs.imp.value?.includes('rating')}
     <Column id=rating              title="Rating"         align=center contentType=colorscale colorPalette={['white','#8b5cf6']} />
-    {/if}
     {#if inputs.atk.value?.includes('goals')}
     <Column id=goals           title="Goals"       align=center contentType=colorscale colorPalette={['white','#fbbf24']} />
     {/if}
@@ -803,6 +1205,99 @@ select * from (values
     {/if}
     {#if inputs.phy.value?.includes('aerial_success')}
     <Column id=aerial_success title="Aerial %"    align=center contentType=colorscale colorPalette={['white','#fb923c']} />
+    {/if}
+    {#if inputs.oth.value?.includes('minutes_played')}
+    <Column id=minutes_played    title="Minutes"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('yellow_cards')}
+    <Column id=yellow_cards      title="YC"               align=center contentType=colorscale colorPalette={['white','#eab308']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_total')}
+    <Column id=shots_total       title="Total Shots"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_off_target')}
+    <Column id=shots_off_target  title="Off Target"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('big_chances_missed')}
+    <Column id=big_chances_missed title="Big Ch. Missed"  align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('fouls_committed')}
+    <Column id=fouls_committed   title="Fouls Com."       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('offsides')}
+    <Column id=offsides          title="Offsides"         align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('dispossessed')}
+    <Column id=dispossessed      title="Dispossessed"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('possession_losses')}
+    <Column id=possession_losses title="Poss. Losses"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('clearances')}
+    <Column id=clearances        title="Clearances"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('blocks')}
+    <Column id=blocks            title="Blocks"           align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('interceptions')}
+    <Column id=interceptions     title="Interceptions"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('tackles')}
+    <Column id=tackles           title="Tackles"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('saves')}
+    <Column id=saves             title="Saves"            align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('goals_conceded')}
+    <Column id=goals_conceded    title="Goals Conceded"   align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('own_goals')}
+    <Column id=own_goals         title="Own Goals"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_missed')}
+    <Column id=penalty_missed          title="Pen. Missed"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('shots_blocked')}
+    <Column id=shots_blocked           title="Shots Blocked"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('clearances_off_line')}
+    <Column id=clearances_off_line     title="Clr. Off Line"     align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('last_man_tackle')}
+    <Column id=last_man_tackle         title="Last Man Tkl"      align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('red_cards')}
+    <Column id=red_cards               title="RC"                align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    {/if}
+    {#if inputs.oth.value?.includes('yellow_red_cards')}
+    <Column id=yellow_red_cards        title="YRC"               align=center contentType=colorscale colorPalette={['white','#f97316']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_won')}
+    <Column id=penalty_won             title="Pen. Won"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_committed')}
+    <Column id=penalty_committed       title="Pen. Com."         align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_scored')}
+    <Column id=penalty_scored          title="Pen. Scored"       align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('penalty_saved')}
+    <Column id=penalty_saved           title="Pen. Saved"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('saves_inside_box')}
+    <Column id=saves_inside_box        title="Saves IB"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('goalkeeper_punches')}
+    <Column id=goalkeeper_punches      title="GK Punches"        align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('high_ball_claims')}
+    <Column id=high_ball_claims        title="High Ball Clms"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('errors_leading_to_shot')}
+    <Column id=errors_leading_to_shot  title="Errors to Shot"    align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
+    {/if}
+    {#if inputs.oth.value?.includes('dribbles_completed')}
+    <Column id=dribbles_completed      title="Dribbles"          align=center contentType=colorscale colorPalette={['white','#94a3b8']} />
     {/if}
 </DataTable>
 </div>
