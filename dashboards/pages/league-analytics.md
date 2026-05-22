@@ -358,6 +358,40 @@ where ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
 order by team_name
 ```
 
+```sql match_log
+select distinct
+    season,
+    match_date,
+    month_name,
+    day_name,
+    is_weekend,
+    kick_off_time,
+    period_of_day,
+    cast(match_round_number as integer) as match_round_number,
+    match_round_name,
+    match_round_type,
+    standings_type,
+    match_name,
+    score,
+    match_status,
+    team_name,
+    team_side,
+    result,
+    opponent_team_name,
+    formation,
+    coach_name,
+    referee_name,
+    referee_nationality,
+    stadium_name,
+    stadium_city,
+    stadium_surface,
+    goals_scored
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
+order by match_date desc, team_name
+```
+
 ```sql match_schedule
 select
     day_name,
@@ -876,4 +910,39 @@ order by case period_of_day
 />
 
 </div>
+
+---
+
+## Match Log
+
+<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every team appearance for the selected season — one row per team per match. Search by anything: team, opponent, result, formation, coach, referee, stadium, time slot, day, round, etc.</p>
+
+<DataTable data={match_log} search=true rows=6>
+    <Column id=season              title="Season"           />
+    <Column id=match_date          title="Date"             />
+    <Column id=month_name          title="Month"            />
+    <Column id=day_name            title="Day"              />
+    <Column id=is_weekend          title="Weekend"          />
+    <Column id=kick_off_time       title="Kick-off"         />
+    <Column id=period_of_day       title="Time Slot"        />
+    <Column id=match_round_number  title="Round #"          align=center />
+    <Column id=match_round_name    title="Round"            />
+    <Column id=match_round_type    title="Round Type"       />
+    <Column id=standings_type      title="Phase"            />
+    <Column id=match_name          title="Match"            wrap=true />
+    <Column id=score               title="Score"            align=center />
+    <Column id=match_status        title="Status"           />
+    <Column id=team_name           title="Team"             />
+    <Column id=team_side           title="Side"             />
+    <Column id=result              title="Result"           />
+    <Column id=opponent_team_name  title="Opponent"         />
+    <Column id=formation           title="Formation"        />
+    <Column id=coach_name          title="Coach"            />
+    <Column id=referee_name        title="Referee"          />
+    <Column id=referee_nationality title="Ref. Nationality" />
+    <Column id=stadium_name        title="Stadium"          />
+    <Column id=stadium_city        title="City"             />
+    <Column id=stadium_surface     title="Surface"          />
+    <Column id=goals_scored        title="Goals"            align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+</DataTable>
 
