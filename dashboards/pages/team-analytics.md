@@ -182,16 +182,18 @@ from current_age ca
 left join prev_age pa on true
 ```
 
-```sql all_teams_points
+```sql goals_per_round
 select
-    match_round_number  as round,
-    team_name,
-    cumulative_points,
-    case when team_name = '${inputs.team.value}' then '${inputs.team.value}' else 'Other Teams' end as highlight
+    match_round_number              as round,
+    goals_scored,
+    goals_conceded,
+    opponent_team_name              as opponent,
+    result
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
-order by case when team_name = '${inputs.team.value}' then 0 else 1 end, team_name, match_round_number
+order by match_round_number
 ```
 
 ```sql match_results
@@ -509,22 +511,18 @@ end
 
 ---
 
-## Points Race
+## Goals per Round
 
-<div style="pointer-events: none;">
 <LineChart
-    data={all_teams_points}
+    data={goals_per_round}
     x=round
-    y=cumulative_points
-    series=highlight
+    y={['goals_scored','goals_conceded']}
     xAxisTitle="Round"
-    yAxisTitle="Points"
-    title=""
-    colorPalette={['#3b82f6','#e2e8f0']}
-    legend=false
+    yAxisTitle="Goals"
+    colorPalette={['#22c55e','#ef4444']}
+    markers=true
     chartAreaHeight=280
 />
-</div>
 
 ---
 
