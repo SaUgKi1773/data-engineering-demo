@@ -16,7 +16,7 @@ SELECT
     weekofyear(d)::INTEGER                                AS week_number,
     isodow(d)::INTEGER                                    AS day_of_week,
     dayname(d)                                            AS day_name,
-    CASE WHEN isodow(d) IN (6, 7) THEN 'Yes' ELSE 'No' END AS is_weekend,
+    CASE WHEN isodow(d) IN (6, 7) THEN 'Weekend' ELSE 'Weekday' END AS is_weekend,
     LEFT(sr.season, 4) || '/' || RIGHT(sr.season, 2)      AS season,
     COALESCE(sr.is_current, false)                         AS is_current_season
 FROM generate_series(DATE '2010-01-01', DATE '2030-12-31', INTERVAL '1 day') t(d)
