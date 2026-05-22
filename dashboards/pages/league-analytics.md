@@ -736,7 +736,7 @@ order by team_name
     y=goals_pm
     title="Attacking — Goals per Match"
     yAxisTitle="Goals / Match"
-    colorPalette={['#22c55e']}
+    colorPalette={['#3b82f6']}
     swapXY=true
     sort=true
 />
@@ -747,7 +747,7 @@ order by team_name
     y=big_chances_pm
     title="Creativity — Big Chances Created per Match"
     yAxisTitle="Big Chances / Match"
-    colorPalette={['#f59e0b']}
+    colorPalette={['#06b6d4']}
     swapXY=true
     sort=true
 />
@@ -774,7 +774,7 @@ order by team_name
     y=conceded_pm
     title="Defending — Goals Conceded per Match"
     yAxisTitle="Goals Conceded / Match"
-    colorPalette={['#14b8a6']}
+    colorPalette={['#f97316']}
     swapXY=true
     sort=true
 />
@@ -789,7 +789,7 @@ order by team_name
     y=duel_win_pct
     title="Physicality — Duel Win %"
     yAxisTitle="Duel Win %"
-    colorPalette={['#f97316']}
+    colorPalette={['#14b8a6']}
     swapXY=true
     sort=true
     fmt='0.0%'
@@ -801,7 +801,7 @@ order by team_name
     y=win_pct
     title="Winning — Win Rate %"
     yAxisTitle="Win Rate %"
-    colorPalette={['#3b82f6']}
+    colorPalette={['#22c55e']}
     swapXY=true
     sort=true
     fmt='0.0%'
