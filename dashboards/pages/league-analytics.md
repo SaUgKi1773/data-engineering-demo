@@ -845,6 +845,8 @@ order by case period_of_day
 
 ## Match Schedule
 
+<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When are Superligaen matches played? The left chart breaks down fixtures by day of week and time of day; the right shows whether kick-off time influences scoring. Time slots: Morning 05:00–10:59 · Afternoon 11:00–15:59 · Evening 16:00–20:59 · Night 21:00–04:59.</p>
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
@@ -858,7 +860,7 @@ order by case period_of_day
     colorPalette={['#fbbf24','#3b82f6','#f97316','#6366f1']}
     type=stacked
     sort=false
-    echartsOptions={{xAxis: {data: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']}, legend: {data: ['Morning','Noon','Evening','Night']}}}
+    echartsOptions={{xAxis: {data: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']}}}
 />
 
 <BarChart
