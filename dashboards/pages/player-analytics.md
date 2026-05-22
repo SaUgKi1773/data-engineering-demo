@@ -972,7 +972,7 @@ select * from (values
 
 {#key `${inputs.atk.value}|${inputs.cre.value}|${inputs.pos.value}|${inputs.def.value}|${inputs.phy.value}|${inputs.oth.value}`}
 <div class="hidden md:block">
-<DataTable data={player_match_log} rows=20>
+<DataTable data={player_match_log} rows=20 search=true downloadable=true>
     <Column id=match_date   title="Date"     />
     <Column id=round        title="Round"    />
     <Column id=home_away    title="H/A"      align=center />
@@ -1138,7 +1138,7 @@ select * from (values
 </DataTable>
 </div>
 <div class="block md:hidden">
-<DataTable data={player_match_log} rows=20>
+<DataTable data={player_match_log} rows=20 search=true>
     <Column id=match_date      title="Date"     />
     <Column id=opponent_short  title="Opponent" />
     <Column id=result_badge title="Result"   contentType=html align=center />

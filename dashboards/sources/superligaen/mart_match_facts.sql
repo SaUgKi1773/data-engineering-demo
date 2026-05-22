@@ -70,6 +70,7 @@ SELECT
     m.match_result                                                           AS score,
     m.match_status,
     m.kick_off_time,
+    dt.period_of_day,
     t.team_name,
     t.team_short_name,
     t.team_code,
@@ -181,6 +182,7 @@ JOIN superligaen.gold.dim_referee        ref ON ref.referee_sk      = f.referee_
 JOIN superligaen.gold.dim_stadium        st  ON st.stadium_sk       = f.stadium_sk
 JOIN superligaen.gold.dim_coach          dc  ON dc.coach_sk         = f.coach_sk
 JOIN superligaen.gold.dim_formation      df  ON df.formation_sk     = f.formation_sk
+JOIN superligaen.gold.dim_time           dt  ON dt.time_sk          = f.time_sk
 LEFT JOIN player_agg                     pa  ON pa.match_sk         = f.match_sk
                                            AND pa.team_sk           = f.team_sk
 WHERE m.match_type = 'Group Stage'

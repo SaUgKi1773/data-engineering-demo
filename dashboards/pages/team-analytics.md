@@ -59,7 +59,8 @@ with current_stats as (
         round(sum(possession_pct)::double       / count(distinct match_id), 1)               as avg_possession,
         round(100.0 * sum(goals_scored)         / nullif(sum(total_shots), 0), 1)            as shot_conv,
         round(sum(yellow_cards)::double         / count(distinct match_id), 2)               as yc_per_match,
-        round(100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id), 1) as win_rate
+        round(100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id), 1) as win_rate,
+        sum(red_cards)::int                                                                         as total_red_cards
     from superligaen.mart_match_facts
     where season = '${inputs.season.value}'
       and team_name = '${inputs.team.value}'
@@ -98,7 +99,8 @@ prev_stats as (
         round(sum(possession_pct)::double       / count(distinct match_id), 1)               as prev_avg_possession,
         round(100.0 * sum(goals_scored)         / nullif(sum(total_shots), 0), 1)            as prev_shot_conv,
         round(sum(yellow_cards)::double         / count(distinct match_id), 2)               as prev_yc_per_match,
-        round(100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id), 1) as prev_win_rate
+        round(100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id), 1) as prev_win_rate,
+        sum(red_cards)::int                                                                         as prev_total_red_cards
     from superligaen.mart_match_facts
     where season = (select season from prev_season)
       and team_name = '${inputs.team.value}'
@@ -144,16 +146,68 @@ left join prev_stats ps on true
 left join prev_ranking pr on pr.team_name = '${inputs.team.value}'
 ```
 
-```sql all_teams_points
+```sql avg_age
+with prev_season as (
+    select max(season) as season
+    from superligaen.mart_player_facts
+    where season < '${inputs.season.value}'
+),
+current_age as (
+    select round(avg(cast(left('${inputs.season.value}', 4) as integer) - year(player_birth_date)), 1) as avg_age
+    from (
+        select distinct player_id, player_birth_date
+        from superligaen.mart_player_facts
+        where season = '${inputs.season.value}'
+          and team_name = '${inputs.team.value}'
+          and result in ('Win', 'Draw', 'Loss')
+          and player_birth_date is not null
+    )
+),
+prev_age as (
+    select round(avg(cast(left(ps.season, 4) as integer) - year(p.player_birth_date)), 1) as prev_avg_age
+    from (
+        select distinct player_id, player_birth_date
+        from superligaen.mart_player_facts
+        where season = (select season from prev_season)
+          and team_name = '${inputs.team.value}'
+          and result in ('Win', 'Draw', 'Loss')
+          and player_birth_date is not null
+    ) p
+    cross join prev_season ps
+)
 select
-    match_round_number  as round,
-    team_name,
-    cumulative_points,
-    case when team_name = '${inputs.team.value}' then '${inputs.team.value}' else 'Other Teams' end as highlight
+    ca.avg_age,
+    pa.prev_avg_age
+from current_age ca
+left join prev_age pa on true
+```
+
+```sql goals_per_round
+select
+    match_round_number              as round,
+    goals_scored,
+    goals_conceded,
+    opponent_team_name              as opponent,
+    result
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
-order by case when team_name = '${inputs.team.value}' then 0 else 1 end, team_name, match_round_number
+order by match_round_number
+```
+
+```sql goals_vs_opponent
+select
+    opponent_team_name                                                                 as opponent,
+    count(distinct match_id)::int                                                      as matches,
+    sum(goals_scored)::int                                                             as goals_scored,
+    sum(goals_conceded)::int                                                           as goals_conceded
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by opponent_team_name
+order by goals_scored desc
 ```
 
 ```sql match_results
@@ -184,7 +238,7 @@ where season = '${inputs.season.value}'
 order by match_date desc
 ```
 
-```sql form_last10
+```sql form_last5
 select * from (
     select
         match_date,
@@ -197,7 +251,7 @@ select * from (
       and team_name = '${inputs.team.value}'
       and result in ('Win', 'Draw', 'Loss')
     order by match_date desc
-    limit 10
+    limit 5
 ) order by match_date asc
 ```
 
@@ -221,119 +275,71 @@ group by team_side
 order by team_side desc
 ```
 
-```sql squad_contributors
+```sql formation_performance
 select
-    player_name,
-    '<img src="' || player_photo || '" style="height:72px;width:72px;object-fit:cover;border-radius:50%;" onerror="this.style.display=''none''">' as player_photo,
-    player_position,
-    sum(goals_scored)::int                                                            as goals,
-    sum(assists)::int                                                                 as assists,
-    (sum(goals_scored) + sum(assists))::int                                           as goal_contributions,
-    count(distinct match_id)::int                                                     as matches,
-    round(avg(rating), 2)                                                             as avg_rating,
-    round(sum(goals_scored) * 90.0 / nullif(sum(minutes_played), 0), 2)              as goals_per90,
-    round((sum(goals_scored) + sum(assists)) * 90.0 / nullif(sum(minutes_played), 0), 2) as contributions_per90,
-    -- attack
-    sum(shots_total)::int                                                                        as shots,
-    round(sum(shots_total) * 90.0 / nullif(sum(minutes_played), 0), 2)                          as shots_per90,
-    sum(shots_on_target)::int                                                                    as shots_on_target,
-    sum(big_chances_created)::int                                                                as big_chances_created,
-    -- passing
-    sum(key_passes)::int                                                                         as key_passes,
-    round(sum(key_passes) * 90.0 / nullif(sum(minutes_played), 0), 2)                           as key_passes_per90,
-    sum(chances_created)::int                                                                    as chances_created,
-    round(sum(chances_created) * 90.0 / nullif(sum(minutes_played), 0), 2)                      as chances_created_per90,
-    sum(passes_total)::int                                                                       as passes,
-    round(100.0 * sum(passes_accurate) / nullif(sum(passes_total), 0), 1)                       as pass_accuracy,
-    sum(crosses_total)::int                                                                      as crosses,
-    round(sum(crosses_total) * 90.0 / nullif(sum(minutes_played), 0), 2)                        as crosses_per90,
-    round(100.0 * sum(crosses_accurate) / nullif(sum(crosses_total), 0), 1)                     as cross_accuracy,
-    -- defense
-    sum(tackles)::int                                                                            as tackles,
-    round(sum(tackles) * 90.0 / nullif(sum(minutes_played), 0), 2)                              as tackles_per90,
-    sum(interceptions)::int                                                                      as interceptions,
-    round(sum(interceptions) * 90.0 / nullif(sum(minutes_played), 0), 2)                        as interceptions_per90,
-    sum(clearances)::int                                                                         as clearances,
-    sum(aerials_won)::int                                                                        as aerials_won,
-    -- dribbling
-    sum(dribbles_completed)::int                                                                 as dribbles,
-    round(sum(dribbles_completed) * 90.0 / nullif(sum(minutes_played), 0), 2)                   as dribbles_per90,
-    round(100.0 * sum(dribbles_completed) / nullif(sum(dribbles_attempts), 0), 1)               as dribble_success_pct,
-    -- discipline
-    sum(yellow_cards)::int                                                                       as yellow_cards,
-    sum(red_cards)::int                                                                          as red_cards,
-    sum(fouls_committed)::int                                                                    as fouls,
-    sum(fouls_drawn)::int                                                                        as fouls_drawn,
-    -- general
-    sum(minutes_played)::int                                                                     as minutes
-from superligaen.mart_player_facts
-where season = '${inputs.season.value}'
-  and team_name = '${inputs.team.value}'
-  and result in ('Win', 'Draw', 'Loss')
-group by player_name, player_photo, player_position
-having count(distinct match_id) >= 3
-order by avg_rating desc nulls last
-```
-
-```sql attack_metrics
-select value, label from (values
-    ('goals', 'Goals'), ('assists', 'Assists'), ('goal_contributions', 'G+A'),
-    ('goals_per90', 'G/90'), ('contributions_per90', 'G+A/90'),
-    ('shots', 'Shots'), ('shots_per90', 'Shots/90'),
-    ('shots_on_target', 'Shots on Target'), ('big_chances_created', 'Big Chances')
-) t(value, label)
-```
-
-```sql passing_metrics
-select value, label from (values
-    ('key_passes', 'Key Passes'), ('key_passes_per90', 'Key Passes/90'),
-    ('chances_created', 'Chances Created'), ('chances_created_per90', 'Chances/90'),
-    ('passes', 'Passes'), ('pass_accuracy', 'Pass Acc %'),
-    ('crosses', 'Crosses'), ('crosses_per90', 'Crosses/90'), ('cross_accuracy', 'Cross Acc %')
-) t(value, label)
-```
-
-```sql defense_metrics
-select value, label from (values
-    ('tackles', 'Tackles'), ('tackles_per90', 'Tackles/90'),
-    ('interceptions', 'Interceptions'), ('interceptions_per90', 'Interceptions/90'),
-    ('clearances', 'Clearances'), ('aerials_won', 'Aerials Won')
-) t(value, label)
-```
-
-```sql dribbling_metrics
-select value, label from (values
-    ('dribbles', 'Dribbles'), ('dribbles_per90', 'Dribbles/90'),
-    ('dribble_success_pct', 'Dribble Success %')
-) t(value, label)
-```
-
-```sql discipline_metrics
-select value, label from (values
-    ('yellow_cards', 'Yellow Cards'), ('red_cards', 'Red Cards'),
-    ('fouls', 'Fouls'), ('fouls_drawn', 'Fouls Drawn')
-) t(value, label)
-```
-
-```sql phase_performance
-select
-    match_round_type                                                                   as phase,
+    formation,
     count(distinct match_id)::int                                                      as matches,
-    sum(points_earned)::int                                                            as points,
-    round(sum(points_earned)::double / count(distinct match_id), 2)                   as points_per_match,
-    sum(goals_scored)::int                                                             as gf,
-    sum(goals_conceded)::int                                                           as ga,
-    round(sum(goals_scored)::double    / count(distinct match_id), 2)                 as goals_per_match
+    sum(case when result='Win'  then 1 else 0 end)::int                               as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int                               as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int                               as losses,
+    round(sum(points_earned)::double      / count(distinct match_id), 2)              as points_per_match,
+    round(sum(goals_scored)::double       / count(distinct match_id), 2)              as goals_per_match,
+    round(sum(goals_conceded)::double     / count(distinct match_id), 2)              as conceded_per_match
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
-group by match_round_type
-order by case match_round_type
-    when 'Regular Season'       then 1
-    when 'Championship Group'   then 2
-    when 'Relegation Group'     then 2
-    else 3
+group by formation
+order by points_per_match desc
+```
+
+```sql kickoff_performance
+select
+    period_of_day,
+    count(distinct match_id)::int                                                      as matches,
+    sum(case when result='Win'  then 1 else 0 end)::int                               as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int                               as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int                               as losses,
+    round(sum(points_earned)::double      / count(distinct match_id), 2)              as points_per_match,
+    round(sum(goals_scored)::double       / count(distinct match_id), 2)              as goals_per_match,
+    round(sum(goals_conceded)::double     / count(distinct match_id), 2)              as conceded_per_match
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by period_of_day
+order by case period_of_day
+    when 'Morning'   then 1
+    when 'Noon'      then 2
+    when 'Evening'   then 3
+    when 'Night'     then 4
+    else 5
+end
+```
+
+```sql matchday_performance
+select
+    day_name,
+    count(distinct match_id)::int                                                      as matches,
+    sum(case when result='Win'  then 1 else 0 end)::int                               as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int                               as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int                               as losses,
+    round(sum(points_earned)::double      / count(distinct match_id), 2)              as points_per_match,
+    round(sum(goals_scored)::double       / count(distinct match_id), 2)              as goals_per_match,
+    round(sum(goals_conceded)::double     / count(distinct match_id), 2)              as conceded_per_match
+from superligaen.mart_match_facts
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and result in ('Win', 'Draw', 'Loss')
+group by day_name
+order by case day_name
+    when 'Monday'    then 1
+    when 'Tuesday'   then 2
+    when 'Wednesday' then 3
+    when 'Thursday'  then 4
+    when 'Friday'    then 5
+    when 'Saturday'  then 6
+    when 'Sunday'    then 7
 end
 ```
 
@@ -364,9 +370,9 @@ end
 {/each}
 
 <div class="mb-6">
-  <div class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-3">Last 10 Results</div>
+  <div class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-3">Last 5 Results</div>
   <div class="flex gap-2 flex-wrap">
-    {#each form_last10 as m}
+    {#each form_last5 as m}
       <div class="relative group">
         <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-extrabold shadow-md {m.result === 'Win' ? 'bg-green-500 text-white' : m.result === 'Draw' ? 'bg-yellow-400 text-gray-800' : 'bg-red-500 text-white'}">
           {m.result === 'Win' ? 'W' : m.result === 'Draw' ? 'D' : 'L'}
@@ -381,7 +387,7 @@ end
 
 ---
 
-## Performance vs Previous Season
+## Season Overview
 
 {#each team_kpis as k}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -416,11 +422,13 @@ end
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Pass Accuracy %</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.pass_accuracy}%</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Win Rate %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.win_rate}%</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_pass_accuracy != null ? k.prev_pass_accuracy + '%' : '—'}</span>
-      <span class="text-sm font-bold {k.pass_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.pass_ratio >= 1 ? '▲' : '▼'}</span>
+      <span class="text-xs text-gray-400">Prev season: {k.prev_win_rate != null ? k.prev_win_rate + '%' : '—'}</span>
+      {#if k.win_rate_ratio != null}
+      <span class="text-sm font-bold {k.win_rate_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.win_rate_ratio >= 1 ? '▲' : '▼'}</span>
+      {/if}
     </div>
   </div>
 
@@ -434,30 +442,32 @@ end
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Shot Conversion %</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.shot_conv}%</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Pass Accuracy %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.pass_accuracy}%</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_shot_conv != null ? k.prev_shot_conv + '%' : '—'}</span>
-      <span class="text-sm font-bold {k.shot_conv_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.shot_conv_ratio >= 1 ? '▲' : '▼'}</span>
+      <span class="text-xs text-gray-400">Prev season: {k.prev_pass_accuracy != null ? k.prev_pass_accuracy + '%' : '—'}</span>
+      <span class="text-sm font-bold {k.pass_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.pass_ratio >= 1 ? '▲' : '▼'}</span>
     </div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">YC / Match</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.yc_per_match}</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Avg Squad Age</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{avg_age[0]?.avg_age ?? '—'}</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_yc_per_match ?? '—'}</span>
-      <span class="text-sm font-bold {k.yc_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.yc_ratio >= 1 ? '▲' : '▼'}</span>
+      <span class="text-xs text-gray-400">Prev season: {avg_age[0]?.prev_avg_age ?? '—'}</span>
+      {#if avg_age[0]?.prev_avg_age != null && avg_age[0]?.avg_age != null}
+      <span class="text-sm font-bold {avg_age[0].avg_age >= avg_age[0].prev_avg_age ? 'text-green-600' : 'text-red-500'}">{avg_age[0].avg_age >= avg_age[0].prev_avg_age ? '▲' : '▼'}</span>
+      {/if}
     </div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Win Rate %</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.win_rate}%</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Red Cards</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.total_red_cards}</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_win_rate != null ? k.prev_win_rate + '%' : '—'}</span>
-      {#if k.win_rate_ratio != null}
-      <span class="text-sm font-bold {k.win_rate_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.win_rate_ratio >= 1 ? '▲' : '▼'}</span>
+      <span class="text-xs text-gray-400">Prev season: {k.prev_total_red_cards ?? '—'}</span>
+      {#if k.prev_total_red_cards != null}
+      <span class="text-sm font-bold {k.total_red_cards >= k.prev_total_red_cards ? 'text-green-600' : 'text-red-500'}">{k.total_red_cards >= k.prev_total_red_cards ? '▲' : '▼'}</span>
       {/if}
     </div>
   </div>
@@ -467,22 +477,34 @@ end
 
 ---
 
-## Points Race
+## Goals per Round
 
-<div style="pointer-events: none;">
 <LineChart
-    data={all_teams_points}
+    data={goals_per_round}
     x=round
-    y=cumulative_points
-    series=highlight
+    y={['goals_scored','goals_conceded']}
     xAxisTitle="Round"
-    yAxisTitle="Points"
-    title=""
-    colorPalette={['#3b82f6','#e2e8f0']}
-    legend=false
+    yAxisTitle="Goals"
+    colorPalette={['#22c55e','#ef4444']}
+    markers=true
     chartAreaHeight=280
 />
-</div>
+
+## Goals by Opponent
+
+<BarChart
+    data={goals_vs_opponent}
+    x=opponent
+    y={['goals_scored','goals_conceded']}
+    type=grouped
+    swapXY=true
+    colorPalette={['#22c55e','#ef4444']}
+    seriesOptions={{"barGap": "0%"}}
+    xAxisTitle="Goals"
+    yAxisTitle="Opponent"
+    chartAreaHeight=400
+    sort=false
+/>
 
 ---
 
@@ -524,292 +546,99 @@ end
     x=venue
     y=pass_accuracy
     title="Pass Accuracy %"
-    colorPalette={['#0ea5e9']}
-    sort=false
-/>
-
-</div>
-
----
-
-## Squad Contributors
-
-<div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
-  <Dropdown data={attack_metrics}    name=attack_cols    value=value label=label defaultValue={[]} multiple=true title="Attack" />
-  <Dropdown data={passing_metrics}   name=passing_cols   value=value label=label defaultValue={[]} multiple=true title="Passing" />
-  <Dropdown data={defense_metrics}   name=defense_cols   value=value label=label defaultValue={[]} multiple=true title="Defense" />
-  <Dropdown data={dribbling_metrics} name=dribbling_cols value=value label=label defaultValue={[]} multiple=true title="Dribbling" />
-  <Dropdown data={discipline_metrics} name=discipline_cols value=value label=label defaultValue={[]} multiple=true title="Discipline" />
-</div>
-
-<div class="hidden md:block">
-<DataTable data={squad_contributors} rows=10>
-    <Column id=player_photo             title=""               contentType=html />
-    <Column id=player_name              title="Player"         />
-    <Column id=player_position          title="Pos"            />
-    <Column id=matches                  title="MP"             align=center />
-    <Column id=minutes                  title="Minutes"        align=center />
-    <Column id=avg_rating               title="Rating"         contentType=colorscale colorPalette={['white','#8b5cf6']} />
-    {#if inputs.attack_cols.value?.includes('goals')}
-    <Column id=goals                    title="Goals"          align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('assists')}
-    <Column id=assists                  title="Assists"        align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('goal_contributions')}
-    <Column id=goal_contributions       title="G+A"            align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('contributions_per90')}
-    <Column id=contributions_per90      title="G+A/90"         contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('goals_per90')}
-    <Column id=goals_per90              title="G/90"           contentType=colorscale colorPalette={['white','#f59e0b']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('shots')}
-    <Column id=shots                    title="Shots"          align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('shots_per90')}
-    <Column id=shots_per90              title="Shots/90"       contentType=colorscale colorPalette={['white','#f59e0b']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('shots_on_target')}
-    <Column id=shots_on_target          title="SoT"            align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('big_chances_created')}
-    <Column id=big_chances_created      title="Big Chances"    align=center contentType=colorscale colorPalette={['white','#ef4444']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('key_passes')}
-    <Column id=key_passes               title="Key Passes"     align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('key_passes_per90')}
-    <Column id=key_passes_per90         title="Key Passes/90"  contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('chances_created')}
-    <Column id=chances_created          title="Chances"        align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('chances_created_per90')}
-    <Column id=chances_created_per90    title="Chances/90"     contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('passes')}
-    <Column id=passes                   title="Passes"         align=center contentType=colorscale colorPalette={['white','#6366f1']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('pass_accuracy')}
-    <Column id=pass_accuracy            title="Pass Acc %"     fmt='0.0"%"' contentType=colorscale colorPalette={['white','#6366f1']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('crosses')}
-    <Column id=crosses                  title="Crosses"        align=center contentType=colorscale colorPalette={['white','#6366f1']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('crosses_per90')}
-    <Column id=crosses_per90            title="Crosses/90"     contentType=colorscale colorPalette={['white','#6366f1']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('cross_accuracy')}
-    <Column id=cross_accuracy           title="Cross Acc %"    fmt='0.0"%"' contentType=colorscale colorPalette={['white','#6366f1']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('tackles')}
-    <Column id=tackles                  title="Tackles"        align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('tackles_per90')}
-    <Column id=tackles_per90            title="Tackles/90"     contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('interceptions')}
-    <Column id=interceptions            title="Interceptions"  align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('interceptions_per90')}
-    <Column id=interceptions_per90      title="Interceptions/90" contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('clearances')}
-    <Column id=clearances               title="Clearances"     align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('aerials_won')}
-    <Column id=aerials_won              title="Aerials Won"    align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.dribbling_cols.value?.includes('dribbles')}
-    <Column id=dribbles                 title="Dribbles"       align=center contentType=colorscale colorPalette={['white','#f97316']} />
-    {/if}
-    {#if inputs.dribbling_cols.value?.includes('dribbles_per90')}
-    <Column id=dribbles_per90           title="Dribbles/90"    contentType=colorscale colorPalette={['white','#f97316']} />
-    {/if}
-    {#if inputs.dribbling_cols.value?.includes('dribble_success_pct')}
-    <Column id=dribble_success_pct      title="Dribble Success %" fmt='0.0"%"' contentType=colorscale colorPalette={['white','#f97316']} />
-    {/if}
-    {#if inputs.discipline_cols.value?.includes('yellow_cards')}
-    <Column id=yellow_cards             title="YC"             align=center contentType=colorscale colorPalette={['white','#eab308']} />
-    {/if}
-    {#if inputs.discipline_cols.value?.includes('red_cards')}
-    <Column id=red_cards                title="RC"             align=center contentType=colorscale colorPalette={['white','#ef4444']} />
-    {/if}
-    {#if inputs.discipline_cols.value?.includes('fouls')}
-    <Column id=fouls                    title="Fouls"          align=center contentType=colorscale colorPalette={['white','#f97316']} />
-    {/if}
-    {#if inputs.discipline_cols.value?.includes('fouls_drawn')}
-    <Column id=fouls_drawn              title="Fouls Drawn"    align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-</DataTable>
-</div>
-<div class="block md:hidden">
-<DataTable data={squad_contributors} rows=10>
-    <Column id=player_name              title="Player"         />
-    <Column id=player_position          title="Pos"            />
-    <Column id=matches                  title="MP"             align=center />
-    <Column id=minutes                  title="Minutes"        align=center />
-    <Column id=avg_rating               title="Rating"         contentType=colorscale colorPalette={['white','#8b5cf6']} />
-    {#if inputs.attack_cols.value?.includes('goals')}
-    <Column id=goals                    title="Goals"          align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('assists')}
-    <Column id=assists                  title="Assists"        align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('goal_contributions')}
-    <Column id=goal_contributions       title="G+A"            align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('contributions_per90')}
-    <Column id=contributions_per90      title="G+A/90"         contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('goals_per90')}
-    <Column id=goals_per90              title="G/90"           contentType=colorscale colorPalette={['white','#f59e0b']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('shots')}
-    <Column id=shots                    title="Shots"          align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('shots_per90')}
-    <Column id=shots_per90              title="Shots/90"       contentType=colorscale colorPalette={['white','#f59e0b']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('shots_on_target')}
-    <Column id=shots_on_target          title="SoT"            align=center contentType=colorscale colorPalette={['white','#f59e0b']} />
-    {/if}
-    {#if inputs.attack_cols.value?.includes('big_chances_created')}
-    <Column id=big_chances_created      title="Big Chances"    align=center contentType=colorscale colorPalette={['white','#ef4444']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('key_passes')}
-    <Column id=key_passes               title="Key Passes"     align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('key_passes_per90')}
-    <Column id=key_passes_per90         title="Key Passes/90"  contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('chances_created')}
-    <Column id=chances_created          title="Chances"        align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('chances_created_per90')}
-    <Column id=chances_created_per90    title="Chances/90"     contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('passes')}
-    <Column id=passes                   title="Passes"         align=center contentType=colorscale colorPalette={['white','#6366f1']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('pass_accuracy')}
-    <Column id=pass_accuracy            title="Pass Acc %"     fmt='0.0"%"' contentType=colorscale colorPalette={['white','#6366f1']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('crosses')}
-    <Column id=crosses                  title="Crosses"        align=center contentType=colorscale colorPalette={['white','#6366f1']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('crosses_per90')}
-    <Column id=crosses_per90            title="Crosses/90"     contentType=colorscale colorPalette={['white','#6366f1']} />
-    {/if}
-    {#if inputs.passing_cols.value?.includes('cross_accuracy')}
-    <Column id=cross_accuracy           title="Cross Acc %"    fmt='0.0"%"' contentType=colorscale colorPalette={['white','#6366f1']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('tackles')}
-    <Column id=tackles                  title="Tackles"        align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('tackles_per90')}
-    <Column id=tackles_per90            title="Tackles/90"     contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('interceptions')}
-    <Column id=interceptions            title="Interceptions"  align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('interceptions_per90')}
-    <Column id=interceptions_per90      title="Interceptions/90" contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('clearances')}
-    <Column id=clearances               title="Clearances"     align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.defense_cols.value?.includes('aerials_won')}
-    <Column id=aerials_won              title="Aerials Won"    align=center contentType=colorscale colorPalette={['white','#22c55e']} />
-    {/if}
-    {#if inputs.dribbling_cols.value?.includes('dribbles')}
-    <Column id=dribbles                 title="Dribbles"       align=center contentType=colorscale colorPalette={['white','#f97316']} />
-    {/if}
-    {#if inputs.dribbling_cols.value?.includes('dribbles_per90')}
-    <Column id=dribbles_per90           title="Dribbles/90"    contentType=colorscale colorPalette={['white','#f97316']} />
-    {/if}
-    {#if inputs.dribbling_cols.value?.includes('dribble_success_pct')}
-    <Column id=dribble_success_pct      title="Dribble Success %" fmt='0.0"%"' contentType=colorscale colorPalette={['white','#f97316']} />
-    {/if}
-    {#if inputs.discipline_cols.value?.includes('yellow_cards')}
-    <Column id=yellow_cards             title="YC"             align=center contentType=colorscale colorPalette={['white','#eab308']} />
-    {/if}
-    {#if inputs.discipline_cols.value?.includes('red_cards')}
-    <Column id=red_cards                title="RC"             align=center contentType=colorscale colorPalette={['white','#ef4444']} />
-    {/if}
-    {#if inputs.discipline_cols.value?.includes('fouls')}
-    <Column id=fouls                    title="Fouls"          align=center contentType=colorscale colorPalette={['white','#f97316']} />
-    {/if}
-    {#if inputs.discipline_cols.value?.includes('fouls_drawn')}
-    <Column id=fouls_drawn              title="Fouls Drawn"    align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
-    {/if}
-</DataTable>
-</div>
-
----
-
-## Phase Performance
-
-{#if phase_performance.length > 1}
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<BarChart
-    data={phase_performance}
-    x=phase
-    y=points_per_match
-    title="Points per Match by Phase"
-    yAxisTitle="Pts / Match"
     colorPalette={['#3b82f6']}
     sort=false
 />
 
+</div>
+
+---
+
+## Formation
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
 <BarChart
-    data={phase_performance}
-    x=phase
-    y=goals_per_match
-    title="Goals per Match by Phase"
-    colorPalette={['#22c55e']}
+    data={formation_performance}
+    x=formation
+    y={['wins','draws','losses']}
+    title="W/D/L by Formation"
+    colorPalette={['#22c55e','#eab308','#ef4444']}
+    type=stacked
+    sort=false
+/>
+
+<BarChart
+    data={formation_performance}
+    x=formation
+    y={['goals_per_match','conceded_per_match']}
+    title="Goals per Match by Formation"
+    colorPalette={['#22c55e','#ef4444']}
+    type=grouped
     sort=false
 />
 
 </div>
-{/if}
+
+---
+
+## When We Play Best
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={matchday_performance}
+    x=day_name
+    y={['wins','draws','losses']}
+    title="W/D/L by Day"
+    colorPalette={['#22c55e','#eab308','#ef4444']}
+    type=stacked
+    sort=false
+/>
+
+<BarChart
+    data={kickoff_performance}
+    x=period_of_day
+    y={['wins','draws','losses']}
+    title="W/D/L by Time of Day"
+    colorPalette={['#22c55e','#eab308','#ef4444']}
+    type=stacked
+    sort=false
+/>
+
+</div>
 
 ---
 
 ## Match Log
 
 <div class="hidden md:block">
-<DataTable data={match_results} rows=20>
-    <Column id=match_date    title="Date"       />
-    <Column id=round         title="Round"      />
-    <Column id=home_away     title="H/A"        align=center />
-    <Column id=opponent      title="Opponent"   />
-    <Column id=gf            title="GF"         align=center />
-    <Column id=ga            title="GA"         align=center />
-    <Column id=result_badge  title="Result"     contentType=html align=center />
-    <Column id=pts           title="Pts"        align=center />
-    <Column id=possession    title="Poss %"     fmt='0.0"%"' align=center />
-    <Column id=pass_accuracy title="Pass Acc %" fmt='0.0"%"' align=center />
-    <Column id=shots_on_goal title="SoG"        align=center />
-    <Column id=shot_conv     title="Shot Conv %" fmt='0.0"%"' align=center />
-    <Column id=yellow_cards  title="YC"         align=center />
+<DataTable data={match_results} rows=20 search=true downloadable=true>
+    <Column id=match_date    title="Date"        />
+    <Column id=round         title="Round"       />
+    <Column id=home_away     title="H/A"         align=center />
+    <Column id=opponent      title="Opponent"    />
+    <Column id=result_badge  title="Result"      contentType=html align=center />
+    <Column id=gf            title="GF"          align=center contentType=colorscale colorPalette={['white','#22c55e']} />
+    <Column id=ga            title="GA"          align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    <Column id=possession    title="Poss %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
+    <Column id=pass_accuracy title="Pass Acc %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=shots_on_goal title="SoG"         align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=shot_conv     title="Shot Conv %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=yellow_cards  title="YC"          align=center contentType=colorscale colorPalette={['white','#eab308']} />
 </DataTable>
 </div>
 <div class="block md:hidden">
-<DataTable data={match_results} rows=20>
-    <Column id=match_date    title="Date"       />
-    <Column id=opponent      title="Opponent"   />
-    <Column id=gf            title="GF"         align=center />
-    <Column id=ga            title="GA"         align=center />
-    <Column id=result_badge  title="Result"     contentType=html align=center />
-    <Column id=pts           title="Pts"        align=center />
-    <Column id=possession    title="Poss %"     fmt='0.0"%"' align=center />
-    <Column id=pass_accuracy title="Pass Acc %" fmt='0.0"%"' align=center />
-    <Column id=shots_on_goal title="SoG"        align=center />
-    <Column id=shot_conv     title="Shot Conv %" fmt='0.0"%"' align=center />
-    <Column id=yellow_cards  title="YC"         align=center />
+<DataTable data={match_results} rows=20 search=true>
+    <Column id=match_date    title="Date"        />
+    <Column id=opponent      title="Opponent"    />
+    <Column id=result_badge  title="Result"      contentType=html align=center />
+    <Column id=gf            title="GF"          align=center contentType=colorscale colorPalette={['white','#22c55e']} />
+    <Column id=ga            title="GA"          align=center contentType=colorscale colorPalette={['white','#ef4444']} />
+    <Column id=possession    title="Poss %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#8b5cf6']} />
+    <Column id=pass_accuracy title="Pass Acc %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=shots_on_goal title="SoG"         align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=shot_conv     title="Shot Conv %"  fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
+    <Column id=yellow_cards  title="YC"          align=center contentType=colorscale colorPalette={['white','#eab308']} />
 </DataTable>
 </div>
