@@ -279,25 +279,26 @@ erDiagram
 
 ### Dimensional model bus matrix
 
-The bus matrix shows which dimensions are conformed (shared) across fact tables — the foundation of Kimball integration.
+The bus matrix shows which dimensions are conformed (shared) across business processes — the foundation of Kimball integration.
 
-| Dimension | `fct_team_matches` | `fct_player_appearances` |
+| **BUSINESS PROCESSES →** | Team Match Performance | Player Appearance |
 |---|:---:|:---:|
-| dim_date | ✓ | ✓ |
-| dim_time | ✓ | ✓ |
-| dim_match | ✓ | ✓ |
-| dim_team | ✓ | ✓ |
-| dim_opponent_team | ✓ | ✓ |
-| dim_league | ✓ | ✓ |
-| dim_stadium | ✓ | ✓ |
-| dim_referee | ✓ | ✓ |
-| dim_coach | ✓ | ✓ |
-| dim_formation | ✓ | ✓ |
-| dim_team_side | ✓ | ✓ |
-| dim_match_result | ✓ | ✓ |
-| dim_player | | ✓ |
-| dim_position | | ✓ |
-| dim_appearance_type | | ✓ |
+| **COMMON DIMENSIONS ↓** | | |
+| Date | X | X |
+| Time of Day | X | X |
+| Match | X | X |
+| Team | X | X |
+| Opponent Team | X | X |
+| League | X | X |
+| Stadium / Venue | X | X |
+| Referee | X | X |
+| Coach | X | X |
+| Formation | X | X |
+| Home / Away | X | X |
+| Match Result | X | X |
+| Player | | X |
+| Playing Position | | X |
+| Appearance Type | | X |
 
 All dimension surrogate keys are **stable across runs** — new records get new SKs, existing records keep theirs. Sentinel rows (`-1 Unknown`, `-2 Not Applicable`) handle missing lookups, with all VARCHAR attributes filled with descriptive defaults (e.g. `'Unknown Stadium Country'`).
 
