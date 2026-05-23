@@ -225,7 +225,7 @@ EOF
           python scripts/generate_round_discussions.py --season "$SEASON" --db "$DB"
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          GEMINI_API_KEY:   ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY:     ${{ secrets.GROQ_API_KEY }}
           DB:               ${{ github.event.inputs.target_db || 'superligaen' }}
 
   # ---------------------------------------------------------------------------

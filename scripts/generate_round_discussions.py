@@ -20,7 +20,7 @@ import time
 from datetime import datetime, timezone
 
 import duckdb
-import google.generativeai as genai
+from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -213,10 +213,14 @@ def build_prompt(match_context: str) -> str:
     )
 
 
-def call_gemini(model, match_context: str) -> list[dict]:
+def call_groq(client: Groq, match_context: str) -> list[dict]:
     prompt = build_prompt(match_context)
-    response = model.generate_content(prompt)
-    text = response.text.strip()
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8,
+    )
+    text = response.choices[0].message.content.strip()
     if text.startswith("```"):
         parts = text.split("```")
         text = parts[1]
@@ -246,8 +250,7 @@ def main() -> None:
             return
         log.info(f"Auto-detected latest round: {round_number}")
 
-    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
     rows = con.execute(MATCH_QUERY.format(db=args.db), [args.season, round_number]).fetchall()
     cols = [d[0] for d in con.description]
@@ -273,7 +276,7 @@ def main() -> None:
         log.info(f"  → {row['match_name']}")
 
         try:
-            posts = call_gemini(model, context)
+            posts = call_groq(client, context)
             for post in posts:
                 p = persona_map[post["persona"]]
                 to_insert.append((
