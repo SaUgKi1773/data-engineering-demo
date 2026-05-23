@@ -221,13 +221,7 @@ jobs:
       - name: Generate discussions for latest round
         run: |
           DB="${{ github.event.inputs.target_db || 'superligaen' }}"
-          SEASON=$(python - <<'EOF'
-import duckdb, os
-con = duckdb.connect(f"md:{os.environ['DB']}?motherduck_token={os.environ['MOTHERDUCK_TOKEN']}")
-row = con.execute(f"SELECT season FROM {os.environ['DB']}.gold.dim_date WHERE is_current_season ORDER BY date DESC LIMIT 1").fetchone()
-print(row[0] if row else "")
-EOF
-          )
+          SEASON=$(python -c "import duckdb,os; con=duckdb.connect('md:'+os.environ['DB']+'?motherduck_token='+os.environ['MOTHERDUCK_TOKEN']); row=con.execute('SELECT season FROM '+os.environ['DB']+'.gold.dim_date WHERE is_current_season ORDER BY date DESC LIMIT 1').fetchone(); print(row[0] if row else '')")
           if [ -z "$SEASON" ]; then echo "No current season found" && exit 1; fi
           echo "Generating discussions for season: $SEASON"
           EXTRA_ARGS=""
