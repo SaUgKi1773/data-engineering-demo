@@ -229,12 +229,48 @@ EOF
           DB:               ${{ github.event.inputs.target_db || 'superligaen' }}
 
   # ---------------------------------------------------------------------------
+  # LLM models — parse bronze discussions into silver + gold after AI script
+  # ---------------------------------------------------------------------------
+  llm_models:
+    name: LLM dbt models
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: ai_discussions
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: dbt deps
+        working-directory: dbt
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: dbt deps
+
+      - name: Build LLM silver and gold models
+        working-directory: dbt
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          DB="${{ github.event.inputs.target_db || 'superligaen' }}"
+          if [[ "$DB" == "superligaen" ]]; then TARGET=prod
+          elif [[ "$DB" == "superligaen_dev" ]]; then TARGET=dev
+          else echo "Unknown target_db: $DB" && exit 1; fi
+          dbt run --select silver.llm_match_discussions gold.fct_match_discussions --target $TARGET
+
+  # ---------------------------------------------------------------------------
   # Dashboard — push to publish_dashboard/vercel to trigger Vercel rebuild
   # ---------------------------------------------------------------------------
   publish:
     name: Publish dashboard (Vercel)
     runs-on: ubuntu-latest
-    needs: ai_discussions
+    needs: llm_models
     permissions:
       contents: write
 

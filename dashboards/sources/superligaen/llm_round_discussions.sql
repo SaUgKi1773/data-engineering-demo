@@ -1,11 +1,13 @@
 select
-    season,
-    round_number,
-    match_name,
-    persona_name,
-    persona_icon,
-    sort_order,
-    message,
-    generated_at
-from superligaen.gold.llm_round_discussions
-order by season, round_number, match_name, sort_order
+    f.season,
+    dm.match_round_number                                                    as round_number,
+    dm.match_name,
+    dp.persona_name,
+    dp.persona_icon,
+    dp.sort_order,
+    f.message,
+    f.generated_at
+from superligaen.gold.fct_match_discussions f
+join superligaen.gold.dim_persona           dp on dp.persona_sk = f.persona_sk
+join superligaen.gold.dim_match             dm on dm.match_sk   = f.match_sk
+order by f.season, dm.match_round_number, dm.match_name, dp.sort_order

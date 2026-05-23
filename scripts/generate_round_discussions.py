@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Generate AI round discussions using Google Gemini.
+Generate AI round discussions using Groq (Llama).
 
-Reads match data from the gold layer, generates persona-based commentary
-for each match in the given season/round, and writes results to
-superligaen.gold.llm_round_discussions.
+Reads match data and persona definitions from the gold layer, calls Groq
+once per match, and writes the raw API response to bronze.groq__llm_match_discussions.
+dbt then parses and models the bronze data into silver + gold.
 
 Usage:
   python scripts/generate_round_discussions.py --season 2024/25 --round 26
@@ -13,7 +13,6 @@ Usage:
 """
 
 import argparse
-import json
 import logging
 import os
 import time
@@ -30,61 +29,13 @@ log = logging.getLogger(__name__)
 
 DB_DEFAULT = "superligaen"
 
-PERSONAS = [
-    {
-        "name": "Lars",
-        "icon": "📊",
-        "sort_order": 1,
-        "bio": (
-            "Data analyst in his early 30s. Trusts only the numbers — shots, possession, "
-            "big chances, pass accuracy, cards. Never calls a win 'lucky' when the stats "
-            "back it up. Precise, occasionally smug, always grounded in the actual data."
-        ),
-    },
-    {
-        "name": "Bent",
-        "icon": "⚽",
-        "sort_order": 2,
-        "bio": (
-            "68-year-old lifelong Danish football fan. Watched the Superliga since it began. "
-            "Distrusts statistics — thinks you learn everything by watching the game. Values "
-            "hard work, direct play, and results. Blunt and opinionated, occasionally refers "
-            "to 'the old days' but always grounds his point in what happened in this match."
-        ),
-    },
-    {
-        "name": "Magnus",
-        "icon": "🔴",
-        "sort_order": 3,
-        "bio": (
-            "Passionate FC Nordsjælland fan. Even when FCN aren't playing he relates the "
-            "match back to FCN — comparing styles, youth development, what FCN would have "
-            "done differently. Knowledgeable but openly biased. If FCN are in this match "
-            "he is extremely emotionally invested — elated or devastated."
-        ),
-    },
-    {
-        "name": "Sofie",
-        "icon": "🎙️",
-        "sort_order": 4,
-        "bio": (
-            "Former professional player, now a TV pundit. Focuses on tactics: formations, "
-            "pressing triggers, transitions, individual positioning. Calm but incisive. "
-            "Pushes back on Lars when stats miss the tactical story, and on Bent when "
-            "old-school thinking misses something structural about the game."
-        ),
-    },
-]
-
-CREATE_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS {db}.gold.llm_round_discussions (
+BRONZE_CREATE_SQL = """
+CREATE TABLE IF NOT EXISTS {db}.bronze.groq__llm_match_discussions (
+    match_id     INTEGER,
     season       VARCHAR,
     round_number INTEGER,
     match_name   VARCHAR,
-    persona_name VARCHAR,
-    persona_icon VARCHAR,
-    sort_order   INTEGER,
-    message      VARCHAR,
+    raw_response VARCHAR,
     generated_at TIMESTAMP
 )
 """
@@ -111,6 +62,7 @@ WITH player_stats AS (
     GROUP BY match_sk, team_sk
 )
 SELECT
+    m.match_id,
     m.match_name,
     m.match_result                                                          AS score,
     m.match_round_type                                                      AS phase,
@@ -162,10 +114,22 @@ WHERE d.season = ?
   AND m.match_round_number::INTEGER = ?
   AND mr.match_result IN ('Win', 'Draw', 'Loss')
 GROUP BY
-    m.match_name, m.match_result, m.match_round_type,
+    m.match_id, m.match_name, m.match_result, m.match_round_type,
     d.date, d.day_name, m.kick_off_time, dt.period_of_day, m.match_round_name
 ORDER BY m.match_name
 """
+
+
+def load_personas(con, db: str) -> list[dict]:
+    rows = con.execute(f"""
+        SELECT persona_name, persona_icon, sort_order, bio
+        FROM {db}.gold.dim_persona
+        ORDER BY sort_order
+    """).fetchall()
+    return [
+        {"name": r[0], "icon": r[1], "sort_order": r[2], "bio": r[3]}
+        for r in rows
+    ]
 
 
 def build_match_context(row: dict) -> str:
@@ -185,10 +149,11 @@ def build_match_context(row: dict) -> str:
     )
 
 
-def build_prompt(match_context: str) -> str:
+def build_prompt(match_context: str, personas: list[dict]) -> str:
     persona_block = "\n".join(
-        f"- {p['name']} ({p['icon']}): {p['bio']}" for p in PERSONAS
+        f"- {p['name']} ({p['icon']}): {p['bio']}" for p in personas
     )
+    persona_order = ", ".join(p["name"] for p in personas)
     return (
         "You are moderating a fan forum thread where four people discuss a Danish Superliga match.\n"
         "Rules:\n"
@@ -202,35 +167,26 @@ def build_prompt(match_context: str) -> str:
         "\n"
         f"MATCH DATA:\n{match_context}\n"
         "\n"
-        "Write exactly 4 posts in order: Lars, Bent, Magnus, Sofie.\n"
+        f"Write exactly {len(personas)} posts in order: {persona_order}.\n"
         "Return ONLY a JSON array, no other text:\n"
-        '[\n'
-        '  {"persona": "Lars",   "message": "..."},\n'
-        '  {"persona": "Bent",   "message": "..."},\n'
-        '  {"persona": "Magnus", "message": "..."},\n'
-        '  {"persona": "Sofie",  "message": "..."}\n'
-        ']'
+        "[\n"
+        + ",\n".join(f'  {{"persona": "{p["name"]}", "message": "..."}}' for p in personas)
+        + "\n]"
     )
 
 
-def call_groq(client: Groq, match_context: str) -> list[dict]:
-    prompt = build_prompt(match_context)
+def call_groq(client: Groq, match_context: str, personas: list[dict]) -> str:
+    prompt = build_prompt(match_context, personas)
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.8,
     )
-    text = response.choices[0].message.content.strip()
-    if text.startswith("```"):
-        parts = text.split("```")
-        text = parts[1]
-        if text.startswith("json"):
-            text = text[4:]
-    return json.loads(text.strip())
+    return response.choices[0].message.content.strip()
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate AI round discussions via Gemini")
+    parser = argparse.ArgumentParser(description="Generate AI round discussions via Groq")
     parser.add_argument("--season", required=True, help="Season, e.g. 2024/25")
     parser.add_argument("--round",  type=int,      help="Round number (auto-detects latest if omitted)")
     parser.add_argument("--db",     default=DB_DEFAULT, help="MotherDuck database name")
@@ -239,7 +195,13 @@ def main() -> None:
     token = os.environ["MOTHERDUCK_TOKEN"]
     con = duckdb.connect(f"md:{args.db}?motherduck_token={token}")
 
-    con.execute(CREATE_TABLE_SQL.format(db=args.db))
+    con.execute(BRONZE_CREATE_SQL.format(db=args.db))
+
+    personas = load_personas(con, args.db)
+    if not personas:
+        log.error("No personas found in gold.dim_persona — run 'dbt seed' first")
+        return
+    log.info(f"Loaded {len(personas)} personas: {[p['name'] for p in personas]}")
 
     round_number = args.round
     if round_number is None:
@@ -262,11 +224,10 @@ def main() -> None:
     log.info(f"Found {len(rows)} matches — generating discussions")
 
     con.execute(
-        f"DELETE FROM {args.db}.gold.llm_round_discussions WHERE season = ? AND round_number = ?",
+        f"DELETE FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ? AND round_number = ?",
         [args.season, round_number],
     )
 
-    persona_map = {p["name"]: p for p in PERSONAS}
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     to_insert = []
 
@@ -276,19 +237,15 @@ def main() -> None:
         log.info(f"  → {row['match_name']}")
 
         try:
-            posts = call_groq(client, context)
-            for post in posts:
-                p = persona_map[post["persona"]]
-                to_insert.append((
-                    args.season,
-                    round_number,
-                    row["match_name"],
-                    p["name"],
-                    p["icon"],
-                    p["sort_order"],
-                    post["message"],
-                    now,
-                ))
+            raw = call_groq(client, context, personas)
+            to_insert.append((
+                row["match_id"],
+                args.season,
+                round_number,
+                row["match_name"],
+                raw,
+                now,
+            ))
         except Exception as exc:
             log.error(f"Failed for {row['match_name']}: {exc}")
 
@@ -297,14 +254,13 @@ def main() -> None:
     if to_insert:
         con.executemany(
             f"""
-            INSERT INTO {args.db}.gold.llm_round_discussions
-                (season, round_number, match_name, persona_name, persona_icon,
-                 sort_order, message, generated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO {args.db}.bronze.groq__llm_match_discussions
+                (match_id, season, round_number, match_name, raw_response, generated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             to_insert,
         )
-        log.info(f"Inserted {len(to_insert)} discussion rows")
+        log.info(f"Inserted {len(to_insert)} bronze rows")
 
     con.close()
 

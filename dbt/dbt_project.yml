@@ -10,6 +10,11 @@ macro-paths: ["macros"]
 seeds:
   superligaen:
     +schema: silver
+    dim_persona:
+      +schema: gold
+      +column_types:
+        persona_sk: integer
+        sort_order: integer
     referee_id_overrides:
       +column_types:
         referee_id: integer
