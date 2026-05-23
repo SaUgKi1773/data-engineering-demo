@@ -6,6 +6,28 @@ title: Match Results
 
 <script>
   import MatchLineup from '../../components/MatchLineup.svelte';
+  import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
+
+  const pageInputs = getInputContext();
+
+  // When match_options reloads (season/round changed) and the current match is
+  // no longer in the list, update the store to the first valid match so the
+  // dropdown re-mounts with the correct rawValues instead of the stale ones.
+  $: if (match_options?.length > 0) {
+    pageInputs.update(($i) => {
+      const currentIsValid = match_options.some(o => o.match_key === $i.match?.value);
+      if (currentIsValid) return $i;
+      const first = match_options[0];
+      return {
+        ...$i,
+        match: {
+          value: first.match_key,
+          label: first.match_label,
+          rawValues: [{ value: first.match_key, label: first.match_label, selected: true }]
+        }
+      };
+    });
+  }
 
   let commentText = '';
   let userComments = [];
