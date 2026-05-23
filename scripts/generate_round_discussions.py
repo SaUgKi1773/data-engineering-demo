@@ -334,10 +334,14 @@ def main() -> None:
 
     log.info(f"Found {len(rows)} matches — generating discussions")
 
-    con.execute(
-        f"DELETE FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ? AND round_number = ?",
-        [args.season, round_number],
-    )
+    already_done = {
+        r[0] for r in con.execute(
+            f"SELECT match_id FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ? AND round_number = ?",
+            [args.season, round_number],
+        ).fetchall()
+    }
+    if already_done:
+        log.info(f"{len(already_done)} match(es) already in bronze — will skip")
 
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     to_insert = []
@@ -345,6 +349,11 @@ def main() -> None:
     player_cols = None
     for match_row in rows:
         row = dict(zip(cols, match_row))
+
+        if row["match_id"] in already_done:
+            log.info(f"  → {row['match_name']} (skipped — already generated)")
+            continue
+
         log.info(f"  → {row['match_name']}")
 
         player_rows_raw = con.execute(PLAYER_QUERY.format(db=args.db), [row["match_id"]]).fetchall()
