@@ -13,6 +13,14 @@ on:
         description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
         required: false
         default: ""
+      all_discussions:
+        description: "Set to 'true' to generate AI discussions for all completed rounds in the season (not just the latest)."
+        required: false
+        default: "false"
+      force_discussions:
+        description: "Set to 'true' to overwrite existing AI discussions (re-generates even if already in bronze)."
+        required: false
+        default: "false"
 
 concurrency:
   group: ${{ github.workflow }}
@@ -222,7 +230,14 @@ EOF
           )
           if [ -z "$SEASON" ]; then echo "No current season found" && exit 1; fi
           echo "Generating discussions for season: $SEASON"
-          python scripts/generate_round_discussions.py --season "$SEASON" --db "$DB"
+          EXTRA_ARGS=""
+          if [ "${{ github.event.inputs.all_discussions }}" = "true" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS --all-rounds"
+          fi
+          if [ "${{ github.event.inputs.force_discussions }}" = "true" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS --force"
+          fi
+          python scripts/generate_round_discussions.py --season "$SEASON" --db "$DB" $EXTRA_ARGS
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           GROQ_API_KEY:     ${{ secrets.GROQ_API_KEY }}

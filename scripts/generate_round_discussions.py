@@ -68,6 +68,17 @@ WHERE m.match_id = ?
 ORDER BY ts.team_side, pa.goals_scored DESC NULLS LAST, pa.rating DESC NULLS LAST
 """
 
+ALL_ROUNDS_SQL = """
+SELECT DISTINCT m.match_round_number::INTEGER
+FROM {db}.gold.fct_team_matches f
+JOIN {db}.gold.dim_match        m  ON m.match_sk         = f.match_sk
+JOIN {db}.gold.dim_date         d  ON d.date_sk          = f.date_sk
+JOIN {db}.gold.dim_match_result mr ON mr.match_result_sk = f.match_result_sk
+WHERE d.season = ?
+  AND mr.match_result IN ('Win', 'Draw', 'Loss')
+ORDER BY 1
+"""
+
 LATEST_ROUND_SQL = """
 SELECT MAX(m.match_round_number::INTEGER)
 FROM {db}.gold.fct_team_matches f
@@ -296,12 +307,74 @@ def call_groq(client: Groq, match_context: str, personas: list[dict]) -> str:
     return response.choices[0].message.content.strip()
 
 
+def process_round(
+    con, client, personas: list[dict], db: str,
+    season: str, round_number: int, force: bool, now,
+) -> None:
+    rows = con.execute(MATCH_QUERY.format(db=db), [season, round_number]).fetchall()
+    cols = [d[0] for d in con.description]
+
+    if not rows:
+        log.warning(f"No completed matches found for season={season} round={round_number}")
+        return
+
+    if force:
+        con.execute(
+            f"DELETE FROM {db}.bronze.groq__llm_match_discussions WHERE season = ? AND round_number = ?",
+            [season, round_number],
+        )
+        already_done = set()
+    else:
+        already_done = {
+            r[0] for r in con.execute(
+                f"SELECT match_id FROM {db}.bronze.groq__llm_match_discussions WHERE season = ? AND round_number = ?",
+                [season, round_number],
+            ).fetchall()
+        }
+
+    pending = [dict(zip(cols, r)) for r in rows if dict(zip(cols, r))["match_id"] not in already_done]
+    skipped = len(rows) - len(pending)
+    log.info(f"  Round {round_number}: {len(pending)} to generate, {skipped} skipped")
+
+    to_insert = []
+    player_cols = None
+
+    for row in pending:
+        log.info(f"    → {row['match_name']}")
+
+        player_rows_raw = con.execute(PLAYER_QUERY.format(db=db), [row["match_id"]]).fetchall()
+        if player_cols is None:
+            player_cols = [d[0] for d in con.description]
+        players = [dict(zip(player_cols, r)) for r in player_rows_raw]
+        context = build_match_context(row, build_player_context(players))
+
+        try:
+            raw = call_groq(client, context, personas)
+            to_insert.append((row["match_id"], season, round_number, row["match_name"], raw, now))
+        except Exception as exc:
+            log.error(f"    Failed for {row['match_name']}: {exc}")
+
+        time.sleep(2)  # stay within free-tier rate limits
+
+    if to_insert:
+        con.executemany(
+            f"""
+            INSERT INTO {db}.bronze.groq__llm_match_discussions
+                (match_id, season, round_number, match_name, raw_response, generated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            to_insert,
+        )
+        log.info(f"  Inserted {len(to_insert)} bronze rows")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate AI round discussions via Groq")
-    parser.add_argument("--season", required=True, help="Season, e.g. 2024/25")
-    parser.add_argument("--round",  type=int,      help="Round number (auto-detects latest if omitted)")
-    parser.add_argument("--db",     default=DB_DEFAULT, help="MotherDuck database name")
-    parser.add_argument("--force",  action="store_true", help="Overwrite existing discussions for this round")
+    parser.add_argument("--season",     required=True,       help="Season, e.g. 2024/25")
+    parser.add_argument("--round",      type=int,            help="Round number (default: latest completed)")
+    parser.add_argument("--db",         default=DB_DEFAULT,  help="MotherDuck database name")
+    parser.add_argument("--force",      action="store_true", help="Overwrite existing discussions")
+    parser.add_argument("--all-rounds", action="store_true", help="Generate for all completed rounds in the season")
     args = parser.parse_args()
 
     token = os.environ["MOTHERDUCK_TOKEN"]
@@ -315,88 +388,38 @@ def main() -> None:
         return
     log.info(f"Loaded {len(personas)} personas: {[p['name'] for p in personas]}")
 
-    round_number = args.round
-    if round_number is None:
-        result = con.execute(LATEST_ROUND_SQL.format(db=args.db), [args.season]).fetchone()
-        round_number = result[0] if result else None
-        if round_number is None:
+    client = Groq(api_key=os.environ["GROQ_API_KEY"])
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    if args.all_rounds:
+        if args.force:
+            con.execute(
+                f"DELETE FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ?",
+                [args.season],
+            )
+            log.info(f"--force: deleted all bronze rows for season {args.season}")
+
+        rounds = [
+            r[0] for r in con.execute(ALL_ROUNDS_SQL.format(db=args.db), [args.season]).fetchall()
+        ]
+        if not rounds:
             log.error(f"No completed rounds found for season {args.season}")
             return
-        log.info(f"Auto-detected latest round: {round_number}")
+        log.info(f"Processing {len(rounds)} rounds for season {args.season}")
+        for round_number in rounds:
+            process_round(con, client, personas, args.db, args.season, round_number, False, now)
 
-    client = Groq(api_key=os.environ["GROQ_API_KEY"])
-
-    rows = con.execute(MATCH_QUERY.format(db=args.db), [args.season, round_number]).fetchall()
-    cols = [d[0] for d in con.description]
-
-    if not rows:
-        log.warning(f"No completed matches found for season={args.season} round={round_number}")
-        return
-
-    log.info(f"Found {len(rows)} matches — generating discussions")
-
-    if args.force:
-        con.execute(
-            f"DELETE FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ? AND round_number = ?",
-            [args.season, round_number],
-        )
-        log.info("--force: deleted existing bronze rows, regenerating all matches")
-        already_done = set()
     else:
-        already_done = {
-            r[0] for r in con.execute(
-                f"SELECT match_id FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ? AND round_number = ?",
-                [args.season, round_number],
-            ).fetchall()
-        }
-        if already_done:
-            log.info(f"{len(already_done)} match(es) already in bronze — will skip")
+        round_number = args.round
+        if round_number is None:
+            result = con.execute(LATEST_ROUND_SQL.format(db=args.db), [args.season]).fetchone()
+            round_number = result[0] if result else None
+            if round_number is None:
+                log.error(f"No completed rounds found for season {args.season}")
+                return
+            log.info(f"Auto-detected latest round: {round_number}")
 
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    to_insert = []
-
-    player_cols = None
-    for match_row in rows:
-        row = dict(zip(cols, match_row))
-
-        if row["match_id"] in already_done:
-            log.info(f"  → {row['match_name']} (skipped — already generated)")
-            continue
-
-        log.info(f"  → {row['match_name']}")
-
-        player_rows_raw = con.execute(PLAYER_QUERY.format(db=args.db), [row["match_id"]]).fetchall()
-        if player_cols is None:
-            player_cols = [d[0] for d in con.description]
-        players = [dict(zip(player_cols, r)) for r in player_rows_raw]
-        player_context = build_player_context(players)
-        context = build_match_context(row, player_context)
-
-        try:
-            raw = call_groq(client, context, personas)
-            to_insert.append((
-                row["match_id"],
-                args.season,
-                round_number,
-                row["match_name"],
-                raw,
-                now,
-            ))
-        except Exception as exc:
-            log.error(f"Failed for {row['match_name']}: {exc}")
-
-        time.sleep(2)  # stay within free-tier rate limits
-
-    if to_insert:
-        con.executemany(
-            f"""
-            INSERT INTO {args.db}.bronze.groq__llm_match_discussions
-                (match_id, season, round_number, match_name, raw_response, generated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            to_insert,
-        )
-        log.info(f"Inserted {len(to_insert)} bronze rows")
+        process_round(con, client, personas, args.db, args.season, round_number, args.force, now)
 
     con.close()
 
