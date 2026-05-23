@@ -301,6 +301,7 @@ def main() -> None:
     parser.add_argument("--season", required=True, help="Season, e.g. 2024/25")
     parser.add_argument("--round",  type=int,      help="Round number (auto-detects latest if omitted)")
     parser.add_argument("--db",     default=DB_DEFAULT, help="MotherDuck database name")
+    parser.add_argument("--force",  action="store_true", help="Overwrite existing discussions for this round")
     args = parser.parse_args()
 
     token = os.environ["MOTHERDUCK_TOKEN"]
@@ -334,14 +335,22 @@ def main() -> None:
 
     log.info(f"Found {len(rows)} matches — generating discussions")
 
-    already_done = {
-        r[0] for r in con.execute(
-            f"SELECT match_id FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ? AND round_number = ?",
+    if args.force:
+        con.execute(
+            f"DELETE FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ? AND round_number = ?",
             [args.season, round_number],
-        ).fetchall()
-    }
-    if already_done:
-        log.info(f"{len(already_done)} match(es) already in bronze — will skip")
+        )
+        log.info("--force: deleted existing bronze rows, regenerating all matches")
+        already_done = set()
+    else:
+        already_done = {
+            r[0] for r in con.execute(
+                f"SELECT match_id FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ? AND round_number = ?",
+                [args.season, round_number],
+            ).fetchall()
+        }
+        if already_done:
+            log.info(f"{len(already_done)} match(es) already in bronze — will skip")
 
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     to_insert = []
