@@ -4,6 +4,20 @@ hide_toc: true
 title: Team Intelligence
 ---
 
+<script>
+  import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
+  const pageInputs = getInputContext();
+
+  $: if (teams?.length > 0) {
+    pageInputs.update(($i) => {
+      const currentIsValid = teams.some(t => t.team_name === $i.team?.value);
+      if (currentIsValid) return $i;
+      const first = teams[0];
+      return { ...$i, team: { value: first.team_name, label: first.team_name, rawValues: [{ value: first.team_name, label: first.team_name, selected: true }] } };
+    });
+  }
+</script>
+
 ```sql seasons
 select season from (
   select season, max(is_current_season::int) as is_current

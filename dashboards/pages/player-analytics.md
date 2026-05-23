@@ -6,6 +6,17 @@ title: Player Intelligence
 
 <script>
   import TeamRadar from '../../components/TeamRadar.svelte';
+  import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
+  const pageInputs = getInputContext();
+
+  $: if (players_in_team?.length > 0) {
+    pageInputs.update(($i) => {
+      const currentIsValid = players_in_team.some(p => p.player_name === $i.player?.value);
+      if (currentIsValid) return $i;
+      const first = players_in_team[0];
+      return { ...$i, player: { value: first.player_name, label: first.player_name, rawValues: [{ value: first.player_name, label: first.player_name, selected: true }] } };
+    });
+  }
 
   const playerMetrics = [
     { key: 'attacking_pct',   label: 'Attacking'   },

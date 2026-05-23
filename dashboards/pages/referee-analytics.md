@@ -4,6 +4,20 @@ hide_toc: true
 title: Referee Intelligence
 ---
 
+<script>
+  import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
+  const pageInputs = getInputContext();
+
+  $: if (season_stats?.length > 0) {
+    pageInputs.update(($i) => {
+      const currentIsValid = season_stats.some(r => r.referee_name === $i.referee?.value);
+      if (currentIsValid) return $i;
+      const first = season_stats[0];
+      return { ...$i, referee: { value: first.referee_name, label: first.referee_name, rawValues: [{ value: first.referee_name, label: first.referee_name, selected: true }] } };
+    });
+  }
+</script>
+
 ```sql seasons
 select season from (
   select season, max(is_current_season::int) as is_current
@@ -247,7 +261,9 @@ from ${referee_trends}
 
 ## Referee Deep Dive
 
-<Dropdown data={season_stats} name=referee value=referee_name label=referee_name />
+{#key season_stats[0]?.referee_name}
+<Dropdown data={season_stats} name=referee value=referee_name label=referee_name defaultValue={season_stats[0]?.referee_name} />
+{/key}
 
 ```sql referee_team_exposure
 select
