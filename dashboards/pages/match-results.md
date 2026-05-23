@@ -44,7 +44,7 @@ title: Match Results
 
   function postComment() {
     if (!commentText.trim() || !matchKey) return;
-    const entry = { text: commentText.trim(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+    const entry = { text: commentText.trim(), time: new Date().toISOString().split('T')[0] };
     userComments = [...userComments, entry];
     localStorage.setItem(matchKey, JSON.stringify(userComments));
     commentText = '';
@@ -52,6 +52,30 @@ title: Match Results
 
   function handleKeydown(e) {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) postComment();
+  }
+
+  const personaColors = {
+    'Søren':   { bg: '#dbeafe', text: '#1d4ed8' },
+    'Flemming': { bg: '#dcfce7', text: '#15803d' },
+    'Rasmus':  { bg: '#ede9fe', text: '#6d28d9' },
+    'Maja':    { bg: '#fce7f3', text: '#be185d' },
+  };
+  function avatarStyle(name) {
+    const c = personaColors[name] ?? { bg: '#f3f4f6', text: '#374151' };
+    return `background:${c.bg};color:${c.text};`;
+  }
+
+  function daysAgo(dateVal) {
+    if (!dateVal) return '';
+    const match = new Date(dateVal);
+    if (isNaN(match)) return '';
+    match.setHours(12, 0, 0, 0);
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    const diff = Math.round((today - match) / 86400000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return '1 day ago';
+    return `${diff} days ago`;
   }
 </script>
 
@@ -114,7 +138,7 @@ from ${results}
 ```
 
 ```sql discussions
-select persona_name, persona_icon, sort_order, message
+select persona_name, sort_order, message, match_date
 from superligaen.llm_round_discussions
 where season      = '${inputs.season.value}'
   and round_number = ${inputs.round.value}
@@ -683,13 +707,13 @@ order by team_side desc, position_group, position_name
 <div style="display:flex;flex-direction:column;gap:0;margin-bottom:32px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
   {#each discussions as post}
   <div style="display:flex;gap:12px;padding:16px 20px;background:white;border-bottom:1px solid #f3f4f6;">
-    <div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:1.125rem;line-height:1;">
-      {post.persona_icon}
+    <div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8125rem;font-weight:700;{avatarStyle(post.persona_name)}">
+      {post.persona_name[0]}
     </div>
     <div style="flex:1;min-width:0;">
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
         <span style="font-size:0.8125rem;font-weight:700;color:#111827;">{post.persona_name}</span>
-        <span style="font-size:0.75rem;color:#9ca3af;">· Match day</span>
+        <span style="font-size:0.75rem;color:#9ca3af;">· {daysAgo(post.match_date)}</span>
       </div>
       <div style="font-size:0.875rem;color:#374151;line-height:1.6;">{post.message}</div>
     </div>
@@ -704,7 +728,7 @@ order by team_side desc, position_group, position_name
     <div style="flex:1;min-width:0;">
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
         <span style="font-size:0.8125rem;font-weight:700;color:#111827;">You</span>
-        <span style="font-size:0.75rem;color:#9ca3af;">· {comment.time}</span>
+        <span style="font-size:0.75rem;color:#9ca3af;">· {daysAgo(comment.time)}</span>
       </div>
       <div style="font-size:0.875rem;color:#374151;line-height:1.6;">{comment.text}</div>
     </div>
