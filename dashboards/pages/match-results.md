@@ -626,17 +626,26 @@ order by team_side desc, position_group, position_name
 
 ---
 
-## Fan Forum
+<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;">
+  <h2 style="margin:0;">Fan Forum</h2>
+  <span style="font-size:0.8125rem;color:#6b7280;">{discussions.length} comments</span>
+</div>
 
-<p style="font-size:0.8125rem;color:#6b7280;margin:-8px 0 16px;font-style:italic;">Four fans react to this match — grounded in the actual data, not always agreeing.</p>
+<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 20px;font-style:italic;">Four fans react to this match — grounded in the actual data, not always agreeing.</p>
 
-<div class="space-y-4 mb-8">
-  {#each discussions as post}
-  <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;">
-    <div style="font-size:0.8125rem;font-weight:700;color:#111827;margin-bottom:8px;">
-      {post.persona_icon} {post.persona_name}
+<div style="display:flex;flex-direction:column;gap:0;margin-bottom:32px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+  {#each discussions as post, i}
+  <div style="display:flex;gap:12px;padding:16px 20px;background:white;{i < discussions.length - 1 ? 'border-bottom:1px solid #f3f4f6;' : ''}">
+    <div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:1.125rem;line-height:1;">
+      {post.persona_icon}
     </div>
-    <div style="font-size:0.875rem;color:#374151;line-height:1.6;">{post.message}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
+        <span style="font-size:0.8125rem;font-weight:700;color:#111827;">{post.persona_name}</span>
+        <span style="font-size:0.75rem;color:#9ca3af;">· Match day</span>
+      </div>
+      <div style="font-size:0.875rem;color:#374151;line-height:1.6;">{post.message}</div>
+    </div>
   </div>
   {/each}
 </div>
