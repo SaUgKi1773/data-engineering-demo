@@ -622,13 +622,14 @@ order by team_side desc, position_group, position_name
 
 <MatchLineup {lineup} {subs} home_team={mc[0]?.home_team} away_team={mc[0]?.away_team} score={mc[0]?.score} />
 
+{#if discussions.length > 0}
+
 ---
 
 ## Fan Forum
 
 <p style="font-size:0.8125rem;color:#6b7280;margin:-8px 0 16px;font-style:italic;">Four fans react to this match — grounded in the actual data, not always agreeing.</p>
 
-{#if discussions.length > 0}
 <div class="space-y-4 mb-8">
   {#each discussions as post}
   <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;">
@@ -639,6 +640,4 @@ order by team_side desc, position_group, position_name
   </div>
   {/each}
 </div>
-{:else}
-<p style="font-size:0.875rem;color:#9ca3af;font-style:italic;">No discussion yet for this match.</p>
 {/if}
