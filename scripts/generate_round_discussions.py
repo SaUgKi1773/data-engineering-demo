@@ -40,6 +40,34 @@ CREATE TABLE IF NOT EXISTS {db}.bronze.groq__llm_match_discussions (
 )
 """
 
+PLAYER_QUERY = """
+SELECT
+    ts.team_side,
+    t.team_name,
+    p.player_name,
+    pa.goals_scored,
+    pa.assists,
+    pa.own_goals,
+    pa.yellow_cards,
+    pa.yellow_red_cards,
+    pa.red_cards,
+    pa.shots_total,
+    pa.shots_on_target,
+    pa.key_passes,
+    pa.big_chances_created,
+    pa.rating,
+    pa.saves,
+    pa.minutes_played
+FROM {db}.gold.fct_player_appearances pa
+JOIN {db}.gold.dim_match     m  ON m.match_sk      = pa.match_sk
+JOIN {db}.gold.dim_player    p  ON p.player_sk     = pa.player_sk
+JOIN {db}.gold.dim_team      t  ON t.team_sk       = pa.team_sk
+JOIN {db}.gold.dim_team_side ts ON ts.team_side_sk = pa.team_side_sk
+WHERE m.match_id = ?
+  AND pa.minutes_played > 0
+ORDER BY ts.team_side, pa.goals_scored DESC NULLS LAST, pa.rating DESC NULLS LAST
+"""
+
 LATEST_ROUND_SQL = """
 SELECT MAX(m.match_round_number::INTEGER)
 FROM {db}.gold.fct_team_matches f
@@ -132,7 +160,87 @@ def load_personas(con, db: str) -> list[dict]:
     ]
 
 
-def build_match_context(row: dict) -> str:
+def build_player_context(players: list[dict]) -> str:
+    home = [p for p in players if p["team_side"] == "Home"]
+    away = [p for p in players if p["team_side"] == "Away"]
+    home_name = home[0]["team_name"] if home else "Home"
+    away_name = away[0]["team_name"] if away else "Away"
+
+    def goal_events(side):
+        parts = []
+        for p in side:
+            tags = []
+            if p["goals_scored"]:
+                tags.append(f"{p['goals_scored']}G")
+            if p["assists"]:
+                tags.append(f"{p['assists']}A")
+            if p["own_goals"]:
+                tags.append(f"{p['own_goals']} OG")
+            if tags:
+                parts.append(f"{p['player_name']} ({', '.join(tags)})")
+        return ", ".join(parts) if parts else "—"
+
+    def card_events(side):
+        parts = []
+        for p in side:
+            tags = []
+            if p["yellow_cards"]:
+                tags.append("YC")
+            if p["yellow_red_cards"]:
+                tags.append("2YC/RC")
+            if p["red_cards"]:
+                tags.append("RC")
+            if tags:
+                parts.append(f"{p['player_name']} ({', '.join(tags)})")
+        return ", ".join(parts) if parts else "—"
+
+    def top_performer(side):
+        outfield = [p for p in side if not p["saves"]]
+        if not outfield:
+            return "—"
+        best = max(outfield, key=lambda p: p["rating"] or 0)
+        stats = []
+        if best["rating"]:
+            stats.append(f"rating {best['rating']:.1f}")
+        if best["goals_scored"]:
+            stats.append(f"{best['goals_scored']} goal{'s' if best['goals_scored'] > 1 else ''}")
+        if best["assists"]:
+            stats.append(f"{best['assists']} assist{'s' if best['assists'] > 1 else ''}")
+        if best["shots_on_target"]:
+            stats.append(f"{best['shots_on_target']} shots on target")
+        if best["key_passes"]:
+            stats.append(f"{best['key_passes']} key passes")
+        if best["big_chances_created"]:
+            stats.append(f"{best['big_chances_created']} big chance{'s' if best['big_chances_created'] > 1 else ''} created")
+        return f"{best['player_name']} — {', '.join(stats)}"
+
+    def goalkeeper(side):
+        gks = [p for p in side if p["saves"] is not None]
+        if not gks:
+            return "—"
+        gk = gks[0]
+        return f"{gk['player_name']} — {gk['saves']} saves"
+
+    return (
+        f"GOAL EVENTS:\n"
+        f"  {home_name}: {goal_events(home)}\n"
+        f"  {away_name}: {goal_events(away)}\n"
+        f"\n"
+        f"CARDS:\n"
+        f"  {home_name}: {card_events(home)}\n"
+        f"  {away_name}: {card_events(away)}\n"
+        f"\n"
+        f"STANDOUT PERFORMANCES:\n"
+        f"  {home_name}: {top_performer(home)}\n"
+        f"  {away_name}: {top_performer(away)}\n"
+        f"\n"
+        f"GOALKEEPERS:\n"
+        f"  {home_name}: {goalkeeper(home)}\n"
+        f"  {away_name}: {goalkeeper(away)}"
+    )
+
+
+def build_match_context(row: dict, player_context: str) -> str:
     return (
         f"MATCH: {row['match_name']}\n"
         f"Score: {row['score']}  (HT: {row['home_ht_goals']}-{row['away_ht_goals']})\n"
@@ -145,7 +253,9 @@ def build_match_context(row: dict) -> str:
         f"\n"
         f"AWAY — {row['away_team']} [{row['away_formation']}] (Coach: {row['away_coach']})\n"
         f"  Goals: {row['away_goals']}  |  Shots: {row['away_shots']} (on target: {row['away_sog']})  |  Big chances: {row['away_big_chances']}\n"
-        f"  Possession: {row['away_possession']}%  |  Corners: {row['away_corners']}  |  YC: {row['away_yc']}  |  RC: {row['away_rc']}"
+        f"  Possession: {row['away_possession']}%  |  Corners: {row['away_corners']}  |  YC: {row['away_yc']}  |  RC: {row['away_rc']}\n"
+        f"\n"
+        f"{player_context}"
     )
 
 
@@ -157,7 +267,8 @@ def build_prompt(match_context: str, personas: list[dict]) -> str:
     return (
         "You are moderating a fan forum thread where four people discuss a Danish Superliga match.\n"
         "Rules:\n"
-        "- Use ONLY the stats provided. Do not invent numbers, player names, or facts not in the data.\n"
+        "- Use ONLY the stats provided. Do not invent numbers, events, or facts not in the data.\n"
+        "- Player names are provided — use them when making specific points.\n"
         "- No xG — it is not available. Do not mention it.\n"
         "- Each post must be 2-4 sentences, opinionated, and specific to this match.\n"
         "- They should reference each other to feel like a real conversation thread.\n"
@@ -231,10 +342,17 @@ def main() -> None:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     to_insert = []
 
+    player_cols = None
     for match_row in rows:
         row = dict(zip(cols, match_row))
-        context = build_match_context(row)
         log.info(f"  → {row['match_name']}")
+
+        player_rows_raw = con.execute(PLAYER_QUERY.format(db=args.db), [row["match_id"]]).fetchall()
+        if player_cols is None:
+            player_cols = [d[0] for d in con.description]
+        players = [dict(zip(player_cols, r)) for r in player_rows_raw]
+        player_context = build_player_context(players)
+        context = build_match_context(row, player_context)
 
         try:
             raw = call_groq(client, context, personas)
