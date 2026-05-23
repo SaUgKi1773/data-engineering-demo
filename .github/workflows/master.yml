@@ -192,12 +192,49 @@ jobs:
           dbt source freshness --target $TARGET
 
   # ---------------------------------------------------------------------------
+  # AI discussions — generate fan forum posts for the latest completed round
+  # ---------------------------------------------------------------------------
+  ai_discussions:
+    name: AI round discussions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: dq_tests
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate discussions for latest round
+        run: |
+          DB="${{ github.event.inputs.target_db || 'superligaen' }}"
+          SEASON=$(python - <<'EOF'
+import duckdb, os
+con = duckdb.connect(f"md:{os.environ['DB']}?motherduck_token={os.environ['MOTHERDUCK_TOKEN']}")
+row = con.execute(f"SELECT season FROM {os.environ['DB']}.gold.dim_date WHERE is_current_season ORDER BY date DESC LIMIT 1").fetchone()
+print(row[0] if row else "")
+EOF
+          )
+          if [ -z "$SEASON" ]; then echo "No current season found" && exit 1; fi
+          echo "Generating discussions for season: $SEASON"
+          python scripts/generate_round_discussions.py --season "$SEASON" --db "$DB"
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          GEMINI_API_KEY:   ${{ secrets.GEMINI_API_KEY }}
+          DB:               ${{ github.event.inputs.target_db || 'superligaen' }}
+
+  # ---------------------------------------------------------------------------
   # Dashboard — push to publish_dashboard/vercel to trigger Vercel rebuild
   # ---------------------------------------------------------------------------
   publish:
     name: Publish dashboard (Vercel)
     runs-on: ubuntu-latest
-    needs: dq_tests
+    needs: ai_discussions
     permissions:
       contents: write
 
