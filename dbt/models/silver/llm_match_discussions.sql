@@ -18,9 +18,7 @@ WITH raw AS (
         ) AS cleaned_response
     FROM {{ source('bronze', 'groq__llm_match_discussions') }}
     {% if is_incremental() %}
-    WHERE (season, round_number) NOT IN (
-        SELECT DISTINCT season, round_number FROM {{ this }}
-    )
+    WHERE generated_at > (SELECT MAX(generated_at) FROM {{ this }})
     {% endif %}
 )
 SELECT
