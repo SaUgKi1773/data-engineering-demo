@@ -3,7 +3,6 @@ select
     dm.match_round_number                                                    as round_number,
     dm.match_name,
     dp.persona_name,
-    dp.persona_icon,
     dp.sort_order,
     f.message,
     d.date                                                                      as match_date

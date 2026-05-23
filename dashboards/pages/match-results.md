@@ -138,7 +138,7 @@ from ${results}
 ```
 
 ```sql discussions
-select persona_name, persona_icon, sort_order, message, match_date
+select persona_name, sort_order, message, match_date
 from superligaen.llm_round_discussions
 where season      = '${inputs.season.value}'
   and round_number = ${inputs.round.value}
