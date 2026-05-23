@@ -122,7 +122,7 @@ select
     season
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
-  and cast(match_round_number as integer) = ${inputs.round.value}
+  and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
   and result in ('Win', 'Draw', 'Loss')
 group by match_id, match_date, match_round_name, match_round_number, match_name, match_short_name, score, referee_name, season
 order by match_date desc
@@ -141,7 +141,7 @@ from ${results}
 select persona_name, sort_order, message, match_date
 from superligaen.llm_round_discussions
 where season      = '${inputs.season.value}'
-  and round_number = ${inputs.round.value}
+  and round_number = ${inputs.round.value ?? -1}
   and match_name   = split_part('${inputs.match.value}', '|', 1)
 order by sort_order
 ```
@@ -194,7 +194,7 @@ with base as (
     minutes_played
   from superligaen.mart_player_facts
   where season = '${inputs.season.value}'
-    and cast(match_round_number as integer) = ${inputs.round.value}
+    and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
     and result in ('Win', 'Draw', 'Loss')
     and appearance_type in ('Starter', 'Substitute')
     and rating is not null
@@ -290,7 +290,7 @@ select
     match_date
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
-  and cast(match_round_number as integer) = ${inputs.round.value}
+  and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
   and result in ('Win', 'Draw', 'Loss')
 group by match_name, match_short_name, match_date, score
 order by match_date desc
@@ -347,6 +347,7 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
   and season                = '${inputs.season.value}'
 ```
 
+{#if mc.length > 0}
 <div class="rounded-xl border border-gray-200 bg-white p-6 mt-2">
 
   <div class="grid grid-cols-3 text-center border-b border-gray-200 pb-4 mb-2">
@@ -543,6 +544,11 @@ where match_name            = split_part('${inputs.match.value}', '|', 1)
   </div>
 
 </div>
+{:else}
+<div class="rounded-xl border border-gray-200 bg-white p-6 mt-2 text-center text-gray-400 text-sm">
+  Loading match data…
+</div>
+{/if}
 
 ---
 
@@ -691,7 +697,13 @@ where match_name                 = split_part('${inputs.match.value}', '|', 1)
 order by team_side desc, position_group, position_name
 ```
 
+{#if mc.length > 0}
 <MatchLineup {lineup} {subs} home_team={mc[0]?.home_team} away_team={mc[0]?.away_team} score={mc[0]?.score} />
+{:else}
+<div class="rounded-xl border border-gray-200 bg-white p-6 mt-2 text-center text-gray-400 text-sm">
+  Loading lineup…
+</div>
+{/if}
 
 {#if discussions.length > 0}
 
