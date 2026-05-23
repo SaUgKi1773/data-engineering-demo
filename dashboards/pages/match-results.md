@@ -66,6 +66,15 @@ select
 from ${results}
 ```
 
+```sql discussions
+select persona_name, persona_icon, sort_order, message
+from superligaen.llm_round_discussions
+where season      = '${inputs.season.value}'
+  and round_number = ${inputs.round.value}
+  and match_name   = split_part('${inputs.match.value}', '|', 1)
+order by sort_order
+```
+
 ## Match Results — {inputs.season.value} — Round {inputs.round.value}
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -612,3 +621,23 @@ order by team_side desc, position_group, position_name
 ```
 
 <MatchLineup {lineup} {subs} home_team={mc[0]?.home_team} away_team={mc[0]?.away_team} score={mc[0]?.score} />
+
+{#if discussions.length > 0}
+
+---
+
+## Fan Forum
+
+<p style="font-size:0.8125rem;color:#6b7280;margin:-8px 0 16px;font-style:italic;">Four fans react to this match — grounded in the actual data, not always agreeing.</p>
+
+<div class="space-y-4 mb-8">
+  {#each discussions as post}
+  <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;">
+    <div style="font-size:0.8125rem;font-weight:700;color:#111827;margin-bottom:8px;">
+      {post.persona_icon} {post.persona_name}
+    </div>
+    <div style="font-size:0.875rem;color:#374151;line-height:1.6;">{post.message}</div>
+  </div>
+  {/each}
+</div>
+{/if}

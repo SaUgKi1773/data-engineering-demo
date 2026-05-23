@@ -29,3 +29,7 @@ sources:
       - name: sportmonks__core_continents
       - name: sportmonks__core_countries
       - name: sportmonks__core_regions
+      - name: groq__llm_match_discussions
+        description: Raw Groq API responses for fan forum discussions, one row per match.
+        loaded_at_field: generated_at
+        freshness: null

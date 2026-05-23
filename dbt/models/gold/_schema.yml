@@ -36,6 +36,21 @@ models:
               config:
                 where: "match_result_sk IN (1, 2, 3)"
 
+  - name: fct_match_discussions
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [match_sk, persona_sk]
+    columns:
+      - name: match_sk
+        tests: [not_null]
+      - name: persona_sk
+        tests: [not_null]
+      - name: date_sk
+        tests: [not_null]
+      - name: message
+        tests: [not_null]
+
   - name: fct_player_appearances
     tests:
       - dbt_utils.unique_combination_of_columns:
