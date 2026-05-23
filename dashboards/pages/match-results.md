@@ -54,6 +54,17 @@ title: Match Results
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) postComment();
   }
 
+  const personaColors = {
+    'Lars':   { bg: '#dbeafe', text: '#1d4ed8' },
+    'Bent':   { bg: '#dcfce7', text: '#15803d' },
+    'Magnus': { bg: '#ede9fe', text: '#6d28d9' },
+    'Sofie':  { bg: '#fce7f3', text: '#be185d' },
+  };
+  function avatarStyle(name) {
+    const c = personaColors[name] ?? { bg: '#f3f4f6', text: '#374151' };
+    return `background:${c.bg};color:${c.text};`;
+  }
+
   function daysAgo(dateVal) {
     if (!dateVal) return '';
     const match = new Date(dateVal);
@@ -696,8 +707,8 @@ order by team_side desc, position_group, position_name
 <div style="display:flex;flex-direction:column;gap:0;margin-bottom:32px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
   {#each discussions as post}
   <div style="display:flex;gap:12px;padding:16px 20px;background:white;border-bottom:1px solid #f3f4f6;">
-    <div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:1.125rem;line-height:1;">
-      {post.persona_icon}
+    <div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8125rem;font-weight:700;{avatarStyle(post.persona_name)}">
+      {post.persona_name[0]}
     </div>
     <div style="flex:1;min-width:0;">
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
