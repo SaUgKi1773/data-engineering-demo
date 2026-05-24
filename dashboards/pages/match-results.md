@@ -138,7 +138,7 @@ from ${results}
 ```
 
 ```sql discussions
-select persona_name, sort_order, message, match_date
+select persona_name, sort_order, message
 from superligaen.llm_round_discussions
 where season      = '${inputs.season.value}'
   and round_number = ${inputs.round.value ?? -1}
@@ -795,7 +795,6 @@ order by team_side desc, position_group, position_name
     <div style="flex:1;min-width:0;">
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
         <span style="font-size:0.8125rem;font-weight:700;color:#111827;">{post.persona_name}</span>
-        <span style="font-size:0.75rem;color:#9ca3af;">· {daysAgo(post.match_date)}</span>
       </div>
       <div style="font-size:0.875rem;color:#374151;line-height:1.6;">{post.message}</div>
     </div>
