@@ -143,8 +143,8 @@ from superligaen.llm_round_discussions
 where season      = '${inputs.season.value}'
   and round_number = ${inputs.round.value ?? -1}
   and match_name = case
-    when '${inputs.match?.value ?? ''}' != ''
-    then split_part('${inputs.match?.value ?? ''}', '|', 1)
+    when '${inputs.match.value ?? ''}' != ''
+    then split_part('${inputs.match.value ?? ''}', '|', 1)
     else null
   end
 order by sort_order
@@ -348,13 +348,13 @@ select
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and match_name = case
-    when '${inputs.match?.value ?? ''}' != ''
-    then split_part('${inputs.match?.value ?? ''}', '|', 1)
+    when '${inputs.match.value ?? ''}' != ''
+    then split_part('${inputs.match.value ?? ''}', '|', 1)
     else null
   end
   and cast(match_date as varchar) = case
-    when '${inputs.match?.value ?? ''}' != ''
-    then split_part('${inputs.match?.value ?? ''}', '|', 2)
+    when '${inputs.match.value ?? ''}' != ''
+    then split_part('${inputs.match.value ?? ''}', '|', 2)
     else null
   end
 ```
@@ -633,13 +633,13 @@ select
     round(rating, 2) as rating
 from superligaen.mart_player_facts
 where match_name = case
-    when '${inputs.match?.value ?? ''}' != ''
-    then split_part('${inputs.match?.value ?? ''}', '|', 1)
+    when '${inputs.match.value ?? ''}' != ''
+    then split_part('${inputs.match.value ?? ''}', '|', 1)
     else null
   end
   and cast(match_date as varchar) = case
-    when '${inputs.match?.value ?? ''}' != ''
-    then split_part('${inputs.match?.value ?? ''}', '|', 2)
+    when '${inputs.match.value ?? ''}' != ''
+    then split_part('${inputs.match.value ?? ''}', '|', 2)
     else null
   end
   and result in ('Win', 'Draw', 'Loss')
@@ -711,13 +711,13 @@ select
     round(rating, 2) as rating
 from superligaen.mart_player_facts
 where match_name = case
-    when '${inputs.match?.value ?? ''}' != ''
-    then split_part('${inputs.match?.value ?? ''}', '|', 1)
+    when '${inputs.match.value ?? ''}' != ''
+    then split_part('${inputs.match.value ?? ''}', '|', 1)
     else null
   end
   and cast(match_date as varchar) = case
-    when '${inputs.match?.value ?? ''}' != ''
-    then split_part('${inputs.match?.value ?? ''}', '|', 2)
+    when '${inputs.match.value ?? ''}' != ''
+    then split_part('${inputs.match.value ?? ''}', '|', 2)
     else null
   end
   and result in ('Win', 'Draw', 'Loss')
