@@ -140,13 +140,7 @@ from ${results}
 ```sql discussions
 select persona_name, sort_order, message
 from superligaen.llm_round_discussions
-where season      = '${inputs.season.value}'
-  and round_number = ${inputs.round.value ?? -1}
-  and match_name = case
-    when '${inputs.match.value ?? ''}' != ''
-    then split_part('${inputs.match.value ?? ''}', '|', 1)
-    else null
-  end
+where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
 order by sort_order
 ```
 
@@ -289,14 +283,14 @@ order by sort_order
 
 ```sql match_options
 select
-    match_name || '|' || cast(match_date as varchar) as match_key,
+    cast(match_id as varchar)                        as match_key,
     match_short_name || '  (' || score || ')'        as match_label,
     match_date
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
   and result in ('Win', 'Draw', 'Loss')
-group by match_name, match_short_name, match_date, score
+group by match_id, match_short_name, match_date, score
 order by match_date desc
 ```
 
@@ -346,17 +340,7 @@ select
     max(case when team_side = 'Home' then red_cards end)                                        as home_rc,
     max(case when team_side = 'Away' then red_cards end)                                        as away_rc
 from superligaen.mart_match_facts
-where season = '${inputs.season.value}'
-  and match_name = case
-    when '${inputs.match.value ?? ''}' != ''
-    then split_part('${inputs.match.value ?? ''}', '|', 1)
-    else null
-  end
-  and cast(match_date as varchar) = case
-    when '${inputs.match.value ?? ''}' != ''
-    then split_part('${inputs.match.value ?? ''}', '|', 2)
-    else null
-  end
+where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
 ```
 
 {#if mc.length > 0}
@@ -632,16 +616,7 @@ select
     errors_leading_to_shot,
     round(rating, 2) as rating
 from superligaen.mart_player_facts
-where match_name = case
-    when '${inputs.match.value ?? ''}' != ''
-    then split_part('${inputs.match.value ?? ''}', '|', 1)
-    else null
-  end
-  and cast(match_date as varchar) = case
-    when '${inputs.match.value ?? ''}' != ''
-    then split_part('${inputs.match.value ?? ''}', '|', 2)
-    else null
-  end
+where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
   and result in ('Win', 'Draw', 'Loss')
   and appearance_type = 'Starter'
 order by team_side desc, position_group, position_name
@@ -710,16 +685,7 @@ select
     errors_leading_to_shot,
     round(rating, 2) as rating
 from superligaen.mart_player_facts
-where match_name = case
-    when '${inputs.match.value ?? ''}' != ''
-    then split_part('${inputs.match.value ?? ''}', '|', 1)
-    else null
-  end
-  and cast(match_date as varchar) = case
-    when '${inputs.match.value ?? ''}' != ''
-    then split_part('${inputs.match.value ?? ''}', '|', 2)
-    else null
-  end
+where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
   and result in ('Win', 'Draw', 'Loss')
   and appearance_type = 'Substitute'
 order by team_side desc, position_group, position_name
