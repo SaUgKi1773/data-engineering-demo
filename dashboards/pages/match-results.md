@@ -775,13 +775,13 @@ order by team_side desc, position_group, position_name
 </div>
 {/if}
 
-{#if discussions.length > 0}
-
 ---
 
 <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;">
   <h2 style="margin:0;">Fan Forum</h2>
+  {#if discussions.length + userComments.length > 0}
   <span style="font-size:0.8125rem;color:#6b7280;">{discussions.length + userComments.length} comments</span>
+  {/if}
 </div>
 
 <p style="font-size:0.8125rem;color:#6b7280;margin:0 0 20px;font-style:italic;">Fan reactions to this match. Drop your take below.</p>
@@ -842,4 +842,3 @@ order by team_side desc, position_group, position_name
     </div>
   </div>
 </div>
-{/if}
