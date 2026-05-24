@@ -161,12 +161,12 @@ ORDER BY m.match_name
 
 def load_personas(con, db: str) -> list[dict]:
     rows = con.execute(f"""
-        SELECT persona_name, persona_icon, sort_order, bio
+        SELECT persona_name, sort_order, bio
         FROM {db}.gold.dim_persona
         ORDER BY sort_order
     """).fetchall()
     return [
-        {"name": r[0], "icon": r[1], "sort_order": r[2], "bio": r[3]}
+        {"name": r[0], "sort_order": r[1], "bio": r[2]}
         for r in rows
     ]
 
@@ -272,7 +272,7 @@ def build_match_context(row: dict, player_context: str) -> str:
 
 def build_prompt(match_context: str, personas: list[dict]) -> str:
     persona_block = "\n".join(
-        f"- {p['name']} ({p['icon']}): {p['bio']}" for p in personas
+        f"- {p['name']}: {p['bio']}" for p in personas
     )
     persona_order = ", ".join(p["name"] for p in personas)
     return (
