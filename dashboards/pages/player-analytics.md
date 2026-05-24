@@ -31,8 +31,7 @@ title: Player Intelligence
 ```sql seasons
 select season from (
   select season, max(is_current_season::int) as is_current
-  from superligaen.mart_player_facts
-  where result in ('Win', 'Draw', 'Loss')
+  from superligaen.mart_player_season
   group by season
 ) order by is_current desc, season desc
 ```
@@ -42,9 +41,8 @@ select team_name from (
   select 'All Teams' as team_name, 0 as ord
   union all
   select distinct team_name, 1 as ord
-  from superligaen.mart_player_facts
+  from superligaen.mart_player_season
   where season = '${inputs.season.value}'
-    and result in ('Win', 'Draw', 'Loss')
 ) order by ord, team_name
 ```
 
@@ -53,21 +51,19 @@ select player_position from (
   select 'All' as player_position, 0 as ord
   union all
   select distinct player_position, 1 as ord
-  from superligaen.mart_player_facts
+  from superligaen.mart_player_season
   where season = '${inputs.season.value}'
     and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
-    and result in ('Win', 'Draw', 'Loss')
     and player_position is not null
 ) order by ord, player_position
 ```
 
 ```sql players_in_team
 select distinct player_name
-from superligaen.mart_player_facts
+from superligaen.mart_player_season
 where season = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and ('All' in ${inputs.position.value} OR player_position in ${inputs.position.value})
-  and result in ('Win', 'Draw', 'Loss')
 order by player_name
 ```
 
@@ -142,74 +138,66 @@ with base as (
         player_name,
         player_photo,
         player_position,
-        max(team_name)                                                                         as team_name,
-        max(team_logo)                                                                         as team_logo,
-        count(distinct match_id)                                                               as matches,
-        -- Attacking
-        sum(goals_scored)::double                                                              as goals,
-        sum(assists)::double                                                                   as assists,
-        sum(shots_on_target)::double                                                           as shots_on_target,
-        round(100.0 * sum(goals_scored) / nullif(sum(shots_total), 0), 1)                     as shot_conv,
-        sum(woodwork_hits)::double                                                             as woodwork_hits,
-        -- Creativity
-        sum(big_chances_created)::double                                                       as big_chances_created,
-        sum(chances_created)::double                                                           as all_chances,
-        sum(key_passes)::double                                                                as key_passes,
-        round(100.0 * sum(crosses_accurate) / nullif(sum(crosses_total), 0), 1)               as cross_acc,
-        sum(passes_final_third)::double                                                        as passes_final_third,
-        -- Possession
-        round(100.0 * sum(passes_accurate) / nullif(sum(passes_total), 0), 1)                 as pass_acc,
-        round(100.0 * sum(dribbles_completed) / nullif(sum(dribbles_attempts), 0), 1)         as dribble_success,
-        round(100.0 * sum(long_balls_won) / nullif(sum(long_balls), 0), 1)                    as long_ball_success,
-        -- Defending
-        (sum(tackles) + sum(interceptions))::double                                            as tkl_int,
-        round(100.0 * sum(tackles_won) / nullif(sum(tackles), 0), 1)                          as tackle_success,
-        sum(balls_recovered)::double                                                           as balls_recovered,
-        sum(times_dribbled_past)::double                                                       as times_dribbled_past,
-        sum(errors_leading_to_goal)::double                                                    as errors_leading_to_goal,
-        -- Physicality
-        round(100.0 * sum(duels_won) / nullif(sum(duels_total), 0), 1)                        as duel_win,
-        sum(fouls_drawn)::double                                                               as fouls_drawn,
-        round(100.0 * sum(aerials_won) / nullif(sum(aerials_won) + sum(aerials_lost), 0), 1)  as aerial_success,
-        -- Impact & Other
-        round(avg(rating), 2)::double                                                          as avg_rating,
-        sum(minutes_played)::double                                                            as minutes_played,
-        sum(yellow_cards)::double                                                              as yellow_cards,
-        sum(shots_total)::double                                                               as shots_total,
-        sum(shots_off_target)::double                                                          as shots_off_target,
-        sum(big_chances_missed)::double                                                        as big_chances_missed,
-        sum(fouls_committed)::double                                                           as fouls_committed,
-        sum(offsides)::double                                                                  as offsides,
-        sum(dispossessed)::double                                                              as dispossessed,
-        sum(possession_losses)::double                                                         as possession_losses,
-        sum(clearances)::double                                                                as clearances,
-        sum(blocks)::double                                                                    as blocks,
-        sum(interceptions)::double                                                             as interceptions,
-        sum(tackles)::double                                                                   as tackles,
-        sum(saves)::double                                                                     as saves,
-        sum(goals_conceded)::double                                                            as goals_conceded,
-        sum(own_goals)::double                                                                 as own_goals,
-        sum(penalty_missed)::double                                                            as penalty_missed,
-        sum(shots_blocked)::double                                                             as shots_blocked,
-        sum(clearances_off_line)::double                                                       as clearances_off_line,
-        sum(last_man_tackle)::double                                                           as last_man_tackle,
-        sum(red_cards)::double                                                                 as red_cards,
-        sum(yellow_red_cards)::double                                                          as yellow_red_cards,
-        sum(penalty_won)::double                                                               as penalty_won,
-        sum(penalty_committed)::double                                                         as penalty_committed,
-        sum(penalty_scored)::double                                                            as penalty_scored,
-        sum(penalty_saved)::double                                                             as penalty_saved,
-        sum(saves_inside_box)::double                                                          as saves_inside_box,
-        sum(goalkeeper_punches)::double                                                        as goalkeeper_punches,
-        sum(high_ball_claims)::double                                                          as high_ball_claims,
-        sum(errors_leading_to_shot)::double                                                    as errors_leading_to_shot,
-        sum(dribbles_completed)::double                                                        as dribbles_completed
-    from superligaen.mart_player_facts
+        team_name,
+        team_logo,
+        matches,
+        goals::double                       as goals,
+        assists::double                     as assists,
+        shots_on_target::double             as shots_on_target,
+        shot_conv::double                   as shot_conv,
+        woodwork_hits::double               as woodwork_hits,
+        big_chances_created::double         as big_chances_created,
+        chances_created::double             as all_chances,
+        key_passes::double                  as key_passes,
+        cross_acc::double                   as cross_acc,
+        passes_final_third::double          as passes_final_third,
+        pass_accuracy::double               as pass_acc,
+        dribble_success::double             as dribble_success,
+        long_ball_success::double           as long_ball_success,
+        tkl_int::double                     as tkl_int,
+        tackle_success::double              as tackle_success,
+        balls_recovered::double             as balls_recovered,
+        times_dribbled_past::double         as times_dribbled_past,
+        errors_leading_to_goal::double      as errors_leading_to_goal,
+        duel_win_pct::double                as duel_win,
+        fouls_drawn::double                 as fouls_drawn,
+        aerial_success::double              as aerial_success,
+        avg_rating::double                  as avg_rating,
+        minutes_played::double              as minutes_played,
+        yellow_cards::double                as yellow_cards,
+        shots_total::double                 as shots_total,
+        shots_off_target::double            as shots_off_target,
+        big_chances_missed::double          as big_chances_missed,
+        fouls_committed::double             as fouls_committed,
+        offsides::double                    as offsides,
+        dispossessed::double                as dispossessed,
+        possession_losses::double           as possession_losses,
+        clearances::double                  as clearances,
+        blocks::double                      as blocks,
+        interceptions::double               as interceptions,
+        tackles::double                     as tackles,
+        saves::double                       as saves,
+        goals_conceded::double              as goals_conceded,
+        own_goals::double                   as own_goals,
+        penalty_missed::double              as penalty_missed,
+        shots_blocked::double               as shots_blocked,
+        clearances_off_line::double         as clearances_off_line,
+        last_man_tackle::double             as last_man_tackle,
+        red_cards::double                   as red_cards,
+        yellow_red_cards::double            as yellow_red_cards,
+        penalty_won::double                 as penalty_won,
+        penalty_committed::double           as penalty_committed,
+        penalty_scored::double              as penalty_scored,
+        penalty_saved::double               as penalty_saved,
+        saves_inside_box::double            as saves_inside_box,
+        goalkeeper_punches::double          as goalkeeper_punches,
+        high_ball_claims::double            as high_ball_claims,
+        errors_leading_to_shot::double      as errors_leading_to_shot,
+        dribbles_completed::double          as dribbles_completed
+    from superligaen.mart_player_season
     where season = '${inputs.season.value}'
       and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
-      and result in ('Win', 'Draw', 'Loss')
-    group by player_name, player_photo, player_position
-    having count(distinct match_id) >= 5
+      and matches >= 5
 ),
 ranked as (
     select *,
@@ -350,59 +338,57 @@ select
     player_photo,
     player_nationality,
     player_detailed_position,
-    max(player_birth_date)                                                                 as birth_date,
-    date_diff('year', max(player_birth_date)::date, current_date)                         as age,
-    max(player_height)                                                                     as height,
-    max(player_weight)                                                                     as weight,
+    player_birth_date                                           as birth_date,
+    date_diff('year', player_birth_date::date, current_date)   as age,
+    player_height                                              as height,
+    player_weight                                              as weight,
     team_name,
     team_logo,
     player_position,
-    count(distinct match_id)::int                                                         as matches,
-    sum(minutes_played)::int                                                              as minutes,
-    sum(goals_scored)::int                                                                as goals,
-    sum(assists)::int                                                                     as assists,
-    sum(shots_total)::int                                                                 as shots,
-    sum(shots_on_target)::int                                                             as shots_on_target,
-    sum(key_passes)::int                                                                  as key_passes,
-    sum(big_chances_created)::int                                                         as big_chances_created,
-    sum(chances_created)::int                                                             as chances_created,
-    sum(tackles)::int                                                                     as tackles,
-    sum(interceptions)::int                                                               as interceptions,
-    sum(balls_recovered)::int                                                             as balls_recovered,
-    sum(duels_won)::int                                                                   as duels_won,
-    sum(duels_total)::int                                                                 as duels_total,
-    sum(passes_accurate)::int                                                             as passes_accurate,
-    sum(passes_total)::int                                                                as passes_total,
-    sum(yellow_cards)::int                                                                as yellow_cards,
-    sum(case when appearance_type = 'Starter' then 1 else 0 end)::int                    as starts,
-    round(avg(rating), 2)                                                                 as avg_rating,
-    round(sum(goals_scored)  * 90.0 / nullif(sum(minutes_played), 0), 2)                 as goals_per90,
-    round(sum(assists)       * 90.0 / nullif(sum(minutes_played), 0), 2)                 as assists_per90,
-    round((sum(goals_scored) + sum(assists)) * 90.0 / nullif(sum(minutes_played), 0), 2) as contributions_per90,
-    round(100.0 * sum(passes_accurate)  / nullif(sum(passes_total), 0), 1)               as pass_accuracy,
-    round(100.0 * sum(goals_scored)     / nullif(sum(shots_total),  0), 1)               as shot_conversion,
-    round(100.0 * sum(duels_won)        / nullif(sum(duels_total),  0), 1)               as duel_win_pct,
-    (sum(tackles) + sum(interceptions) + sum(balls_recovered))::int                      as def_actions,
-    sum(case when result = 'Win'  then 1 else 0 end)::int                                as wins,
-    sum(case when result = 'Draw' then 1 else 0 end)::int                                as draws,
-    sum(case when result = 'Loss' then 1 else 0 end)::int                                as losses
-from superligaen.mart_player_facts
+    matches,
+    minutes_played                                             as minutes,
+    goals,
+    assists,
+    shots_total                                                as shots,
+    shots_on_target,
+    key_passes,
+    big_chances_created,
+    chances_created,
+    tackles,
+    interceptions,
+    balls_recovered,
+    duels_won,
+    duels_total,
+    passes_accurate,
+    passes_total,
+    yellow_cards,
+    starts,
+    avg_rating,
+    goals_per90,
+    assists_per90,
+    contributions_per90,
+    pass_accuracy,
+    shot_conversion,
+    duel_win_pct,
+    def_actions,
+    wins,
+    draws,
+    losses
+from superligaen.mart_player_season
 where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
-  and result in ('Win', 'Draw', 'Loss')
-group by player_name, player_photo, player_nationality, player_detailed_position, team_name, team_logo, player_position
 ```
 
 ```sql player_trend
 select
-    match_round_number                                                          as round,
+    match_round_number                                                      as round,
     goals_scored,
     big_chances_created,
-    tackles + interceptions                                                     as tkl_int,
-    round(100.0 * passes_accurate / nullif(passes_total, 0), 1)                as pass_acc,
-    round(100.0 * duels_won       / nullif(duels_total,   0), 1)               as duel_win,
+    tackles + interceptions                                                 as tkl_int,
+    pass_accuracy                                                           as pass_acc,
+    round(100.0 * duels_won / nullif(duels_total, 0), 1)                   as duel_win,
     rating
-from superligaen.mart_player_facts
+from superligaen.mart_match_lineup
 where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
   and result in ('Win', 'Draw', 'Loss')
@@ -411,45 +397,38 @@ order by match_round_number
 
 ```sql player_match_log
 select
-    strftime(match_date, '%Y-%m-%d')              as match_date,
-    match_round_name                              as round,
-    opponent_team_name                            as opponent,
-    opponent_team_short_name                      as opponent_short,
-    team_side                                     as home_away,
+    strftime(match_date, '%Y-%m-%d')                                            as match_date,
+    match_round_name                                                            as round,
+    opponent_team_name                                                          as opponent,
+    opponent_team_short_name                                                    as opponent_short,
+    team_side                                                                   as home_away,
     case result
         when 'Win'  then '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;background:#22c55e;color:white;border-radius:4px;font-size:12px;font-weight:700;">W</span>'
         when 'Draw' then '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;background:#eab308;color:white;border-radius:4px;font-size:12px;font-weight:700;">D</span>'
         else             '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;background:#ef4444;color:white;border-radius:4px;font-size:12px;font-weight:700;">L</span>'
-    end                                           as result_badge,
-    -- Attacking
-    goals_scored                                                                    as goals,
+    end                                                                         as result_badge,
+    goals_scored                                                                as goals,
     assists,
     shots_on_target,
-    round(100.0 * goals_scored / nullif(shots_total, 0), 1)                         as shot_conv,
+    round(100.0 * goals_scored / nullif(shots_total, 0), 1)                     as shot_conv,
     woodwork_hits,
-    -- Creativity
     big_chances_created,
     chances_created,
     key_passes,
-    round(100.0 * crosses_accurate / nullif(crosses_total, 0), 1)                   as cross_acc,
+    round(100.0 * crosses_accurate / nullif(crosses_total, 0), 1)               as cross_acc,
     passes_final_third,
-    -- Possession
-    round(100.0 * passes_accurate / nullif(passes_total, 0), 1)                     as pass_acc,
-    round(100.0 * dribbles_completed / nullif(dribbles_attempts, 0), 1)             as dribble_success,
-    round(100.0 * long_balls_won / nullif(long_balls, 0), 1)                        as long_ball_success,
-    -- Defending
-    tackles + interceptions                                                          as tkl_int,
-    round(100.0 * tackles_won / nullif(tackles, 0), 1)                              as tackle_success,
+    pass_accuracy                                                               as pass_acc,
+    round(100.0 * dribbles_completed / nullif(dribbles_attempts, 0), 1)         as dribble_success,
+    round(100.0 * long_balls_won / nullif(long_balls, 0), 1)                    as long_ball_success,
+    tackles + interceptions                                                     as tkl_int,
+    round(100.0 * tackles_won / nullif(tackles, 0), 1)                          as tackle_success,
     balls_recovered,
     times_dribbled_past,
     errors_leading_to_goal,
-    -- Physicality
-    round(100.0 * duels_won / nullif(duels_total, 0), 1)                            as duel_win,
+    round(100.0 * duels_won / nullif(duels_total, 0), 1)                        as duel_win,
     fouls_drawn,
-    round(100.0 * aerials_won / nullif(aerials_won + aerials_lost, 0), 1)           as aerial_success,
-    -- Impact
+    round(100.0 * aerials_won / nullif(aerials_won + aerials_lost, 0), 1)       as aerial_success,
     rating,
-    -- Other
     minutes_played,
     yellow_cards,
     shots_total,
@@ -481,7 +460,7 @@ select
     high_ball_claims,
     errors_leading_to_shot,
     dribbles_completed
-from superligaen.mart_player_facts
+from superligaen.mart_match_lineup
 where season = '${inputs.season.value}'
   and player_name = '${inputs.player.value}'
   and result in ('Win', 'Draw', 'Loss')
@@ -489,79 +468,10 @@ order by match_date desc
 ```
 
 ```sql league_context
-with base as (
-    select
-        player_name,
-        -- Attacking
-        sum(goals_scored)         * 90.0 / nullif(sum(minutes_played), 0)                           as goals_per90,
-        sum(assists)              * 90.0 / nullif(sum(minutes_played), 0)                           as assists_per90,
-        sum(shots_on_target)      * 90.0 / nullif(sum(minutes_played), 0)                           as sot_per90,
-        100.0 * sum(goals_scored)          / nullif(sum(shots_total), 0)                            as shot_acc_pct,
-        sum(woodwork_hits)        * 90.0 / nullif(sum(minutes_played), 0)                           as woodwork_per90,
-        -- Creativity
-        sum(big_chances_created)  * 90.0 / nullif(sum(minutes_played), 0)                           as big_chances_per90,
-        sum(chances_created)      * 90.0 / nullif(sum(minutes_played), 0)                           as chances_per90,
-        sum(key_passes)           * 90.0 / nullif(sum(minutes_played), 0)                           as key_passes_per90,
-        100.0 * sum(big_chances_created)   / nullif(sum(chances_created), 0)                        as chance_quality_pct,
-        100.0 * sum(crosses_accurate)      / nullif(sum(crosses_total), 0)                          as cross_acc_pct,
-        sum(passes_final_third)   * 90.0 / nullif(sum(minutes_played), 0)                           as passes_final_third_per90,
-        -- Possession
-        100.0 * sum(passes_accurate)       / nullif(sum(passes_total), 0)                           as pass_acc_pct,
-        100.0 * sum(dribbles_completed)    / nullif(sum(dribbles_attempts), 0)                      as dribble_success_pct,
-        100.0 * sum(long_balls_won)        / nullif(sum(long_balls), 0)                             as long_ball_success_pct,
-        -- Defending
-        (sum(tackles) + sum(interceptions)) * 90.0 / nullif(sum(minutes_played), 0)                as tkl_int_per90,
-        100.0 * sum(tackles_won)           / nullif(sum(tackles), 0)                               as tackle_success_pct,
-        sum(balls_recovered)      * 90.0 / nullif(sum(minutes_played), 0)                           as balls_recovered_per90,
-        sum(times_dribbled_past)  * 90.0 / nullif(sum(minutes_played), 0)                           as times_dribbled_past_per90,
-        sum(errors_leading_to_goal) * 90.0 / nullif(sum(minutes_played), 0)                         as errors_per90,
-        -- Physicality
-        100.0 * sum(duels_won)             / nullif(sum(duels_total), 0)                            as duel_win_pct,
-        sum(fouls_drawn)          * 90.0 / nullif(sum(minutes_played), 0)                           as fouls_drawn_per90,
-        100.0 * sum(aerials_won)           / nullif(sum(aerials_won) + sum(aerials_lost), 0)        as aerial_success_pct,
-        -- Impact
-        avg(rating)                                                                                  as avg_rating
-    from superligaen.mart_player_facts
-    where season = '${inputs.season.value}'
-      and result in ('Win', 'Draw', 'Loss')
-    group by player_name
-    having sum(minutes_played) >= 450
-),
-ranked as (
-    select
-        player_name,
-        -- Attacking: anchor goals/90 (2×), + assists/90, sot/90, shot_acc%, woodwork/90 → /6
-        round((2 * percent_rank() over (order by goals_per90)
-                 + percent_rank() over (order by assists_per90)
-                 + percent_rank() over (order by sot_per90)
-                 + percent_rank() over (order by shot_acc_pct)
-                 + percent_rank() over (order by woodwork_per90)) / 6 * 100)                        as attacking_pct,
-        -- Creativity: anchor big_chances/90 (2×), + chances/90, key_passes/90, chance_quality%, cross_acc%, passes_final_third/90 → /7
-        round((  percent_rank() over (order by chances_per90)
-               + 2 * percent_rank() over (order by big_chances_per90)
-               + percent_rank() over (order by key_passes_per90)
-               + percent_rank() over (order by chance_quality_pct)
-               + percent_rank() over (order by cross_acc_pct)
-               + percent_rank() over (order by passes_final_third_per90)) / 7 * 100)               as creativity_pct,
-        -- Possession: anchor pass_acc% (2×), + dribble_success%, long_ball_success% → /4
-        round((2 * percent_rank() over (order by pass_acc_pct)
-                 + percent_rank() over (order by dribble_success_pct)
-                 + percent_rank() over (order by long_ball_success_pct)) / 4 * 100)                as possession_pct,
-        -- Defending: anchor (tkl+int)/90 (2×), + tackle_success%, balls_recovered/90, times_dribbled_past/90 ↓, errors/90 ↓ → /6
-        round((2 * percent_rank() over (order by tkl_int_per90)
-                 + percent_rank() over (order by tackle_success_pct)
-                 + percent_rank() over (order by balls_recovered_per90)
-                 + percent_rank() over (order by times_dribbled_past_per90 desc)
-                 + percent_rank() over (order by errors_per90 desc)) / 6 * 100)                    as defending_pct,
-        -- Physicality: anchor duel_win% (2×), + fouls_drawn/90, aerial_success% → /4
-        round((2 * percent_rank() over (order by duel_win_pct)
-                 + percent_rank() over (order by fouls_drawn_per90)
-                 + percent_rank() over (order by aerial_success_pct)) / 4 * 100)                   as physicality_pct,
-        -- Impact: avg_rating (single)
-        round(percent_rank() over (order by avg_rating) * 100)                                     as impact_pct
-    from base
-)
-select * from ranked where player_name = '${inputs.player.value}'
+select attacking_pct, creativity_pct, possession_pct, defending_pct, physicality_pct, impact_pct
+from superligaen.mart_player_season
+where season = '${inputs.season.value}'
+  and player_name = '${inputs.player.value}'
 ```
 
 ---

@@ -82,7 +82,7 @@ title: Match Results
 ```sql seasons
 select season from (
   select season, max(is_current_season::int) as is_current
-  from superligaen.mart_match_facts
+  from superligaen.mart_match_results
   group by season
 ) order by is_current desc, season desc
 ```
@@ -93,9 +93,8 @@ select season from (
 
 ```sql rounds
 select distinct cast(match_round_number as integer) as round_number
-from superligaen.mart_match_facts
+from superligaen.mart_match_results
 where season = '${inputs.season.value}'
-  and result in ('Win', 'Draw', 'Loss')
 order by 1 desc
 ```
 
@@ -104,27 +103,10 @@ order by 1 desc
 {/key}
 
 ```sql results
-select
-    match_id,
-    match_date,
-    match_round_name                as round,
-    match_round_number,
-    match_name,
-    match_short_name,
-    score,
-    sum(goals_scored)               as total_goals,
-    sum(shots_on_goal)              as total_shots_on_goal,
-    sum(total_shots)                as total_shots,
-    sum(big_chances_created)        as total_big_chances,
-    sum(yellow_cards)               as total_yellow_cards,
-    sum(red_cards)                  as total_red_cards,
-    referee_name                    as referee,
-    season
-from superligaen.mart_match_facts
+select *, referee_name as referee
+from superligaen.mart_match_results
 where season = '${inputs.season.value}'
   and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
-  and result in ('Win', 'Draw', 'Loss')
-group by match_id, match_date, match_round_name, match_round_number, match_name, match_short_name, score, referee_name, season
 order by match_date desc
 ```
 
@@ -181,76 +163,11 @@ order by sort_order
 </div>
 
 ```sql potw
-with base as (
-  select
-    player_name,
-    player_photo,
-    team_name,
-    team_logo,
-    rating,
-    position_group,
-    minutes_played
-  from superligaen.mart_match_lineup
-  where season = '${inputs.season.value}'
-    and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
-    and result in ('Win', 'Draw', 'Loss')
-    and rating is not null
-    and minutes_played >= 30
-),
-overall_ranked as (
-  select *,
-    ROW_NUMBER() OVER (ORDER BY rating DESC, minutes_played DESC) as rn_best,
-    ROW_NUMBER() OVER (ORDER BY rating ASC,  minutes_played DESC) as rn_worst
-  from base
-),
-position_ranked as (
-  select *,
-    ROW_NUMBER() OVER (PARTITION BY position_group ORDER BY rating DESC, minutes_played DESC) as rn
-  from base
-  where player_name not in (select player_name from overall_ranked where rn_best = 1)
-),
-mvp as (
-  select 'MVP' as category, '⭐' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 1 as sort_order
-  from overall_ranked where rn_best = 1
-),
-best_attacker as (
-  select 'Best Attacker' as category, '⚽' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 2 as sort_order
-  from position_ranked where position_group = 'Attacker' and rn = 1
-),
-best_midfielder as (
-  select 'Best Midfielder' as category, '🎯' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 3 as sort_order
-  from position_ranked where position_group = 'Midfielder' and rn = 1
-),
-best_defender as (
-  select 'Best Defender' as category, '🛡️' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 4 as sort_order
-  from position_ranked where position_group = 'Defender' and rn = 1
-),
-best_gk as (
-  select 'Best GK' as category, '🧤' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 5 as sort_order
-  from position_ranked where position_group = 'Goalkeeper' and rn = 1
-),
-lvp as (
-  select 'LVP' as category, '📉' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 6 as sort_order
-  from overall_ranked where rn_worst = 1
-)
-select * from mvp
-union all select * from best_attacker
-union all select * from best_midfielder
-union all select * from best_defender
-union all select * from best_gk
-union all select * from lvp
+select category, icon, player_name, player_photo, team_name, team_logo,
+       stat_value, stat_label, sort_order
+from superligaen.mart_round_potw
+where season = '${inputs.season.value}'
+  and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
 order by sort_order
 ```
 
@@ -285,11 +202,9 @@ select
     cast(match_id as varchar)                        as match_key,
     match_short_name || '  (' || score || ')'        as match_label,
     match_date
-from superligaen.mart_match_facts
+from superligaen.mart_match_results
 where season = '${inputs.season.value}'
   and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
-  and result in ('Win', 'Draw', 'Loss')
-group by match_id, match_short_name, match_date, score
 order by match_date desc
 ```
 

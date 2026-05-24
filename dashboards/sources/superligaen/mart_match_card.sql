@@ -21,9 +21,13 @@ WITH player_agg AS (
 base AS (
     SELECT
         m.match_id,
+        d.date                                              AS match_date,
         d.season,
         m.match_round_number,
+        m.match_round_name,
+        m.match_name,
         m.match_result                                      AS score,
+        ref.referee_common_name                             AS referee_name,
         t.team_name,
         t.team_short_name,
         ts.team_side,
@@ -46,20 +50,25 @@ base AS (
         COALESCE(pa.woodwork_hits,        0)                AS woodwork_hits,
         COALESCE(pa.crosses_total,        0)                AS crosses_total
     FROM superligaen.gold.fct_team_matches   f
-    JOIN superligaen.gold.dim_date           d   ON d.date_sk      = f.date_sk
-    JOIN superligaen.gold.dim_match          m   ON m.match_sk     = f.match_sk
-    JOIN superligaen.gold.dim_team           t   ON t.team_sk      = f.team_sk
+    JOIN superligaen.gold.dim_date           d   ON d.date_sk       = f.date_sk
+    JOIN superligaen.gold.dim_match          m   ON m.match_sk      = f.match_sk
+    JOIN superligaen.gold.dim_team           t   ON t.team_sk       = f.team_sk
     JOIN superligaen.gold.dim_team_side      ts  ON ts.team_side_sk = f.team_side_sk
-    LEFT JOIN player_agg                     pa  ON pa.match_sk    = f.match_sk
-                                               AND pa.team_sk      = f.team_sk
+    JOIN superligaen.gold.dim_referee        ref ON ref.referee_sk  = f.referee_sk
+    LEFT JOIN player_agg                     pa  ON pa.match_sk     = f.match_sk
+                                               AND pa.team_sk       = f.team_sk
     WHERE m.match_type = 'Group Stage'
       AND d.season >= '2020/21'
 )
 SELECT
     match_id,
+    max(match_date)                                                                                AS match_date,
     max(season)                                                                                    AS season,
     max(match_round_number)                                                                        AS match_round_number,
+    max(match_round_name)                                                                          AS match_round_name,
+    max(match_name)                                                                                AS match_name,
     max(score)                                                                                     AS score,
+    max(referee_name)                                                                              AS referee_name,
     max(case when team_side = 'Home' then team_name       end)                                    AS home_team,
     max(case when team_side = 'Away' then team_name       end)                                    AS away_team,
     max(case when team_side = 'Home' then team_short_name end)                                    AS home_team_short,

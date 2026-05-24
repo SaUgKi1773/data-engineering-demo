@@ -1,7 +1,9 @@
 SELECT
     m.match_id,
+    d.date                                                                    AS match_date,
     d.season,
     m.match_round_number,
+    m.match_round_name,
     r.match_result                                                            AS result,
     at_dim.appearance_type,
     p.player_name,
@@ -9,6 +11,8 @@ SELECT
     t.team_name,
     t.team_logo,
     ts.team_side,
+    ot.opponent_team_name,
+    ot.opponent_team_short_name,
     dpos.position_group,
     dpos.position_name,
     dpos.position_short_code,
@@ -19,8 +23,11 @@ SELECT
     f.assists,
     f.shots_total,
     f.shots_on_target,
+    f.shots_off_target,
+    f.shots_blocked,
     f.woodwork_hits,
     f.big_chances_created,
+    f.chances_created,
     f.big_chances_missed,
     f.key_passes,
     f.passes_total,
@@ -32,6 +39,7 @@ SELECT
     f.dribbles_attempts,
     f.dribbles_completed,
     f.crosses_total,
+    f.crosses_accurate,
     f.tackles,
     f.tackles_won,
     f.interceptions,
@@ -72,6 +80,7 @@ JOIN superligaen.gold.dim_date                 d      ON d.date_sk              
 JOIN superligaen.gold.dim_match                m      ON m.match_sk              = f.match_sk
 JOIN superligaen.gold.dim_player               p      ON p.player_sk             = f.player_sk
 JOIN superligaen.gold.dim_team                 t      ON t.team_sk               = f.team_sk
+JOIN superligaen.gold.dim_opponent_team        ot     ON ot.opponent_team_sk     = f.opponent_team_sk
 JOIN superligaen.gold.dim_match_result         r      ON r.match_result_sk       = f.match_result_sk
 JOIN superligaen.gold.dim_team_side            ts     ON ts.team_side_sk         = f.team_side_sk
 JOIN superligaen.gold.dim_appearance_type      at_dim ON at_dim.appearance_type_sk = f.appearance_type_sk

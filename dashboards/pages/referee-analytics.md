@@ -19,13 +19,9 @@ title: Referee Intelligence
 </script>
 
 ```sql seasons
-select season from (
-  select season, max(is_current_season::int) as is_current
-  from superligaen.mart_match_facts
-  where result in ('Win', 'Draw', 'Loss')
-    and season >= '2020/21'
-  group by season
-) order by is_current desc, season desc
+select distinct season
+from superligaen.mart_referee_season
+order by season desc
 ```
 
 {#key seasons[0]?.season}
@@ -34,37 +30,32 @@ select season from (
 
 ```sql season_kpis
 select
-    count(distinct referee_name)                                                              as total_referees,
-    round(sum(yellow_cards)::double  / count(distinct match_id), 2)                          as league_avg_yellows,
-    round(sum(red_cards)::double     / count(distinct match_id), 3)                          as league_avg_reds,
-    round(sum(fouls)::double         / count(distinct match_id), 1)                          as league_avg_fouls,
-    round((sum(yellow_cards) + sum(red_cards) * 3)::double / count(distinct match_id), 2)   as league_severity_index
-from superligaen.mart_match_facts
+    count(*)                                                                            as total_referees,
+    round(sum(total_yellow_cards)::double / sum(matches_managed), 2)                   as league_avg_yellows,
+    round(sum(total_red_cards)::double    / sum(matches_managed), 3)                   as league_avg_reds,
+    round(sum(total_fouls)::double        / sum(matches_managed), 1)                   as league_avg_fouls,
+    round((sum(total_yellow_cards) + sum(total_red_cards) * 3)::double
+          / sum(matches_managed), 2)                                                   as league_severity_index
+from superligaen.mart_referee_season
 where season = '${inputs.season.value}'
-  and result in ('Win', 'Draw', 'Loss')
 ```
 
 ```sql season_stats
 select
     referee_name,
-    count(distinct match_id)::int                                                                        as matches_managed,
-    sum(yellow_cards)::int                                                                               as total_yellow_cards,
-    sum(red_cards)::int                                                                                  as total_red_cards,
-    sum(fouls)::int                                                                                      as total_fouls,
-    round(sum(yellow_cards)::double  / count(distinct match_id), 2)                                     as avg_yellows_per_match,
-    round(sum(red_cards)::double     / count(distinct match_id), 3)                                     as avg_reds_per_match,
-    round(sum(fouls)::double         / count(distinct match_id), 1)                                     as avg_fouls_per_match,
-    round((sum(yellow_cards) + sum(red_cards) * 3)::double / count(distinct match_id), 2)               as card_severity_index,
-    round(sum(case when team_side='Home' then yellow_cards else 0 end)::double
-          / count(distinct match_id), 2)                                                                 as home_yc_per_match,
-    round(sum(case when team_side='Away' then yellow_cards else 0 end)::double
-          / count(distinct match_id), 2)                                                                 as away_yc_per_match,
-    round(100.0 * sum(case when team_side='Home' then yellow_cards else 0 end)
-          / nullif(sum(yellow_cards), 0), 1)                                                             as home_yc_pct
-from superligaen.mart_match_facts
+    matches_managed,
+    total_yellow_cards,
+    total_red_cards,
+    total_fouls,
+    avg_yellows_per_match,
+    avg_reds_per_match,
+    avg_fouls_per_match,
+    card_severity_index,
+    home_yc_per_match,
+    away_yc_per_match,
+    home_yc_pct
+from superligaen.mart_referee_season
 where season = '${inputs.season.value}'
-  and result in ('Win', 'Draw', 'Loss')
-group by referee_name
 order by matches_managed desc
 ```
 
@@ -78,30 +69,26 @@ select * from ${season_stats} order by avg_yellows_per_match asc limit 3
 
 ```sql historical_trends
 select
-    substr(season, 3, 2) || '/' || right(season, 2)                                              as season,
-    round(sum(yellow_cards)::double  / count(distinct match_id), 2)                               as yc_per_match,
-    round(sum(red_cards)::double     / count(distinct match_id), 4)                               as rc_per_match,
-    round(sum(fouls)::double         / count(distinct match_id), 1)                               as fouls_per_match,
-    round((sum(yellow_cards) + sum(red_cards) * 3)::double / count(distinct match_id), 2)         as severity_index
-from superligaen.mart_match_facts
-where result in ('Win', 'Draw', 'Loss')
-  and season >= '2020/21'
+    substr(season, 3, 2) || '/' || right(season, 2)                                        as season,
+    round(sum(total_yellow_cards)::double / sum(matches_managed), 2)                        as yc_per_match,
+    round(sum(total_red_cards)::double    / sum(matches_managed), 4)                        as rc_per_match,
+    round(sum(total_fouls)::double        / sum(matches_managed), 1)                        as fouls_per_match,
+    round((sum(total_yellow_cards) + sum(total_red_cards) * 3)::double
+          / sum(matches_managed), 2)                                                        as severity_index
+from superligaen.mart_referee_season
 group by season
 order by season asc
 ```
 
 ```sql referee_trends
 select
-    substr(season, 3, 2) || '/' || right(season, 2)                                              as season,
-    round(sum(yellow_cards)::double  / count(distinct match_id), 2)                               as yc_per_match,
-    round(sum(red_cards)::double     / count(distinct match_id), 4)                               as rc_per_match,
-    round(sum(fouls)::double         / count(distinct match_id), 1)                               as fouls_per_match,
-    round((sum(yellow_cards) + sum(red_cards) * 3)::double / count(distinct match_id), 2)         as severity_index
-from superligaen.mart_match_facts
-where result in ('Win', 'Draw', 'Loss')
-  and season >= '2020/21'
-  and referee_name = '${inputs.referee.value}'
-group by season
+    substr(season, 3, 2) || '/' || right(season, 2)                                        as season,
+    avg_yellows_per_match                                                                   as yc_per_match,
+    avg_reds_per_match                                                                      as rc_per_match,
+    avg_fouls_per_match                                                                     as fouls_per_match,
+    card_severity_index                                                                     as severity_index
+from superligaen.mart_referee_season
+where referee_name = '${inputs.referee.value}'
 order by season asc
 ```
 
@@ -266,13 +253,14 @@ from ${referee_trends}
 {/key}
 
 ```sql referee_team_exposure
-select
-    team_name,
-    count(distinct match_id)::int as matches
-from superligaen.mart_match_facts
+select team_name, count(*)::int as matches
+from (
+    select referee_name, season, home_team as team_name from superligaen.mart_match_card
+    union all
+    select referee_name, season, away_team as team_name from superligaen.mart_match_card
+) t
 where referee_name = '${inputs.referee.value}'
   and season = '${inputs.season.value}'
-  and result in ('Win', 'Draw', 'Loss')
 group by team_name
 order by matches desc
 ```
@@ -280,17 +268,15 @@ order by matches desc
 ```sql referee_match_log
 select
     match_date,
-    match_round_name                    as round,
+    match_round_name                            as round,
     match_name,
     score,
-    sum(yellow_cards)::int              as yellow_cards,
-    sum(red_cards)::int                 as red_cards,
-    sum(fouls)::int                     as fouls
-from superligaen.mart_match_facts
+    (home_yc + away_yc)::int                   as yellow_cards,
+    (home_rc + away_rc)::int                   as red_cards,
+    (home_fouls + away_fouls)::int             as fouls
+from superligaen.mart_match_card
 where referee_name = '${inputs.referee.value}'
   and season = '${inputs.season.value}'
-  and result in ('Win', 'Draw', 'Loss')
-group by match_date, match_round_name, match_name, score
 order by match_date desc
 ```
 

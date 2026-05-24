@@ -19,19 +19,15 @@ title: Team Intelligence
 </script>
 
 ```sql seasons
-select season from (
-  select season, max(is_current_season::int) as is_current
-  from superligaen.mart_match_facts
-  where result in ('Win', 'Draw', 'Loss')
-  group by season
-) order by is_current desc, season desc
+select distinct season
+from superligaen.mart_team_season
+order by season desc
 ```
 
 ```sql teams
 select distinct team_name, team_logo
-from superligaen.mart_match_facts
+from superligaen.mart_team_season
 where season = '${inputs.season.value}'
-  and result in ('Win', 'Draw', 'Loss')
 order by team_name
 ```
 
@@ -44,166 +40,81 @@ order by team_name
 {/key}
 
 ```sql team_header
-select
-    team_name,
-    team_logo,
-    max(coach_name) filter (where coach_name is not null) as coach_name,
-    sum(points_earned)::int                              as points,
-    count(distinct match_id)::int                        as matches,
-    sum(case when result='Win'  then 1 else 0 end)::int  as wins,
-    sum(case when result='Draw' then 1 else 0 end)::int  as draws,
-    sum(case when result='Loss' then 1 else 0 end)::int  as losses,
-    sum(goals_scored)::int                               as gf,
-    sum(goals_conceded)::int                             as ga,
-    (sum(goals_scored) - sum(goals_conceded))::int       as gd
-from superligaen.mart_match_facts
+select team_name, team_logo, coach_name, pts as points, matches, wins, draws, losses, gf, ga, gd
+from superligaen.mart_team_season
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
-  and result in ('Win', 'Draw', 'Loss')
-group by team_name, team_logo
 ```
 
 ```sql team_kpis
-with current_stats as (
-    select
-        max(match_round_number)                                                              as max_round,
-        round(sum(goals_scored)::double        / count(distinct match_id), 2)               as goals_per_match,
-        round(sum(goals_conceded)::double       / count(distinct match_id), 2)               as conceded_per_match,
-        round(100.0 * sum(passes_accurate)      / nullif(sum(total_passes), 0), 1)           as pass_accuracy,
-        round(sum(possession_pct)::double       / count(distinct match_id), 1)               as avg_possession,
-        round(100.0 * sum(goals_scored)         / nullif(sum(total_shots), 0), 1)            as shot_conv,
-        round(sum(yellow_cards)::double         / count(distinct match_id), 2)               as yc_per_match,
-        round(100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id), 1) as win_rate,
-        sum(red_cards)::int                                                                         as total_red_cards
-    from superligaen.mart_match_facts
+with cur as (
+    select * from superligaen.mart_team_season
     where season = '${inputs.season.value}'
       and team_name = '${inputs.team.value}'
-      and result in ('Win', 'Draw', 'Loss')
-),
-current_ranking as (
-    select row_number() over (order by group_order, total_pts desc, total_gd desc, total_gf desc) as rank,
-           team_name
-    from (
-        select
-            team_name,
-            sum(points_earned)                          as total_pts,
-            sum(goals_scored - goals_conceded)          as total_gd,
-            sum(goals_scored)                           as total_gf,
-            case max(standings_type)
-                when 'Championship Group' then 1
-                when 'Relegation Group'   then 2
-                else                           3
-            end                                         as group_order
-        from superligaen.mart_match_facts
-        where season = '${inputs.season.value}'
-          and result in ('Win', 'Draw', 'Loss')
-        group by team_name
-    )
 ),
 prev_season as (
-    select max(season) as season
-    from superligaen.mart_match_facts
+    select max(season) as season from superligaen.mart_team_season
     where season < '${inputs.season.value}'
 ),
-prev_stats as (
-    select
-        round(sum(goals_scored)::double        / count(distinct match_id), 2)               as prev_goals_per_match,
-        round(sum(goals_conceded)::double       / count(distinct match_id), 2)               as prev_conceded_per_match,
-        round(100.0 * sum(passes_accurate)      / nullif(sum(total_passes), 0), 1)           as prev_pass_accuracy,
-        round(sum(possession_pct)::double       / count(distinct match_id), 1)               as prev_avg_possession,
-        round(100.0 * sum(goals_scored)         / nullif(sum(total_shots), 0), 1)            as prev_shot_conv,
-        round(sum(yellow_cards)::double         / count(distinct match_id), 2)               as prev_yc_per_match,
-        round(100.0 * sum(case when result='Win' then 1 else 0 end) / count(distinct match_id), 1) as prev_win_rate,
-        sum(red_cards)::int                                                                         as prev_total_red_cards
-    from superligaen.mart_match_facts
+prev as (
+    select * from superligaen.mart_team_season
     where season = (select season from prev_season)
       and team_name = '${inputs.team.value}'
-      and result in ('Win', 'Draw', 'Loss')
-      and match_round_number <= (select max_round from current_stats)
-),
-prev_ranking as (
-    select row_number() over (order by group_order, total_pts desc, total_gd desc, total_gf desc) as rank,
-           team_name
-    from (
-        select
-            team_name,
-            sum(points_earned)                          as total_pts,
-            sum(goals_scored - goals_conceded)          as total_gd,
-            sum(goals_scored)                           as total_gf,
-            case max(standings_type)
-                when 'Championship Group' then 1
-                when 'Relegation Group'   then 2
-                else                           3
-            end                                         as group_order
-        from superligaen.mart_match_facts
-        where season = (select season from prev_season)
-          and result in ('Win', 'Draw', 'Loss')
-          and match_round_number <= (select max_round from current_stats)
-        group by team_name
-    )
 )
 select
-    cs.*,
-    cr.rank                                                                                 as current_rank,
-    ps.*,
-    pr.rank                                                                                 as prev_rank,
-    round(cs.goals_per_match    / nullif(ps.prev_goals_per_match,    0), 2)                 as goals_ratio,
-    round(cs.conceded_per_match / nullif(ps.prev_conceded_per_match, 0), 2)                 as conceded_ratio,
-    round(cs.pass_accuracy      / nullif(ps.prev_pass_accuracy,      0), 2)                 as pass_ratio,
-    round(cs.shot_conv          / nullif(ps.prev_shot_conv,          0), 2)                 as shot_conv_ratio,
-    round(cs.yc_per_match       / nullif(ps.prev_yc_per_match,       0), 2)                 as yc_ratio,
-    round(cs.win_rate           / nullif(ps.prev_win_rate,           0), 2)                 as win_rate_ratio,
-    round(cs.avg_possession     / nullif(ps.prev_avg_possession,     0), 2)                 as possession_ratio
-from current_stats cs
-left join current_ranking cr on cr.team_name = '${inputs.team.value}'
-left join prev_stats ps on true
-left join prev_ranking pr on pr.team_name = '${inputs.team.value}'
+    cur.goals_per_match,
+    cur.conceded_per_match,
+    cur.pass_accuracy,
+    cur.avg_possession,
+    cur.shot_conv,
+    cur.yc_per_match,
+    cur.win_rate,
+    cur.total_red_cards,
+    cur.season_rank                                                             as current_rank,
+    prev.goals_per_match                                                        as prev_goals_per_match,
+    prev.conceded_per_match                                                     as prev_conceded_per_match,
+    prev.pass_accuracy                                                          as prev_pass_accuracy,
+    prev.avg_possession                                                         as prev_avg_possession,
+    prev.shot_conv                                                              as prev_shot_conv,
+    prev.yc_per_match                                                           as prev_yc_per_match,
+    prev.win_rate                                                               as prev_win_rate,
+    prev.total_red_cards                                                        as prev_total_red_cards,
+    prev.season_rank                                                            as prev_rank,
+    round(cur.goals_per_match    / nullif(prev.goals_per_match,    0), 2)       as goals_ratio,
+    round(cur.conceded_per_match / nullif(prev.conceded_per_match, 0), 2)       as conceded_ratio,
+    round(cur.pass_accuracy      / nullif(prev.pass_accuracy,      0), 2)       as pass_ratio,
+    round(cur.shot_conv          / nullif(prev.shot_conv,          0), 2)       as shot_conv_ratio,
+    round(cur.yc_per_match       / nullif(prev.yc_per_match,       0), 2)       as yc_ratio,
+    round(cur.win_rate           / nullif(prev.win_rate,           0), 2)       as win_rate_ratio,
+    round(cur.avg_possession     / nullif(prev.avg_possession,     0), 2)       as possession_ratio
+from cur
+left join prev on true
 ```
 
 ```sql avg_age
 with prev_season as (
-    select max(season) as season
-    from superligaen.mart_player_facts
+    select max(season) as season from superligaen.mart_team_season
     where season < '${inputs.season.value}'
-),
-current_age as (
-    select round(avg(cast(left('${inputs.season.value}', 4) as integer) - year(player_birth_date)), 1) as avg_age
-    from (
-        select distinct player_id, player_birth_date
-        from superligaen.mart_player_facts
-        where season = '${inputs.season.value}'
-          and team_name = '${inputs.team.value}'
-          and result in ('Win', 'Draw', 'Loss')
-          and player_birth_date is not null
-    )
-),
-prev_age as (
-    select round(avg(cast(left(ps.season, 4) as integer) - year(p.player_birth_date)), 1) as prev_avg_age
-    from (
-        select distinct player_id, player_birth_date
-        from superligaen.mart_player_facts
-        where season = (select season from prev_season)
-          and team_name = '${inputs.team.value}'
-          and result in ('Win', 'Draw', 'Loss')
-          and player_birth_date is not null
-    ) p
-    cross join prev_season ps
 )
 select
-    ca.avg_age,
-    pa.prev_avg_age
-from current_age ca
-left join prev_age pa on true
+    cur.avg_age,
+    prev.avg_age as prev_avg_age
+from superligaen.mart_team_season cur
+left join superligaen.mart_team_season prev
+    on prev.season = (select season from prev_season)
+    and prev.team_name = '${inputs.team.value}'
+where cur.season = '${inputs.season.value}'
+  and cur.team_name = '${inputs.team.value}'
 ```
 
 ```sql goals_per_round
 select
-    match_round_number              as round,
+    match_round_number  as round,
     goals_scored,
     goals_conceded,
-    opponent_team_name              as opponent,
+    opponent_team_name  as opponent,
     result
-from superligaen.mart_match_facts
+from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
@@ -212,11 +123,11 @@ order by match_round_number
 
 ```sql goals_vs_opponent
 select
-    opponent_team_name                                                                 as opponent,
-    count(distinct match_id)::int                                                      as matches,
-    sum(goals_scored)::int                                                             as goals_scored,
-    sum(goals_conceded)::int                                                           as goals_conceded
-from superligaen.mart_match_facts
+    opponent_team_name                                          as opponent,
+    count(distinct match_id)::int                               as matches,
+    sum(goals_scored)::int                                      as goals_scored,
+    sum(goals_conceded)::int                                    as goals_conceded
+from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
@@ -227,25 +138,25 @@ order by goals_scored desc
 ```sql match_results
 select
     match_date,
-    match_round_name    as round,
-    team_side           as home_away,
-    opponent_team_name  as opponent,
-    goals_scored        as gf,
-    goals_conceded      as ga,
+    match_round_name                                                as round,
+    team_side                                                       as home_away,
+    opponent_team_name                                              as opponent,
+    goals_scored                                                    as gf,
+    goals_conceded                                                  as ga,
     result,
     case result
         when 'Win'  then '<span style="background:#22c55e;color:white;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:700;">W</span>'
         when 'Draw' then '<span style="background:#eab308;color:white;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:700;">D</span>'
         when 'Loss' then '<span style="background:#ef4444;color:white;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:700;">L</span>'
-    end as result_badge,
-    points_earned       as pts,
-    possession_pct                                                        as possession,
+    end                                                             as result_badge,
+    points_earned                                                   as pts,
+    possession_pct                                                  as possession,
     shots_on_goal,
     total_shots,
-    round(100.0 * passes_accurate / nullif(total_passes, 0), 1)           as pass_accuracy,
-    round(100.0 * goals_scored    / nullif(total_shots,   0), 1)           as shot_conv,
+    round(100.0 * passes_accurate / nullif(total_passes, 0), 1)    as pass_accuracy,
+    round(100.0 * goals_scored    / nullif(total_shots,   0), 1)    as shot_conv,
     yellow_cards
-from superligaen.mart_match_facts
+from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
@@ -260,7 +171,7 @@ select * from (
         goals_scored       as gf,
         goals_conceded     as ga,
         opponent_team_name as opponent
-    from superligaen.mart_match_facts
+    from superligaen.mart_team_match
     where season = '${inputs.season.value}'
       and team_name = '${inputs.team.value}'
       and result in ('Win', 'Draw', 'Loss')
@@ -270,36 +181,33 @@ select * from (
 ```
 
 ```sql home_away_split
-select
-    team_side                                                                         as venue,
-    count(distinct match_id)::int                                                     as matches,
-    sum(case when result='Win'  then 1 else 0 end)::int                              as wins,
-    sum(case when result='Draw' then 1 else 0 end)::int                              as draws,
-    sum(case when result='Loss' then 1 else 0 end)::int                              as losses,
-    sum(points_earned)::int                                                           as points,
-    round(sum(goals_scored)::double    / count(distinct match_id), 2)                as goals_per_match,
-    round(sum(goals_conceded)::double  / count(distinct match_id), 2)                as conceded_per_match,
-    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)            as pass_accuracy,
-    round(sum(possession_pct)::double  / count(distinct match_id), 1)                as avg_possession
-from superligaen.mart_match_facts
-where season = '${inputs.season.value}'
-  and team_name = '${inputs.team.value}'
-  and result in ('Win', 'Draw', 'Loss')
-group by team_side
-order by team_side desc
+select 'Home' as venue, home_matches as matches, home_wins as wins, home_draws as draws,
+       home_losses as losses, home_pts as points, home_goals_per_match as goals_per_match,
+       home_conceded_per_match as conceded_per_match, home_avg_possession as avg_possession,
+       home_pass_accuracy as pass_accuracy
+from superligaen.mart_team_season
+where season = '${inputs.season.value}' and team_name = '${inputs.team.value}'
+union all
+select 'Away' as venue, away_matches as matches, away_wins as wins, away_draws as draws,
+       away_losses as losses, away_pts as points, away_goals_per_match as goals_per_match,
+       away_conceded_per_match as conceded_per_match, away_avg_possession as avg_possession,
+       away_pass_accuracy as pass_accuracy
+from superligaen.mart_team_season
+where season = '${inputs.season.value}' and team_name = '${inputs.team.value}'
+order by venue desc
 ```
 
 ```sql formation_performance
 select
     formation,
-    count(distinct match_id)::int                                                      as matches,
-    sum(case when result='Win'  then 1 else 0 end)::int                               as wins,
-    sum(case when result='Draw' then 1 else 0 end)::int                               as draws,
-    sum(case when result='Loss' then 1 else 0 end)::int                               as losses,
-    round(sum(points_earned)::double      / count(distinct match_id), 2)              as points_per_match,
-    round(sum(goals_scored)::double       / count(distinct match_id), 2)              as goals_per_match,
-    round(sum(goals_conceded)::double     / count(distinct match_id), 2)              as conceded_per_match
-from superligaen.mart_match_facts
+    count(distinct match_id)::int                                           as matches,
+    sum(case when result='Win'  then 1 else 0 end)::int                     as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int                     as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int                     as losses,
+    round(sum(points_earned)::double  / count(distinct match_id), 2)        as points_per_match,
+    round(sum(goals_scored)::double   / count(distinct match_id), 2)        as goals_per_match,
+    round(sum(goals_conceded)::double / count(distinct match_id), 2)        as conceded_per_match
+from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
@@ -310,14 +218,14 @@ order by points_per_match desc
 ```sql kickoff_performance
 select
     period_of_day,
-    count(distinct match_id)::int                                                      as matches,
-    sum(case when result='Win'  then 1 else 0 end)::int                               as wins,
-    sum(case when result='Draw' then 1 else 0 end)::int                               as draws,
-    sum(case when result='Loss' then 1 else 0 end)::int                               as losses,
-    round(sum(points_earned)::double      / count(distinct match_id), 2)              as points_per_match,
-    round(sum(goals_scored)::double       / count(distinct match_id), 2)              as goals_per_match,
-    round(sum(goals_conceded)::double     / count(distinct match_id), 2)              as conceded_per_match
-from superligaen.mart_match_facts
+    count(distinct match_id)::int                                           as matches,
+    sum(case when result='Win'  then 1 else 0 end)::int                     as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int                     as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int                     as losses,
+    round(sum(points_earned)::double  / count(distinct match_id), 2)        as points_per_match,
+    round(sum(goals_scored)::double   / count(distinct match_id), 2)        as goals_per_match,
+    round(sum(goals_conceded)::double / count(distinct match_id), 2)        as conceded_per_match
+from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
@@ -334,14 +242,14 @@ end
 ```sql matchday_performance
 select
     day_name,
-    count(distinct match_id)::int                                                      as matches,
-    sum(case when result='Win'  then 1 else 0 end)::int                               as wins,
-    sum(case when result='Draw' then 1 else 0 end)::int                               as draws,
-    sum(case when result='Loss' then 1 else 0 end)::int                               as losses,
-    round(sum(points_earned)::double      / count(distinct match_id), 2)              as points_per_match,
-    round(sum(goals_scored)::double       / count(distinct match_id), 2)              as goals_per_match,
-    round(sum(goals_conceded)::double     / count(distinct match_id), 2)              as conceded_per_match
-from superligaen.mart_match_facts
+    count(distinct match_id)::int                                           as matches,
+    sum(case when result='Win'  then 1 else 0 end)::int                     as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int                     as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int                     as losses,
+    round(sum(points_earned)::double  / count(distinct match_id), 2)        as points_per_match,
+    round(sum(goals_scored)::double   / count(distinct match_id), 2)        as goals_per_match,
+    round(sum(goals_conceded)::double / count(distinct match_id), 2)        as conceded_per_match
+from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
   and result in ('Win', 'Draw', 'Loss')
