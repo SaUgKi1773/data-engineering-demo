@@ -18,7 +18,7 @@ WITH raw AS (
         ) AS cleaned_response
     FROM {{ source('bronze', 'groq__llm_match_discussions') }}
     {% if is_incremental() %}
-    WHERE generated_at > (SELECT MAX(generated_at) FROM {{ this }})
+    WHERE generated_at > (SELECT COALESCE(MAX(generated_at), '1970-01-01'::TIMESTAMP) FROM {{ this }})
     {% endif %}
 )
 SELECT
