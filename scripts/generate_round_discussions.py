@@ -284,6 +284,7 @@ def build_prompt(match_context: str, personas: list[dict]) -> str:
         "- Each post must be 2-4 sentences, opinionated, and specific to this match.\n"
         "- They should reference each other to feel like a real conversation thread.\n"
         "- No generic football commentary — every sentence must be grounded in the match data.\n"
+        f"- When referring to other fans by name, use ONLY these exact names: {persona_order}. Never invent or use any other name.\n"
         "\n"
         f"PERSONAS:\n{persona_block}\n"
         "\n"
