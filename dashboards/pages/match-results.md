@@ -142,7 +142,17 @@ select persona_name, sort_order, message, match_date
 from superligaen.llm_round_discussions
 where season      = '${inputs.season.value}'
   and round_number = ${inputs.round.value ?? -1}
-  and match_name   = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 1)
+  and match_name = case
+    when '${inputs.match?.value ?? ''}' != ''
+    then split_part('${inputs.match?.value ?? ''}', '|', 1)
+    else (
+      select match_name from superligaen.mart_match_facts
+      where season = '${inputs.season.value}'
+        and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
+        and result in ('Win', 'Draw', 'Loss')
+      order by match_date desc limit 1
+    )
+  end
 order by sort_order
 ```
 
@@ -342,9 +352,20 @@ select
     max(case when team_side = 'Home' then red_cards end)                                        as home_rc,
     max(case when team_side = 'Away' then red_cards end)                                        as away_rc
 from superligaen.mart_match_facts
-where match_name            = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 1)
-  and cast(match_date as varchar) = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 2)
-  and season                = '${inputs.season.value}'
+where season = '${inputs.season.value}'
+  and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
+  and result in ('Win', 'Draw', 'Loss')
+  and match_name = case
+    when '${inputs.match?.value ?? ''}' != ''
+    then split_part('${inputs.match?.value ?? ''}', '|', 1)
+    else (
+      select match_name from superligaen.mart_match_facts
+      where season = '${inputs.season.value}'
+        and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
+        and result in ('Win', 'Draw', 'Loss')
+      order by match_date desc limit 1
+    )
+  end
 ```
 
 {#if mc.length > 0}
@@ -620,8 +641,28 @@ select
     errors_leading_to_shot,
     round(rating, 2) as rating
 from superligaen.mart_player_facts
-where match_name                 = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 1)
-  and cast(match_date as varchar) = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 2)
+where match_name = case
+    when '${inputs.match?.value ?? ''}' != ''
+    then split_part('${inputs.match?.value ?? ''}', '|', 1)
+    else (
+      select match_name from superligaen.mart_match_facts
+      where season = '${inputs.season.value}'
+        and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
+        and result in ('Win', 'Draw', 'Loss')
+      order by match_date desc limit 1
+    )
+  end
+  and cast(match_date as varchar) = case
+    when '${inputs.match?.value ?? ''}' != ''
+    then split_part('${inputs.match?.value ?? ''}', '|', 2)
+    else (
+      select cast(match_date as varchar) from superligaen.mart_match_facts
+      where season = '${inputs.season.value}'
+        and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
+        and result in ('Win', 'Draw', 'Loss')
+      order by match_date desc limit 1
+    )
+  end
   and result in ('Win', 'Draw', 'Loss')
   and appearance_type = 'Starter'
 order by team_side desc, position_group, position_name
@@ -690,8 +731,28 @@ select
     errors_leading_to_shot,
     round(rating, 2) as rating
 from superligaen.mart_player_facts
-where match_name                 = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 1)
-  and cast(match_date as varchar) = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 2)
+where match_name = case
+    when '${inputs.match?.value ?? ''}' != ''
+    then split_part('${inputs.match?.value ?? ''}', '|', 1)
+    else (
+      select match_name from superligaen.mart_match_facts
+      where season = '${inputs.season.value}'
+        and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
+        and result in ('Win', 'Draw', 'Loss')
+      order by match_date desc limit 1
+    )
+  end
+  and cast(match_date as varchar) = case
+    when '${inputs.match?.value ?? ''}' != ''
+    then split_part('${inputs.match?.value ?? ''}', '|', 2)
+    else (
+      select cast(match_date as varchar) from superligaen.mart_match_facts
+      where season = '${inputs.season.value}'
+        and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
+        and result in ('Win', 'Draw', 'Loss')
+      order by match_date desc limit 1
+    )
+  end
   and result in ('Win', 'Draw', 'Loss')
   and appearance_type = 'Substitute'
 order by team_side desc, position_group, position_name
