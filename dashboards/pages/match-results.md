@@ -142,7 +142,7 @@ select persona_name, sort_order, message, match_date
 from superligaen.llm_round_discussions
 where season      = '${inputs.season.value}'
   and round_number = ${inputs.round.value ?? -1}
-  and match_name   = split_part('${inputs.match.value}', '|', 1)
+  and match_name   = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 1)
 order by sort_order
 ```
 
@@ -342,8 +342,8 @@ select
     max(case when team_side = 'Home' then red_cards end)                                        as home_rc,
     max(case when team_side = 'Away' then red_cards end)                                        as away_rc
 from superligaen.mart_match_facts
-where match_name            = split_part('${inputs.match.value}', '|', 1)
-  and cast(match_date as varchar) = split_part('${inputs.match.value}', '|', 2)
+where match_name            = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 1)
+  and cast(match_date as varchar) = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 2)
   and season                = '${inputs.season.value}'
 ```
 
@@ -620,8 +620,8 @@ select
     errors_leading_to_shot,
     round(rating, 2) as rating
 from superligaen.mart_player_facts
-where match_name                 = split_part('${inputs.match.value}', '|', 1)
-  and cast(match_date as varchar) = split_part('${inputs.match.value}', '|', 2)
+where match_name                 = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 1)
+  and cast(match_date as varchar) = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 2)
   and result in ('Win', 'Draw', 'Loss')
   and appearance_type = 'Starter'
 order by team_side desc, position_group, position_name
@@ -690,8 +690,8 @@ select
     errors_leading_to_shot,
     round(rating, 2) as rating
 from superligaen.mart_player_facts
-where match_name                 = split_part('${inputs.match.value}', '|', 1)
-  and cast(match_date as varchar) = split_part('${inputs.match.value}', '|', 2)
+where match_name                 = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 1)
+  and cast(match_date as varchar) = split_part('${inputs.match?.value ?? match_options[0]?.match_key ?? ''}', '|', 2)
   and result in ('Win', 'Draw', 'Loss')
   and appearance_type = 'Substitute'
 order by team_side desc, position_group, position_name
