@@ -15,13 +15,13 @@ select * from superligaen.last_updated
 ```sql season_info
 with max_s as (
     select max(season) as season
-    from superligaen.mart_match_facts
+    from superligaen.mart_home
     where result in ('Win', 'Draw', 'Loss')
 )
 select
     max_s.season,
     max(f.match_date)::varchar as season_end
-from superligaen.mart_match_facts f
+from superligaen.mart_home f
 join max_s on f.season = max_s.season
 where f.result in ('Win', 'Draw', 'Loss')
 group by max_s.season
@@ -30,7 +30,7 @@ group by max_s.season
 ```sql kpis
 with max_s as (
     select max(season) as season
-    from superligaen.mart_match_facts
+    from superligaen.mart_home
     where result in ('Win', 'Draw', 'Loss')
 )
 select
@@ -38,7 +38,7 @@ select
     sum(f.goals_scored)         as total_goals,
     count(distinct f.team_name) as total_teams,
     f.season
-from superligaen.mart_match_facts f
+from superligaen.mart_home f
 join max_s on f.season = max_s.season
 where f.result in ('Win', 'Draw', 'Loss')
 group by f.season
@@ -47,7 +47,7 @@ group by f.season
 ```sql leader
 with max_s as (
     select max(season) as season
-    from superligaen.mart_match_facts
+    from superligaen.mart_home
     where result in ('Win', 'Draw', 'Loss')
 )
 select team_name, team_short_name, pts
@@ -59,7 +59,7 @@ from (
         sum(points_earned)                      as pts,
         sum(goals_scored) - sum(goals_conceded) as gd,
         sum(goals_scored)                       as gf
-    from superligaen.mart_match_facts f
+    from superligaen.mart_home f
     join max_s on f.season = max_s.season
     where f.result in ('Win', 'Draw', 'Loss')
     group by team_name, team_short_name, standings_type
@@ -86,11 +86,11 @@ limit 1
     <!-- left: league identity -->
     <div class="flex items-center gap-5">
       <div class="bg-white/10 backdrop-blur rounded-2xl p-3 shadow-inner flex-shrink-0">
-        <img src="{league[0].league_logo}" alt="Superligaen" class="h-14 md:h-20 w-auto" />
+        <img src="{league[0].league_logo}" alt="Superligaen" class="h-14 md:h-20 w-auto" onerror="this.style.display='none'" />
       </div>
       <div>
         <div class="flex items-center gap-2 mb-1">
-          <img src="{league[0].league_country_flag}" alt="Denmark" class="h-4 rounded opacity-90" />
+          <img src="{league[0].league_country_flag}" alt="Denmark" class="h-4 rounded opacity-90" onerror="this.style.display='none'" />
           <span class="text-white/50 text-xs uppercase tracking-widest">Denmark</span>
         </div>
         <div class="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">Superligaen</div>

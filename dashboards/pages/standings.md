@@ -9,7 +9,7 @@ title: Standings
 ```sql seasons
 select season from (
   select season, max(is_current_season::int) as is_current
-  from superligaen.mart_match_facts
+  from superligaen.mart_home
   group by season
 ) order by is_current desc, season desc
 ```
@@ -70,7 +70,7 @@ from (
         sum(goals_conceded)                               as ga,
         sum(goals_scored) - sum(goals_conceded)           as gd,
         sum(points_earned)                                as pts
-    from superligaen.mart_match_facts
+    from superligaen.mart_home
     where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
     group by team_name, team_short_name, standings_type
@@ -111,7 +111,7 @@ from (
         sum(goals_conceded)                               as ga,
         sum(goals_scored) - sum(goals_conceded)           as gd,
         sum(points_earned)                                as pts
-    from superligaen.mart_match_facts
+    from superligaen.mart_home
     where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
       and match_round_type = 'Regular Season'
@@ -127,7 +127,7 @@ select
     sum(case when result = 'Draw' then 1 else 0 end)  as d,
     sum(case when result = 'Loss' then 1 else 0 end)  as l,
     standings_type                                    as round_group
-from superligaen.mart_match_facts
+from superligaen.mart_home
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
 group by team_short_name, standings_type
