@@ -14,7 +14,7 @@ per_match AS (
         f.team_sk,
         t.team_name,
         t.team_logo,
-        MAX(dc.coach_name) FILTER (WHERE dc.coach_name IS NOT NULL) AS coach_name,
+        MAX(dc.coach_name) OVER (PARTITION BY f.team_sk, d.season)  AS coach_name,
         m.match_id,
         r.match_result                          AS result,
         f.goals_scored,

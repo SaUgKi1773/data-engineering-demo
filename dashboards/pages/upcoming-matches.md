@@ -6,9 +6,9 @@ title: Upcoming Fixtures
 
 ```sql teams
 select distinct team_name from (
-    select home_team as team_name from superligaen.mart_upcoming
+    select home_team as team_name from superligaen.mart_upcoming where home_team is not null
     union
-    select away_team as team_name from superligaen.mart_upcoming
+    select away_team as team_name from superligaen.mart_upcoming where away_team is not null
 ) order by team_name asc
 ```
 
@@ -33,8 +33,9 @@ select
     referee,
     season
 from superligaen.mart_upcoming
-where home_team in ${inputs.team.value}
-   or away_team in ${inputs.team.value}
+where home_team is not null
+  and (home_team in ${inputs.team.value}
+       or away_team in ${inputs.team.value})
 order by match_date asc, kick_off_time asc
 ```
 
