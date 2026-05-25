@@ -312,7 +312,7 @@ order by team_side desc, position_group, position_name
 
 <p style="font-size:13px;color:#6b7280;margin:-8px 0 16px;">Click on a player to see their stats for this match.</p>
 
-{#if mc.length > 0}
+{#if lineup.length > 0}
 <MatchLineup {lineup} {subs} home_team={mc[0]?.home_team} away_team={mc[0]?.away_team} score={mc[0]?.score} />
 {:else}
 <div class="rounded-xl border border-gray-200 bg-white p-6 mt-2 text-center text-gray-400 text-sm">
