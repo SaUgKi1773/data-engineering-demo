@@ -214,7 +214,7 @@ order by match_date desc
 
 ```sql mc
 select *
-from superligaen.mart_match_card
+from superligaen.mart_match_results
 where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
 ```
 
