@@ -44,10 +44,11 @@ title: Match Analysis
   }
 
   const personaColors = {
-    'Søren':   { bg: '#dbeafe', text: '#1d4ed8' },
+    'Søren':    { bg: '#dbeafe', text: '#1d4ed8' },
     'Flemming': { bg: '#dcfce7', text: '#15803d' },
-    'Rasmus':  { bg: '#ede9fe', text: '#6d28d9' },
-    'Maja':    { bg: '#fce7f3', text: '#be185d' },
+    'Rasmus':   { bg: '#ede9fe', text: '#6d28d9' },
+    'Maja':     { bg: '#fce7f3', text: '#be185d' },
+    'Ecem':     { bg: '#fef3c7', text: '#b45309' },
   };
   function avatarStyle(name) {
     const c = personaColors[name] ?? { bg: '#f3f4f6', text: '#374151' };

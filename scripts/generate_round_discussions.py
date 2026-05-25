@@ -163,6 +163,7 @@ def load_personas(con, db: str) -> list[dict]:
     rows = con.execute(f"""
         SELECT persona_name, sort_order, bio
         FROM {db}.gold.dim_persona
+        WHERE is_active = true
         ORDER BY sort_order
     """).fetchall()
     return [
