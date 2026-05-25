@@ -33,7 +33,7 @@ title: Match Analysis
 
   function postComment() {
     if (!commentText.trim() || !matchKey) return;
-    const entry = { text: commentText.trim(), time: new Date().toISOString().split('T')[0] };
+    const entry = { text: commentText.trim(), time: new Date().toISOString() };
     userComments = [...userComments, entry];
     localStorage.setItem(matchKey, JSON.stringify(userComments));
     commentText = '';
@@ -57,15 +57,17 @@ title: Match Analysis
 
   function daysAgo(dateVal) {
     if (!dateVal) return '';
-    const match = new Date(dateVal);
-    if (isNaN(match)) return '';
-    match.setHours(12, 0, 0, 0);
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-    const diff = Math.round((today - match) / 86400000);
-    if (diff === 0) return 'Today';
-    if (diff === 1) return '1 day ago';
-    return `${diff} days ago`;
+    const then = new Date(dateVal);
+    if (isNaN(then)) return '';
+    const diffMs = Date.now() - then.getTime();
+    const mins  = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMs / 3600000);
+    const days  = Math.floor(diffMs / 86400000);
+    if (mins  <  1) return 'Just now';
+    if (mins  < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days  ===1) return '1 day ago';
+    return `${days} days ago`;
   }
 </script>
 
@@ -76,7 +78,7 @@ where match_id = cast('${inputs.match.value}' as bigint)
 ```
 
 ```sql discussions
-select persona_name, sort_order, message
+select persona_name, sort_order, message, comment_date
 from superligaen.llm_round_discussions
 where match_id = cast('${inputs.match.value}' as bigint)
 order by sort_order
@@ -341,6 +343,7 @@ order by team_side desc, position_group, position_name
     <div style="flex:1;min-width:0;">
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
         <span style="font-size:0.8125rem;font-weight:700;color:#111827;">{post.persona_name}</span>
+        <span style="font-size:0.75rem;color:#9ca3af;">· {daysAgo(post.comment_date)}</span>
       </div>
       <div style="font-size:0.875rem;color:#374151;line-height:1.6;">{post.message}</div>
     </div>
