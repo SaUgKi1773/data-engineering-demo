@@ -82,7 +82,7 @@ title: Match Results
 ```sql seasons
 select season from (
   select season, max(is_current_season::int) as is_current
-  from superligaen.mart_match_facts
+  from superligaen.mart_match_results
   group by season
 ) order by is_current desc, season desc
 ```
@@ -93,9 +93,8 @@ select season from (
 
 ```sql rounds
 select distinct cast(match_round_number as integer) as round_number
-from superligaen.mart_match_facts
+from superligaen.mart_match_results
 where season = '${inputs.season.value}'
-  and result in ('Win', 'Draw', 'Loss')
 order by 1 desc
 ```
 
@@ -104,27 +103,10 @@ order by 1 desc
 {/key}
 
 ```sql results
-select
-    match_id,
-    match_date,
-    match_round_name                as round,
-    match_round_number,
-    match_name,
-    match_short_name,
-    score,
-    sum(goals_scored)               as total_goals,
-    sum(shots_on_goal)              as total_shots_on_goal,
-    sum(total_shots)                as total_shots,
-    sum(big_chances_created)        as total_big_chances,
-    sum(yellow_cards)               as total_yellow_cards,
-    sum(red_cards)                  as total_red_cards,
-    referee_name                    as referee,
-    season
-from superligaen.mart_match_facts
+select *, referee_name as referee
+from superligaen.mart_match_results
 where season = '${inputs.season.value}'
   and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
-  and result in ('Win', 'Draw', 'Loss')
-group by match_id, match_date, match_round_name, match_round_number, match_name, match_short_name, score, referee_name, season
 order by match_date desc
 ```
 
@@ -181,77 +163,11 @@ order by sort_order
 </div>
 
 ```sql potw
-with base as (
-  select
-    player_name,
-    player_photo,
-    team_name,
-    team_logo,
-    rating,
-    position_group,
-    minutes_played
-  from superligaen.mart_player_facts
-  where season = '${inputs.season.value}'
-    and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
-    and result in ('Win', 'Draw', 'Loss')
-    and appearance_type in ('Starter', 'Substitute')
-    and rating is not null
-    and minutes_played >= 30
-),
-overall_ranked as (
-  select *,
-    ROW_NUMBER() OVER (ORDER BY rating DESC, minutes_played DESC) as rn_best,
-    ROW_NUMBER() OVER (ORDER BY rating ASC,  minutes_played DESC) as rn_worst
-  from base
-),
-position_ranked as (
-  select *,
-    ROW_NUMBER() OVER (PARTITION BY position_group ORDER BY rating DESC, minutes_played DESC) as rn
-  from base
-  where player_name not in (select player_name from overall_ranked where rn_best = 1)
-),
-mvp as (
-  select 'MVP' as category, '⭐' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 1 as sort_order
-  from overall_ranked where rn_best = 1
-),
-best_attacker as (
-  select 'Best Attacker' as category, '⚽' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 2 as sort_order
-  from position_ranked where position_group = 'Attacker' and rn = 1
-),
-best_midfielder as (
-  select 'Best Midfielder' as category, '🎯' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 3 as sort_order
-  from position_ranked where position_group = 'Midfielder' and rn = 1
-),
-best_defender as (
-  select 'Best Defender' as category, '🛡️' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 4 as sort_order
-  from position_ranked where position_group = 'Defender' and rn = 1
-),
-best_gk as (
-  select 'Best GK' as category, '🧤' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 5 as sort_order
-  from position_ranked where position_group = 'Goalkeeper' and rn = 1
-),
-lvp as (
-  select 'LVP' as category, '📉' as icon,
-         player_name, player_photo, team_name, team_logo,
-         cast(round(rating, 2) as varchar) as stat_value, 'Rating' as stat_label, 6 as sort_order
-  from overall_ranked where rn_worst = 1
-)
-select * from mvp
-union all select * from best_attacker
-union all select * from best_midfielder
-union all select * from best_defender
-union all select * from best_gk
-union all select * from lvp
+select category, icon, player_name, player_photo, team_name, team_logo,
+       stat_value, stat_label, sort_order
+from superligaen.mart_round_potw
+where season = '${inputs.season.value}'
+  and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
 order by sort_order
 ```
 
@@ -286,11 +202,9 @@ select
     cast(match_id as varchar)                        as match_key,
     match_short_name || '  (' || score || ')'        as match_label,
     match_date
-from superligaen.mart_match_facts
+from superligaen.mart_match_results
 where season = '${inputs.season.value}'
   and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
-  and result in ('Win', 'Draw', 'Loss')
-group by match_id, match_short_name, match_date, score
 order by match_date desc
 ```
 
@@ -299,47 +213,8 @@ order by match_date desc
 {/key}
 
 ```sql mc
-select
-    max(case when team_side = 'Home' then team_name end)                                        as home_team,
-    max(case when team_side = 'Away' then team_name end)                                        as away_team,
-    max(case when team_side = 'Home' then team_short_name end)                                  as home_team_short,
-    max(case when team_side = 'Away' then team_short_name end)                                  as away_team_short,
-    max(score)                                                                                  as score,
-    max(case when team_side = 'Home' then goals_scored end)                                     as home_goals,
-    max(case when team_side = 'Away' then goals_scored end)                                     as away_goals,
-    max(case when team_side = 'Home' then total_shots end)                                      as home_total_shots,
-    max(case when team_side = 'Away' then total_shots end)                                      as away_total_shots,
-    max(case when team_side = 'Home' then shots_on_goal end)                                    as home_sog,
-    max(case when team_side = 'Away' then shots_on_goal end)                                    as away_sog,
-    max(case when team_side = 'Home' then big_chances_created end)                              as home_big_chances,
-    max(case when team_side = 'Away' then big_chances_created end)                              as away_big_chances,
-    max(case when team_side = 'Home' then woodwork_hits end)                                    as home_woodwork,
-    max(case when team_side = 'Away' then woodwork_hits end)                                    as away_woodwork,
-    max(case when team_side = 'Home' then possession_pct end)                                   as home_possession,
-    max(case when team_side = 'Away' then possession_pct end)                                   as away_possession,
-    round(max(case when team_side = 'Home' then passes_accurate end)::double / nullif(max(case when team_side = 'Home' then total_passes end), 0) * 100, 1) as home_pass_accuracy,
-    round(max(case when team_side = 'Away' then passes_accurate end)::double / nullif(max(case when team_side = 'Away' then total_passes end), 0) * 100, 1) as away_pass_accuracy,
-    max(case when team_side = 'Home' then key_passes end)                                       as home_key_passes,
-    max(case when team_side = 'Away' then key_passes end)                                       as away_key_passes,
-    max(case when team_side = 'Home' then crosses_total end)                                    as home_crosses,
-    max(case when team_side = 'Away' then crosses_total end)                                    as away_crosses,
-    max(case when team_side = 'Home' then corner_kicks end)                                     as home_corners,
-    max(case when team_side = 'Away' then corner_kicks end)                                     as away_corners,
-    max(case when team_side = 'Home' then tackles end)                                          as home_tackles,
-    max(case when team_side = 'Away' then tackles end)                                          as away_tackles,
-    max(case when team_side = 'Home' then interceptions end)                                    as home_interceptions,
-    max(case when team_side = 'Away' then interceptions end)                                    as away_interceptions,
-    max(case when team_side = 'Home' then clearances end)                                       as home_clearances,
-    max(case when team_side = 'Away' then clearances end)                                       as away_clearances,
-    max(case when team_side = 'Home' then saves end)                                            as home_saves,
-    max(case when team_side = 'Away' then saves end)                                            as away_saves,
-    max(case when team_side = 'Home' then fouls end)                                            as home_fouls,
-    max(case when team_side = 'Away' then fouls end)                                            as away_fouls,
-    max(case when team_side = 'Home' then yellow_cards end)                                     as home_yc,
-    max(case when team_side = 'Away' then yellow_cards end)                                     as away_yc,
-    max(case when team_side = 'Home' then red_cards end)                                        as home_rc,
-    max(case when team_side = 'Away' then red_cards end)                                        as away_rc
-from superligaen.mart_match_facts
+select *
+from superligaen.mart_match_card
 where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
 ```
 
@@ -553,69 +428,8 @@ where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
 <p style="font-size:13px;color:#6b7280;margin:-8px 0 16px;">Click on a player to see their stats for this match.</p>
 
 ```sql lineup
-select
-    player_name,
-    player_photo,
-    team_name,
-    team_logo,
-    team_side,
-    position_group,
-    position_name,
-    position_short_code,
-    formation,
-    minutes_played,
-    goals_scored,
-    assists,
-    shots_total,
-    shots_on_target,
-    woodwork_hits,
-    key_passes,
-    big_chances_created,
-    big_chances_missed,
-    dribbles_completed,
-    crosses_total,
-    round(passes_accurate::double / nullif(passes_total, 0) * 100, 1) as pass_accuracy,
-    tackles,
-    interceptions,
-    clearances,
-    aerials_won,
-    blocks,
-    fouls_committed,
-    fouls_drawn,
-    saves,
-    yellow_cards,
-    red_cards,
-    own_goals,
-    tackles_won,
-    aerials_lost,
-    balls_recovered,
-    last_man_tackle,
-    clearances_off_line,
-    duels_total,
-    duels_won,
-    duels_lost,
-    dribbles_attempts,
-    times_dribbled_past,
-    dispossessed,
-    possession_losses,
-    passes_final_third,
-    long_balls,
-    long_balls_won,
-    saves_inside_box,
-    goalkeeper_punches,
-    high_ball_claims,
-    goals_conceded,
-    penalty_won,
-    penalty_committed,
-    penalty_scored,
-    penalty_missed,
-    penalty_saved,
-    offsides,
-    yellow_red_cards,
-    errors_leading_to_goal,
-    errors_leading_to_shot,
-    round(rating, 2) as rating
-from superligaen.mart_player_facts
+select *
+from superligaen.mart_match_lineup
 where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
   and result in ('Win', 'Draw', 'Loss')
   and appearance_type = 'Starter'
@@ -623,68 +437,8 @@ order by team_side desc, position_group, position_name
 ```
 
 ```sql subs
-select
-    player_name,
-    player_photo,
-    team_name,
-    team_side,
-    position_group,
-    position_name,
-    position_short_code,
-    formation,
-    minutes_played,
-    goals_scored,
-    assists,
-    shots_total,
-    shots_on_target,
-    woodwork_hits,
-    key_passes,
-    big_chances_created,
-    big_chances_missed,
-    dribbles_completed,
-    crosses_total,
-    round(passes_accurate::double / nullif(passes_total, 0) * 100, 1) as pass_accuracy,
-    tackles,
-    interceptions,
-    clearances,
-    aerials_won,
-    blocks,
-    fouls_committed,
-    fouls_drawn,
-    saves,
-    yellow_cards,
-    red_cards,
-    own_goals,
-    tackles_won,
-    aerials_lost,
-    balls_recovered,
-    last_man_tackle,
-    clearances_off_line,
-    duels_total,
-    duels_won,
-    duels_lost,
-    dribbles_attempts,
-    times_dribbled_past,
-    dispossessed,
-    possession_losses,
-    passes_final_third,
-    long_balls,
-    long_balls_won,
-    saves_inside_box,
-    goalkeeper_punches,
-    high_ball_claims,
-    goals_conceded,
-    penalty_won,
-    penalty_committed,
-    penalty_scored,
-    penalty_missed,
-    penalty_saved,
-    offsides,
-    yellow_red_cards,
-    errors_leading_to_goal,
-    errors_leading_to_shot,
-    round(rating, 2) as rating
-from superligaen.mart_player_facts
+select *
+from superligaen.mart_match_lineup
 where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
   and result in ('Win', 'Draw', 'Loss')
   and appearance_type = 'Substitute'

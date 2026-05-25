@@ -12,66 +12,8 @@ select * from superligaen.league_info
 select * from superligaen.last_updated
 ```
 
-```sql season_info
-with max_s as (
-    select max(season) as season
-    from superligaen.mart_match_facts
-    where result in ('Win', 'Draw', 'Loss')
-)
-select
-    max_s.season,
-    max(f.match_date)::varchar as season_end
-from superligaen.mart_match_facts f
-join max_s on f.season = max_s.season
-where f.result in ('Win', 'Draw', 'Loss')
-group by max_s.season
-```
-
-```sql kpis
-with max_s as (
-    select max(season) as season
-    from superligaen.mart_match_facts
-    where result in ('Win', 'Draw', 'Loss')
-)
-select
-    count(distinct f.match_id)  as total_matches,
-    sum(f.goals_scored)         as total_goals,
-    count(distinct f.team_name) as total_teams,
-    f.season
-from superligaen.mart_match_facts f
-join max_s on f.season = max_s.season
-where f.result in ('Win', 'Draw', 'Loss')
-group by f.season
-```
-
-```sql leader
-with max_s as (
-    select max(season) as season
-    from superligaen.mart_match_facts
-    where result in ('Win', 'Draw', 'Loss')
-)
-select team_name, team_short_name, pts
-from (
-    select
-        team_name,
-        team_short_name,
-        standings_type,
-        sum(points_earned)                      as pts,
-        sum(goals_scored) - sum(goals_conceded) as gd,
-        sum(goals_scored)                       as gf
-    from superligaen.mart_match_facts f
-    join max_s on f.season = max_s.season
-    where f.result in ('Win', 'Draw', 'Loss')
-    group by team_name, team_short_name, standings_type
-)
-order by
-    case standings_type
-        when 'Championship Group' then 1
-        when 'Relegation Group'   then 2
-        when 'Regular Season'     then 3
-    end,
-    pts desc, gd desc, gf desc
-limit 1
+```sql summary
+select * from superligaen.mart_home_summary
 ```
 
 <div class="relative rounded-2xl overflow-hidden mb-6 shadow-lg" style="background: linear-gradient(135deg, #1e3a5f 0%, #1a5276 40%, #1a6b4a 100%);">
@@ -86,11 +28,11 @@ limit 1
     <!-- left: league identity -->
     <div class="flex items-center gap-5">
       <div class="bg-white/10 backdrop-blur rounded-2xl p-3 shadow-inner flex-shrink-0">
-        <img src="{league[0].league_logo}" alt="Superligaen" class="h-14 md:h-20 w-auto" />
+        <img src="{league[0].league_logo}" alt="Superligaen" class="h-14 md:h-20 w-auto" onerror="this.style.display='none'" />
       </div>
       <div>
         <div class="flex items-center gap-2 mb-1">
-          <img src="{league[0].league_country_flag}" alt="Denmark" class="h-4 rounded opacity-90" />
+          <img src="{league[0].league_country_flag}" alt="Denmark" class="h-4 rounded opacity-90" onerror="this.style.display='none'" />
           <span class="text-white/50 text-xs uppercase tracking-widest">Denmark</span>
         </div>
         <div class="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">Superligaen</div>
@@ -101,23 +43,23 @@ limit 1
     <!-- right: live stats pills -->
     <div class="flex flex-wrap justify-center md:justify-end gap-3">
       <div class="rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-3 text-center min-w-[80px]">
-        <div class="text-white text-xl font-black leading-none">{kpis[0].total_goals}</div>
+        <div class="text-white text-xl font-black leading-none">{summary[0].total_goals}</div>
         <div class="text-white/50 text-xs mt-1 uppercase tracking-wide">Goals</div>
       </div>
       <div class="rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-3 text-center min-w-[80px]">
-        <div class="text-white text-xl font-black leading-none">{kpis[0].total_matches}</div>
+        <div class="text-white text-xl font-black leading-none">{summary[0].total_matches}</div>
         <div class="text-white/50 text-xs mt-1 uppercase tracking-wide">Matches</div>
       </div>
       <div class="rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-3 text-center min-w-[80px]">
-        <div class="text-white text-xl font-black leading-none">{kpis[0].total_teams}</div>
+        <div class="text-white text-xl font-black leading-none">{summary[0].total_teams}</div>
         <div class="text-white/50 text-xs mt-1 uppercase tracking-wide">Teams</div>
       </div>
       <div class="rounded-xl backdrop-blur px-4 py-3 text-center min-w-[80px]"
-           style="{new Date() > new Date(season_info[0].season_end) ? 'background:rgba(100,116,139,0.2);border:1px solid rgba(148,163,184,0.3)' : 'background:rgba(74,222,128,0.2);border:1px solid rgba(74,222,128,0.3)'}">
+           style="{new Date() > new Date(summary[0].season_end) ? 'background:rgba(100,116,139,0.2);border:1px solid rgba(148,163,184,0.3)' : 'background:rgba(74,222,128,0.2);border:1px solid rgba(74,222,128,0.3)'}">
         <div class="text-sm font-black leading-none"
-             style="{new Date() > new Date(season_info[0].season_end) ? 'color:rgb(203,213,225)' : 'color:rgb(134,239,172)'}">{kpis[0].season}</div>
+             style="{new Date() > new Date(summary[0].season_end) ? 'color:rgb(203,213,225)' : 'color:rgb(134,239,172)'}">{summary[0].season}</div>
         <div class="text-xs mt-1 uppercase tracking-wide"
-             style="{new Date() > new Date(season_info[0].season_end) ? 'color:rgba(148,163,184,0.7)' : 'color:rgba(74,222,128,0.7)'}">{new Date() > new Date(season_info[0].season_end) ? 'Ended' : 'Live'}</div>
+             style="{new Date() > new Date(summary[0].season_end) ? 'color:rgba(148,163,184,0.7)' : 'color:rgba(74,222,128,0.7)'}">{new Date() > new Date(summary[0].season_end) ? 'Ended' : 'Live'}</div>
       </div>
     </div>
   </div>
@@ -127,8 +69,8 @@ limit 1
   <div class="text-amber-400 text-2xl">👑</div>
   <div class="text-xs font-semibold text-amber-600 uppercase tracking-widest flex-shrink-0">Season Leader</div>
   <div class="flex-1 h-px bg-amber-200"></div>
-  <div class="text-sm font-bold text-amber-800">{leader[0]?.team_name}</div>
-  <div class="text-xs text-amber-600 font-semibold">{leader[0]?.pts} pts</div>
+  <div class="text-sm font-bold text-amber-800">{summary[0]?.leader_name}</div>
+  <div class="text-xs text-amber-600 font-semibold">{summary[0]?.leader_pts} pts</div>
 </div>
 
 <div class="flex items-center gap-3 mb-4">

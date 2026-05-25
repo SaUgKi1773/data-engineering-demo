@@ -5,12 +5,9 @@ title: Stadium Intelligence
 ---
 
 ```sql season_options
-select season from (
-  select season, max(is_current_season::int) as is_current
-  from superligaen.mart_match_facts
-  where result in ('Win', 'Draw', 'Loss')
-  group by season
-) order by is_current desc, season desc
+select distinct season
+from superligaen.mart_stadium_season
+order by season desc
 ```
 
 {#key season_options[0]?.season}
@@ -18,101 +15,25 @@ select season from (
 {/key}
 
 ```sql stadium_stats
-select
-    stadium_name,
-    max(stadium_latitude)                                                                           as lat,
-    max(stadium_longitude)                                                                          as lon,
-    max(stadium_surface)                                                                            as stadium_surface,
-    case
-        when max(stadium_surface) ilike '%grass%' or max(stadium_surface) ilike '%natural%' then 1
-        when max(stadium_surface) ilike '%artif%' or max(stadium_surface) ilike '%turf%'    then 2
-        else 3
-    end                                                                                             as surface_code,
-    max(stadium_capacity)                                                                           as stadium_capacity,
-    count(distinct match_id)                                                                        as total_matches,
-    sum(goals_scored)::int                                                                          as total_goals,
-    sum(goals_scored) - (min(sum(goals_scored)) over () - 1)                                        as total_goals_scaled,
-    round(sum(goals_scored)::double    / count(distinct match_id), 2)                               as goals_per_match,
-    round(100.0 * count(*) filter (where team_side='Home' and result='Win')
-          / nullif(count(*) filter (where team_side='Home'), 0), 1)                                 as home_win_pct,
-    round(100.0 * count(*) filter (where result='Draw')
-          / count(*), 1)                                                                            as draw_pct,
-    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                           as pass_accuracy,
-    round(sum(yellow_cards)::double    / count(distinct match_id), 2)                               as yc_per_match,
-    round(sum(fouls)::double           / count(distinct match_id), 1)                               as fouls_per_match,
-    round(sum(corner_kicks)::double    / count(distinct match_id), 1)                               as corners_per_match
-from superligaen.mart_match_facts
-where result in ('Win', 'Draw', 'Loss')
-  and stadium_latitude between 54.5 and 57.8
-  and stadium_longitude between 7.5 and 15.5
-  and stadium_name not like '%Unknown%'
-  and stadium_name not like '%Applicable%'
-  and season = '${inputs.season.value}'
-group by stadium_name
-having count(distinct match_id) >= 4
+select *
+from superligaen.mart_stadium_season
+where season = '${inputs.season.value}'
 order by home_win_pct desc
 ```
 
 ```sql surface_analysis
-select
-    stadium_surface,
-    count(distinct match_id)::int                                                                    as matches,
-    round(sum(goals_scored)::double    / count(distinct match_id), 2)                               as goals_per_match,
-    round(100.0 * count(*) filter (where team_side='Home' and result='Win')
-          / nullif(count(*) filter (where team_side='Home'), 0), 1)                                 as home_win_pct,
-    round(100.0 * count(*) filter (where result='Draw') / count(*), 1)                             as draw_pct,
-    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                           as pass_accuracy,
-    round(sum(possession_pct)::double  / count(distinct match_id), 1)                               as avg_possession,
-    round(sum(shots_on_goal)::double   / count(distinct match_id), 1)                               as shots_per_match,
-    round(sum(yellow_cards)::double    / count(distinct match_id), 2)                               as yc_per_match,
-    round(sum(fouls)::double           / count(distinct match_id), 1)                               as fouls_per_match,
-    round(sum(corner_kicks)::double    / count(distinct match_id), 1)                               as corners_per_match,
-    round(100.0 * sum(goals_scored)    / nullif(sum(total_shots), 0), 1)                            as shot_conversion,
-    round(100.0 * sum(crosses_accurate) / nullif(sum(crosses_total), 0), 1)                        as cross_accuracy
-from superligaen.mart_match_facts
-where result in ('Win', 'Draw', 'Loss')
-  and stadium_surface is not null
-  and stadium_surface != ''
-  and stadium_latitude between 54.5 and 57.8
-  and stadium_longitude between 7.5 and 15.5
-  and season = '${inputs.season.value}'
-group by stadium_surface
-order by
-    case
-        when stadium_surface ilike '%grass%' or stadium_surface ilike '%natural%' then 1
-        when stadium_surface ilike '%artif%' or stadium_surface ilike '%turf%'    then 2
-        else 3
-    end
+select *
+from superligaen.mart_surface_season
+where season = '${inputs.season.value}'
 ```
 
 ```sql fortress_ranking
 select
-    stadium_name,
-    max(stadium_surface)                                                                            as stadium_surface,
-    max(stadium_capacity)                                                                           as stadium_capacity,
-    mode(team_logo) filter (where team_side='Home')                                                 as team_logo,
-    mode(team_name) filter (where team_side='Home')                                                 as home_team,
-    '<div style="display:flex;align-items:center;gap:6px;"><img src="' || mode(team_logo) filter (where team_side='Home') || '" style="height:20px;width:20px;object-fit:contain;" onerror="this.style.display=''none''"><span>' || mode(team_name) filter (where team_side='Home') || '</span></div>' as home_team_col,
-    '<div style="display:flex;align-items:center;gap:6px;"><img src="' || mode(team_logo) filter (where team_side='Home') || '" style="height:20px;width:20px;object-fit:contain;" onerror="this.style.display=''none''"><span>' || mode(team_short_name) filter (where team_side='Home') || '</span></div>' as home_team_col_mobile,
-    count(distinct match_id) filter (where team_side='Home')::int                                  as home_matches,
-    sum(case when team_side='Home' and result='Win'  then 1 else 0 end)::int                       as home_wins,
-    sum(case when team_side='Home' and result='Draw' then 1 else 0 end)::int                       as home_draws,
-    sum(case when team_side='Home' and result='Loss' then 1 else 0 end)::int                       as home_losses,
-    round(100.0 * sum(case when team_side='Home' and result='Win' then 1 else 0 end)
-          / nullif(count(distinct match_id) filter (where team_side='Home'), 0), 1)                as home_win_pct,
-    round(sum(case when team_side='Home' then goals_scored   else 0 end)::double
-          / nullif(count(distinct match_id) filter (where team_side='Home'), 0), 2)                as goals_scored_per_match,
-    round(sum(case when team_side='Home' then goals_conceded else 0 end)::double
-          / nullif(count(distinct match_id) filter (where team_side='Home'), 0), 2)                as goals_conceded_per_match
-from superligaen.mart_match_facts
-where result in ('Win', 'Draw', 'Loss')
-  and stadium_name not like '%Unknown%'
-  and stadium_name not like '%Applicable%'
-  and stadium_latitude between 54.5 and 57.8
-  and stadium_longitude between 7.5 and 15.5
-  and season = '${inputs.season.value}'
-group by stadium_name
-having count(distinct match_id) filter (where team_side='Home') >= 4
+    *,
+    '<div style="display:flex;align-items:center;gap:6px;"><img src="' || team_logo || '" style="height:20px;width:20px;object-fit:contain;" onerror="this.style.display=''none''"><span>' || home_team       || '</span></div>' as home_team_col,
+    '<div style="display:flex;align-items:center;gap:6px;"><img src="' || team_logo || '" style="height:20px;width:20px;object-fit:contain;" onerror="this.style.display=''none''"><span>' || home_team_short || '</span></div>' as home_team_col_mobile
+from superligaen.mart_stadium_season
+where season = '${inputs.season.value}'
 order by home_win_pct desc
 ```
 
@@ -125,17 +46,8 @@ select
     count(distinct stadium_name)                                                                              as total_stadiums,
     sum(case when stadium_surface ilike '%grass%' or stadium_surface ilike '%natural%' then 1 else 0 end)    as grass_stadiums,
     sum(case when stadium_surface ilike '%artif%' or stadium_surface ilike '%turf%'    then 1 else 0 end)    as turf_stadiums
-from (
-    select stadium_name, max(stadium_surface) as stadium_surface
-    from superligaen.mart_match_facts
-    where result in ('Win','Draw','Loss')
-      and stadium_name not like '%Unknown%'
-      and stadium_latitude between 54.5 and 57.8
-      and stadium_longitude between 7.5 and 15.5
-      and season = '${inputs.season.value}'
-    group by stadium_name
-    having count(distinct match_id) >= 4
-) t
+from superligaen.mart_stadium_season
+where season = '${inputs.season.value}'
 ```
 
 ---
