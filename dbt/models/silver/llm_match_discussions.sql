@@ -20,6 +20,10 @@ WITH raw AS (
     {% if is_incremental() %}
     WHERE generated_at > (SELECT COALESCE(MAX(generated_at), '1970-01-01'::TIMESTAMP) FROM {{ this }})
     {% endif %}
+),
+valid AS (
+    SELECT * FROM raw
+    WHERE TRY_CAST(cleaned_response AS JSON) IS NOT NULL
 )
 SELECT
     r.match_id,
@@ -29,5 +33,5 @@ SELECT
     r.generated_at,
     j.value->>'persona'  AS persona_name,
     j.value->>'message'  AS message
-FROM raw r,
+FROM valid r,
      json_each(r.cleaned_response::JSON) j
