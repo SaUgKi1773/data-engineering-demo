@@ -122,7 +122,7 @@ from ${results}
 ```sql discussions
 select persona_name, sort_order, message
 from superligaen.llm_round_discussions
-where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
+where match_id = cast('${inputs.match.value}' as bigint)
 order by sort_order
 ```
 
@@ -215,7 +215,7 @@ order by match_date desc
 ```sql mc
 select *
 from superligaen.mart_match_results
-where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
+where match_id = cast('${inputs.match.value}' as bigint)
 ```
 
 {#if mc.length > 0}
@@ -430,7 +430,7 @@ where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
 ```sql lineup
 select *
 from superligaen.mart_match_lineup
-where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
+where match_id = cast('${inputs.match.value}' as bigint)
   and result in ('Win', 'Draw', 'Loss')
   and appearance_type = 'Starter'
 order by team_side desc, position_group, position_name
@@ -439,7 +439,7 @@ order by team_side desc, position_group, position_name
 ```sql subs
 select *
 from superligaen.mart_match_lineup
-where match_id = cast('${inputs.match.value ?? '0'}' as bigint)
+where match_id = cast('${inputs.match.value}' as bigint)
   and result in ('Win', 'Draw', 'Loss')
   and appearance_type = 'Substitute'
 order by team_side desc, position_group, position_name
