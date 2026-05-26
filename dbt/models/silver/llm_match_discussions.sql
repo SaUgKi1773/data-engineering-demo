@@ -35,3 +35,4 @@ SELECT
     j.value->>'message'  AS message
 FROM valid r,
      json_each(r.cleaned_response::JSON) j
+QUALIFY ROW_NUMBER() OVER (PARTITION BY r.match_id, j.value->>'persona' ORDER BY r.generated_at DESC) = 1
