@@ -54,6 +54,12 @@ models:
               config: {where: "player_sk > 0"}
           - unique:
               config: {where: "player_sk > 0"}
+      - name: player_main_position
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker', 'Unknown Main Position', 'Not Applicable Main Position']
 
   - name: dim_referee
     columns:

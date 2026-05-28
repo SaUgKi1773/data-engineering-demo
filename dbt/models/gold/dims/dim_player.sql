@@ -3,10 +3,10 @@
         materialized='incremental',
         incremental_strategy='merge',
         unique_key='player_id',
-        merge_update_columns=['player_name', 'player_firstname', 'player_lastname', 'player_nationality', 'player_birth_date', 'player_birth_place', 'player_birth_country', 'player_height', 'player_weight', 'player_photo', 'player_position', 'player_detailed_position'],
+        merge_update_columns=['player_name', 'player_firstname', 'player_lastname', 'player_nationality', 'player_birth_date', 'player_birth_place', 'player_birth_country', 'player_height', 'player_weight', 'player_photo', 'player_position', 'player_detailed_position', 'player_main_position'],
         post_hook=[
             "DELETE FROM {{ this }} WHERE player_sk IN (-1, -2)",
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Player', 'Unknown', 'Unknown', 'Unknown Player Nationality', NULL::DATE, 'Unknown Player Birth Place', 'Unknown Player Birth Country', NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Unknown Player Position', 'Unknown Player Position'), (-2, NULL::INTEGER, 'Not Applicable Player', 'Not Applicable', 'Not Applicable', 'Not Applicable Player Nationality', NULL::DATE, 'Not Applicable Player Birth Place', 'Not Applicable Player Birth Country', NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Player Position', 'Not Applicable Player Position')) t(player_sk, player_id, player_name, player_firstname, player_lastname, player_nationality, player_birth_date, player_birth_place, player_birth_country, player_height, player_weight, player_photo, player_position, player_detailed_position)"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Player', 'Unknown', 'Unknown', 'Unknown Player Nationality', NULL::DATE, 'Unknown Player Birth Place', 'Unknown Player Birth Country', NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Unknown Player Position', 'Unknown Player Position', 'Unknown Main Position'), (-2, NULL::INTEGER, 'Not Applicable Player', 'Not Applicable', 'Not Applicable', 'Not Applicable Player Nationality', NULL::DATE, 'Not Applicable Player Birth Place', 'Not Applicable Player Birth Country', NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Player Position', 'Not Applicable Player Position', 'Not Applicable Main Position')) t(player_sk, player_id, player_name, player_firstname, player_lastname, player_nationality, player_birth_date, player_birth_place, player_birth_country, player_height, player_weight, player_photo, player_position, player_detailed_position, player_main_position)"
         ]
     )
 }}
@@ -25,7 +25,18 @@ WITH from_players AS (
         weight         AS player_weight,
         image_path     AS player_photo,
         position_name  AS player_position,
-        detailed_position_name AS player_detailed_position
+        detailed_position_name AS player_detailed_position,
+        CASE position_name
+            WHEN 'Goalkeeper'   THEN 'Goalkeeper'
+            WHEN 'Centre Back'  THEN 'Defender'
+            WHEN 'Defender'     THEN 'Defender'
+            WHEN 'Central Midfield' THEN 'Midfielder'
+            WHEN 'Midfielder'   THEN 'Midfielder'
+            WHEN 'Attacker'     THEN 'Attacker'
+            WHEN 'Centre Forward' THEN 'Attacker'
+            WHEN 'Not Applicable Player Position' THEN 'Not Applicable Main Position'
+            ELSE 'Unknown Main Position'
+        END AS player_main_position
     FROM {{ ref('players') }}
     WHERE id IS NOT NULL
       AND position_name != 'Coach'
@@ -45,7 +56,18 @@ from_lineups AS (
         NULL::INTEGER  AS player_weight,
         NULL::VARCHAR  AS player_photo,
         position_name  AS player_position,
-        detailed_position_name AS player_detailed_position
+        detailed_position_name AS player_detailed_position,
+        CASE position_name
+            WHEN 'Goalkeeper'   THEN 'Goalkeeper'
+            WHEN 'Centre Back'  THEN 'Defender'
+            WHEN 'Defender'     THEN 'Defender'
+            WHEN 'Central Midfield' THEN 'Midfielder'
+            WHEN 'Midfielder'   THEN 'Midfielder'
+            WHEN 'Attacker'     THEN 'Attacker'
+            WHEN 'Centre Forward' THEN 'Attacker'
+            WHEN 'Not Applicable Player Position' THEN 'Not Applicable Main Position'
+            ELSE 'Unknown Main Position'
+        END AS player_main_position
     FROM {{ ref('fixture_lineups') }}
     WHERE player_id IS NOT NULL
       AND player_id NOT IN (SELECT player_id FROM from_players)
@@ -75,5 +97,6 @@ SELECT
     player_weight,
     player_photo,
     player_position,
-    player_detailed_position
+    player_detailed_position,
+    player_main_position
 FROM combined
