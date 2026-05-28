@@ -47,15 +47,16 @@ select team_name from (
 ```
 
 ```sql positions
-select player_position from (
-  select 'All' as player_position, 0 as ord
+select player_main_position from (
+  select 'All Positions' as player_main_position, 0 as ord
   union all
-  select distinct player_position, 1 as ord
+  select distinct player_main_position, 1 as ord
   from superligaen.mart_player_season
   where season = '${inputs.season.value}'
     and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
-    and player_position is not null
-) order by ord, player_position
+    and player_main_position is not null
+    and player_main_position not in ('Unknown Main Position', 'Not Applicable Main Position')
+) order by ord, player_main_position
 ```
 
 ```sql players_in_team
@@ -63,7 +64,7 @@ select distinct player_name
 from superligaen.mart_player_season
 where season = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
-  and ('All' in ${inputs.position.value} OR player_position in ${inputs.position.value})
+  and ('All Positions' in ${inputs.position.value} OR player_main_position in ${inputs.position.value})
 order by player_name
 ```
 
@@ -128,7 +129,38 @@ select * from (values
   ('goalkeeper_punches',     'GK Punches'),
   ('high_ball_claims',       'High Ball Claims'),
   ('errors_leading_to_shot', 'Errors Leading to Shot'),
-  ('dribbles_completed',     'Dribbles Completed')
+  ('dribbles_completed',     'Dribbles Completed'),
+  -- Per-90 & Calculated
+  ('goals_per90',            'Goals per 90'),
+  ('assists_per90',          'Assists per 90'),
+  ('contributions_per90',    'G+A per 90'),
+  ('def_actions',            'Defensive Actions'),
+  ('fouls_drawn_per90',      'Fouls Drawn per 90'),
+  -- Percentile Scores
+  ('attacking_pct',          'Attacking Percentile'),
+  ('creativity_pct',         'Creativity Percentile'),
+  ('possession_pct',         'Possession Percentile'),
+  ('defending_pct',          'Defending Percentile'),
+  ('physicality_pct',        'Physicality Percentile'),
+  ('impact_pct',             'Impact Percentile'),
+  -- Raw Counts
+  ('starts',                 'Starts'),
+  ('passes_total',           'Passes Total'),
+  ('passes_accurate',        'Passes Accurate'),
+  ('long_balls',             'Long Balls'),
+  ('long_balls_won',         'Long Balls Won'),
+  ('crosses_total',          'Crosses Total'),
+  ('crosses_accurate',       'Crosses Accurate'),
+  ('dribbles_attempts',      'Dribble Attempts'),
+  ('tackles_won',            'Tackles Won'),
+  ('aerials_won',            'Aerials Won'),
+  ('aerials_lost',           'Aerials Lost'),
+  ('duels_total',            'Duels Total'),
+  ('duels_won',              'Duels Won'),
+  ('duels_lost',             'Duels Lost'),
+  ('wins',                   'Wins'),
+  ('draws',                  'Draws'),
+  ('losses',                 'Losses')
 ) t(value, label)
 ```
 
@@ -193,10 +225,39 @@ with base as (
         goalkeeper_punches::double          as goalkeeper_punches,
         high_ball_claims::double            as high_ball_claims,
         errors_leading_to_shot::double      as errors_leading_to_shot,
-        dribbles_completed::double          as dribbles_completed
+        dribbles_completed::double          as dribbles_completed,
+        starts::double                      as starts,
+        passes_total::double                as passes_total,
+        passes_accurate::double             as passes_accurate,
+        long_balls::double                  as long_balls,
+        long_balls_won::double              as long_balls_won,
+        crosses_total::double               as crosses_total,
+        crosses_accurate::double            as crosses_accurate,
+        dribbles_attempts::double           as dribbles_attempts,
+        tackles_won::double                 as tackles_won,
+        aerials_won::double                 as aerials_won,
+        aerials_lost::double                as aerials_lost,
+        duels_total::double                 as duels_total,
+        duels_won::double                   as duels_won,
+        duels_lost::double                  as duels_lost,
+        wins::double                        as wins,
+        draws::double                       as draws,
+        losses::double                      as losses,
+        goals_per90::double                 as goals_per90,
+        assists_per90::double               as assists_per90,
+        contributions_per90::double         as contributions_per90,
+        def_actions::double                 as def_actions,
+        fouls_drawn_per90::double           as fouls_drawn_per90,
+        attacking_pct::double               as attacking_pct,
+        creativity_pct::double              as creativity_pct,
+        possession_pct::double              as possession_pct,
+        defending_pct::double               as defending_pct,
+        physicality_pct::double             as physicality_pct,
+        impact_pct::double                  as impact_pct
     from superligaen.mart_player_season
     where season = '${inputs.season.value}'
       and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+      and ('All Positions' in ${inputs.position.value} OR player_main_position in ${inputs.position.value})
       and matches >= 5
 ),
 ranked as (
@@ -255,6 +316,34 @@ ranked as (
             when 'high_ball_claims'       then high_ball_claims
             when 'errors_leading_to_shot' then errors_leading_to_shot
             when 'dribbles_completed'     then dribbles_completed
+            when 'goals_per90'            then goals_per90
+            when 'assists_per90'          then assists_per90
+            when 'contributions_per90'    then contributions_per90
+            when 'def_actions'            then def_actions
+            when 'fouls_drawn_per90'      then fouls_drawn_per90
+            when 'attacking_pct'          then attacking_pct
+            when 'creativity_pct'         then creativity_pct
+            when 'possession_pct'         then possession_pct
+            when 'defending_pct'          then defending_pct
+            when 'physicality_pct'        then physicality_pct
+            when 'impact_pct'             then impact_pct
+            when 'starts'                 then starts
+            when 'passes_total'           then passes_total
+            when 'passes_accurate'        then passes_accurate
+            when 'long_balls'             then long_balls
+            when 'long_balls_won'         then long_balls_won
+            when 'crosses_total'          then crosses_total
+            when 'crosses_accurate'       then crosses_accurate
+            when 'dribbles_attempts'      then dribbles_attempts
+            when 'tackles_won'            then tackles_won
+            when 'aerials_won'            then aerials_won
+            when 'aerials_lost'           then aerials_lost
+            when 'duels_total'            then duels_total
+            when 'duels_won'              then duels_won
+            when 'duels_lost'             then duels_lost
+            when 'wins'                   then wins
+            when 'draws'                  then draws
+            when 'losses'                 then losses
             else goals
         end as measure_value,
         row_number() over (
@@ -312,6 +401,34 @@ ranked as (
                 when 'high_ball_claims'       then high_ball_claims
                 when 'errors_leading_to_shot' then errors_leading_to_shot
                 when 'dribbles_completed'     then dribbles_completed
+                when 'goals_per90'            then goals_per90
+                when 'assists_per90'          then assists_per90
+                when 'contributions_per90'    then contributions_per90
+                when 'def_actions'            then def_actions
+                when 'fouls_drawn_per90'      then fouls_drawn_per90
+                when 'attacking_pct'          then attacking_pct
+                when 'creativity_pct'         then creativity_pct
+                when 'possession_pct'         then possession_pct
+                when 'defending_pct'          then defending_pct
+                when 'physicality_pct'        then physicality_pct
+                when 'impact_pct'             then impact_pct
+                when 'starts'                 then starts
+                when 'passes_total'           then passes_total
+                when 'passes_accurate'        then passes_accurate
+                when 'long_balls'             then long_balls
+                when 'long_balls_won'         then long_balls_won
+                when 'crosses_total'          then crosses_total
+                when 'crosses_accurate'       then crosses_accurate
+                when 'dribbles_attempts'      then dribbles_attempts
+                when 'tackles_won'            then tackles_won
+                when 'aerials_won'            then aerials_won
+                when 'aerials_lost'           then aerials_lost
+                when 'duels_total'            then duels_total
+                when 'duels_won'              then duels_won
+                when 'duels_lost'             then duels_lost
+                when 'wins'                   then wins
+                when 'draws'                  then draws
+                when 'losses'                 then losses
                 else goals
             end desc nulls last
         ) as rn
@@ -330,6 +447,10 @@ order by rn
 
 {#key teams[0]?.team_name}
 <Dropdown data={teams} name=team value=team_name label=team_name multiple=true defaultValue={['All Teams']} />
+{/key}
+
+{#key positions.map(p => p.player_position).join(',')}
+<Dropdown data={positions} name=position value=player_main_position label=player_main_position multiple=true defaultValue={['All Positions']} title="Position" />
 {/key}
 
 ```sql player_profile
@@ -478,6 +599,8 @@ where season = '${inputs.season.value}'
 
 ## Top Players
 
+*Top 3 players with at least 5 appearances in the selected season, ranked by the chosen measure. Season, team, and position filters all apply.*
+
 <Dropdown data={podium_measures} name=podium_measure value=value label=label defaultValue="goals" title="Measure" />
 
 <div style="display:flex;align-items:flex-end;justify-content:center;gap:1rem;margin-top:2rem;border-bottom:3px solid #e5e7eb;">
@@ -530,11 +653,7 @@ where season = '${inputs.season.value}'
 
 ## Player Deep Dive
 
-*Filter by position and team, then select a player to explore their profile, season stats, player characteristics, performance timeline, and match log.*
-
-{#key positions.map(p => p.player_position).join(',')}
-<Dropdown data={positions} name=position value=player_position label=player_position multiple=true defaultValue={['All']} />
-{/key}
+*Select a player from the dropdown to explore their profile, season stats, player characteristics, performance timeline, and match log.*
 
 {#key players_in_team[0]?.player_name}
 <Dropdown data={players_in_team} name=player value=player_name label=player_name defaultValue={players_in_team[0]?.player_name} />
