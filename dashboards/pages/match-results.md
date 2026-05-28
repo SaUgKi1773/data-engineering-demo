@@ -39,12 +39,26 @@ order by match_date desc
 ```
 
 ```sql round_kpis
-select
-    sum(total_goals)                                                                        as total_goals,
-    round(sum(total_goals)::double / count(distinct match_id), 2)                          as avg_goals_per_match,
-    round(sum(total_shots_on_goal)::double / count(distinct match_id), 1)                  as avg_shots_on_goal,
-    round(sum(total_goals)::double / nullif(sum(total_big_chances), 0), 2)                   as goals_per_big_chance
-from ${results}
+with curr as (
+    select
+        sum(total_goals)                                                                      as total_goals,
+        round(sum(total_goals)::double / count(distinct match_id), 2)                        as avg_goals_per_match,
+        round(sum(total_shots_on_goal)::double / count(distinct match_id), 1)                as avg_shots_on_goal,
+        round(sum(total_goals)::double / nullif(sum(total_big_chances), 0), 2)               as goals_per_big_chance
+    from ${results}
+),
+prev as (
+    select
+        sum(total_goals)                                                                      as prev_total_goals,
+        round(sum(total_goals)::double / count(distinct match_id), 2)                        as prev_avg_goals_per_match,
+        round(sum(total_shots_on_goal)::double / count(distinct match_id), 1)                as prev_avg_shots_on_goal,
+        round(sum(total_goals)::double / nullif(sum(total_big_chances), 0), 2)               as prev_goals_per_big_chance
+    from superligaen.mart_match_results
+    where season = '${inputs.season.value}'
+      and cast(match_round_number as integer) = ${(inputs.round.value ?? 1) - 1}
+)
+select curr.*, prev.*
+from curr cross join prev
 ```
 
 ## Match Results — {inputs.season.value} — Round {inputs.round.value}
@@ -54,21 +68,39 @@ from ${results}
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">Goals Scored</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.total_goals}</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">Prev round: {k.prev_total_goals ?? '—'}</span>
+      {#if k.prev_total_goals != null}<span class="text-sm font-bold {k.total_goals >= k.prev_total_goals ? 'text-green-600' : 'text-red-500'}">{k.total_goals >= k.prev_total_goals ? '▲' : '▼'}</span>{/if}
+    </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">Avg Goals / Match</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.avg_goals_per_match}</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">Prev round: {k.prev_avg_goals_per_match ?? '—'}</span>
+      {#if k.prev_avg_goals_per_match != null}<span class="text-sm font-bold {k.avg_goals_per_match >= k.prev_avg_goals_per_match ? 'text-green-600' : 'text-red-500'}">{k.avg_goals_per_match >= k.prev_avg_goals_per_match ? '▲' : '▼'}</span>{/if}
+    </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">Avg Shots on Target / Match</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.avg_shots_on_goal}</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">Prev round: {k.prev_avg_shots_on_goal ?? '—'}</span>
+      {#if k.prev_avg_shots_on_goal != null}<span class="text-sm font-bold {k.avg_shots_on_goal >= k.prev_avg_shots_on_goal ? 'text-green-600' : 'text-red-500'}">{k.avg_shots_on_goal >= k.prev_avg_shots_on_goal ? '▲' : '▼'}</span>{/if}
+    </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">Goals / Big Chance</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.goals_per_big_chance}</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">Prev round: {k.prev_goals_per_big_chance ?? '—'}</span>
+      {#if k.prev_goals_per_big_chance != null}<span class="text-sm font-bold {k.goals_per_big_chance >= k.prev_goals_per_big_chance ? 'text-green-600' : 'text-red-500'}">{k.goals_per_big_chance >= k.prev_goals_per_big_chance ? '▲' : '▼'}</span>{/if}
+    </div>
   </div>
 </div>
 {/each}
+
+<p class="text-sm text-gray-500 mb-3">Click on a match to open the detailed analysis page.</p>
 
 <div class="block md:hidden">
 <DataTable data={results} rows=20>
