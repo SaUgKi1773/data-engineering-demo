@@ -24,7 +24,18 @@ WITH from_players AS (
         height         AS player_height,
         weight         AS player_weight,
         image_path     AS player_photo,
-        position_name  AS player_position,
+        CASE position_name
+            WHEN 'Centre Forward'    THEN 'Attacker'
+            WHEN 'Second Striker'    THEN 'Attacker'
+            WHEN 'Winger'            THEN 'Attacker'
+            WHEN 'Centre Back'       THEN 'Defender'
+            WHEN 'Full Back'         THEN 'Defender'
+            WHEN 'Wing Back'         THEN 'Defender'
+            WHEN 'Central Midfield'  THEN 'Midfielder'
+            WHEN 'Defensive Midfield' THEN 'Midfielder'
+            WHEN 'Attacking Midfield' THEN 'Midfielder'
+            ELSE position_name
+        END AS player_position,
         detailed_position_name AS player_detailed_position
     FROM {{ ref('players') }}
     WHERE id IS NOT NULL
@@ -44,7 +55,18 @@ from_lineups AS (
         NULL::INTEGER  AS player_height,
         NULL::INTEGER  AS player_weight,
         NULL::VARCHAR  AS player_photo,
-        position_name  AS player_position,
+        CASE position_name
+            WHEN 'Centre Forward'    THEN 'Attacker'
+            WHEN 'Second Striker'    THEN 'Attacker'
+            WHEN 'Winger'            THEN 'Attacker'
+            WHEN 'Centre Back'       THEN 'Defender'
+            WHEN 'Full Back'         THEN 'Defender'
+            WHEN 'Wing Back'         THEN 'Defender'
+            WHEN 'Central Midfield'  THEN 'Midfielder'
+            WHEN 'Defensive Midfield' THEN 'Midfielder'
+            WHEN 'Attacking Midfield' THEN 'Midfielder'
+            ELSE position_name
+        END AS player_position,
         detailed_position_name AS player_detailed_position
     FROM {{ ref('fixture_lineups') }}
     WHERE player_id IS NOT NULL
