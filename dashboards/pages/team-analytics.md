@@ -514,6 +514,7 @@ end
     title="Goals per Match by Formation"
     colorPalette={['#3b82f6','#f97316']}
     type=grouped
+    seriesOptions={{"barGap": "0%"}}
     sort=false
 />
 
