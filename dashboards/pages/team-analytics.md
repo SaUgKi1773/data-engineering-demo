@@ -454,6 +454,7 @@ end
     title="W/D/L Split"
     colorPalette={['#22c55e','#eab308','#ef4444']}
     type=grouped
+    seriesOptions={{"barGap": "0%"}}
     sort=false
 />
 
@@ -464,6 +465,7 @@ end
     title="Goals Scored vs Conceded per Match"
     colorPalette={['#3b82f6','#f97316']}
     type=grouped
+    seriesOptions={{"barGap": "0%"}}
     sort=false
 />
 
