@@ -56,7 +56,7 @@ jobs:
           if [ "${{ github.event.inputs.force }}" = "true" ]; then
             EXTRA_ARGS="$EXTRA_ARGS --force"
           fi
-          python scripts/generate_round_discussions.py --season "$SEASON" --db "$DB" $EXTRA_ARGS
+          python ingestion/groq/generate_round_discussions.py --season "$SEASON" --db "$DB" $EXTRA_ARGS
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           GROQ_API_KEY:     ${{ secrets.GROQ_API_KEY }}

@@ -7,9 +7,9 @@ once per match, and writes the raw API response to bronze.groq__llm_match_discus
 dbt then parses and models the bronze data into silver + gold.
 
 Usage:
-  python scripts/generate_round_discussions.py --season 2024/25 --round 26
-  python scripts/generate_round_discussions.py --season 2024/25  # auto-detects latest round
-  python scripts/generate_round_discussions.py --season 2024/25 --round 26 --db superligaen_dev
+  python ingestion/groq/generate_round_discussions.py --season 2024/25 --round 26
+  python ingestion/groq/generate_round_discussions.py --season 2024/25  # auto-detects latest round
+  python ingestion/groq/generate_round_discussions.py --season 2024/25 --round 26 --db superligaen_dev
 """
 
 import argparse
