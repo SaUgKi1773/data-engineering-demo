@@ -14,6 +14,8 @@ select distinct team_name from (
 
 {#if teams.length > 0}
 
+*Filter by team to see only relevant fixtures. Select a match in the section below to explore head-to-head history and recent form for both sides.*
+
 <Dropdown data={teams} name=team value=team_name label=team_name order="team_name asc" multiple=true selectAllByDefault=true />
 
 ```sql upcoming
@@ -65,6 +67,8 @@ order by match_date asc, kick_off_time asc
 ---
 
 ## Match Analysis
+
+*Select a fixture to see the all-time head-to-head record between the two clubs and the last 5 results for each side going into the match.*
 
 <Dropdown data={upcoming} name=match value=match_key label=match_short_name order="match_date asc, kick_off_time asc" />
 
@@ -171,6 +175,8 @@ limit 5
 
 ### Head-to-Head History
 
+*All previous meetings between these two clubs. Filter by season to narrow the comparison.*
+
 <Dropdown data={h2h_seasons} name=h2h_season value=season label=season multiple=true selectAllByDefault=true order="season desc" />
 
 <div class="grid grid-cols-3 gap-4 mb-6">
@@ -214,6 +220,8 @@ limit 5
 ---
 
 ### Form Guide — Last 5 Matches
+
+*Most recent five results for each side across all competitions in the current season.*
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 

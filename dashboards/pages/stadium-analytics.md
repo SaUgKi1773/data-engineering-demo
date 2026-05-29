@@ -10,6 +10,8 @@ from superligaen.mart_stadium_season
 order by season desc
 ```
 
+*Select a season to explore stadium and surface data — fortress rankings, home win rates, and how grass vs. artificial turf affects the way the game is played.*
+
 {#key season_options[0]?.season}
 <Dropdown data={season_options} name=season value=season label=season order="season desc" defaultValue={season_options[0]?.season} />
 {/key}
@@ -90,6 +92,8 @@ where season = '${inputs.season.value}'
 ---
 
 ## Top 3 Fortress Stadiums
+
+*The three venues where the home side wins most often — home win %, wins, and total home matches played.*
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
   {#each fortress_podium as s, i}
