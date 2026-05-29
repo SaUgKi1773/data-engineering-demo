@@ -34,6 +34,7 @@ import argparse
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 
@@ -86,7 +87,12 @@ def main() -> None:
     tables = set(args.tables.split(",")) if args.tables else None
     conn = connect(args.db)
     ensure_schema(conn)
+    started_at = datetime.now(timezone.utc).replace(tzinfo=None)
     engine.run(conn, mode=args.mode, tables=tables)
+    conn.execute(
+        "INSERT INTO meta.ingestion_run_log VALUES (?, ?, ?, ?, ?)",
+        ["sportmonks", args.mode, "success", started_at, datetime.now(timezone.utc).replace(tzinfo=None)],
+    )
     conn.close()
 
 

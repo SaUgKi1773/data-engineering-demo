@@ -36,8 +36,18 @@ def connect(db_path: str = None) -> duckdb.DuckDBPyConnection:
 
 
 def ensure_schema(conn: duckdb.DuckDBPyConnection) -> None:
-    """Create bronze schema and all tables; migrate old schemas gracefully."""
+    """Create bronze/meta schemas and all tables; migrate old schemas gracefully."""
     conn.execute("CREATE SCHEMA IF NOT EXISTS bronze")
+    conn.execute("CREATE SCHEMA IF NOT EXISTS meta")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS meta.ingestion_run_log (
+            pipeline     VARCHAR,
+            mode         VARCHAR,
+            status       VARCHAR,
+            started_at   TIMESTAMP,
+            completed_at TIMESTAMP
+        )
+    """)
     for table in ALL_TABLES:
         conn.execute(f"""
             CREATE TABLE IF NOT EXISTS bronze.{table} (
