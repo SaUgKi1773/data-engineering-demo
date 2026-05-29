@@ -102,7 +102,7 @@ from curr cross join prev
 </div>
 {/each}
 
-<p class="text-sm text-gray-500 mb-3">Click on a match to open the detailed analysis page.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Click on a match to open the detailed analysis page.</p>
 
 <div class="block md:hidden">
 <DataTable data={results} rows=20>
