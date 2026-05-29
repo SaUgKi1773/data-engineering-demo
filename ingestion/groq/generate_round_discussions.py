@@ -107,7 +107,8 @@ WITH player_stats AS (
         team_sk,
         SUM(shots_total)         AS total_shots,
         SUM(shots_on_target)     AS shots_on_goal,
-        SUM(big_chances_created) AS big_chances
+        SUM(big_chances_created) AS big_chances,
+        SUM(woodwork_hits)       AS woodwork_hits
     FROM {db}.gold.fct_player_appearances
     GROUP BY match_sk, team_sk
 )
@@ -128,6 +129,7 @@ SELECT
     MAX(CASE WHEN ts.team_side = 'Home' THEN ps.total_shots      END)       AS home_shots,
     MAX(CASE WHEN ts.team_side = 'Home' THEN ps.shots_on_goal    END)       AS home_sog,
     MAX(CASE WHEN ts.team_side = 'Home' THEN ps.big_chances      END)       AS home_big_chances,
+    MAX(CASE WHEN ts.team_side = 'Home' THEN ps.woodwork_hits   END)       AS home_woodwork,
     MAX(CASE WHEN ts.team_side = 'Home' THEN f.corner_kicks     END)        AS home_corners,
     MAX(CASE WHEN ts.team_side = 'Home' THEN f.yellow_cards     END)        AS home_yc,
     MAX(CASE WHEN ts.team_side = 'Home' THEN f.red_cards        END)        AS home_rc,
@@ -140,6 +142,7 @@ SELECT
     MAX(CASE WHEN ts.team_side = 'Away' THEN ps.total_shots      END)       AS away_shots,
     MAX(CASE WHEN ts.team_side = 'Away' THEN ps.shots_on_goal    END)       AS away_sog,
     MAX(CASE WHEN ts.team_side = 'Away' THEN ps.big_chances      END)       AS away_big_chances,
+    MAX(CASE WHEN ts.team_side = 'Away' THEN ps.woodwork_hits   END)       AS away_woodwork,
     MAX(CASE WHEN ts.team_side = 'Away' THEN f.corner_kicks     END)        AS away_corners,
     MAX(CASE WHEN ts.team_side = 'Away' THEN f.yellow_cards     END)        AS away_yc,
     MAX(CASE WHEN ts.team_side = 'Away' THEN f.red_cards        END)        AS away_rc,
@@ -271,11 +274,11 @@ def build_match_context(row: dict, player_context: str) -> str:
         f"Phase: {row['phase']}  |  Venue: {row['stadium']}  |  Referee: {row['referee']}\n"
         f"\n"
         f"HOME — {row['home_team']} [{row['home_formation']}] (Coach: {row['home_coach']})\n"
-        f"  Goals: {row['home_goals']}  |  Shots: {row['home_shots']} (on target: {row['home_sog']})  |  Big chances: {row['home_big_chances']}\n"
+        f"  Goals: {row['home_goals']}  |  Shots: {row['home_shots']} (on target: {row['home_sog']})  |  Big chances: {row['home_big_chances']}  |  Woodwork hits: {row['home_woodwork'] or 0}\n"
         f"  Possession: {row['home_possession']}%  |  Corners: {row['home_corners']}  |  YC: {row['home_yc']}  |  RC: {row['home_rc']}\n"
         f"\n"
         f"AWAY — {row['away_team']} [{row['away_formation']}] (Coach: {row['away_coach']})\n"
-        f"  Goals: {row['away_goals']}  |  Shots: {row['away_shots']} (on target: {row['away_sog']})  |  Big chances: {row['away_big_chances']}\n"
+        f"  Goals: {row['away_goals']}  |  Shots: {row['away_shots']} (on target: {row['away_sog']})  |  Big chances: {row['away_big_chances']}  |  Woodwork hits: {row['away_woodwork'] or 0}\n"
         f"  Possession: {row['away_possession']}%  |  Corners: {row['away_corners']}  |  YC: {row['away_yc']}  |  RC: {row['away_rc']}\n"
         f"\n"
         f"{player_context}"
@@ -296,6 +299,7 @@ def build_prompt(match_context: str, personas: list[dict]) -> str:
         "- Each post must be 2-4 sentences, opinionated, and specific to this match.\n"
         "- They should reference each other to feel like a real conversation thread.\n"
         "- No generic football commentary — every sentence must be grounded in the match data.\n"
+        "- Each persona's bio is law. If a persona's bio restricts them to a specific topic (e.g. only woodwork hits) or forbids them from mentioning stats, follow that strictly — even if it means ignoring other match events.\n"
         f"- When referring to other fans by name, use ONLY these exact names: {persona_order}. Never invent or use any other name.\n"
         "\n"
         f"PERSONAS:\n{persona_block}\n"
