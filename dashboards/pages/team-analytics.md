@@ -31,6 +31,8 @@ where season = '${inputs.season.value}'
 order by team_name
 ```
 
+*Select a season and team to explore their full season profile — KPIs vs. the previous year, goals timeline, home/away splits, formation breakdowns, and the complete match log.*
+
 {#key seasons[0]?.season}
 <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
 {/key}
@@ -269,6 +271,8 @@ end
 
 ## Team Intelligence
 
+*Season summary for the selected team — points, goal difference, last 5 results, and head-to-head record against each opponent.*
+
 {#each team_header as h}
 <div class="rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 md:p-8 mb-6 shadow-xl">
   <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
@@ -310,6 +314,8 @@ end
 ---
 
 ## Season Overview
+
+*Key performance indicators for the selected season, each compared against the previous season to show whether the team has improved or declined.*
 
 {#each team_kpis as k}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -401,6 +407,8 @@ end
 
 ## Goals per Round
 
+*Goals scored and conceded per match across the season. Hover a round to see the opponent.*
+
 <LineChart
     data={goals_per_round}
     x=round
@@ -414,6 +422,8 @@ end
 />
 
 ## Goals by Opponent
+
+*Total goals scored and conceded against each opponent across all meetings in the selected season.*
 
 <BarChart
     data={goals_vs_opponent}
@@ -432,6 +442,8 @@ end
 ---
 
 ## Home vs Away
+
+*Results, goals, possession, and pass accuracy split by home and away fixtures.*
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -479,6 +491,8 @@ end
 
 ## Formation
 
+*Win/draw/loss record and goals per match broken down by the formation used in each game.*
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
@@ -507,6 +521,8 @@ end
 
 ## When We Play Best
 
+*Results split by day of the week and time of day to reveal any scheduling patterns in performance.*
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
@@ -534,6 +550,8 @@ end
 ---
 
 ## Match Log
+
+*Full match-by-match record for the selected team and season, including possession, pass accuracy, shots on goal, and shot conversion.*
 
 <div class="hidden md:block">
 <DataTable data={match_results} rows=20 search=true downloadable=true>
