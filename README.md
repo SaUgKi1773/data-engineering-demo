@@ -9,10 +9,12 @@ An end-to-end data engineering project tracking the Danish premier football leag
 ## Architecture
 
 ```
-Sportmonks API
-       │
-       ▼
+Sportmonks API        Groq LLM
+       │                   │
+       └─────────┬─────────┘
+                 ▼
   Bronze layer        Raw JSON stored in MotherDuck (one table per endpoint)
+                       + LLM-generated match discussion rows
        │
        ▼
   Silver layer        Cleaned, typed, structured relational tables  (dbt)
@@ -20,7 +22,8 @@ Sportmonks API
        ▼
   Gold layer          Kimball star schema  ─────────────────────────────┐
                       (dims + fct_team_matches                          │
-                           + fct_player_appearances)  (dbt)             │
+                           + fct_player_appearances                     │
+                           + fct_match_discussions)  (dbt)             │
                                                                         ▼
                                                              Evidence.dev dashboard
                                                              deployed on Vercel
@@ -46,7 +49,11 @@ The nightly GitHub Actions pipeline runs all three layers sequentially, then tri
 
 ## Data model
 
-The gold layer follows **Kimball dimensional modelling**. Main fact grain: **one row per team per match** (`fct_team_matches` — each fixture produces two rows, one for each side). A second fact table `fct_player_appearances` holds individual player stats at match level.
+The gold layer follows **Kimball dimensional modelling**. Three fact tables cover three business processes:
+
+- **`fct_team_matches`** — one row per team per match (each fixture produces two rows, one per side); team-level stats, results, and tactical data
+- **`fct_player_appearances`** — one row per player per match; individual performance stats and ratings
+- **`fct_match_discussions`** — one row per match per persona; LLM-generated fan discussion comments (via Groq) powering the Fan Forum on the Match Analysis page
 
 ```mermaid
 erDiagram
@@ -248,6 +255,21 @@ erDiagram
         varchar appearance_type
     }
 
+    dim_persona {
+        int persona_sk PK
+        varchar persona_name
+        int sort_order
+        boolean is_active
+        varchar bio
+    }
+
+    fct_match_discussions {
+        int match_sk FK
+        int persona_sk FK
+        int date_sk FK
+        varchar message
+    }
+
     fct_team_matches }o--|| dim_date : "date_sk"
     fct_team_matches }o--|| dim_time : "time_sk"
     fct_team_matches }o--|| dim_match : "match_sk"
@@ -275,30 +297,34 @@ erDiagram
     fct_player_appearances }o--|| dim_team_side : "team_side_sk"
     fct_player_appearances }o--|| dim_match_result : "match_result_sk"
     fct_player_appearances }o--|| dim_appearance_type : "appearance_type_sk"
+    fct_match_discussions }o--|| dim_match : "match_sk"
+    fct_match_discussions }o--|| dim_persona : "persona_sk"
+    fct_match_discussions }o--|| dim_date : "date_sk"
 ```
 
 ### Dimensional model bus matrix
 
 The bus matrix shows which dimensions are conformed (shared) across business processes — the foundation of Kimball integration.
 
-| **BUSINESS PROCESSES →** | Team Match Performance | Player Appearance |
-|---|:---:|:---:|
-| **COMMON DIMENSIONS ↓** | | |
-| Date | X | X |
-| Time of Day | X | X |
-| Match | X | X |
-| Team | X | X |
-| Opponent Team | X | X |
-| League | X | X |
-| Stadium / Venue | X | X |
-| Referee | X | X |
-| Coach | X | X |
-| Formation | X | X |
-| Home / Away | X | X |
-| Match Result | X | X |
-| Player | | X |
-| Playing Position | | X |
-| Appearance Type | | X |
+| **BUSINESS PROCESSES →** | Team Match Performance | Player Appearance | Match Discussion |
+|---|:---:|:---:|:---:|
+| **COMMON DIMENSIONS ↓** | | | |
+| Date | X | X | X |
+| Time of Day | X | X | |
+| Match | X | X | X |
+| Team | X | X | |
+| Opponent Team | X | X | |
+| League | X | X | |
+| Stadium / Venue | X | X | |
+| Referee | X | X | |
+| Coach | X | X | |
+| Formation | X | X | |
+| Home / Away | X | X | |
+| Match Result | X | X | |
+| Player | | X | |
+| Playing Position | | X | |
+| Appearance Type | | X | |
+| Persona | | | X |
 
 All dimension surrogate keys are **stable across runs** — new records get new SKs, existing records keep theirs. Sentinel rows (`-1 Unknown`, `-2 Not Applicable`) handle missing lookups, with all VARCHAR attributes filled with descriptive defaults (e.g. `'Unknown Stadium Country'`).
 
@@ -338,9 +364,10 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 │   ├── models/
 │   │   ├── silver/             # 37 models: bronze JSON → structured tables
 │   │   └── gold/
-│   │       ├── dims/           # 15 dim_* models (Kimball dims)
+│   │       ├── dims/           # 16 dim_* models (Kimball dims, incl. dim_persona)
 │   │       ├── fct_team_matches.sql
-│   │       └── fct_player_appearances.sql
+│   │       ├── fct_player_appearances.sql
+│   │       └── fct_match_discussions.sql
 │   ├── seeds/                  # team_names.csv (display names + codes)
 │   ├── tests/                  # Custom SQL DQ assertions
 │   ├── macros/
@@ -393,7 +420,7 @@ pip install -r requirements.txt
 
 # 3. Configure environment
 cp .env.example .env
-# Fill in MOTHERDUCK_TOKEN and SPORTMONKS_API_KEY
+# Fill in MOTHERDUCK_TOKEN, SPORTMONKS_API_KEY, and GROQ_API_KEY
 
 # 4. Run layers against local dev
 python ingestion/sportmonks/run.py
@@ -423,3 +450,4 @@ npm run dev
 | `MOTHERDUCK_TOKEN` | MotherDuck service token (read-write) |
 | `MOTHERDUCK_TOKEN_READONLY` | MotherDuck read-only token (dashboard build) |
 | `SPORTMONKS_API_KEY` | Sportmonks API key |
+| `GROQ_API_KEY` | Groq API key (LLM match discussion generation) |
