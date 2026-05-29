@@ -321,7 +321,7 @@ end
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Current Ranking</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Ranking</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">#{k.current_rank}</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-xs text-gray-400">Prev season: {k.prev_rank != null ? '#' + k.prev_rank : '—'}</span>
