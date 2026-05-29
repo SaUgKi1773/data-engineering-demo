@@ -24,7 +24,7 @@ from superligaen.mart_referee_season
 order by season desc
 ```
 
-*Select a season to explore referee discipline patterns — league averages, strictness rankings, home/away bias, and individual referee deep dives.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a season to explore referee discipline patterns — league averages, strictness rankings, home/away bias, and individual referee deep dives.</p>
 
 {#key seasons[0]?.season}
 <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
@@ -108,7 +108,7 @@ from ${referee_trends}
 
 ### League Discipline Snapshot
 
-*Season-wide averages across all referees — active officials, yellow and red card rates, and average fouls per match.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Season-wide averages across all referees — active officials, yellow and red card rates, and average fouls per match.</p>
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
@@ -129,7 +129,7 @@ from ${referee_trends}
 
 ## Strictest vs Most Lenient Referees
 
-*Top 3 referees by yellow cards per match at each extreme — who runs the tightest game and who lets the most go.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top 3 referees by yellow cards per match at each extreme — who runs the tightest game and who lets the most go.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
 
@@ -177,7 +177,7 @@ from ${referee_trends}
 
 ## Season Leaderboard
 
-*All referees ranked by matches managed. Includes cards, fouls, severity index, and home/away yellow card split.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">All referees ranked by matches managed. Includes cards, fouls, severity index, and home/away yellow card split.</p>
 
 <DataTable data={season_stats} rows=20>
     <Column id=referee_name          title="Referee"              wrap=true />
@@ -195,7 +195,7 @@ from ${referee_trends}
 
 ## Home / Away Bias
 
-*A neutral referee should book home and away teams equally. Values near 50% = balanced. Above 50% = more cards to home team.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">A neutral referee should book home and away teams equally. Values near 50% = balanced. Above 50% = more cards to home team.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -228,7 +228,7 @@ from ${referee_trends}
 
 ## Cards & Fouls per Match
 
-*Per-match averages for every referee. Sorted highest to lowest so outliers are immediately visible.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Per-match averages for every referee. Sorted highest to lowest so outliers are immediately visible.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -258,7 +258,7 @@ from ${referee_trends}
 
 ## Referee Deep Dive
 
-*Select a referee to see their personal profile, team exposure, match log, and how their card rates compare to the league average across all seasons.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a referee to see their personal profile, team exposure, match log, and how their card rates compare to the league average across all seasons.</p>
 
 {#key season_stats[0]?.referee_name}
 <Dropdown data={season_stats} name=referee value=referee_name label=referee_name defaultValue={season_stats[0]?.referee_name} />
@@ -371,7 +371,7 @@ where referee_name = '${inputs.referee.value}'
 
 ## Historical Discipline Trends
 
-*Season-by-season league averages (grey) overlaid with the selected referee's own trend line — spot referees who have become stricter or more lenient over time.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Season-by-season league averages (grey) overlaid with the selected referee's own trend line — spot referees who have become stricter or more lenient over time.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 

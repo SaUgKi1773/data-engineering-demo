@@ -10,7 +10,7 @@ from superligaen.mart_stadium_season
 order by season desc
 ```
 
-*Select a season to explore stadium and surface data — fortress rankings, home win rates, and how grass vs. artificial turf affects the way the game is played.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a season to explore stadium and surface data — fortress rankings, home win rates, and how grass vs. artificial turf affects the way the game is played.</p>
 
 {#key season_options[0]?.season}
 <Dropdown data={season_options} name=season value=season label=season order="season desc" defaultValue={season_options[0]?.season} />
@@ -72,7 +72,7 @@ where season = '${inputs.season.value}'
 
 ## Stadium Map
 
-*Bubble size = total goals scored. Color = playing surface type.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Bubble size = total goals scored. Color = playing surface type.</p>
 
 <BubbleMap
     data={stadium_stats}
@@ -93,7 +93,7 @@ where season = '${inputs.season.value}'
 
 ## Top 3 Fortress Stadiums
 
-*The three venues where the home side wins most often — home win %, wins, and total home matches played.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">The three venues where the home side wins most often — home win %, wins, and total home matches played.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
   {#each fortress_podium as s, i}
@@ -132,7 +132,7 @@ where season = '${inputs.season.value}'
 
 ## Full Fortress Ranking
 
-*Home record at each stadium. A true fortress keeps opponents at bay.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Home record at each stadium. A true fortress keeps opponents at bay.</p>
 
 <BarChart
     data={fortress_ranking}
@@ -177,7 +177,7 @@ where season = '${inputs.season.value}'
 
 ## Surface Analysis: Grass vs Artificial Turf
 
-*How does the playing surface shape the way football is played?*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">How does the playing surface shape the way football is played?</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 

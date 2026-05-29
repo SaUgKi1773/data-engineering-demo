@@ -31,7 +31,7 @@ where season = '${inputs.season.value}'
 order by team_name
 ```
 
-*Select a season and team to explore their full season profile — KPIs vs. the previous year, goals timeline, home/away splits, formation breakdowns, and the complete match log.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a season and team to explore their full season profile — KPIs vs. the previous year, goals timeline, home/away splits, formation breakdowns, and the complete match log.</p>
 
 {#key seasons[0]?.season}
 <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
@@ -271,7 +271,7 @@ end
 
 ## Team Intelligence
 
-*Season summary for the selected team — points, goal difference, last 5 results, and head-to-head record against each opponent.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Season summary for the selected team — points, goal difference, last 5 results, and head-to-head record against each opponent.</p>
 
 {#each team_header as h}
 <div class="rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 md:p-8 mb-6 shadow-xl">
@@ -315,7 +315,7 @@ end
 
 ## Season Overview
 
-*Key performance indicators for the selected season, each compared against the previous season to show whether the team has improved or declined.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Key performance indicators for the selected season, each compared against the previous season to show whether the team has improved or declined.</p>
 
 {#each team_kpis as k}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -407,7 +407,7 @@ end
 
 ## Goals per Round
 
-*Goals scored and conceded per match across the season. Hover a round to see the opponent.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Goals scored and conceded per match across the season. Hover a round to see the opponent.</p>
 
 <LineChart
     data={goals_per_round}
@@ -423,7 +423,7 @@ end
 
 ## Goals against Opponent
 
-*Total goals scored and conceded against each opponent across all meetings in the selected season.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Total goals scored and conceded against each opponent across all meetings in the selected season.</p>
 
 <BarChart
     data={goals_vs_opponent}
@@ -443,7 +443,7 @@ end
 
 ## Home vs Away
 
-*Results, goals, possession, and pass accuracy split by home and away fixtures.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Results, goals, possession, and pass accuracy split by home and away fixtures.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -493,7 +493,7 @@ end
 
 ## Formation
 
-*Win/draw/loss record and goals per match broken down by the formation used in each game.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Win/draw/loss record and goals per match broken down by the formation used in each game.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -524,7 +524,7 @@ end
 
 ## When We Play Best
 
-*Results split by day of the week and time of day to reveal any scheduling patterns in performance.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Results split by day of the week and time of day to reveal any scheduling patterns in performance.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -554,7 +554,7 @@ end
 
 ## Match Log
 
-*Full match-by-match record for the selected team and season, including possession, pass accuracy, shots on goal, and shot conversion.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Full match-by-match record for the selected team and season, including possession, pass accuracy, shots on goal, and shot conversion.</p>
 
 <div class="hidden md:block">
 <DataTable data={match_results} rows=20 search=true downloadable=true>
