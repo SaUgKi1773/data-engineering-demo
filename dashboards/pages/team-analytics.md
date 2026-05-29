@@ -418,7 +418,7 @@ end
     colorPalette={['#3b82f6','#f97316']}
     markers=true
     chartAreaHeight=280
-    echartsOptions={{series: [{markLine: {silent: true, symbol: ['none','none'], label: {show: false}, data: goals_per_round.map(r => ([{coord: [r.round, r.goals_scored]}, {coord: [r.round, r.goals_conceded], lineStyle: {color: r.goals_scored >= r.goals_conceded ? '#3b82f6' : '#f97316', width: 2, opacity: 0.5}}]))}}]}}
+    echartsOptions={{tooltip: {formatter: (function() { const lu = {}; for (const r of goals_per_round) { lu[r.round] = {opponent: r.opponent, result: r.result}; } return function(params) { const round = params[0].value[0]; const info = lu[round] || {}; let out = '<span style="font-weight:600;">Round ' + round + '</span>'; if (info.opponent) out += '<br><span style="font-size:11px;color:#9ca3af;">vs ' + info.opponent + ' · ' + info.result + '</span>'; for (const p of params) { out += '<br>' + p.marker + ' ' + p.seriesName + ': <b>' + p.value[1] + '</b>'; } return out; }; })()}, series: [{markLine: {silent: true, symbol: ['none','none'], label: {show: false}, data: goals_per_round.map(r => ([{coord: [r.round, r.goals_scored]}, {coord: [r.round, r.goals_conceded], lineStyle: {color: r.goals_scored >= r.goals_conceded ? '#3b82f6' : '#f97316', width: 2, opacity: 0.5}}]))}}]}}
 />
 
 ## Goals against Opponent
