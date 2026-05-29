@@ -93,7 +93,7 @@ select * from superligaen.mart_home_summary
   <div class="rounded-xl bg-blue-50 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">⚽</div>
   <div class="flex-1 min-w-0">
     <div class="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors">Match Results</div>
-    <div class="text-gray-400 text-xs mt-0.5 leading-snug">Full match history, scorelines and analytics by round</div>
+    <div class="text-gray-400 text-xs mt-0.5 leading-snug">Scorelines, round KPIs &amp; players of the week</div>
   </div>
   <div class="shrink-0 text-gray-300 group-hover:text-blue-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
 </a>
@@ -111,7 +111,7 @@ select * from superligaen.mart_home_summary
   <div class="rounded-xl bg-emerald-50 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">📈</div>
   <div class="flex-1 min-w-0">
     <div class="text-sm font-bold text-gray-800 group-hover:text-emerald-600 transition-colors">League Intelligence</div>
-    <div class="text-gray-400 text-xs mt-0.5 leading-snug">Standings, points race, team radar &amp; discipline rankings</div>
+    <div class="text-gray-400 text-xs mt-0.5 leading-snug">Season KPIs, points race, team radar &amp; domain rankings</div>
   </div>
   <div class="shrink-0 text-gray-300 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
 </a>
@@ -120,7 +120,7 @@ select * from superligaen.mart_home_summary
   <div class="rounded-xl bg-sky-50 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">👥</div>
   <div class="flex-1 min-w-0">
     <div class="text-sm font-bold text-gray-800 group-hover:text-sky-600 transition-colors">Team Intelligence</div>
-    <div class="text-gray-400 text-xs mt-0.5 leading-snug">Points race, match log, squad depth &amp; home/away splits</div>
+    <div class="text-gray-400 text-xs mt-0.5 leading-snug">Season KPIs, goals timeline, formation &amp; home/away splits</div>
   </div>
   <div class="shrink-0 text-gray-300 group-hover:text-sky-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
 </a>
