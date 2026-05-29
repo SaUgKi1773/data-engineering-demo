@@ -47,6 +47,8 @@ select team_name from (
 
 <Dropdown data={teams} name=team value=team_name label=team_name multiple=true defaultValue={['All Teams']} />
 
+*Use the **Season** picker to switch between years. Use the **Team** filter to focus on one or more clubs — or keep 'All Teams' selected for full-league statistics. Both filters apply to every section on this page.*
+
 ```sql league_kpis
 with curr as (
     select
