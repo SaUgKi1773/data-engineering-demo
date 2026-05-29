@@ -421,7 +421,7 @@ end
     echartsOptions={{series: [{markLine: {silent: true, symbol: ['none','none'], label: {show: false}, data: goals_per_round.map(r => ([{coord: [r.round, r.goals_scored]}, {coord: [r.round, r.goals_conceded], lineStyle: {color: r.goals_scored >= r.goals_conceded ? '#3b82f6' : '#f97316', width: 2, opacity: 0.5}}]))}}]}}
 />
 
-## Goals by Opponent
+## Goals against Opponent
 
 *Total goals scored and conceded against each opponent across all meetings in the selected season.*
 
