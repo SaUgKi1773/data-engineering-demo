@@ -41,7 +41,7 @@ select team_name from (
 ) order by ord, team_name
 ```
 
-*Select a season and optionally filter to specific teams. All sections below — KPIs, awards, standings, radar, and match log — update to the selection.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a season and optionally filter to specific teams. All sections below — KPIs, awards, standings, radar, and match log — update to the selection.</p>
 
 {#key seasons[0]?.season}
 <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
@@ -430,7 +430,7 @@ order by case period_of_day
 
 ## League Intelligence — {inputs.season.value}
 
-*Top-line KPIs for the selected season, each compared against the previous season. Applies to the team filter if set.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top-line KPIs for the selected season, each compared against the previous season. Applies to the team filter if set.</p>
 
 {#each league_kpis as k}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -514,7 +514,7 @@ order by case period_of_day
 
 ## Season Awards
 
-*Top scorer, top assister, and best-rated player for the selected season (minimum 5 appearances). Runner-up cards are stacked below each winner.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top scorer, top assister, and best-rated player for the selected season (minimum 5 appearances). Runner-up cards are stacked below each winner.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
@@ -683,7 +683,7 @@ order by case period_of_day
 
 ## Standings & Points Race
 
-*Cumulative points race round by round alongside the current league table. Hover a round on the line chart to see the full ranking.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Cumulative points race round by round alongside the current league table. Hover a round on the line chart to see the full ranking.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
 
@@ -736,8 +736,8 @@ order by case period_of_day
 <div style="display:grid;grid-template-columns:repeat(1,1fr);gap:0 1.5rem;margin-bottom:1.5rem;" class="md:two-col-radar">
 
 <!-- Explanations: order 1 & 5 on mobile, reset to DOM order on desktop -->
-<p style="order:1;font-size:0.8125rem;color:#6b7280;margin:1rem 0 0.5rem 0;font-style:italic;" class="md:order-reset">Where does each team sit on the attack vs defence spectrum? Teams to the right score more, teams lower down concede less. The bottom-right corner is where champions live.</p>
-<p style="order:5;font-size:0.8125rem;color:#6b7280;margin:1rem 0 0.5rem 0;font-style:italic;" class="md:order-reset">How does a team rank across six dimensions relative to the rest of the league? Each axis is a score from 0 to 100 — 100 means best in the league. Click a team in the legend to isolate it.</p>
+<p style="order:1;font-size:0.75rem;color:#6b7280;margin:1rem 0 0.5rem 0;font-style:italic;" class="md:order-reset">Where does each team sit on the attack vs defence spectrum? Teams to the right score more, teams lower down concede less. The bottom-right corner is where champions live.</p>
+<p style="order:5;font-size:0.75rem;color:#6b7280;margin:1rem 0 0.5rem 0;font-style:italic;" class="md:order-reset">How does a team rank across six dimensions relative to the rest of the league? Each axis is a score from 0 to 100 — 100 means best in the league. Click a team in the legend to isolate it.</p>
 
 <!-- Titles: order 2 & 6 on mobile, reset to DOM order on desktop -->
 <p style="order:2;font-size:0.875rem;font-weight:600;color:#374151;margin:0 0 0.5rem 0;" class="md:order-reset">Attack vs Defence — {inputs.season.value}</p>
@@ -802,7 +802,7 @@ order by case period_of_day
 
 ## Team Rankings by Domain
 
-*All teams ranked within each performance dimension. Sorted highest to lowest so the best and worst performers are immediately visible.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">All teams ranked within each performance dimension. Sorted highest to lowest so the best and worst performers are immediately visible.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -889,7 +889,7 @@ order by case period_of_day
 
 ## Match Schedule
 
-<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When are Superligaen matches played? The left chart breaks down fixtures by day of week and time of day; the right shows whether kick-off time influences scoring. Time slots: Morning 05:00–10:59 · Afternoon 11:00–15:59 · Evening 16:00–20:59 · Night 21:00–04:59.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When are Superligaen matches played? The left chart breaks down fixtures by day of week and time of day; the right shows whether kick-off time influences scoring. Time slots: Morning 05:00–10:59 · Afternoon 11:00–15:59 · Evening 16:00–20:59 · Night 21:00–04:59.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -925,7 +925,7 @@ order by case period_of_day
 
 ## Match Log
 
-<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every team appearance for the selected season — one row per team per match. Search by anything: team, opponent, result, formation, coach, referee, stadium, time slot, day, round, etc.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every team appearance for the selected season — one row per team per match. Search by anything: team, opponent, result, formation, coach, referee, stadium, time slot, day, round, etc.</p>
 
 <DataTable data={match_log} search=true rows=6>
     <Column id=season              title="Season"           />

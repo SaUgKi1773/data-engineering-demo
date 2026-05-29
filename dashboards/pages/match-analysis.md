@@ -332,7 +332,7 @@ order by team_side desc, position_group, position_name
   {/if}
 </div>
 
-<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 20px;font-style:italic;">Fan reactions to this match. Drop your take below.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fan reactions to this match. Drop your take below.</p>
 
 <div style="display:flex;flex-direction:column;gap:0;margin-bottom:32px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
   {#each discussions as post}

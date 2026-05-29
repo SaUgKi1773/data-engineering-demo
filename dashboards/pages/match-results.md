@@ -12,7 +12,7 @@ select season from (
 ) order by is_current desc, season desc
 ```
 
-*Select a season and round to browse all matches. Click any match in the table to open the full match analysis page.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a season and round to browse all matches. Click any match in the table to open the full match analysis page.</p>
 
 {#key seasons[0]?.season}
 <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
@@ -144,7 +144,7 @@ order by sort_order
 {#if potw.length > 0}
 ## Players of the Week
 
-*Standout performers from this round — one player recognised per category based on the highest single-match stat.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Standout performers from this round — one player recognised per category based on the highest single-match stat.</p>
 
 <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
   {#each potw as p}

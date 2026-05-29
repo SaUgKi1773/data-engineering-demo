@@ -599,7 +599,7 @@ where season = '${inputs.season.value}'
 
 ## Top Players
 
-*Top 3 players with at least 5 appearances in the selected season, ranked by the chosen measure. Season, team, and position filters all apply.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top 3 players with at least 5 appearances in the selected season, ranked by the chosen measure. Season, team, and position filters all apply.</p>
 
 <Dropdown data={podium_measures} name=podium_measure value=value label=label defaultValue="goals" title="Measure" />
 
@@ -653,7 +653,7 @@ where season = '${inputs.season.value}'
 
 ## Player Deep Dive
 
-*Select a player from the dropdown to explore their profile, season stats, player characteristics, performance timeline, and match log.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a player from the dropdown to explore their profile, season stats, player characteristics, performance timeline, and match log.</p>
 
 {#key players_in_team[0]?.player_name}
 <Dropdown data={players_in_team} name=player value=player_name label=player_name defaultValue={players_in_team[0]?.player_name} />
@@ -755,7 +755,7 @@ where season = '${inputs.season.value}'
 
 ## Player Characteristics
 
-*Composite percentile score among all players with 450+ minutes in {inputs.season.value}. Each axis combines multiple rate metrics weighted by their importance to that dimension. Higher = better relative to the league.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Composite percentile score among all players with 450+ minutes in {inputs.season.value}. Each axis combines multiple rate metrics weighted by their importance to that dimension. Higher = better relative to the league.</p>
 
 {#each league_context as lc}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-center">
@@ -821,7 +821,7 @@ where season = '${inputs.season.value}'
 
 ## Performance Timeline
 
-*Select a measure to see how it evolved across rounds. Rating is always shown as the secondary axis.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a measure to see how it evolved across rounds. Rating is always shown as the secondary axis.</p>
 
 ```sql timeline_measures
 select * from (values
@@ -917,7 +917,7 @@ select * from (values
 
 ## Match Log
 
-*Use the selectors below to add or remove columns per domain.*
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Use the selectors below to add or remove columns per domain.</p>
 
 ```sql other_measures
 select * from (values
