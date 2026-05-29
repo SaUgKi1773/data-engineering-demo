@@ -450,3 +450,4 @@ npm run dev
 | `MOTHERDUCK_TOKEN` | MotherDuck service token (read-write) |
 | `MOTHERDUCK_TOKEN_READONLY` | MotherDuck read-only token (dashboard build) |
 | `SPORTMONKS_API_KEY` | Sportmonks API key |
+| `GROQ_API_KEY` | Groq API key (LLM match discussion generation) |
