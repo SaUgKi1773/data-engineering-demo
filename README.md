@@ -420,7 +420,7 @@ pip install -r requirements.txt
 
 # 3. Configure environment
 cp .env.example .env
-# Fill in MOTHERDUCK_TOKEN and SPORTMONKS_API_KEY
+# Fill in MOTHERDUCK_TOKEN, SPORTMONKS_API_KEY, and GROQ_API_KEY
 
 # 4. Run layers against local dev
 python ingestion/sportmonks/run.py
