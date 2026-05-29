@@ -41,6 +41,8 @@ select team_name from (
 ) order by ord, team_name
 ```
 
+*Select a season and optionally filter to specific teams. All sections below — KPIs, awards, standings, radar, and match log — update to the selection.*
+
 {#key seasons[0]?.season}
 <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
 {/key}
@@ -428,6 +430,8 @@ order by case period_of_day
 
 ## League Intelligence — {inputs.season.value}
 
+*Top-line KPIs for the selected season, each compared against the previous season. Applies to the team filter if set.*
+
 {#each league_kpis as k}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 
@@ -509,6 +513,8 @@ order by case period_of_day
 ---
 
 ## Season Awards
+
+*Top scorer, top assister, and best-rated player for the selected season (minimum 5 appearances). Runner-up cards are stacked below each winner.*
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
@@ -677,6 +683,8 @@ order by case period_of_day
 
 ## Standings & Points Race
 
+*Cumulative points race round by round alongside the current league table. Hover a round on the line chart to see the full ranking.*
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
 
 <div>
@@ -793,6 +801,8 @@ order by case period_of_day
 ---
 
 ## Team Rankings by Domain
+
+*All teams ranked within each performance dimension. Sorted highest to lowest so the best and worst performers are immediately visible.*
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
