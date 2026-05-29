@@ -39,7 +39,7 @@ The nightly GitHub Actions pipeline runs all three layers sequentially, then tri
 |---|---|
 | Data source | Sportmonks REST API |
 | Data warehouse | MotherDuck (DuckDB cloud) |
-| Ingestion | Python (`ingestion/sportmonks/`) |
+| Ingestion | Python (`ingestion/sportmonks/`, `ingestion/groq/`) |
 | Transformations | dbt-duckdb (`dbt/`) |
 | Orchestration | GitHub Actions (nightly + manual triggers) |
 | BI / Dashboard | Evidence.dev |
@@ -353,12 +353,14 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 ```
 .
 ├── ingestion/
-│   └── sportmonks/             # Bronze: pull from Sportmonks API → MotherDuck
-│       ├── run.py              # Ingestion runner (incremental + full load)
-│       ├── engine.py           # Metadata-driven fetch engine
-│       ├── api.py              # Sportmonks API client
-│       ├── db.py               # MotherDuck connection
-│       └── config.py           # Endpoint manifest + env vars
+│   ├── sportmonks/             # Bronze: pull from Sportmonks API → MotherDuck
+│   │   ├── run.py              # Ingestion runner (incremental + full load)
+│   │   ├── engine.py           # Metadata-driven fetch engine
+│   │   ├── api.py              # Sportmonks API client
+│   │   ├── db.py               # MotherDuck connection
+│   │   └── config.py           # Endpoint manifest + env vars
+│   └── groq/                   # Bronze: LLM match discussion generation
+│       └── generate_round_discussions.py  # Groq API → fct_match_discussions
 │
 ├── dbt/                        # Silver + Gold transformations (dbt-duckdb)
 │   ├── models/
