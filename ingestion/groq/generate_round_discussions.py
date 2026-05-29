@@ -40,6 +40,17 @@ CREATE TABLE IF NOT EXISTS {db}.bronze.groq__llm_match_discussions (
 )
 """
 
+META_CREATE_SQL = """
+CREATE SCHEMA IF NOT EXISTS {db}.meta;
+CREATE TABLE IF NOT EXISTS {db}.meta.ingestion_run_log (
+    pipeline     VARCHAR,
+    mode         VARCHAR,
+    status       VARCHAR,
+    started_at   TIMESTAMP,
+    completed_at TIMESTAMP
+)
+"""
+
 PLAYER_QUERY = """
 SELECT
     ts.team_side,
@@ -383,6 +394,9 @@ def main() -> None:
     con = duckdb.connect(f"md:{args.db}?motherduck_token={token}")
 
     con.execute(BRONZE_CREATE_SQL.format(db=args.db))
+    for stmt in META_CREATE_SQL.format(db=args.db).strip().split(";"):
+        if stmt.strip():
+            con.execute(stmt)
 
     personas = load_personas(con, args.db)
     if not personas:
@@ -391,7 +405,8 @@ def main() -> None:
     log.info(f"Loaded {len(personas)} personas: {[p['name'] for p in personas]}")
 
     client = Groq(api_key=os.environ["GROQ_API_KEY"])
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    started_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = started_at
 
     if args.all_rounds:
         if args.force:
@@ -423,6 +438,10 @@ def main() -> None:
 
         process_round(con, client, personas, args.db, args.season, round_number, args.force, now)
 
+    con.execute(
+        f"INSERT INTO {args.db}.meta.ingestion_run_log VALUES (?, ?, ?, ?, ?)",
+        ["groq", "incremental", "success", started_at, datetime.now(timezone.utc).replace(tzinfo=None)],
+    )
     con.close()
 
 
