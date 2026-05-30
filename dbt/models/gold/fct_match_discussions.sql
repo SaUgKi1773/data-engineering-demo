@@ -13,8 +13,5 @@ FROM {{ ref('llm_match_discussions') }}  s
 JOIN {{ ref('dim_match') }}              dm ON dm.match_id    = s.match_id
 JOIN {{ ref('dim_persona') }}            dp ON dp.persona_name = s.persona_name
 {% if is_incremental() %}
-WHERE NOT EXISTS (
-    SELECT 1 FROM {{ this }} t
-    WHERE t.match_sk = dm.match_sk AND t.persona_sk = dp.persona_sk
-)
+WHERE {{ gold_incremental_filter() }}
 {% endif %}
