@@ -20,6 +20,7 @@ sources:
       - name: sportmonks__referees
       - name: sportmonks__players
       - name: sportmonks__fixtures
+        freshness: null
       - name: sportmonks__standings
       - name: sportmonks__topscorers
       - name: sportmonks__stage_topscorers
