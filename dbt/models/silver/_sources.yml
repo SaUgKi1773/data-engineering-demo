@@ -23,7 +23,9 @@ sources:
         freshness: null
       - name: sportmonks__standings
       - name: sportmonks__topscorers
+        freshness: null
       - name: sportmonks__stage_topscorers
+        freshness: null
       - name: sportmonks__stage_statistics
       - name: sportmonks__round_statistics
       - name: sportmonks__rivals
