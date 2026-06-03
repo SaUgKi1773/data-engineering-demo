@@ -911,10 +911,12 @@ order by case period_of_day
     data={goals_by_slot}
     x=period_of_day
     y=goals_per_match
+    series=period_of_day
     title="Goals per Match by Time of Day"
     xAxisTitle="Time of Day"
     yAxisTitle="Goals / Match"
     colorPalette={['#fbbf24','#3b82f6','#10b981','#f97316','#6366f1']}
+    legend=false
     sort=false
     echartsOptions={{xAxis: {data: ['Morning', 'Noon', 'Afternoon', 'Evening', 'Night']}}}
 />
