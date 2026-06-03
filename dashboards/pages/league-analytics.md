@@ -889,7 +889,7 @@ order by case period_of_day
 
 ## Match Schedule
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When are Superligaen matches played? The left chart breaks down fixtures by day of week and time of day; the right shows whether kick-off time influences scoring. Time slots: Morning 05:00–10:59 · Noon 11:00–14:59 · Afternoon 15:00–17:59 · Evening 18:00–20:59 · Night 21:00–04:59.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When are Superligaen matches played? The left chart breaks down fixtures by day of week and time of day; the right shows whether kick-off time influences scoring. Time slots: Morning 05:00–10:59 · Noon 11:00–13:59 · Afternoon 14:00–17:59 · Evening 18:00–20:59 · Night 21:00–04:59.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 

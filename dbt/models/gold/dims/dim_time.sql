@@ -3,8 +3,8 @@ SELECT
     hour::INTEGER AS hour,
     CASE
         WHEN hour BETWEEN  5 AND 10 THEN 'Morning'
-        WHEN hour BETWEEN 11 AND 14 THEN 'Noon'
-        WHEN hour BETWEEN 15 AND 17 THEN 'Afternoon'
+        WHEN hour BETWEEN 11 AND 13 THEN 'Noon'
+        WHEN hour BETWEEN 14 AND 17 THEN 'Afternoon'
         WHEN hour BETWEEN 18 AND 20 THEN 'Evening'
         ELSE 'Night'
     END           AS period_of_day
