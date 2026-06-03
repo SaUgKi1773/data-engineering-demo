@@ -235,9 +235,10 @@ group by period_of_day
 order by case period_of_day
     when 'Morning'   then 1
     when 'Noon'      then 2
-    when 'Evening'   then 3
-    when 'Night'     then 4
-    else 5
+    when 'Afternoon' then 3
+    when 'Evening'   then 4
+    when 'Night'     then 5
+    else 6
 end
 ```
 

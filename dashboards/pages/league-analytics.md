@@ -409,7 +409,7 @@ order by case day_name
     when 'Thursday'  then 4 when 'Friday'   then 5 when 'Saturday'  then 6
     when 'Sunday'    then 7 end,
     case period_of_day
-    when 'Morning' then 1 when 'Noon' then 2 when 'Evening' then 3 when 'Night' then 4 else 5 end
+    when 'Morning' then 1 when 'Noon' then 2 when 'Afternoon' then 3 when 'Evening' then 4 when 'Night' then 5 else 6 end
 ```
 
 ```sql goals_by_slot
@@ -423,7 +423,7 @@ where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
 group by period_of_day
 order by case period_of_day
-    when 'Morning' then 1 when 'Noon' then 2 when 'Evening' then 3 when 'Night' then 4 else 5 end
+    when 'Morning' then 1 when 'Noon' then 2 when 'Afternoon' then 3 when 'Evening' then 4 when 'Night' then 5 else 6 end
 ```
 
 ---
@@ -889,7 +889,7 @@ order by case period_of_day
 
 ## Match Schedule
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When are Superligaen matches played? The left chart breaks down fixtures by day of week and time of day; the right shows whether kick-off time influences scoring. Time slots: Morning 05:00–10:59 · Afternoon 11:00–15:59 · Evening 16:00–20:59 · Night 21:00–04:59.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When are Superligaen matches played? The left chart breaks down fixtures by day of week and time of day; the right shows whether kick-off time influences scoring. Time slots: Morning 05:00–10:59 · Noon 11:00–14:59 · Afternoon 15:00–17:59 · Evening 18:00–20:59 · Night 21:00–04:59.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -901,7 +901,7 @@ order by case period_of_day
     title="Matches by Day & Time of Day"
     xAxisTitle="Day"
     yAxisTitle="Matches"
-    colorPalette={['#fbbf24','#3b82f6','#f97316','#6366f1']}
+    colorPalette={['#fbbf24','#3b82f6','#10b981','#f97316','#6366f1']}
     type=stacked
     sort=false
     echartsOptions={{xAxis: {data: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']}}}
@@ -914,9 +914,9 @@ order by case period_of_day
     title="Goals per Match by Time of Day"
     xAxisTitle="Time of Day"
     yAxisTitle="Goals / Match"
-    colorPalette={['#fbbf24','#3b82f6','#f97316','#6366f1']}
+    colorPalette={['#fbbf24','#3b82f6','#10b981','#f97316','#6366f1']}
     sort=false
-    echartsOptions={{xAxis: {data: ['Morning', 'Noon', 'Evening', 'Night']}}}
+    echartsOptions={{xAxis: {data: ['Morning', 'Noon', 'Afternoon', 'Evening', 'Night']}}}
 />
 
 </div>
