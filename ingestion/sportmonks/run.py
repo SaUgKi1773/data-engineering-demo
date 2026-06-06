@@ -88,12 +88,20 @@ def main() -> None:
     conn = connect(args.db)
     ensure_schema(conn)
     started_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    engine.run(conn, mode=args.mode, tables=tables)
-    conn.execute(
-        "INSERT INTO meta.ingestion_run_log VALUES (?, ?, ?, ?, ?)",
-        ["sportmonks", args.mode, "success", started_at, datetime.now(timezone.utc).replace(tzinfo=None)],
-    )
-    conn.close()
+    try:
+        engine.run(conn, mode=args.mode, tables=tables)
+        conn.execute(
+            "INSERT INTO meta.ingestion_run_log VALUES (?, ?, ?, ?, ?, ?)",
+            ["sportmonks", args.mode, "success", started_at, datetime.now(timezone.utc).replace(tzinfo=None), None],
+        )
+    except Exception as exc:
+        conn.execute(
+            "INSERT INTO meta.ingestion_run_log VALUES (?, ?, ?, ?, ?, ?)",
+            ["sportmonks", args.mode, "failure", started_at, datetime.now(timezone.utc).replace(tzinfo=None), str(exc)],
+        )
+        raise
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":
