@@ -41,11 +41,12 @@ def ensure_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute("CREATE SCHEMA IF NOT EXISTS meta")
     conn.execute("""
         CREATE TABLE IF NOT EXISTS meta.ingestion_run_log (
-            pipeline     VARCHAR,
-            mode         VARCHAR,
-            status       VARCHAR,
-            started_at   TIMESTAMP,
-            completed_at TIMESTAMP
+            pipeline      VARCHAR,
+            mode          VARCHAR,
+            status        VARCHAR,
+            started_at    TIMESTAMP,
+            completed_at  TIMESTAMP,
+            error_message VARCHAR
         )
     """)
     for table in ALL_TABLES:

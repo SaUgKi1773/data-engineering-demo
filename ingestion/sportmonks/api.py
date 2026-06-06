@@ -33,6 +33,11 @@ def get(path: str, params: dict = None, base: str = API_BASE) -> dict:
             log.warning("Request error (attempt %d/%d): %s", attempt + 1, MAX_RETRIES, exc)
             time.sleep(min(5 * 2 ** attempt, 120))
             continue
+        if r.status_code >= 500:
+            wait = min(10 * 2 ** attempt, 300)
+            log.warning("Server error %d — sleeping %ds (attempt %d/%d)", r.status_code, wait, attempt + 1, MAX_RETRIES)
+            time.sleep(wait)
+            continue
         if r.status_code == 429:
             # Use retry_after from the API response if present; otherwise fall back
             # to exponential backoff capped at 600 s

@@ -43,11 +43,12 @@ CREATE TABLE IF NOT EXISTS {db}.bronze.groq__llm_match_discussions (
 META_CREATE_SQL = """
 CREATE SCHEMA IF NOT EXISTS {db}.meta;
 CREATE TABLE IF NOT EXISTS {db}.meta.ingestion_run_log (
-    pipeline     VARCHAR,
-    mode         VARCHAR,
-    status       VARCHAR,
-    started_at   TIMESTAMP,
-    completed_at TIMESTAMP
+    pipeline      VARCHAR,
+    mode          VARCHAR,
+    status        VARCHAR,
+    started_at    TIMESTAMP,
+    completed_at  TIMESTAMP,
+    error_message VARCHAR
 )
 """
 
@@ -412,41 +413,49 @@ def main() -> None:
     started_at = datetime.now(timezone.utc).replace(tzinfo=None)
     now = started_at
 
-    if args.all_rounds:
-        if args.force:
-            con.execute(
-                f"DELETE FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ?",
-                [args.season],
-            )
-            log.info(f"--force: deleted all bronze rows for season {args.season}")
+    try:
+        if args.all_rounds:
+            if args.force:
+                con.execute(
+                    f"DELETE FROM {args.db}.bronze.groq__llm_match_discussions WHERE season = ?",
+                    [args.season],
+                )
+                log.info(f"--force: deleted all bronze rows for season {args.season}")
 
-        rounds = [
-            r[0] for r in con.execute(ALL_ROUNDS_SQL.format(db=args.db), [args.season]).fetchall()
-        ]
-        if not rounds:
-            log.error(f"No completed rounds found for season {args.season}")
-            return
-        log.info(f"Processing {len(rounds)} rounds for season {args.season}")
-        for round_number in rounds:
-            process_round(con, client, personas, args.db, args.season, round_number, False, now)
-
-    else:
-        round_number = args.round
-        if round_number is None:
-            result = con.execute(LATEST_ROUND_SQL.format(db=args.db), [args.season]).fetchone()
-            round_number = result[0] if result else None
-            if round_number is None:
+            rounds = [
+                r[0] for r in con.execute(ALL_ROUNDS_SQL.format(db=args.db), [args.season]).fetchall()
+            ]
+            if not rounds:
                 log.error(f"No completed rounds found for season {args.season}")
                 return
-            log.info(f"Auto-detected latest round: {round_number}")
+            log.info(f"Processing {len(rounds)} rounds for season {args.season}")
+            for round_number in rounds:
+                process_round(con, client, personas, args.db, args.season, round_number, False, now)
 
-        process_round(con, client, personas, args.db, args.season, round_number, args.force, now)
+        else:
+            round_number = args.round
+            if round_number is None:
+                result = con.execute(LATEST_ROUND_SQL.format(db=args.db), [args.season]).fetchone()
+                round_number = result[0] if result else None
+                if round_number is None:
+                    log.error(f"No completed rounds found for season {args.season}")
+                    return
+                log.info(f"Auto-detected latest round: {round_number}")
 
-    con.execute(
-        f"INSERT INTO {args.db}.meta.ingestion_run_log VALUES (?, ?, ?, ?, ?)",
-        ["groq", "incremental", "success", started_at, datetime.now(timezone.utc).replace(tzinfo=None)],
-    )
-    con.close()
+            process_round(con, client, personas, args.db, args.season, round_number, args.force, now)
+
+        con.execute(
+            f"INSERT INTO {args.db}.meta.ingestion_run_log VALUES (?, ?, ?, ?, ?, ?)",
+            ["groq", "incremental", "success", started_at, datetime.now(timezone.utc).replace(tzinfo=None), None],
+        )
+    except Exception as exc:
+        con.execute(
+            f"INSERT INTO {args.db}.meta.ingestion_run_log VALUES (?, ?, ?, ?, ?, ?)",
+            ["groq", "incremental", "failure", started_at, datetime.now(timezone.utc).replace(tzinfo=None), str(exc)],
+        )
+        raise
+    finally:
+        con.close()
 
 
 if __name__ == "__main__":
