@@ -901,7 +901,7 @@ order by case period_of_day
     title="Matches by Day & Time of Day"
     xAxisTitle="Day"
     yAxisTitle="Matches"
-    colorPalette={['#fbbf24','#3b82f6','#10b981','#f97316','#6366f1']}
+    colorPalette={['#fbbf24','#3b82f6','#6366f1','#f97316','#10b981']}
     type=stacked
     sort=false
     echartsOptions={{xAxis: {data: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']}}}
@@ -915,10 +915,16 @@ order by case period_of_day
     title="Goals per Match by Time of Day"
     xAxisTitle="Time of Day"
     yAxisTitle="Goals / Match"
-    colorPalette={['#fbbf24','#3b82f6','#10b981','#f97316','#6366f1']}
     legend=false
     sort=false
-    echartsOptions={{xAxis: {data: ['Morning', 'Noon', 'Afternoon', 'Evening', 'Night']}}}
+    echartsOptions={{
+      xAxis: {data: ['Morning', 'Noon', 'Afternoon', 'Evening', 'Night']},
+      series: goals_by_slot.map(row => ({
+        itemStyle: {
+          color: ({Morning:'#10b981', Noon:'#f97316', Afternoon:'#fbbf24', Evening:'#3b82f6', Night:'#6366f1'})[row.period_of_day]
+        }
+      }))
+    }}
 />
 
 </div>
