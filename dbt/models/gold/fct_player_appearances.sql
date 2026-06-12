@@ -2,18 +2,24 @@
     config(
         materialized='incremental',
         incremental_strategy='delete+insert',
-        unique_key=['match_sk', 'player_sk', 'team_sk']
+        unique_key=['match_sk', 'player_sk', 'team_sk'],
+        post_hook=[
+            "DELETE FROM {{ this }} WHERE match_sk > 0 AND match_sk NOT IN (SELECT match_sk FROM {{ ref('dim_match') }})"
+        ]
     )
 }}
 
 WITH finished_fixtures AS (
     SELECT
-        id        AS fixture_id,
-        league_id,
-        venue_id,
-        starting_at
-    FROM {{ ref('fixtures') }}
-    WHERE state_developer_name IN ('FT', 'FT_PEN', 'AET')
+        f.id        AS fixture_id,
+        f.league_id,
+        f.venue_id,
+        f.starting_at
+    FROM {{ ref('fixtures') }} f
+    JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
+    WHERE f.state_developer_name IN ('FT', 'FT_PEN', 'AET')
+      -- League matches only: excludes KNOCK_OUT stages (European cup / relegation play-offs)
+      AND sg.type_developer_name = 'GROUP_STAGE'
 ),
 participants AS (
     SELECT fixture_id, team_id, location

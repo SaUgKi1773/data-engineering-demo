@@ -5,6 +5,7 @@
         unique_key='match_id',
         merge_update_columns=['match_round_type', 'match_round_number', 'match_round_name', 'match_type', 'match_name', 'match_short_name', 'match_result', 'kick_off_time', 'match_status'],
         post_hook=[
+            "DELETE FROM {{ this }} WHERE match_id IN (SELECT f.id FROM {{ ref('fixtures') }} f JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id WHERE sg.type_developer_name != 'GROUP_STAGE')",
             "DELETE FROM {{ this }} WHERE match_sk IN (-1, -2)",
             "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Match Round Type', NULL::INTEGER, 'Unknown Match Round Name', 'Unknown Match Type', 'Unknown Match', 'Unknown Match', 'Unknown Match Result', 'Unknown', 'Unknown Match Status'), (-2, NULL::INTEGER, 'Not Applicable Match Round Type', NULL::INTEGER, 'Not Applicable Match Round Name', 'Not Applicable Match Type', 'Not Applicable Match', 'Not Applicable Match', 'Not Applicable Match Result', 'Not Applicable', 'Not Applicable Match Status')) t(match_sk, match_id, match_round_type, match_round_number, match_round_name, match_type, match_name, match_short_name, match_result, kick_off_time, match_status)"
         ]
@@ -72,12 +73,15 @@ src AS (
                                                                                  AS kick_off_time,
         f.state_name                                                             AS match_status
     FROM {{ ref('fixtures') }} f
-    LEFT JOIN {{ ref('stages') }}      sg  ON sg.id          = f.stage_id
+    JOIN {{ ref('stages') }}           sg  ON sg.id          = f.stage_id
     LEFT JOIN regular_season_max       rsm ON rsm.season_id  = f.season_id
     LEFT JOIN participants_pivot       pp  ON pp.fixture_id  = f.id
     LEFT JOIN scores_pivot             sp  ON sp.fixture_id  = f.id
     LEFT JOIN name_map                 nm_h ON nm_h.team_id = pp.home_team_id
     LEFT JOIN name_map                 nm_a ON nm_a.team_id = pp.away_team_id
+    -- League matches only: Regular Season, Championship Round, Relegation Round.
+    -- Excludes KNOCK_OUT stages (European cup play-offs, relegation play-offs).
+    WHERE sg.type_developer_name = 'GROUP_STAGE'
 )
 SELECT
     {% if is_incremental() %}
