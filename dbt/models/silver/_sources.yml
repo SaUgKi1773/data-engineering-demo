@@ -18,16 +18,20 @@ sources:
       - name: sportmonks__teams
       - name: sportmonks__venues
       - name: sportmonks__referees
+        freshness: null
       - name: sportmonks__players
       - name: sportmonks__fixtures
         freshness: null
       - name: sportmonks__standings
+        freshness: null
       - name: sportmonks__topscorers
         freshness: null
       - name: sportmonks__stage_topscorers
         freshness: null
       - name: sportmonks__stage_statistics
+        freshness: null
       - name: sportmonks__round_statistics
+        freshness: null
       - name: sportmonks__rivals
       - name: sportmonks__core_continents
       - name: sportmonks__core_countries
