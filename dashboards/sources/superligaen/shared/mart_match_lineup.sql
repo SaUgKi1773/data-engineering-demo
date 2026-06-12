@@ -86,6 +86,5 @@ JOIN superligaen.gold.dim_team_side            ts     ON ts.team_side_sk        
 JOIN superligaen.gold.dim_appearance_type      at_dim ON at_dim.appearance_type_sk = f.appearance_type_sk
 JOIN superligaen.gold.dim_formation            df     ON df.formation_sk         = f.formation_sk
 JOIN superligaen.gold.dim_position             dpos   ON dpos.position_sk        = f.position_sk
-WHERE m.match_type = 'Group Stage'
-  AND d.season >= '2020/21'
+WHERE d.season >= '2020/21'
   AND at_dim.appearance_type IN ('Starter', 'Substitute')

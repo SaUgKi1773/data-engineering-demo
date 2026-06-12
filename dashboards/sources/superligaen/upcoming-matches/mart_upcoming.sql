@@ -23,8 +23,7 @@ WITH base AS (
     JOIN superligaen.gold.dim_match_result  r   ON r.match_result_sk  = f.match_result_sk
     JOIN superligaen.gold.dim_stadium       st  ON st.stadium_sk      = f.stadium_sk
     JOIN superligaen.gold.dim_referee       ref ON ref.referee_sk     = f.referee_sk
-    WHERE m.match_type = 'Group Stage'
-      AND r.match_result = 'Pending'
+    WHERE r.match_result = 'Pending'
     GROUP BY m.match_id, d.date, d.season, m.match_round_number, m.match_round_name,
              m.kick_off_time, st.stadium_name, ref.referee_common_name
 )

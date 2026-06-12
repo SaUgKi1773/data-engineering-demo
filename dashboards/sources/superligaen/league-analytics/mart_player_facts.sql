@@ -126,5 +126,4 @@ JOIN superligaen.gold.dim_formation           df     ON df.formation_sk         
 JOIN superligaen.gold.dim_position            dpos   ON dpos.position_sk          = f.position_sk
 JOIN superligaen.gold.dim_coach               dc     ON dc.coach_sk               = f.coach_sk
 JOIN superligaen.gold.dim_time                dt     ON dt.time_sk                = f.time_sk
-WHERE m.match_type = 'Group Stage'
-  AND d.season >= '2020/21'
+WHERE d.season >= '2020/21'

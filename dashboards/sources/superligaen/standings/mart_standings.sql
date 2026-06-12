@@ -23,5 +23,4 @@ JOIN superligaen.gold.dim_date           d  ON d.date_sk         = f.date_sk
 JOIN superligaen.gold.dim_match          m  ON m.match_sk        = f.match_sk
 JOIN superligaen.gold.dim_team           t  ON t.team_sk         = f.team_sk
 JOIN superligaen.gold.dim_match_result   r  ON r.match_result_sk = f.match_result_sk
-WHERE m.match_type = 'Group Stage'
-  AND d.season >= '2020/21'
+WHERE d.season >= '2020/21'

@@ -28,8 +28,7 @@ JOIN superligaen.gold.dim_referee         ref ON ref.referee_sk    = f.referee_s
 JOIN superligaen.gold.dim_team_side       ts  ON ts.team_side_sk   = f.team_side_sk
 LEFT JOIN fouls_agg                       fa  ON fa.match_sk       = f.match_sk
                                             AND fa.team_sk         = f.team_sk
-WHERE m.match_type = 'Group Stage'
-  AND d.season >= '2020/21'
+WHERE d.season >= '2020/21'
   AND r.match_result IN ('Win', 'Draw', 'Loss')
 GROUP BY d.season, ref.referee_common_name
 ORDER BY d.season DESC, matches_managed DESC
