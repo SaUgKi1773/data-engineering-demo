@@ -259,8 +259,10 @@ select
     sum(case when result = 'Win' then 1 else 0 end)::double / count(distinct match_id)             as win_pct
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
+  and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and result in ('Win', 'Draw', 'Loss')
 group by team_name
+order by conceded_pm asc
 ```
 
 ```sql radar_data
@@ -390,6 +392,7 @@ select distinct
     goals_scored
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
+  and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and result in ('Win', 'Draw', 'Loss')
 order by match_date desc, team_name
 ```
@@ -802,7 +805,7 @@ order by case period_of_day
 
 ## Team Rankings by Domain
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">All teams ranked within each performance dimension. Sorted highest to lowest so the best and worst performers are immediately visible.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">All teams ranked within each performance dimension. Sorted best to worst so the strongest performers are always at the top — for goals conceded that means the tightest defence leads.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -852,7 +855,7 @@ order by case period_of_day
     yAxisTitle="Goals Conceded / Match"
     colorPalette={['#f97316']}
     swapXY=true
-    sort=true
+    sort=false
 />
 
 </div>
