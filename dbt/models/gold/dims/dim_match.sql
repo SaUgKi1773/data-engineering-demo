@@ -72,12 +72,15 @@ src AS (
                                                                                  AS kick_off_time,
         f.state_name                                                             AS match_status
     FROM {{ ref('fixtures') }} f
-    LEFT JOIN {{ ref('stages') }}      sg  ON sg.id          = f.stage_id
+    JOIN {{ ref('stages') }}           sg  ON sg.id          = f.stage_id
     LEFT JOIN regular_season_max       rsm ON rsm.season_id  = f.season_id
     LEFT JOIN participants_pivot       pp  ON pp.fixture_id  = f.id
     LEFT JOIN scores_pivot             sp  ON sp.fixture_id  = f.id
     LEFT JOIN name_map                 nm_h ON nm_h.team_id = pp.home_team_id
     LEFT JOIN name_map                 nm_a ON nm_a.team_id = pp.away_team_id
+    -- League matches only: Regular Season, Championship Round, Relegation Round.
+    -- Excludes KNOCK_OUT stages (European cup play-offs, relegation play-offs).
+    WHERE sg.type_developer_name = 'GROUP_STAGE'
 )
 SELECT
     {% if is_incremental() %}

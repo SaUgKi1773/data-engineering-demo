@@ -15,7 +15,9 @@ WITH all_fixtures AS (
         sg.type_developer_name AS stage_type,
         f.state_developer_name IN ('FT', 'FT_PEN', 'AET') AS is_finished
     FROM {{ ref('fixtures') }} f
-    LEFT JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
+    JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
+    -- League matches only: excludes KNOCK_OUT stages (European cup / relegation play-offs)
+    WHERE sg.type_developer_name = 'GROUP_STAGE'
 ),
 coaches AS (
     SELECT fixture_id, team_id, coach_id
