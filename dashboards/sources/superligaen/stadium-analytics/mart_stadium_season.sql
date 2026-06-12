@@ -69,8 +69,7 @@ LEFT JOIN (
     FROM superligaen.gold.fct_player_appearances GROUP BY match_sk, team_sk
 )                                         fouls ON fouls.match_sk  = f.match_sk
                                                AND fouls.team_sk   = f.team_sk
-WHERE m.match_type = 'Group Stage'
-  AND d.season >= '2020/21'
+WHERE d.season >= '2020/21'
   AND r.match_result IN ('Win', 'Draw', 'Loss')
   AND st.stadium_latitude  BETWEEN 54.5 AND 57.8
   AND st.stadium_longitude BETWEEN 7.5  AND 15.5

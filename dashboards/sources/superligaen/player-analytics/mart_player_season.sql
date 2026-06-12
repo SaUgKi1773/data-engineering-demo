@@ -84,8 +84,7 @@ WITH base AS (
     JOIN superligaen.gold.dim_match_result         r      ON r.match_result_sk       = f.match_result_sk
     JOIN superligaen.gold.dim_appearance_type      at_dim ON at_dim.appearance_type_sk = f.appearance_type_sk
     JOIN superligaen.gold.dim_position             dpos   ON dpos.position_sk        = f.position_sk
-    WHERE m.match_type = 'Group Stage'
-      AND d.season >= '2020/21'
+    WHERE d.season >= '2020/21'
       AND r.match_result IN ('Win', 'Draw', 'Loss')
     GROUP BY
         d.season,

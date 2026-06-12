@@ -48,8 +48,7 @@ per_match AS (
     JOIN superligaen.gold.dim_coach           dc  ON dc.coach_sk       = f.coach_sk
     LEFT JOIN player_agg                      pa  ON pa.match_sk       = f.match_sk
                                                AND pa.team_sk          = f.team_sk
-    WHERE m.match_type = 'Group Stage'
-      AND d.season >= '2020/21'
+    WHERE d.season >= '2020/21'
 ),
 season_agg AS (
     SELECT

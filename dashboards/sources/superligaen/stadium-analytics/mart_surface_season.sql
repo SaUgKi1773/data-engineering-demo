@@ -45,8 +45,7 @@ LEFT JOIN player_agg                     pa  ON pa.match_sk       = f.match_sk
                                            AND pa.team_sk         = f.team_sk
 LEFT JOIN fouls_agg                      fouls ON fouls.match_sk  = f.match_sk
                                                AND fouls.team_sk  = f.team_sk
-WHERE m.match_type = 'Group Stage'
-  AND d.season >= '2020/21'
+WHERE d.season >= '2020/21'
   AND r.match_result IN ('Win', 'Draw', 'Loss')
   AND st.stadium_surface IS NOT NULL AND st.stadium_surface != ''
   AND st.stadium_latitude  BETWEEN 54.5 AND 57.8

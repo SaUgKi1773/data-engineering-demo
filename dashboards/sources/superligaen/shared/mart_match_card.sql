@@ -57,8 +57,7 @@ base AS (
     JOIN superligaen.gold.dim_referee        ref ON ref.referee_sk  = f.referee_sk
     LEFT JOIN player_agg                     pa  ON pa.match_sk     = f.match_sk
                                                AND pa.team_sk       = f.team_sk
-    WHERE m.match_type = 'Group Stage'
-      AND d.season >= '2020/21'
+    WHERE d.season >= '2020/21'
 )
 SELECT
     match_id,
