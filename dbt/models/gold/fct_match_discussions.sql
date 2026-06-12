@@ -1,10 +1,7 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key=['match_sk', 'persona_sk'],
-    post_hook=[
-        "DELETE FROM {{ this }} WHERE match_sk > 0 AND match_sk NOT IN (SELECT match_sk FROM {{ ref('dim_match') }})"
-    ]
+    unique_key=['match_sk', 'persona_sk']
 ) }}
 
 SELECT
