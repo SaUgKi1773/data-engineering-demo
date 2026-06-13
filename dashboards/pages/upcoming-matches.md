@@ -67,14 +67,14 @@ order by match_date asc, kick_off_time asc
       <img src={m.home_team_logo} alt="" class="h-8 w-8 object-contain shrink-0" onerror="this.style.display='none'" />
     </div>
     <div class="shrink-0 px-3 text-center">
-      <div class="text-base md:text-lg font-black text-gray-800 whitespace-nowrap">{m.kick_off_time}</div>
+      <div class="text-sm font-black text-gray-300">VS</div>
     </div>
     <div class="flex-1 flex items-center gap-2 min-w-0">
       <img src={m.away_team_logo} alt="" class="h-8 w-8 object-contain shrink-0" onerror="this.style.display='none'" />
       <span class="font-semibold text-gray-800 truncate">{m.away_team}</span>
     </div>
   </div>
-  <div class="text-[11px] text-gray-400 text-center mt-2 uppercase tracking-wide">{m.round} &middot; {m.stadium} &middot; {m.referee || 'TBD'}</div>
+  <div class="text-[11px] text-gray-400 text-center mt-2 uppercase tracking-wide">{m.stadium} &middot; {m.kick_off_time}</div>
 </div>
 </a>
 {/each}
