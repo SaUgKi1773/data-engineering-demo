@@ -75,7 +75,8 @@ from (
 <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 mb-3 transition hover:shadow-md hover:border-gray-300 cursor-pointer">
   <div class="flex items-center gap-3">
     <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
-      <span class="font-semibold text-gray-800 truncate">{m.home_team}</span>
+      <span class="font-semibold text-gray-800 truncate md:hidden">{m.home_team_short}</span>
+      <span class="font-semibold text-gray-800 truncate hidden md:inline">{m.home_team}</span>
       <img src={m.home_team_logo} alt="" class="h-8 w-8 object-contain shrink-0" onerror="this.style.display='none'" />
     </div>
     <div class="shrink-0 px-3 text-center">
@@ -83,7 +84,8 @@ from (
     </div>
     <div class="flex-1 flex items-center gap-2 min-w-0">
       <img src={m.away_team_logo} alt="" class="h-8 w-8 object-contain shrink-0" onerror="this.style.display='none'" />
-      <span class="font-semibold text-gray-800 truncate">{m.away_team}</span>
+      <span class="font-semibold text-gray-800 truncate md:hidden">{m.away_team_short}</span>
+      <span class="font-semibold text-gray-800 truncate hidden md:inline">{m.away_team}</span>
     </div>
   </div>
   <div class="text-[11px] text-gray-400 text-center mt-2 uppercase tracking-wide">{m.stadium} &middot; {m.kick_off_time}</div>
