@@ -113,7 +113,7 @@ limit 5
 {#if match_info.length > 0}
 
 <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 md:p-6 mb-6 text-center">
-  <div class="text-xs text-gray-400 uppercase tracking-widest mb-3">{match_info[0].round} &middot; {match_info[0].match_date} &middot; {match_info[0].kick_off_time} &middot; {match_info[0].stadium}</div>
+  <div class="text-xs text-gray-400 uppercase tracking-widest mb-3">{match_info[0].round} &middot; {match_info[0].match_date}</div>
   <div class="flex items-center justify-center gap-4 md:gap-6">
     <div class="flex-1 min-w-0 flex flex-col items-center">
       <img src={match_info[0].home_team_logo} alt="" class="h-12 w-12 md:h-16 md:w-16 object-contain mb-2" onerror="this.style.display='none'" />
@@ -127,6 +127,7 @@ limit 5
       <div class="text-xs text-red-400 font-semibold uppercase tracking-widest mt-1">Away</div>
     </div>
   </div>
+  <div class="text-xs text-gray-400 uppercase tracking-widest mt-3">{match_info[0].stadium} &middot; {match_info[0].kick_off_time}</div>
 </div>
 
 ---
