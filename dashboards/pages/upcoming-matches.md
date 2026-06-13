@@ -24,7 +24,9 @@ order by match_round_number asc
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Filter by team or round to narrow the fixtures. Click any match to open its preview — head-to-head history and recent form for both sides.</p>
 
 <Dropdown data={teams} name=team value=team_name label=team_name order="team_name asc" multiple=true selectAllByDefault=true />
+{#key rounds[0]?.round_number}
 <Dropdown data={rounds} name=round value=round_number label=round_number title="Round" order="round_number asc" multiple=true defaultValue={rounds[0]?.round_number} />
+{/key}
 
 ```sql upcoming
 select
