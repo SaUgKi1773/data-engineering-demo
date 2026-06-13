@@ -101,6 +101,7 @@ select
 from superligaen.mart_team_match tm
 join ${match_info} mi on tm.team_name = mi.home_team
 where tm.result in ('Win', 'Draw', 'Loss')
+  and tm.match_date >= current_date - interval '6 months'
 order by tm.match_date desc
 limit 5
 ```
@@ -115,6 +116,7 @@ select
 from superligaen.mart_team_match tm
 join ${match_info} mi on tm.team_name = mi.away_team
 where tm.result in ('Win', 'Draw', 'Loss')
+  and tm.match_date >= current_date - interval '6 months'
 order by tm.match_date desc
 limit 5
 ```
@@ -191,9 +193,9 @@ limit 5
 
 ---
 
-### Form Guide — Last 5 Matches
+### Form Guide
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Most recent five results for each side across all competitions in the current season.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Most recent results for each side from the last 6 months.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -215,6 +217,8 @@ limit 5
           {/if}
         </div>
       </div>
+    {:else}
+      <div class="text-sm text-gray-400 py-2">Form guide not available</div>
     {/each}
   </div>
 </div>
@@ -237,6 +241,8 @@ limit 5
           {/if}
         </div>
       </div>
+    {:else}
+      <div class="text-sm text-gray-400 py-2">Form guide not available</div>
     {/each}
   </div>
 </div>
