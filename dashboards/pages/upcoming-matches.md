@@ -13,10 +13,10 @@ select distinct team_name from (
 ```
 
 ```sql rounds
-select distinct match_round_number as round_number, round
+select distinct cast(match_round_number as int) as round_number, round
 from superligaen.mart_upcoming
 where home_team is not null
-order by match_round_number asc
+order by round_number asc
 ```
 
 {#if teams.length > 0}
@@ -55,7 +55,17 @@ where home_team is not null
 order by match_date asc, kick_off_time asc
 ```
 
-## Upcoming Fixtures
+```sql round_title
+select string_agg(round_number::varchar, ', ' order by round_number) as label
+from (
+    select distinct cast(match_round_number as int) as round_number
+    from superligaen.mart_upcoming
+    where home_team is not null
+      and match_round_number in ${inputs.round.value}
+)
+```
+
+## Upcoming Fixtures — Round {round_title[0]?.label}
 
 {#each upcoming as m, i}
 {#if i === 0 || m.match_date !== upcoming[i-1].match_date}
