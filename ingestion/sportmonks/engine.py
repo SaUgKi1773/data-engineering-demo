@@ -16,7 +16,7 @@ The only behavioural difference between modes is scope for seasonal / date entri
   full        → seasonal entries cover ALL in-scope seasons;
                 date_based iterates 90-day chunks across every season's range
   incremental → seasonal entries cover CURRENT season only;
-                date_based uses a rolling ±3 / +30 day window around today
+                date_based uses a rolling -7 / +60 day window around today
 
 Strategy handlers
 -----------------
@@ -406,7 +406,7 @@ def run(conn, mode: str = "incremental", tables: set = None) -> None:
     mode "full"        — all seasons iterated for seasonal tables;
                          full season-range chunks for fixtures
     mode "incremental" — current season only for seasonal tables;
-                         rolling ±3 / +30 day window for fixtures
+                         rolling -7 / +60 day window for fixtures
     tables             — optional set of table names to restrict the run to;
                          if None, all manifest entries for the given mode are run
     """

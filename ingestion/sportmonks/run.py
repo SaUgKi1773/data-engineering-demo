@@ -24,7 +24,7 @@ each table's delete strategy in ENDPOINT_MANIFEST:
   incremental   Daily refresh (default).
                   global tables   → full truncate + reload  (same as full)
                   seasonal tables → current season only deleted + reloaded
-                  fixtures        → rolling window: last 3 days + next 30 days
+                  fixtures        → rolling window: last 7 days + next 60 days
 
 The entire pipeline is driven by ENDPOINT_MANIFEST in config.py.
 To add, remove, or adjust an endpoint — edit the manifest, not this file.
