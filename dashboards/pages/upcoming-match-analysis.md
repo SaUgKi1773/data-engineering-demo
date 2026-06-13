@@ -51,7 +51,18 @@ select
     mc.season,
     mc.match_date,
     mc.match_round_name                                                     as round,
+    cast(mc.match_round_number as int)                                      as round_no,
     mc.home_team_short || ' - ' || mc.away_team_short                       as match,
+    case
+        when mc.home_goals = mc.away_goals then '<span style="color:#9ca3af;font-weight:600;">Draw</span>'
+        when (case when mc.home_goals > mc.away_goals then mc.home_team else mc.away_team end) = mi.home_team
+            then '<span style="color:#2563eb;font-weight:600;">'
+                 || (case when mc.home_goals > mc.away_goals then mc.home_team_short else mc.away_team_short end)
+                 || '</span>'
+        else '<span style="color:#ef4444;font-weight:600;">'
+             || (case when mc.home_goals > mc.away_goals then mc.home_team_short else mc.away_team_short end)
+             || '</span>'
+    end                                                                     as winner,
     mc.score,
     (mc.home_goals + mc.away_goals)::int                                    as total_goals,
     (mc.home_sog   + mc.away_sog)::int                                      as total_shots_on_goal,
@@ -155,20 +166,22 @@ limit 5
 
 <div class="block md:hidden">
 <DataTable data={h2h} rows=20>
-    <Column id=match_date          title="Date"        />
+    <Column id=season              title="Season"      />
+    <Column id=round_no            title="Round"       align=center />
     <Column id=match               title="Match"       />
+    <Column id=winner              title="Winner"      contentType=html />
     <Column id=score               title="Score"       align=center />
     <Column id=total_goals         title="Goals"       contentType=colorscale colorPalette={['white','#22c55e']} align=center />
-    <Column id=total_big_chances   title="Big Ch."     contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
+    <Column id=total_big_chances   title="Big Chances" contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
     <Column id=total_shots_on_goal title="SoG"         contentType=bar colorPalette={['#6366f1']} />
 </DataTable>
 </div>
 <div class="hidden md:block">
 <DataTable data={h2h} rows=20>
     <Column id=season              title="Season"      />
-    <Column id=match_date          title="Date"        />
     <Column id=round               title="Round"       />
     <Column id=match               title="Match"       />
+    <Column id=winner              title="Winner"      contentType=html />
     <Column id=score               title="Score"       align=center />
     <Column id=total_goals         title="Goals"       contentType=colorscale colorPalette={['white','#22c55e']} align=center />
     <Column id=total_big_chances   title="Big Chances" contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
