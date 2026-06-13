@@ -40,6 +40,7 @@ select
     home_team_logo,
     away_team_logo,
     strftime(match_date, '%Y-%m-%d')            as match_date,
+    strftime(match_date, '%A %d %B')            as match_day,
     kick_off_time,
     '<span style="color:#94a3b8;">' || stadium || '</span>'                  as stadium_muted,
     '<span style="color:#94a3b8;">' || coalesce(referee, '—') || '</span>'  as referee_muted,
@@ -56,14 +57,27 @@ order by match_date asc, kick_off_time asc
 
 ## Upcoming Fixtures
 
-<DataTable data={upcoming} rows=15>
-    <Column id=match_date         title="Date" />
-    <Column id=round title="Round" />
-    <Column id=match_name         title="Match"    wrap=true />
-    <Column id=kick_off_time title="Kick-Off" align=center />
-    <Column id=stadium_muted title="Stadium"  contentType=html />
-    <Column id=referee_muted title="Referee"  contentType=html />
-</DataTable>
+{#each upcoming as m, i}
+{#if i === 0 || m.match_date !== upcoming[i-1].match_date}
+<div class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-6 mb-2">{m.match_day}</div>
+{/if}
+<div class="rounded-xl border border-gray-200 bg-white px-4 py-3 mb-3">
+  <div class="flex items-center gap-3">
+    <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
+      <span class="font-semibold text-gray-800 truncate">{m.home_team}</span>
+      <img src={m.home_team_logo} alt="" class="h-8 w-8 object-contain shrink-0" onerror="this.style.display='none'" />
+    </div>
+    <div class="shrink-0 px-3 text-center">
+      <div class="text-base md:text-lg font-black text-gray-800 whitespace-nowrap">{m.kick_off_time}</div>
+    </div>
+    <div class="flex-1 flex items-center gap-2 min-w-0">
+      <img src={m.away_team_logo} alt="" class="h-8 w-8 object-contain shrink-0" onerror="this.style.display='none'" />
+      <span class="font-semibold text-gray-800 truncate">{m.away_team}</span>
+    </div>
+  </div>
+  <div class="text-[11px] text-gray-400 text-center mt-2 uppercase tracking-wide">{m.round} &middot; {m.stadium} &middot; {m.referee || 'TBD'}</div>
+</div>
+{/each}
 
 ---
 
