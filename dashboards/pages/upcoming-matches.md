@@ -12,11 +12,19 @@ select distinct team_name from (
 ) order by team_name asc
 ```
 
+```sql rounds
+select distinct match_round_number as round_number, round
+from superligaen.mart_upcoming
+where home_team is not null
+order by match_round_number asc
+```
+
 {#if teams.length > 0}
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Filter by team to see only relevant fixtures. Select a match in the section below to explore head-to-head history and recent form for both sides.</p>
 
 <Dropdown data={teams} name=team value=team_name label=team_name order="team_name asc" multiple=true selectAllByDefault=true />
+<Dropdown data={rounds} name=round value=round_number label=round_number title="Round" order="round_number asc" multiple=true defaultValue={rounds[0]?.round_number} />
 
 ```sql upcoming
 select
@@ -29,13 +37,18 @@ select
     home_team_short,
     away_team_short,
     match_short_name,
+    home_team_logo,
+    away_team_logo,
     strftime(match_date, '%Y-%m-%d')            as match_date,
     kick_off_time,
+    '<span style="color:#94a3b8;">' || stadium || '</span>'                  as stadium_muted,
+    '<span style="color:#94a3b8;">' || coalesce(referee, '—') || '</span>'  as referee_muted,
     stadium,
     referee,
     season
 from superligaen.mart_upcoming
 where home_team is not null
+  and match_round_number in ${inputs.round.value}
   and (home_team in ${inputs.team.value}
        or away_team in ${inputs.team.value})
 order by match_date asc, kick_off_time asc
@@ -43,26 +56,14 @@ order by match_date asc, kick_off_time asc
 
 ## Upcoming Fixtures
 
-<div class="block md:hidden">
-<DataTable data={upcoming} rows=10>
-    <Column id=match_date       title="Date"          />
-    <Column id=round            title="Round"         />
-    <Column id=match_short_name title="Match"         wrap=true />
-    <Column id=stadium          title="Stadium"       />
-    <Column id=kick_off_time    title="K/O"           />
-    <Column id=referee          title="Referee"       />
+<DataTable data={upcoming} rows=15>
+    <Column id=match_date         title="Date" />
+    <Column id=round title="Round" />
+    <Column id=match_name         title="Match"    wrap=true />
+    <Column id=kick_off_time title="Kick-Off" align=center />
+    <Column id=stadium_muted title="Stadium"  contentType=html />
+    <Column id=referee_muted title="Referee"  contentType=html />
 </DataTable>
-</div>
-<div class="hidden md:block">
-<DataTable data={upcoming} rows=10>
-    <Column id=match_date    title="Date"          />
-    <Column id=round         title="Round"         />
-    <Column id=match_name    title="Match"         wrap=true />
-    <Column id=stadium       title="Stadium"       />
-    <Column id=kick_off_time title="Kick-Off Time" />
-    <Column id=referee       title="Referee"       />
-</DataTable>
-</div>
 
 ---
 
@@ -78,6 +79,8 @@ select
     away_team,
     home_team_short,
     away_team_short,
+    home_team_logo,
+    away_team_logo,
     match_date,
     round,
     kick_off_time,
@@ -159,13 +162,15 @@ limit 5
 <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 md:p-6 mb-6 text-center">
   <div class="text-xs text-gray-400 uppercase tracking-widest mb-3">{match_info[0].round} &middot; {match_info[0].match_date} &middot; {match_info[0].kick_off_time} &middot; {match_info[0].stadium}</div>
   <div class="flex items-center justify-center gap-4 md:gap-6">
-    <div class="flex-1 min-w-0">
-      <div class="text-base md:text-xl font-bold text-gray-800 truncate">{match_info[0].home_team_short}</div>
+    <div class="flex-1 min-w-0 flex flex-col items-center">
+      <img src={match_info[0].home_team_logo} alt="" class="h-12 w-12 md:h-16 md:w-16 object-contain mb-2" onerror="this.style.display='none'" />
+      <div class="text-base md:text-xl font-bold text-gray-800 truncate w-full">{match_info[0].home_team_short}</div>
       <div class="text-xs text-blue-400 font-semibold uppercase tracking-widest mt-1">Home</div>
     </div>
     <div class="text-xl md:text-2xl font-black text-gray-300 shrink-0">vs</div>
-    <div class="flex-1 min-w-0">
-      <div class="text-base md:text-xl font-bold text-gray-800 truncate">{match_info[0].away_team_short}</div>
+    <div class="flex-1 min-w-0 flex flex-col items-center">
+      <img src={match_info[0].away_team_logo} alt="" class="h-12 w-12 md:h-16 md:w-16 object-contain mb-2" onerror="this.style.display='none'" />
+      <div class="text-base md:text-xl font-bold text-gray-800 truncate w-full">{match_info[0].away_team_short}</div>
       <div class="text-xs text-red-400 font-semibold uppercase tracking-widest mt-1">Away</div>
     </div>
   </div>

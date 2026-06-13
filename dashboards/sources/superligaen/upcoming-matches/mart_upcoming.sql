@@ -14,7 +14,9 @@ WITH base AS (
         MAX(CASE WHEN ts.team_side = 'Away' THEN t.team_short_name END)                        AS match_short_name,
         CASE WHEN st.stadium_name LIKE '%Unknown%' OR st.stadium_name LIKE '%Applicable%'
              THEN 'TBD' ELSE st.stadium_name END                                               AS stadium,
-        ref.referee_common_name                                                                 AS referee
+        ref.referee_common_name                                                                 AS referee,
+        MAX(CASE WHEN ts.team_side = 'Home' THEN t.team_logo END)                                AS home_team_logo,
+        MAX(CASE WHEN ts.team_side = 'Away' THEN t.team_logo END)                                AS away_team_logo
     FROM superligaen.gold.fct_team_matches  f
     JOIN superligaen.gold.dim_date          d   ON d.date_sk          = f.date_sk
     JOIN superligaen.gold.dim_match         m   ON m.match_sk         = f.match_sk
@@ -31,6 +33,6 @@ SELECT * FROM base
 UNION ALL
 -- sentinel row so parquet is never empty (filtered out in page queries via home_team IS NOT NULL)
 SELECT -1, date '1900-01-01', '0000-00', 0, '----', '00:00',
-       NULL, NULL, NULL, NULL, NULL, 'TBD', NULL
+       NULL, NULL, NULL, NULL, NULL, 'TBD', NULL, NULL, NULL
 WHERE NOT EXISTS (SELECT 1 FROM base)
 ORDER BY match_date ASC, kick_off_time ASC
