@@ -61,6 +61,7 @@ join ${match_info} mi
     on (mc.home_team = mi.home_team and mc.away_team = mi.away_team)
     or (mc.home_team = mi.away_team  and mc.away_team = mi.home_team)
 where mc.season in ${inputs.h2h_season.value}
+  and mc.home_goals is not null
 order by mc.match_date desc
 ```
 
@@ -76,6 +77,7 @@ join ${match_info} mi
     on (mc.home_team = mi.home_team and mc.away_team = mi.away_team)
     or (mc.home_team = mi.away_team  and mc.away_team = mi.home_team)
 where mc.season in ${inputs.h2h_season.value}
+  and mc.home_goals is not null
 ```
 
 ```sql home_form
@@ -136,13 +138,13 @@ limit 5
 <Dropdown data={h2h_seasons} name=h2h_season value=season label=season multiple=true selectAllByDefault=true order="season desc" />
 
 <div class="grid grid-cols-3 gap-4 mb-6">
-  <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center">
-    <div class="text-3xl font-black text-blue-600">{h2h_stats[0].team1_wins}</div>
-    <div class="text-xs text-blue-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].home_team_short} Wins</div>
+  <div class="rounded-xl border border-green-200 bg-green-50 p-4 text-center">
+    <div class="text-3xl font-black text-green-600">{h2h_stats[0].team1_wins}</div>
+    <div class="text-xs text-green-500 mt-1 font-semibold uppercase tracking-wide">{match_info[0].home_team_short} Wins</div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-gray-100 p-4 text-center">
-    <div class="text-3xl font-black text-gray-500">{h2h_stats[0].draws}</div>
-    <div class="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-wide">Draws</div>
+  <div class="rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-center">
+    <div class="text-3xl font-black text-yellow-500">{h2h_stats[0].draws}</div>
+    <div class="text-xs text-yellow-600 mt-1 font-semibold uppercase tracking-wide">Draws</div>
   </div>
   <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-center">
     <div class="text-3xl font-black text-red-500">{h2h_stats[0].team2_wins}</div>
