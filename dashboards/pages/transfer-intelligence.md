@@ -47,21 +47,24 @@ order by team_name
 ```
 
 ```sql kpi
+-- Market level: each transfer counted once (the two club-perspective rows of a
+-- transfer share the same fee/nature, so DISTINCT collapses them).
+with txn as (
+  select distinct transfer_id, fee_eur, nature
+  from superligaen.mart_club_transfer_log
+  where transfer_year in ${inputs.year.value}
+    and transfer_month in ${inputs.month.value}
+    and club in ${inputs.team.value}
+)
 select
-  sum(signings)        as signings,
-  sum(departures)      as departures,
-  sum(signings) + sum(departures) as moves,
-  sum(permanent_moves) as permanent_moves,
-  sum(loan_moves)      as loan_moves,
-  sum(free_moves)      as free_moves,
-  sum(retirements)     as retirements,
-  round(sum(spend_eur) / 1e6, 2)                                          as spend_m,
-  round(sum(spend_eur) / nullif(sum(paid_signings), 0) / 1e6, 2)         as avg_fee_m,
-  round(max(biggest_fee_eur) / 1e6, 2)                                   as biggest_fee_m
-from superligaen.mart_club_transfers
-where transfer_year in ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
-  and team_name in ${inputs.team.value}
+  count(*)                                                 as transfers,
+  count(*) filter (where nature = 'Permanent')             as permanent_moves,
+  count(*) filter (where nature in ('Loan', 'Loan Return')) as loan_moves,
+  count(*) filter (where nature = 'Free')                  as free_moves,
+  count(*) filter (where fee_eur is not null)              as paid_deals,
+  round(sum(fee_eur) / 1e6, 2)                             as total_value_m,
+  round(avg(fee_eur) / 1e6, 2)                             as avg_fee_m
+from txn
 ```
 
 ```sql record_signing
@@ -180,24 +183,24 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 mb-3">
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-3xl font-black text-gray-800 leading-none">{kpi[0]?.moves}</div>
+    <div class="text-3xl font-black text-gray-800 leading-none">{kpi[0]?.transfers}</div>
     <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Transfers</div>
     <div class="text-[11px] text-gray-500 mt-1">{kpi[0]?.permanent_moves} perm · {kpi[0]?.loan_moves} loan · {kpi[0]?.free_moves} free</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-3xl font-black text-emerald-600 leading-none">€{kpi[0]?.spend_m}m</div>
-    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Total Spend</div>
-    <div class="text-[11px] text-gray-500 mt-1">on signings</div>
+    <div class="text-3xl font-black text-emerald-600 leading-none">€{kpi[0]?.total_value_m}m</div>
+    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Total Value</div>
+    <div class="text-[11px] text-gray-500 mt-1">disclosed transfer fees</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
     <div class="text-3xl font-black text-gray-800 leading-none">€{kpi[0]?.avg_fee_m ?? '—'}m</div>
     <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Avg Fee</div>
-    <div class="text-[11px] text-gray-500 mt-1">per paid signing</div>
+    <div class="text-[11px] text-gray-500 mt-1">per paid deal</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-3xl font-black text-violet-600 leading-none">€{kpi[0]?.biggest_fee_m}m</div>
-    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Record Fee</div>
-    <div class="text-[11px] text-gray-500 mt-1">biggest deal</div>
+    <div class="text-3xl font-black text-violet-600 leading-none">{kpi[0]?.paid_deals}</div>
+    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Paid Deals</div>
+    <div class="text-[11px] text-gray-500 mt-1">with a disclosed fee</div>
   </div>
 </div>
 

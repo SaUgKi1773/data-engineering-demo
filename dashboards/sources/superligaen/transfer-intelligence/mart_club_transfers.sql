@@ -35,7 +35,6 @@ SELECT
     MAX(team_logo) AS team_logo,
     count(*) FILTER (WHERE direction = 'Incoming')                    AS signings,
     count(*) FILTER (WHERE direction = 'Outgoing')                    AS departures,
-    count(*) FILTER (WHERE direction = 'Incoming' AND fee IS NOT NULL) AS paid_signings,
     count(*) FILTER (WHERE direction = 'Incoming' AND basis = 'Loan') AS loans_in,
     count(*) FILTER (WHERE direction = 'Outgoing' AND basis = 'Loan') AS loans_out,
     count(*) FILTER (WHERE nature = 'Permanent')                      AS permanent_moves,
