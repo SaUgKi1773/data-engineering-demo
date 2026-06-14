@@ -69,7 +69,7 @@ from txn
 
 ```sql record_signing
 select player_name, player_photo, club, partner,
-  cast(transfer_year as integer)::varchar as transfer_year,
+  strftime(transfer_date, '%-d %B %Y') as transfer_date_fmt,
   round(fee_eur / 1e6, 2) as fee_m
 from superligaen.mart_club_transfer_log
 where direction = 'Incoming' and fee_eur is not null
@@ -82,7 +82,7 @@ limit 1
 
 ```sql record_sale
 select player_name, player_photo, club, partner,
-  cast(transfer_year as integer)::varchar as transfer_year,
+  strftime(transfer_date, '%-d %B %Y') as transfer_date_fmt,
   round(fee_eur / 1e6, 2) as fee_m
 from superligaen.mart_club_transfer_log
 where direction = 'Outgoing' and fee_eur is not null
@@ -193,7 +193,8 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <div class="flex-1 min-w-0">
       <div class="text-[10px] uppercase tracking-widest text-emerald-700 font-bold">🏆 Record Signing</div>
       <div class="text-lg font-bold text-gray-800 truncate">{record_signing[0]?.player_name ?? '—'}</div>
-      <div class="text-xs text-gray-500 truncate">{record_signing[0]?.club} ← {record_signing[0]?.partner} · {record_signing[0]?.transfer_year}</div>
+      <div class="text-xs text-gray-500 truncate">{record_signing[0]?.club} ← {record_signing[0]?.partner}</div>
+      <div class="text-[11px] text-gray-400 mt-0.5">{record_signing[0]?.transfer_date_fmt}</div>
     </div>
     <div class="text-2xl font-black text-emerald-600 whitespace-nowrap">€{record_signing[0]?.fee_m ?? '—'}m</div>
   </div>
@@ -202,7 +203,8 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <div class="flex-1 min-w-0">
       <div class="text-[10px] uppercase tracking-widest text-orange-700 font-bold">💰 Record Sale</div>
       <div class="text-lg font-bold text-gray-800 truncate">{record_sale[0]?.player_name ?? '—'}</div>
-      <div class="text-xs text-gray-500 truncate">{record_sale[0]?.club} → {record_sale[0]?.partner} · {record_sale[0]?.transfer_year}</div>
+      <div class="text-xs text-gray-500 truncate">{record_sale[0]?.club} → {record_sale[0]?.partner}</div>
+      <div class="text-[11px] text-gray-400 mt-0.5">{record_sale[0]?.transfer_date_fmt}</div>
     </div>
     <div class="text-2xl font-black text-orange-600 whitespace-nowrap">€{record_sale[0]?.fee_m ?? '—'}m</div>
   </div>
