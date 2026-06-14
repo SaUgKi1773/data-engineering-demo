@@ -35,36 +35,34 @@ select
   sum(permanent_moves)   as permanent_moves,
   sum(loan_moves)        as loan_moves,
   sum(free_moves)        as free_moves,
-  round(sum(spend_eur) / 1e6, 1)      as spend_m,
-  round(sum(income_eur) / 1e6, 1)     as income_m,
-  round(sum(net_spend_eur) / 1e6, 1)  as net_m,
+  round(sum(spend_eur) / 1e6, 2)      as spend_m,
+  round(sum(income_eur) / 1e6, 2)     as income_m,
+  round(sum(net_spend_eur) / 1e6, 2)  as net_m,
   sum(net_spend_eur)                  as net_raw,
-  round(max(biggest_fee_eur) / 1e6, 1) as biggest_fee_m
+  round(max(biggest_fee_eur) / 1e6, 2) as biggest_fee_m
 from superligaen.mart_club_transfers
 where transfer_year in ${inputs.year.value}
   and team_name in ${inputs.team.value}
 ```
 
 ```sql by_club
-select team_name,
-  max(team_code) as team_code,
-  sum(signings) as signings,
-  sum(departures) as departures,
-  sum(signings) + sum(departures) as total_moves,
-  round(sum(spend_eur) / 1e6, 2)     as spend_m,
-  round(sum(income_eur) / 1e6, 2)    as income_m,
-  round(sum(net_spend_eur) / 1e6, 2) as net_spend_m
-from superligaen.mart_club_transfers
-where transfer_year in ${inputs.year.value}
-  and team_name in ${inputs.team.value}
-group by team_name
-having sum(signings) + sum(departures) > 0
-order by sum(net_spend_eur) desc
+select * from (
+  select team_name,
+    sum(net_spend_eur)                 as net_raw,
+    round(sum(net_spend_eur) / 1e6, 2) as net_spend_m
+  from superligaen.mart_club_transfers
+  where transfer_year in ${inputs.year.value}
+    and team_name in ${inputs.team.value}
+  group by team_name
+  having sum(signings) + sum(departures) > 0
+  order by abs(sum(net_spend_eur)) desc
+  limit 10
+)
+order by net_raw desc
 ```
 
 ```sql by_club_busy
 select team_name,
-  max(team_code) as team_code,
   sum(signings) as signings,
   sum(departures) as departures
 from superligaen.mart_club_transfers
@@ -73,6 +71,7 @@ where transfer_year in ${inputs.year.value}
 group by team_name
 having sum(signings) + sum(departures) > 0
 order by sum(signings) + sum(departures) desc
+limit 10
 ```
 
 ```sql trend_year
@@ -157,13 +156,13 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Net Spend by Club
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming permanents minus fees received on outgoing permanents. Positive = net investment, negative = net sales.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming permanents minus fees received on outgoing permanents. Top 10 clubs by net balance; positive = net investment, negative = net sales.</p>
 
 <BarChart
     data={by_club}
     x=team_name
     y=net_spend_m
-    title="Net Spend (€m)"
+    title="Net Spend — Top 10 (€m)"
     yAxisTitle="€m"
     sort=false
     colorPalette={['#236aa4']}
@@ -172,13 +171,13 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Market Activity
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Incoming vs outgoing moves per club, busiest first.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Incoming vs outgoing moves per club — top 10 busiest.</p>
 
 <BarChart
     data={by_club_busy}
     x=team_name
     y={['signings','departures']}
-    title="Ins vs Outs by Club"
+    title="Ins vs Outs — Top 10 Busiest"
     type=grouped
     colorPalette={['#16a34a','#f97316']}
     seriesOptions={{"barGap": "0%"}}
