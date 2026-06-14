@@ -34,10 +34,11 @@ dimensions as views, no NULLs in dimension attributes, business-friendly names.
   (`to_team`, Incoming) — exactly like a match emits 2 rows.
 - League-agnostic: there is **no internal/external distinction**. Every club a transfer references
   gets a row, and `dim_team` carries every such club. The model scales unchanged to other leagues.
-- `from_team` is always present → an Outgoing row is always emitted. An Incoming row is emitted only
-  when `to_team` is a **real club** (not null, not a placeholder). The Outgoing row's partner then
-  resolves as: real `to_team` → its SK; `"Retired"` placeholder (`career_ended`) → `-2` Not
-  Applicable; `"TBC"` placeholder or null `to_team` → `-1` Unknown (149 + 8 + 5 = 162 null rows).
+- A row is emitted for each side that is a **real club** (not null, not a placeholder). `from_team`
+  is real in all but 89 rows (placeholder origin); `to_team` is null in 162 rows and a placeholder
+  in another 56 ("Retired" ×54, "TBC" ×2). The Outgoing row's partner resolves as: real `to_team` →
+  its SK; `"Retired"` (`career_ended`) → `-2` Not Applicable; `"TBC"` / null → `-1` Unknown. On dev
+  this yields 5,397 Outgoing + 5,180 Incoming = **10,577 rows** over 5,486 transfers.
 
 **Materialization:** `incremental`, `delete+insert`, `unique_key = ['transfer_id', 'team_sk']`,
 `{{ gold_incremental_filter() }}` in the incremental `WHERE` (house pattern).
@@ -167,21 +168,23 @@ Build as a small static model (`VALUES` / seed-style), incremental-safe SKs, `-1
 
 ---
 
-## 6. Global fee totals — handled by a direction filter
+## 6. Global fee totals — de-duplicate on `transfer_id`
 
 Each transfer appears once per club, so a naive `SUM(transfer_fee_eur)` over the whole fact
-double-counts two-club moves. This is **not a real limitation**: every transfer has exactly one
-Incoming row and one Outgoing row, so filtering on direction counts each transfer once —
+double-counts two-club moves. The fee is identical on a transfer's 1–2 rows, so the **exact** global
+total sums one row per transfer:
 
 ```sql
--- correct global fee total
+-- correct global fee total (matches silver to the euro)
 SELECT SUM(transfer_fee_eur)
-FROM fct_team_transfers
-WHERE transfer_direction = 'Incoming';
+FROM (SELECT DISTINCT transfer_id, transfer_fee_eur FROM fct_team_transfers);
 ```
 
-The fee lives on a single measure (`transfer_fee_eur`) and `dim_transfer_type.transfer_direction`
-does the de-duplication. No atomic side-fact is needed.
+A `transfer_direction = 'Incoming'` filter is *almost* equivalent and reads more cleanly, but it
+**undercounts** the handful of fee-bearing moves whose destination is unknown ("TBC" placeholder):
+those have only an Outgoing row, so the Incoming filter drops them. Verified on dev — `DISTINCT
+transfer_id` = €1,351,958,000 (= silver truth); `Incoming`-only = €1,350,713,000 (misses 2 moves to
+TBC). Use the `DISTINCT transfer_id` form for exact league-wide figures.
 ---
 
 ## 7. `dim_transfer_status` — completed vs pending

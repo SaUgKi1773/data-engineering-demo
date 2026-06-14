@@ -155,3 +155,42 @@ models:
     columns:
       - name: time_sk
         tests: [not_null, unique]
+
+  - name: dim_transfer_partner_team
+    columns:
+      - name: transfer_partner_team_sk
+        tests: [not_null, unique]
+      - name: transfer_partner_team_name
+        tests: [not_null]
+
+  - name: dim_transfer_type
+    columns:
+      - name: transfer_type_sk
+        tests: [not_null, unique]
+      - name: transfer_type_name
+        tests: [not_null]
+      - name: transfer_direction
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Incoming', 'Outgoing', 'Unknown', 'Not Applicable']
+      - name: transfer_nature
+        tests: [not_null]
+      - name: transfer_basis
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Permanent', 'Loan', 'Career End', 'Unknown', 'Not Applicable']
+
+  - name: dim_transfer_status
+    columns:
+      - name: transfer_status_sk
+        tests: [not_null, unique]
+      - name: transfer_status
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Completed', 'Pending', 'Unknown Transfer Status', 'Not Applicable Transfer Status']

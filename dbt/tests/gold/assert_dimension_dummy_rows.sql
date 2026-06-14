@@ -33,3 +33,9 @@ WHERE expected_sk NOT IN (SELECT formation_sk    FROM {{ ref('dim_formation') }}
 UNION ALL
 SELECT 'dim_position',     expected_sk FROM (VALUES (-1), (-2)) t(expected_sk)
 WHERE expected_sk NOT IN (SELECT position_sk     FROM {{ ref('dim_position') }})
+UNION ALL
+SELECT 'dim_transfer_type',   expected_sk FROM (VALUES (-1), (-2)) t(expected_sk)
+WHERE expected_sk NOT IN (SELECT transfer_type_sk   FROM {{ ref('dim_transfer_type') }})
+UNION ALL
+SELECT 'dim_transfer_status', expected_sk FROM (VALUES (-1), (-2)) t(expected_sk)
+WHERE expected_sk NOT IN (SELECT transfer_status_sk FROM {{ ref('dim_transfer_status') }})

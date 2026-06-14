@@ -9,3 +9,5 @@ UNION ALL
 SELECT 'fct_team_matches',               count(*),           2000               FROM {{ ref('fct_team_matches') }} WHERE match_sk > 0 HAVING count(*) < 2000
 UNION ALL
 SELECT 'fct_player_appearances',         count(*),           20000              FROM {{ ref('fct_player_appearances') }} WHERE match_sk > 0 HAVING count(*) < 20000
+UNION ALL
+SELECT 'fct_team_transfers',             count(*),           3000               FROM {{ ref('fct_team_transfers') }} WHERE team_sk > 0 HAVING count(*) < 3000
