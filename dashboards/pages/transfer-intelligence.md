@@ -41,9 +41,11 @@ order by transfer_month
 ```
 
 ```sql teams
-select distinct team_name
-from superligaen.mart_club_transfers
-order by team_name
+select team_name from (
+  select 'All Teams' as team_name, 0 as ord
+  union all
+  select distinct team_name, 1 as ord from superligaen.mart_club_transfers
+) order by ord, team_name
 ```
 
 ```sql kpi
@@ -54,7 +56,7 @@ with txn as (
   from superligaen.mart_club_transfer_log
   where transfer_year in ${inputs.year.value}
     and transfer_month in ${inputs.month.value}
-    and club in ${inputs.team.value}
+    and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
 )
 select
   count(*)                                                 as transfers,
@@ -75,7 +77,7 @@ from superligaen.mart_club_transfer_log
 where direction = 'Incoming' and fee_eur is not null
   and transfer_year in ${inputs.year.value}
   and transfer_month in ${inputs.month.value}
-  and club in ${inputs.team.value}
+  and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
 order by fee_eur desc
 limit 1
 ```
@@ -88,7 +90,7 @@ from superligaen.mart_club_transfer_log
 where direction = 'Outgoing' and fee_eur is not null
   and transfer_year in ${inputs.year.value}
   and transfer_month in ${inputs.month.value}
-  and club in ${inputs.team.value}
+  and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
 order by fee_eur desc
 limit 1
 ```
@@ -105,7 +107,7 @@ select * from (
   from superligaen.mart_club_transfers
   where transfer_year in ${inputs.year.value}
     and transfer_month in ${inputs.month.value}
-    and team_name in ${inputs.team.value}
+    and ('All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value})
   group by team_name
   having sum(signings) + sum(departures) > 0
   order by abs(sum(net_spend_eur)) desc
@@ -121,7 +123,7 @@ select team_name,
 from superligaen.mart_club_transfers
 where transfer_year in ${inputs.year.value}
   and transfer_month in ${inputs.month.value}
-  and team_name in ${inputs.team.value}
+  and ('All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value})
 group by team_name
 having sum(signings) + sum(departures) > 0
 order by sum(signings) + sum(departures) desc
@@ -135,7 +137,7 @@ with txn as (
   select distinct transfer_id, transfer_year, fee_eur
   from superligaen.mart_club_transfer_log
   where transfer_month in ${inputs.month.value}
-    and club in ${inputs.team.value}
+    and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
 )
 select cast(transfer_year as integer)::varchar as transfer_year,
   count(*)                      as transfers,
@@ -152,7 +154,7 @@ select transfer_date, transfer_month_name, club, direction, transfer_type,
 from superligaen.mart_club_transfer_log
 where transfer_year in ${inputs.year.value}
   and transfer_month in ${inputs.month.value}
-  and club in ${inputs.team.value}
+  and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
 order by (fee_eur is null), fee_eur desc, transfer_date desc
 ```
 
@@ -161,7 +163,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   <Dropdown data={years} name=year value=transfer_year multiple=true order="transfer_year desc" defaultValue={[years[0]?.transfer_year]} title="Year" />
   {/key}
   <Dropdown data={months} name=month value=transfer_month label=transfer_month_name multiple=true selectAllByDefault=true order="transfer_month asc" title="Month" />
-  <Dropdown data={teams} name=team value=team_name multiple=true selectAllByDefault=true order="team_name asc" title="Club" />
+  <Dropdown data={teams} name=team value=team_name multiple=true defaultValue={['All Teams']} title="Team" />
 </div>
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 mb-3">
