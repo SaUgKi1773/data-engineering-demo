@@ -12,6 +12,7 @@ rows AS (
         t.team_logo,
         d.year                AS transfer_year,
         tt.transfer_direction AS direction,
+        tt.transfer_nature    AS nature,
         tt.transfer_basis     AS basis,
         f.transfer_fee_eur    AS fee
     FROM superligaen.gold.fct_team_transfers f
@@ -30,9 +31,14 @@ SELECT
     count(*) FILTER (WHERE direction = 'Outgoing')                    AS departures,
     count(*) FILTER (WHERE direction = 'Incoming' AND basis = 'Loan') AS loans_in,
     count(*) FILTER (WHERE direction = 'Outgoing' AND basis = 'Loan') AS loans_out,
+    count(*) FILTER (WHERE nature = 'Permanent')                      AS permanent_moves,
+    count(*) FILTER (WHERE nature = 'Free')                           AS free_moves,
+    count(*) FILTER (WHERE nature IN ('Loan', 'Loan Return'))         AS loan_moves,
+    count(*) FILTER (WHERE nature = 'Retirement')                     AS retirements,
     COALESCE(sum(fee) FILTER (WHERE direction = 'Incoming'), 0)       AS spend_eur,
     COALESCE(sum(fee) FILTER (WHERE direction = 'Outgoing'), 0)       AS income_eur,
     COALESCE(sum(fee) FILTER (WHERE direction = 'Incoming'), 0)
-        - COALESCE(sum(fee) FILTER (WHERE direction = 'Outgoing'), 0) AS net_spend_eur
+        - COALESCE(sum(fee) FILTER (WHERE direction = 'Outgoing'), 0) AS net_spend_eur,
+    COALESCE(max(fee), 0)                                             AS biggest_fee_eur
 FROM rows
 GROUP BY transfer_year, team_name
