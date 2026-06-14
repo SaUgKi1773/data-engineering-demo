@@ -4,6 +4,24 @@ hide_toc: true
 title: Transfer Intelligence
 ---
 
+<script>
+  let codeToName = {};
+  $: codeToName = Object.fromEntries((team_lookup ?? []).map(r => [r.team_code, r.team_name]));
+
+  // Tooltip showing the full club name (axis shows the short code)
+  $: clubTooltip = (params) => {
+    const arr = Array.isArray(params) ? params : [params];
+    const name = codeToName[arr[0].axisValue] ?? arr[0].axisValue;
+    let s = `<strong>${name}</strong>`;
+    arr.forEach(p => { s += `<br/>${p.marker} ${p.seriesName}: ${p.value}`; });
+    return s;
+  };
+</script>
+
+```sql team_lookup
+select distinct team_code, team_name from superligaen.mart_club_transfers
+```
+
 ```sql years
 select distinct transfer_year,
   (transfer_year = year(current_date)) as is_current
@@ -152,11 +170,11 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     data={by_club}
     x=team_code
     y=net_spend_m
-    tooltipTitle=team_name
     title="Net Spend (€m)"
     yAxisTitle="€m"
     sort=false
     colorPalette={['#236aa4']}
+    echartsOptions={{tooltip: {formatter: clubTooltip}}}
 />
 
 ## Market Activity
@@ -167,12 +185,12 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     data={by_club_busy}
     x=team_code
     y={['signings','departures']}
-    tooltipTitle=team_name
     title="Ins vs Outs by Club"
     type=grouped
     colorPalette={['#16a34a','#f97316']}
     seriesOptions={{"barGap": "0%"}}
     sort=false
+    echartsOptions={{tooltip: {formatter: clubTooltip}}}
 />
 
 ## Market Over Time
