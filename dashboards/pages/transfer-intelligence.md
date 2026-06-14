@@ -22,6 +22,14 @@ from superligaen.mart_club_transfers
 order by is_current desc, transfer_year desc
 ```
 
+```sql windows
+select transfer_window from (
+  select distinct transfer_window,
+    case transfer_window when 'Summer' then 1 when 'Winter' then 2 else 3 end as ord
+  from superligaen.mart_club_transfers
+) order by ord
+```
+
 ```sql teams
 select distinct team_name
 from superligaen.mart_club_transfers
@@ -30,19 +38,47 @@ order by team_name
 
 ```sql kpi
 select
-  sum(signings)          as signings,
-  sum(departures)        as departures,
-  sum(permanent_moves)   as permanent_moves,
-  sum(loan_moves)        as loan_moves,
-  sum(free_moves)        as free_moves,
-  round(sum(spend_eur) / 1e6, 2)      as spend_m,
-  round(sum(income_eur) / 1e6, 2)     as income_m,
-  round(sum(net_spend_eur) / 1e6, 2)  as net_m,
-  sum(net_spend_eur)                  as net_raw,
-  round(max(biggest_fee_eur) / 1e6, 2) as biggest_fee_m
+  sum(signings)        as signings,
+  sum(departures)      as departures,
+  sum(signings) + sum(departures) as moves,
+  sum(permanent_moves) as permanent_moves,
+  sum(loan_moves)      as loan_moves,
+  sum(free_moves)      as free_moves,
+  sum(retirements)     as retirements,
+  round(sum(spend_eur) / 1e6, 2)     as spend_m,
+  round(sum(income_eur) / 1e6, 2)    as income_m,
+  round(sum(net_spend_eur) / 1e6, 2) as net_m,
+  sum(net_spend_eur)                 as net_raw
 from superligaen.mart_club_transfers
 where transfer_year in ${inputs.year.value}
+  and transfer_window in ${inputs.window.value}
   and team_name in ${inputs.team.value}
+```
+
+```sql record_signing
+select player_name, player_photo, club, partner,
+  cast(transfer_year as integer)::varchar as transfer_year,
+  round(fee_eur / 1e6, 2) as fee_m
+from superligaen.mart_club_transfer_log
+where direction = 'Incoming' and fee_eur is not null
+  and transfer_year in ${inputs.year.value}
+  and transfer_window in ${inputs.window.value}
+  and club in ${inputs.team.value}
+order by fee_eur desc
+limit 1
+```
+
+```sql record_sale
+select player_name, player_photo, club, partner,
+  cast(transfer_year as integer)::varchar as transfer_year,
+  round(fee_eur / 1e6, 2) as fee_m
+from superligaen.mart_club_transfer_log
+where direction = 'Outgoing' and fee_eur is not null
+  and transfer_year in ${inputs.year.value}
+  and transfer_window in ${inputs.window.value}
+  and club in ${inputs.team.value}
+order by fee_eur desc
+limit 1
 ```
 
 ```sql by_club
@@ -52,6 +88,7 @@ select * from (
     round(sum(net_spend_eur) / 1e6, 2) as net_spend_m
   from superligaen.mart_club_transfers
   where transfer_year in ${inputs.year.value}
+    and transfer_window in ${inputs.window.value}
     and team_name in ${inputs.team.value}
   group by team_name
   having sum(signings) + sum(departures) > 0
@@ -67,6 +104,7 @@ select team_name,
   sum(departures) as departures
 from superligaen.mart_club_transfers
 where transfer_year in ${inputs.year.value}
+  and transfer_window in ${inputs.window.value}
   and team_name in ${inputs.team.value}
 group by team_name
 having sum(signings) + sum(departures) > 0
@@ -75,12 +113,13 @@ limit 10
 ```
 
 ```sql trend_year
--- Time series: not affected by the Year filter (it is the time axis); Team filter still applies.
+-- Time series: not affected by the Year filter (it is the time axis); Window/Team filters apply.
 select cast(cast(transfer_year as integer) as varchar) as transfer_year,
   sum(signings) + sum(departures) as moves,
   round(sum(spend_eur) / 1e6, 1) as spend_m
 from superligaen.mart_club_transfers
-where team_name in ${inputs.team.value}
+where transfer_window in ${inputs.window.value}
+  and team_name in ${inputs.team.value}
 group by 1
 order by 1
 ```
@@ -91,6 +130,7 @@ select player_name, club, partner, cast(transfer_year as integer)::varchar as tr
 from superligaen.mart_club_transfer_log
 where direction = 'Incoming' and fee_eur is not null
   and transfer_year in ${inputs.year.value}
+  and transfer_window in ${inputs.window.value}
   and club in ${inputs.team.value}
 order by fee_eur desc
 limit 10
@@ -102,6 +142,7 @@ select player_name, club, partner, cast(transfer_year as integer)::varchar as tr
 from superligaen.mart_club_transfer_log
 where direction = 'Outgoing' and fee_eur is not null
   and transfer_year in ${inputs.year.value}
+  and transfer_window in ${inputs.window.value}
   and club in ${inputs.team.value}
 order by fee_eur desc
 limit 10
@@ -113,6 +154,7 @@ select transfer_date, transfer_window, club, direction, transfer_type,
   case when fee_eur is null then null else round(fee_eur / 1e6, 2) end as fee_m
 from superligaen.mart_club_transfer_log
 where transfer_year in ${inputs.year.value}
+  and transfer_window in ${inputs.window.value}
   and club in ${inputs.team.value}
 order by (fee_eur is null), fee_eur desc, transfer_date desc
 ```
@@ -121,33 +163,58 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   {#key years[0]?.transfer_year}
   <Dropdown data={years} name=year value=transfer_year multiple=true order="transfer_year desc" defaultValue={[years[0]?.transfer_year]} title="Year" />
   {/key}
+  <Dropdown data={windows} name=window value=transfer_window multiple=true selectAllByDefault=true title="Window" />
   <Dropdown data={teams} name=team value=team_name multiple=true selectAllByDefault=true order="team_name asc" title="Club" />
 </div>
 
-<div class="grid grid-cols-2 md:grid-cols-6 gap-3 my-5">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 mb-3">
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-2xl font-black text-gray-800 leading-none">{kpi[0]?.signings}</div>
-    <div class="text-gray-400 text-xs mt-1 uppercase tracking-wide">Signings</div>
+    <div class="text-3xl font-black text-gray-800 leading-none">{kpi[0]?.moves}</div>
+    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Transfers</div>
+    <div class="text-[11px] text-gray-500 mt-1">{kpi[0]?.signings} in · {kpi[0]?.departures} out</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-2xl font-black text-gray-800 leading-none">{kpi[0]?.departures}</div>
-    <div class="text-gray-400 text-xs mt-1 uppercase tracking-wide">Departures</div>
+    <div class="text-3xl font-black text-emerald-600 leading-none">€{kpi[0]?.spend_m}m</div>
+    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Spent</div>
+    <div class="text-[11px] text-gray-500 mt-1">on incoming fees</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-2xl font-black text-emerald-600 leading-none">€{kpi[0]?.spend_m}m</div>
-    <div class="text-gray-400 text-xs mt-1 uppercase tracking-wide">Spent</div>
+    <div class="text-3xl font-black text-orange-600 leading-none">€{kpi[0]?.income_m}m</div>
+    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Received</div>
+    <div class="text-[11px] text-gray-500 mt-1">on outgoing fees</div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-2xl font-black text-orange-600 leading-none">€{kpi[0]?.income_m}m</div>
-    <div class="text-gray-400 text-xs mt-1 uppercase tracking-wide">Received</div>
+  <div class="rounded-xl border-2 p-4 shadow-sm" style="border-color:{kpi[0]?.net_raw >= 0 ? '#236aa4' : '#16a34a'}">
+    <div class="text-3xl font-black leading-none" style="color:{kpi[0]?.net_raw >= 0 ? '#236aa4' : '#16a34a'}">€{kpi[0]?.net_m}m</div>
+    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Net Spend</div>
+    <div class="text-[11px] text-gray-500 mt-1">{kpi[0]?.net_raw >= 0 ? 'net buyer' : 'net seller'}</div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-2xl font-black leading-none" style="color:{kpi[0]?.net_raw >= 0 ? '#236aa4' : '#16a34a'}">€{kpi[0]?.net_m}m</div>
-    <div class="text-gray-400 text-xs mt-1 uppercase tracking-wide">Net Spend</div>
+</div>
+
+<div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-500 mb-5 px-1">
+  <span><span class="font-semibold text-gray-700">{kpi[0]?.permanent_moves}</span> permanent</span>
+  <span><span class="font-semibold text-gray-700">{kpi[0]?.loan_moves}</span> loan</span>
+  <span><span class="font-semibold text-gray-700">{kpi[0]?.free_moves}</span> free</span>
+  <span><span class="font-semibold text-gray-700">{kpi[0]?.retirements}</span> retirements</span>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-7">
+  <div class="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 shadow-sm flex items-center gap-4">
+    <img src="{record_signing[0]?.player_photo}" alt="" class="w-16 h-16 rounded-full object-cover bg-white border border-emerald-100 flex-shrink-0" onerror="this.style.visibility='hidden'" />
+    <div class="flex-1 min-w-0">
+      <div class="text-[10px] uppercase tracking-widest text-emerald-700 font-bold">🏆 Record Signing</div>
+      <div class="text-lg font-bold text-gray-800 truncate">{record_signing[0]?.player_name ?? '—'}</div>
+      <div class="text-xs text-gray-500 truncate">{record_signing[0]?.club} ← {record_signing[0]?.partner} · {record_signing[0]?.transfer_year}</div>
+    </div>
+    <div class="text-2xl font-black text-emerald-600 whitespace-nowrap">€{record_signing[0]?.fee_m ?? '—'}m</div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-2xl font-black text-violet-600 leading-none">€{kpi[0]?.biggest_fee_m}m</div>
-    <div class="text-gray-400 text-xs mt-1 uppercase tracking-wide">Record Fee</div>
+  <div class="rounded-xl border border-orange-200 bg-orange-50/40 p-4 shadow-sm flex items-center gap-4">
+    <img src="{record_sale[0]?.player_photo}" alt="" class="w-16 h-16 rounded-full object-cover bg-white border border-orange-100 flex-shrink-0" onerror="this.style.visibility='hidden'" />
+    <div class="flex-1 min-w-0">
+      <div class="text-[10px] uppercase tracking-widest text-orange-700 font-bold">💰 Record Sale</div>
+      <div class="text-lg font-bold text-gray-800 truncate">{record_sale[0]?.player_name ?? '—'}</div>
+      <div class="text-xs text-gray-500 truncate">{record_sale[0]?.club} → {record_sale[0]?.partner} · {record_sale[0]?.transfer_year}</div>
+    </div>
+    <div class="text-2xl font-black text-orange-600 whitespace-nowrap">€{record_sale[0]?.fee_m ?? '—'}m</div>
   </div>
 </div>
 
