@@ -1,10 +1,9 @@
--- Per-season transfer KPIs and trend. One row per transfer (deduped across the
--- two club-perspective fact rows, which agree on fee / nature / season), bucketed
--- into the football season its window belongs to (Jul–Jun).
+-- Per calendar-year transfer KPIs and trend. One row per transfer (deduped across
+-- the two club-perspective fact rows, which agree on fee / nature / date).
 WITH txn AS (
     SELECT
         f.transfer_id,
-        MAX(CASE WHEN d.month >= 7 THEN d.year ELSE d.year - 1 END) AS season_start_year,
+        MAX(d.year)             AS transfer_year,
         MAX(tt.transfer_nature) AS nature,
         MAX(f.transfer_fee_eur) AS fee
     FROM superligaen.gold.fct_team_transfers f
@@ -14,9 +13,7 @@ WITH txn AS (
     GROUP BY f.transfer_id
 )
 SELECT
-    (season_start_year || '/' || right((season_start_year + 1)::varchar, 2)) AS season,
-    season_start_year,
-    (season_start_year = (CASE WHEN month(current_date) >= 7 THEN year(current_date) ELSE year(current_date) - 1 END)) AS is_current,
+    transfer_year,
     count(*)                                              AS transfers,
     count(*) FILTER (WHERE nature = 'Permanent')          AS permanent_moves,
     count(*) FILTER (WHERE nature = 'Free')               AS free_moves,
@@ -27,6 +24,6 @@ SELECT
     COALESCE(max(fee), 0)                                 AS biggest_fee_eur,
     ROUND(avg(fee))                                       AS avg_fee_eur
 FROM txn
-WHERE season_start_year >= 2015
-GROUP BY 1, 2, 3
-ORDER BY season_start_year DESC
+WHERE transfer_year >= 2020
+GROUP BY transfer_year
+ORDER BY transfer_year
