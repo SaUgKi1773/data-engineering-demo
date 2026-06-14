@@ -66,8 +66,8 @@ select * from superligaen.mart_home_summary
 </div>
 
 <div class="rounded-xl border border-amber-200 bg-amber-50 shadow-sm p-4 mb-8 flex items-center gap-3">
-  <div class="text-amber-400 text-2xl">👑</div>
-  <div class="text-xs font-semibold text-amber-600 uppercase tracking-widest flex-shrink-0">Season Leader</div>
+  <div class="text-amber-400 text-2xl">{new Date() > new Date(summary[0].season_end) ? '👑' : '🥇'}</div>
+  <div class="text-xs font-semibold text-amber-600 uppercase tracking-widest flex-shrink-0">{new Date() > new Date(summary[0].season_end) ? 'Champion' : 'Current Leader'}</div>
   <div class="flex-1 h-px bg-amber-200"></div>
   <div class="text-sm font-bold text-amber-800">{summary[0]?.leader_name}</div>
   <div class="text-xs text-amber-600 font-semibold">{summary[0]?.leader_pts} pts</div>
