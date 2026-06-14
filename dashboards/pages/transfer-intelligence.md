@@ -108,18 +108,6 @@ where transfer_year in ${inputs.year.value}
 order by (fee_eur is null), fee_eur desc, transfer_date desc
 ```
 
-<div class="relative rounded-2xl overflow-hidden mb-6 shadow-lg" style="background: linear-gradient(135deg, #1e3a5f 0%, #1a5276 40%, #6b21a8 100%);">
-  <div class="absolute inset-0 opacity-[0.08]" style="background-image: repeating-linear-gradient(90deg, white 0px, white 1px, transparent 1px, transparent 80px), repeating-linear-gradient(0deg, white 0px, white 1px, transparent 1px, transparent 80px);"></div>
-  <div class="relative px-6 py-8 md:px-10 md:py-9 flex items-center gap-5">
-    <div class="bg-white/10 backdrop-blur rounded-2xl p-3 shadow-inner flex-shrink-0 text-4xl">🔁</div>
-    <div>
-      <div class="text-white/50 text-xs uppercase tracking-widest mb-1">Superligaen · since 2020</div>
-      <div class="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">Transfer Intelligence</div>
-      <div class="text-white/50 text-xs mt-1 tracking-wide italic">Ins, outs, fees &amp; net spend across the market</div>
-    </div>
-  </div>
-</div>
-
 <div class="flex flex-wrap gap-3 items-end mb-2">
   {#key years[0]?.transfer_year}
   <Dropdown data={years} name=year value=transfer_year multiple=true order="transfer_year desc" defaultValue={[years[0]?.transfer_year]} title="Year" />
