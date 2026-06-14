@@ -55,10 +55,9 @@ select
   sum(loan_moves)      as loan_moves,
   sum(free_moves)      as free_moves,
   sum(retirements)     as retirements,
-  round(sum(spend_eur) / 1e6, 2)     as spend_m,
-  round(sum(income_eur) / 1e6, 2)    as income_m,
-  round(sum(net_spend_eur) / 1e6, 2) as net_m,
-  sum(net_spend_eur)                 as net_raw
+  round(sum(spend_eur) / 1e6, 2)                                          as spend_m,
+  round(sum(spend_eur) / nullif(sum(paid_signings), 0) / 1e6, 2)         as avg_fee_m,
+  round(max(biggest_fee_eur) / 1e6, 2)                                   as biggest_fee_m
 from superligaen.mart_club_transfers
 where transfer_year in ${inputs.year.value}
   and transfer_month in ${inputs.month.value}
@@ -187,18 +186,18 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
     <div class="text-3xl font-black text-emerald-600 leading-none">€{kpi[0]?.spend_m}m</div>
-    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Spent</div>
-    <div class="text-[11px] text-gray-500 mt-1">on incoming fees</div>
+    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Total Spend</div>
+    <div class="text-[11px] text-gray-500 mt-1">on signings</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-3xl font-black text-orange-600 leading-none">€{kpi[0]?.income_m}m</div>
-    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Received</div>
-    <div class="text-[11px] text-gray-500 mt-1">on outgoing fees</div>
+    <div class="text-3xl font-black text-gray-800 leading-none">€{kpi[0]?.avg_fee_m ?? '—'}m</div>
+    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Avg Fee</div>
+    <div class="text-[11px] text-gray-500 mt-1">per paid signing</div>
   </div>
-  <div class="rounded-xl border-2 p-4 shadow-sm" style="border-color:{kpi[0]?.net_raw >= 0 ? '#236aa4' : '#16a34a'}">
-    <div class="text-3xl font-black leading-none" style="color:{kpi[0]?.net_raw >= 0 ? '#236aa4' : '#16a34a'}">€{kpi[0]?.net_m}m</div>
-    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Net Spend</div>
-    <div class="text-[11px] text-gray-500 mt-1">{kpi[0]?.net_raw >= 0 ? 'net buyer' : 'net seller'}</div>
+  <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div class="text-3xl font-black text-violet-600 leading-none">€{kpi[0]?.biggest_fee_m}m</div>
+    <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Record Fee</div>
+    <div class="text-[11px] text-gray-500 mt-1">biggest deal</div>
   </div>
 </div>
 
