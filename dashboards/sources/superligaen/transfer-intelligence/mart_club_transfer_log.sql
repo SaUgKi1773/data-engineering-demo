@@ -11,7 +11,7 @@ enriched AS (
         d.date AS transfer_date,
         CASE WHEN d.month IN (6, 7, 8) THEN 'Summer'
              WHEN d.month IN (1, 2)    THEN 'Winter'
-             ELSE 'Other' END AS window,
+             ELSE 'Other' END AS transfer_window,
         t.team_name  AS club,
         t.team_logo  AS club_logo,
         tt.transfer_direction AS direction,
@@ -39,7 +39,7 @@ SELECT
     transfer_id,
     season_start_year,
     (season_start_year || '/' || right((season_start_year + 1)::varchar, 2)) AS season,
-    window,
+    transfer_window,
     transfer_date,
     club,
     club_logo,
