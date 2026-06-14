@@ -50,6 +50,18 @@ having sum(signings) + sum(departures) > 0
 order by sum(net_spend_eur) desc
 ```
 
+```sql by_club_busy
+select team_name,
+  sum(signings) as signings,
+  sum(departures) as departures
+from superligaen.mart_club_transfers
+where transfer_year in ${inputs.year.value}
+  and team_name in ${inputs.team.value}
+group by team_name
+having sum(signings) + sum(departures) > 0
+order by sum(signings) + sum(departures) desc
+```
+
 ```sql trend_year
 select transfer_year,
   sum(signings) + sum(departures) as moves,
@@ -150,42 +162,26 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     data={by_club}
     x=team_name
     y=net_spend_m
-    swapXY=true
     title="Net Spend (€m)"
     yAxisTitle="€m"
-    chartAreaHeight=460
     sort=false
     colorPalette={['#236aa4']}
 />
 
 ## Market Activity
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Incoming vs outgoing moves per club, busiest first.</p>
 
 <BarChart
-    data={by_club}
+    data={by_club_busy}
     x=team_name
     y={['signings','departures']}
     title="Ins vs Outs by Club"
     type=grouped
-    swapXY=true
     colorPalette={['#16a34a','#f97316']}
     seriesOptions={{"barGap": "0%"}}
-    chartAreaHeight=460
     sort=false
 />
-
-<BarChart
-    data={trend_year}
-    x=transfer_year
-    y={['permanent_moves','loan_moves','free_moves']}
-    title="Move Types by Year"
-    type=stacked
-    colorPalette={['#236aa4','#f4b548','#85c7c6']}
-    sort=false
-/>
-
-</div>
 
 ## Market Over Time
 
