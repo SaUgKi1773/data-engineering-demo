@@ -9,6 +9,18 @@ title: Transfer Intelligence
   let nameToCode = {};
   $: nameToCode = Object.fromEntries((team_lookup ?? []).map(r => [r.team_name, r.team_code]));
   $: shortLabel = (name) => nameToCode[name] ?? name;
+
+  // Net Spend tooltip: full club name + net / spent / received
+  $: clubFin = Object.fromEntries((by_club ?? []).map(r => [r.team_name, r]));
+  $: netSpendTip = (params) => {
+    const name = (Array.isArray(params) ? params[0] : params).axisValue;
+    const r = clubFin[name];
+    if (!r) return name;
+    return `<strong>${name}</strong>`
+      + `<br/>Net spend: €${r.net_spend_m}m`
+      + `<br/>Spent: €${r.spend_m}m`
+      + `<br/>Received: €${r.income_m}m`;
+  };
 </script>
 
 ```sql team_lookup
@@ -83,7 +95,9 @@ limit 1
 select * from (
   select team_name,
     sum(net_spend_eur)                 as net_raw,
-    round(sum(net_spend_eur) / 1e6, 2) as net_spend_m
+    round(sum(net_spend_eur) / 1e6, 2) as net_spend_m,
+    round(sum(spend_eur) / 1e6, 2)     as spend_m,
+    round(sum(income_eur) / 1e6, 2)    as income_m
   from superligaen.mart_club_transfers
   where transfer_year in ${inputs.year.value}
     and transfer_month in ${inputs.month.value}
@@ -222,7 +236,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     yAxisTitle="€m"
     sort=false
     colorPalette={['#236aa4']}
-    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}}}
+    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}, tooltip: {formatter: netSpendTip}}}
 />
 
 ## Market Activity
