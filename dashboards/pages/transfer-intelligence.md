@@ -130,7 +130,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 </div>
 
 <div class="flex flex-wrap gap-3 items-end">
-  <Dropdown data={years} name=year value=transfer_year multiple=true defaultValue={years.map(y => y.transfer_year)} title="Year" />
+  <Dropdown data={years} name=year value=transfer_year multiple=true selectAllByDefault=true order="transfer_year desc" title="Year" />
   <Dropdown data={teams} name=team value=team_name label=team_name defaultValue="All Teams" title="Club" />
 </div>
 
