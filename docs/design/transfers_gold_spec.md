@@ -12,28 +12,30 @@ dimensions as views, no NULLs in dimension attributes, business-friendly names.
 ## 1. Star overview
 
 ```
-                 dim_date
-                    │
+                 dim_date          dim_transfer_status
+                    │                     │
    dim_player ──── fct_team_transfers ──── dim_transfer_type
                     │        │
               dim_team   dim_transfer_partner_team (role view → dim_team)
-                    │
-        (+ dim_transfer_status — optional junk dim)
 ```
 
-- **Fact:** `fct_team_transfers` — one *perspective* fact, club-centric, mirroring `fct_team_matches`.
-- **New objects:** `fct_team_transfers`, `dim_transfer_type`, `dim_transfer_partner_team`, (optional) `dim_transfer_status`.
-- **Conformed (reused):** `dim_date`, `dim_player`, `dim_team` (extended).
+- **Fact:** `fct_team_transfers` — club-centric, one row per club per transfer, mirroring `fct_team_matches`.
+  League-agnostic: no "internal/external" notion — every club a transfer references gets a row.
+- **New objects:** `fct_team_transfers`, `dim_transfer_type`, `dim_transfer_partner_team`, `dim_transfer_status`.
+- **Conformed (reused):** `dim_date`, `dim_player`, `dim_team` (extended to hold every club a transfer references).
 
 ---
 
 ## 2. Fact — `fct_team_transfers`
 
-> **Grain: one row per tracked (Superliga) club, per transfer that club was a party to.**
+> **Grain: one row per (transfer, club) — each transfer emits one row per club involved.**
 
-- Intra-league move (both clubs tracked) → **2 rows** (one per club), exactly like a match emits 2 rows.
-- Move involving an external club → **1 row** (only the tracked side).
-- "Tracked" is resolved at build time from `ref('teams')` — it is **not** a stored attribute.
+- A standard two-club move → **2 rows**: selling club (`from_team`, Outgoing) and buying club
+  (`to_team`, Incoming) — exactly like a match emits 2 rows.
+- League-agnostic: there is **no internal/external distinction**. Every club a transfer references
+  gets a row, and `dim_team` carries every such club. The model scales unchanged to other leagues.
+- `from_team` is always present → an Outgoing row is always emitted. `to_team` is null in 162 rows
+  (destination not captured) → those emit only the Outgoing row, with partner resolving to `-1`.
 
 **Materialization:** `incremental`, `delete+insert`, `unique_key = ['transfer_id', 'team_sk']`,
 `{{ gold_incremental_filter() }}` in the incremental `WHERE` (house pattern).
@@ -47,50 +49,58 @@ dimensions as views, no NULLs in dimension attributes, business-friendly names.
 | `team_sk` | INTEGER | FK → `dim_team` | the tracked club (subject side) |
 | `transfer_partner_team_sk` | INTEGER | FK → `dim_transfer_partner_team` | the other club (role view) |
 | `player_sk` | INTEGER | FK → `dim_player` | `COALESCE(dp.player_sk, -1)` |
-| `transfer_type_sk` | INTEGER | FK → `dim_transfer_type` | resolves mechanism **and** direction |
+| `transfer_type_sk` | INTEGER | FK → `dim_transfer_type` | resolves mechanism, direction **and** career-ending |
+| `transfer_status_sk` | INTEGER | FK → `dim_transfer_status` | completed vs pending |
 | `transfer_count` | INTEGER | measure (additive) | constant `1` |
 | `transfer_fee_eur` | BIGINT | measure | deal value; **NULL when undisclosed** (never 0) |
-| `fee_paid_eur` | BIGINT | measure (additive) | `transfer_fee_eur` when Incoming & disclosed, else NULL |
-| `fee_received_eur` | BIGINT | measure (additive) | `transfer_fee_eur` when Outgoing & disclosed, else NULL |
-| `net_spend_eur` | BIGINT | measure (additive) | `+fee` when Incoming, `−fee` when Outgoing (disclosed only) |
+
+> Agreed — `transfer_fee_eur` is the single fee measure. The earlier `fee_paid` / `fee_received` /
+> `net_spend` columns are dropped: they were derivable, and with direction on `dim_transfer_type`
+> they add no information. Net spend per club is a one-line BI expression —
+> `SUM(CASE WHEN transfer_direction = 'Incoming' THEN transfer_fee_eur ELSE -transfer_fee_eur END)`
+> grouped by `team_sk` — not a stored, maintained column.
 
 ### Row-generation logic
 
-For each `silver.transfers` row, emit a subject row per side that is a tracked club:
+For each `silver.transfers` row, emit one row per club side that has a team:
 
 | Side | Emit when | `team_sk` | `transfer_partner_team_sk` | direction |
 |---|---|---|---|---|
-| Buying side (`to_team`) | `to_team_id` is tracked | `to_team_id` | `from_team_id` | Incoming |
-| Selling side (`from_team`) | `from_team_id` is tracked | `from_team_id` | `to_team_id` | Outgoing |
+| Selling side (`from_team`) | always (never null) | `from_team_id` | `to_team_id` (→ `-1` if null) | Outgoing |
+| Buying side (`to_team`) | `to_team_id` not null | `to_team_id` | `from_team_id` | Incoming |
 
-Implemented as a `UNION ALL` of the two sides, each filtered to tracked membership.
+Implemented as a `UNION ALL` of the two sides. No tracked/scope filter — both sides are emitted
+whenever a team is present.
 
 ### Measure semantics (additivity)
 
-- `transfer_fee_eur` — stays **NULL** when undisclosed so `AVG`/`MAX` are honest. `SUM` over
-  distinct transfers is additive; over the perspective fact it double-counts intra-league
-  moves (see §6).
-- `fee_paid_eur` / `fee_received_eur` / `net_spend_eur` — fully additive *when grouped/filtered by
-  `team_sk`*. `SUM(net_spend_eur) WHERE team_sk = X` = club X's net spend. NULLs (undisclosed)
-  are ignored by `SUM` by design — **undisclosed fees are excluded, not treated as €0**.
+- `transfer_count` — fully additive.
+- `transfer_fee_eur` — stays **NULL** when undisclosed so `AVG`/`MAX` are honest, and `SUM` ignores
+  undisclosed fees rather than treating them as €0. Because each transfer appears once per club, a
+  **global** fee total is taken with a direction filter, e.g.
+  `SUM(transfer_fee_eur) WHERE transfer_direction = 'Incoming'` — each transfer counted exactly once
+  (see §6).
 
 ---
 
 ## 3. `dim_team` — extended (conformed)
 
-Keep all existing columns and the `-1`/`-2` members. Add external clubs (transfer
-counterparties, frequently foreign and absent from `ref('teams')`) via `UNION ALL`:
+`dim_team` is the conformed club dimension. Today it is sourced only from `ref('teams')` (the clubs
+we ingest in detail). Transfers reference additional clubs we don't ingest in detail (e.g. foreign
+buyers/sellers), so every club a transfer references must also exist here. Keep all existing columns
+and the `-1`/`-2` members, and `UNION ALL` the additional clubs:
 
-- In-scope clubs: unchanged, full attributes from `ref('teams')` / `ref('team_names')`.
-- External clubs: distinct `from_team_id`/`to_team_id` seen in `silver.transfers`, with
-  `team_name` / `team_logo` / `team_country` from the embedded `fromteam`/`toteam` fields.
-  In-scope-only attributes (`team_venue_name`, `team_venue_city`, `team_venue_capacity`,
-  `team_founded_year`, `team_code`, `team_short_name`) → `'Not Applicable …'` text (**no NULLs**).
+- Detailed clubs: unchanged, full attributes from `ref('teams')` / `ref('team_names')`.
+- Transfer-only clubs: distinct `from_team_id`/`to_team_id` from `silver.transfers` not already
+  present, with `team_name` / `team_logo` / `team_country` from the embedded `fromteam`/`toteam`
+  fields. Attributes the transfer payload doesn't carry (`team_venue_name`, `team_venue_city`,
+  `team_venue_capacity`, `team_founded_year`, `team_code`, `team_short_name`) → `'Not Applicable …'`
+  text (**no NULLs**).
 - `placeholder = true` clubs (e.g. "TBC") are **not** admitted — they resolve to `-1`.
-- **No scope flag** — "tracked vs external" is a build-time set, not a stored attribute.
+- **No scope flag** — there is no internal/external distinction; a club is a club.
 
 SK assignment continues the existing incremental `MAX(team_sk)+ROW_NUMBER()` scheme so existing
-in-scope SKs are stable and external clubs get new positive SKs.
+SKs are stable and newly-referenced clubs get new positive SKs.
 
 ---
 
@@ -110,84 +120,102 @@ in-scope SKs are stable and external clubs get new positive SKs.
 
 ## 5. `dim_transfer_type` — new
 
-Combines mechanism **and** direction (low-cardinality, correlated → one mini-dimension).
-8 business rows + `-1`. Natural drill path: **`transfer_basis` → `transfer_nature` → `transfer_type_name`**.
+Combines mechanism, direction **and** the career-ending flag (all low-cardinality, correlated → one
+mini-dimension). 10 business rows + `-1` / `-2`. Natural drill path:
+**`transfer_basis` → `transfer_nature` → `transfer_type_name`**.
 
-| `transfer_type_sk` | `transfer_type_name` | `transfer_direction` | `transfer_nature` | `transfer_basis` | `is_fee_bearing` |
-|---|---|---|---|---|---|
-| 1 | Permanent Signing | Incoming | Permanent | Permanent | true |
-| 2 | Permanent Sale | Outgoing | Permanent | Permanent | true |
-| 3 | Free Signing | Incoming | Free | Permanent | false |
-| 4 | Free Departure | Outgoing | Free | Permanent | false |
-| 5 | Loan In | Incoming | Loan | Loan | false |
-| 6 | Loan Out | Outgoing | Loan | Loan | false |
-| 7 | Returning from Loan | Incoming | Loan Return | Loan | false |
-| 8 | Loan Spell Ended | Outgoing | Loan Return | Loan | false |
-| -1 | Unknown | Unknown | Unknown | Unknown | false |
+| `transfer_type_sk` | `transfer_type_name` | `transfer_direction` | `transfer_nature` | `transfer_basis` | `is_fee_bearing` | `is_career_ending` |
+|---|---|---|---|---|---|---|
+| 1 | Permanent Signing | Incoming | Permanent | Permanent | true | false |
+| 2 | Permanent Sale | Outgoing | Permanent | Permanent | true | false |
+| 3 | Free Signing | Incoming | Free | Permanent | false | false |
+| 4 | Free Departure | Outgoing | Free | Permanent | false | false |
+| 5 | Loan In | Incoming | Loan | Loan | false | false |
+| 6 | Loan Out | Outgoing | Loan | Loan | false | false |
+| 7 | Returning from Loan | Incoming | Loan Return | Loan | false | false |
+| 8 | Loan Spell Ended | Outgoing | Loan Return | Loan | false | false |
+| 9 | Final Transfer In | Incoming | Permanent | Permanent | true | true |
+| 10 | Final Transfer Out | Outgoing | Permanent | Permanent | true | true |
+| -1 | Unknown | Unknown | Unknown | Unknown | false | false |
+| -2 | Not Applicable | Not Applicable | Not Applicable | Not Applicable | false | false |
 
-**Source mapping** (`silver.transfers` → row), by source `type_name` × whether the tracked club is `to_team` (Incoming) or `from_team` (Outgoing):
+**Source mapping** (`silver.transfers` → row), by source `type_name` and `career_ended`, split by
+whether the club is `to_team` (Incoming) or `from_team` (Outgoing):
 
-| Source `type_name` | `transfer_nature` | Incoming row | Outgoing row |
-|---|---|---|---|
-| `Transfer` | Permanent | 1 | 2 |
-| `Free Transfer` | Free | 3 | 4 |
-| `Loan` | Loan | 5 | 6 |
-| `End of loan` | Loan Return | 7 | 8 |
+| Source `type_name` | `career_ended` | `transfer_nature` | Incoming row | Outgoing row |
+|---|---|---|---|---|
+| `Transfer` | false | Permanent | 1 | 2 |
+| `Transfer` | true | Permanent | 9 | 10 |
+| `Free Transfer` | (false) | Free | 3 | 4 |
+| `Loan` | (false) | Loan | 5 | 6 |
+| `End of loan` | (false) | Loan Return | 7 | 8 |
 
 Notes:
+- **`is_career_ending`** carries the silver `career_ended` flag — moved here from the status dim per
+  review. Data shows it only ever co-occurs with a completed permanent `Transfer` (54 rows), so it
+  stays a permanent transfer (`transfer_basis = Permanent`) rather than a separate nature; the flag +
+  the `Final Transfer In/Out` labels mark the player's last move.
 - `transfer_basis` rolls **Free up to Permanent** (a free transfer is a permanent move with no
   fee) — the economically correct binary, unlike a mechanism-only grouping.
 - `is_fee_bearing` is true only for `Permanent` (matches the silver note that `amount` is
   populated only for a subset of permanent moves).
 - Rows 7–8 labels are tunable — "End of loan" is an inherently ambiguous event.
 
-Build as a small static model (`VALUES` / seed-style), incremental-safe SKs, `-1` member via `post_hook`.
+Build as a small static model (`VALUES` / seed-style), incremental-safe SKs, `-1` / `-2` members via `post_hook`.
 
 ---
 
-## 6. Known caveat — league-wide fee totals
+## 6. Global fee totals — handled by a direction filter
 
-Because intra-league transfers appear twice (once per club), a **league-wide** unique fee total
-(`SUM(transfer_fee_eur)` over the whole fact) double-counts them. This fact is built **for per-club
-analysis** — always filter/group by `team_sk`. League totals should use `COUNT(DISTINCT transfer_id)`
-or be sourced from a thin atomic fact if one is added later. (Same trade-off `fct_team_matches`
-sidesteps by framing goals per-subject; here the fee is a shared event attribute, so it cannot be.)
+Each transfer appears once per club, so a naive `SUM(transfer_fee_eur)` over the whole fact
+double-counts two-club moves. This is **not a real limitation**: every transfer has exactly one
+Incoming row and one Outgoing row, so filtering on direction counts each transfer once —
 
+```sql
+-- correct global fee total
+SELECT SUM(transfer_fee_eur)
+FROM fct_team_transfers
+WHERE transfer_direction = 'Incoming';
+```
+
+The fee lives on a single measure (`transfer_fee_eur`) and `dim_transfer_type.transfer_direction`
+does the de-duplication. No atomic side-fact is needed.
 ---
 
-## 7. Optional — `dim_transfer_status` (junk dim)
+## 7. `dim_transfer_status` — completed vs pending
 
-The Kimball-correct home for the two low-cardinality state flags, instead of booleans on the fact.
-4 rows + members.
+Scoped to deal state only, per review — `career_ended` moved to `dim_transfer_type`
+(§5, `is_career_ending`). 2 business rows + members.
 
-| `transfer_status_sk` | `deal_status` | `career_status` |
-|---|---|---|
-| 1 | Completed | Active |
-| 2 | Completed | Career Ended |
-| 3 | Pending | Active |
-| 4 | Pending | Career Ended |
+| `transfer_status_sk` | `transfer_status` |
+|---|---|
+| 1 | Completed |
+| 2 | Pending |
+| -1 | Unknown |
+| -2 | Not Applicable |
 
-- `deal_status` from `silver.transfers.completed`; `career_status` from `career_ended`.
+- `transfer_status` from `silver.transfers.completed` (`true → Completed`, `false → Pending`).
 - Adds `transfer_status_sk` FK to the fact.
-- **Decision needed:** include now, or omit until a use case appears?
-
 ---
 
-## 8. Open items for review
+## 8. Open items for review (round 2)
 
-1. Overall model & grain sign-off.
-2. `dim_transfer_status` — in or out?
-3. Rows 7–8 wording in `dim_transfer_type` (`Returning from Loan` / `Loan Spell Ended`).
-4. Confirm `net_spend_eur` sign convention (spend positive: purchases `+`, sales `−`).
+1. Overall model & grain sign-off (now one row per club per transfer, league-agnostic).
+2. `career_ended` treatment — modeled as `is_career_ending` + `Final Transfer In/Out` rows on
+   `dim_transfer_type` (it's a completed permanent transfer in the data, never a null destination).
+   Confirm, or prefer a distinct `transfer_nature`?
+3. `dim_transfer_type` label wording — rows 7–8 (`Returning from Loan` / `Loan Spell Ended`) and
+   9–10 (`Final Transfer In/Out`).
 
 ---
 
 ## 9. Build order (once approved) — dev target only
 
-1. Extend `dim_team` (add external clubs).
+1. Extend `dim_team` (add clubs referenced only by transfers).
 2. `dim_transfer_partner_team` (role view).
-3. `dim_transfer_type` (+ `dim_transfer_status` if approved).
+3. `dim_transfer_type` and `dim_transfer_status`.
 4. `fct_team_transfers`.
-5. Singular tests (fee-direction consistency, partner resolution, grain uniqueness) + `_schema.yml` entries.
+5. Singular tests (direction/grain uniqueness, partner resolution, fee only on `is_fee_bearing` types)
+   + `_schema.yml` entries.
 
 > No prod writes. Build and validate against the dev target; prod only on explicit approval.
