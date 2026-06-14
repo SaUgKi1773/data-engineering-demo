@@ -169,7 +169,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
     <div class="text-3xl font-black text-gray-800 leading-none">{kpi[0]?.moves}</div>
     <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Transfers</div>
-    <div class="text-[11px] text-gray-500 mt-1">{kpi[0]?.signings} in · {kpi[0]?.departures} out</div>
+    <div class="text-[11px] text-gray-500 mt-1">{kpi[0]?.permanent_moves} perm · {kpi[0]?.loan_moves} loan · {kpi[0]?.free_moves} free</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
     <div class="text-3xl font-black text-emerald-600 leading-none">€{kpi[0]?.spend_m}m</div>
@@ -188,14 +188,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   </div>
 </div>
 
-<div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-500 mb-5 px-1">
-  <span><span class="font-semibold text-gray-700">{kpi[0]?.permanent_moves}</span> permanent</span>
-  <span><span class="font-semibold text-gray-700">{kpi[0]?.loan_moves}</span> loan</span>
-  <span><span class="font-semibold text-gray-700">{kpi[0]?.free_moves}</span> free</span>
-  <span><span class="font-semibold text-gray-700">{kpi[0]?.retirements}</span> retirements</span>
-</div>
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-7">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 mb-7">
   <div class="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 shadow-sm flex items-center gap-4">
     <img src="{record_signing[0]?.player_photo}" alt="" class="w-16 h-16 rounded-full object-cover bg-white border border-emerald-100 flex-shrink-0" onerror="this.style.visibility='hidden'" />
     <div class="flex-1 min-w-0">
