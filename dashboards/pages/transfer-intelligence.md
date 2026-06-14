@@ -162,6 +162,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     data={by_club}
     x=team_name
     y=net_spend_m
+    yFmt='#,##0.00'
     title="Net Spend — Top 10 (€m)"
     yAxisTitle="€m"
     sort=false
