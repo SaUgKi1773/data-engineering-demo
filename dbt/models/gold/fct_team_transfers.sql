@@ -1,10 +1,11 @@
 {{
-    config(
-        materialized='incremental',
-        incremental_strategy='delete+insert',
-        unique_key=['transfer_id', 'team_sk']
-    )
+    config(materialized='table')
 }}
+
+-- Full rebuild each run (not date-incremental): a transfer's effective date is
+-- unrelated to when it lands in bronze — backfills and future-dated windows would
+-- be missed by a date-window filter. The table is small (~10k rows), so a plain
+-- table materialization is both correct and simpler.
 
 -- One row per (transfer, club). A two-club move emits 2 rows (selling club =
 -- Outgoing, buying club = Incoming). A retirement / unknown-destination move
@@ -80,6 +81,3 @@ LEFT JOIN {{ ref('dim_date') }}                  dd  ON dd.date = src.transfer_d
 LEFT JOIN {{ ref('dim_team') }}                  dt  ON dt.team_id = src.team_id
 LEFT JOIN {{ ref('dim_transfer_partner_team') }} dp  ON dp.transfer_partner_team_id = src.partner_team_id
 LEFT JOIN {{ ref('dim_player') }}                dpl ON dpl.player_id = src.player_id
-{% if is_incremental() %}
-WHERE {{ gold_incremental_filter() }}
-{% endif %}

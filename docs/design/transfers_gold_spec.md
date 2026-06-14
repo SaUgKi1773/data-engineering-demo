@@ -22,7 +22,8 @@ dimensions as views, no NULLs in dimension attributes, business-friendly names.
 - **Fact:** `fct_team_transfers` — club-centric, one row per club per transfer, mirroring `fct_team_matches`.
   League-agnostic: no "internal/external" notion — every club a transfer references gets a row.
 - **New objects:** `fct_team_transfers`, `dim_transfer_type`, `dim_transfer_partner_team`, `dim_transfer_status`.
-- **Conformed (reused):** `dim_date`, `dim_player`, `dim_team` (extended to hold every club a transfer references).
+- **Conformed (reused):** `dim_date`; `dim_team` and `dim_player` both **extended** to hold every
+  club / player a transfer references (foreign clubs and un-ingested players).
 
 ---
 
@@ -40,8 +41,10 @@ dimensions as views, no NULLs in dimension attributes, business-friendly names.
   its SK; `"Retired"` (`career_ended`) → `-2` Not Applicable; `"TBC"` / null → `-1` Unknown. On dev
   this yields 5,397 Outgoing + 5,180 Incoming = **10,577 rows** over 5,486 transfers.
 
-**Materialization:** `incremental`, `delete+insert`, `unique_key = ['transfer_id', 'team_sk']`,
-`{{ gold_incremental_filter() }}` in the incremental `WHERE` (house pattern).
+**Materialization:** `table` (full rebuild each run). A date-window incremental is *wrong* here — a
+transfer's effective date is unrelated to when it lands in bronze, so backfills / future-dated
+windows would be silently missed. The table is small (~10k rows), so a full rebuild is correct and
+cheap. Grain is still guarded by the `unique_combination_of_columns([transfer_id, team_sk])` test.
 
 ### Columns
 
@@ -106,6 +109,15 @@ SK assignment continues the existing incremental `MAX(team_sk)+ROW_NUMBER()` sch
 SKs are stable and newly-referenced clubs get new positive SKs.
 
 ---
+
+## 3b. `dim_player` — extended (conformed)
+
+Same idea as `dim_team`: ~333 transferred players (foreign signings who never appeared in an
+ingested fixture) aren't in `dim_player`. A `from_transfers` branch `UNION ALL`s them in, sourcing
+`player_name` / `player_photo` / `player_position` from the embedded transfer payload; the rest
+(`firstname`, nationality, birth, height/weight) is unknown (NULL, as the `from_lineups` branch
+already does). `Coach`-position rows are excluded, matching the existing branches. Existing player
+SKs are preserved (incremental merge). After this, fact rows with `player_sk = -1` drop from 1,315 to 4.
 
 ## 4. `dim_transfer_partner_team` — role view over `dim_team`
 
@@ -215,7 +227,7 @@ Scoped to deal state only, per review — `career_ended` moved to `dim_transfer_
 
 ## 9. Build order (once approved) — dev target only
 
-1. Extend `dim_team` (add clubs referenced only by transfers).
+1. Extend `dim_team` and `dim_player` (add clubs / players referenced only by transfers).
 2. `dim_transfer_partner_team` (role view).
 3. `dim_transfer_type` and `dim_transfer_status`.
 4. `fct_team_transfers`.
