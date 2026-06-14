@@ -5,17 +5,10 @@ title: Transfer Intelligence
 ---
 
 <script>
-  let codeToName = {};
-  $: codeToName = Object.fromEntries((team_lookup ?? []).map(r => [r.team_code, r.team_name]));
-
-  // Tooltip showing the full club name (axis shows the short code)
-  $: clubTooltip = (params) => {
-    const arr = Array.isArray(params) ? params : [params];
-    const name = codeToName[arr[0].axisValue] ?? arr[0].axisValue;
-    let s = `<strong>${name}</strong>`;
-    arr.forEach(p => { s += `<br/>${p.marker} ${p.seriesName}: ${p.value}`; });
-    return s;
-  };
+  // axis shows the short code; the full club name stays in the data (and tooltip)
+  let nameToCode = {};
+  $: nameToCode = Object.fromEntries((team_lookup ?? []).map(r => [r.team_name, r.team_code]));
+  $: shortLabel = (name) => nameToCode[name] ?? name;
 </script>
 
 ```sql team_lookup
@@ -168,13 +161,13 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <BarChart
     data={by_club}
-    x=team_code
+    x=team_name
     y=net_spend_m
     title="Net Spend (€m)"
     yAxisTitle="€m"
     sort=false
     colorPalette={['#236aa4']}
-    echartsOptions={{tooltip: {formatter: clubTooltip}}}
+    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}}}
 />
 
 ## Market Activity
@@ -183,14 +176,14 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <BarChart
     data={by_club_busy}
-    x=team_code
+    x=team_name
     y={['signings','departures']}
     title="Ins vs Outs by Club"
     type=grouped
     colorPalette={['#16a34a','#f97316']}
     seriesOptions={{"barGap": "0%"}}
     sort=false
-    echartsOptions={{tooltip: {formatter: clubTooltip}}}
+    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}}}
 />
 
 ## Market Over Time
