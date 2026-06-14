@@ -146,7 +146,7 @@ order by 1
 ```
 
 ```sql ledger
-select transfer_date, transfer_month_name, club, transfer_type,
+select transfer_date, transfer_month_name, club, direction, transfer_type,
   player_name, position, partner,
   case when fee_eur is null then null else round(fee_eur / 1e6, 2) end as fee_m
 from superligaen.mart_club_transfer_log
@@ -276,6 +276,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <Column id=transfer_date   title="Date" />
     <Column id=transfer_month_name title="Month" align=center />
     <Column id=club            title="Club" />
+    <Column id=direction       title="Direction" align=center />
     <Column id=transfer_type   title="Type" />
     <Column id=player_name     title="Player" />
     <Column id=position        title="Pos" align=center />
