@@ -22,12 +22,10 @@ from superligaen.mart_club_transfers
 order by is_current desc, transfer_year desc
 ```
 
-```sql windows
-select transfer_window from (
-  select distinct transfer_window,
-    case transfer_window when 'Summer' then 1 when 'Winter' then 2 else 3 end as ord
-  from superligaen.mart_club_transfers
-) order by ord
+```sql months
+select distinct cast(transfer_month as integer) as transfer_month, transfer_month_name
+from superligaen.mart_club_transfers
+order by transfer_month
 ```
 
 ```sql teams
@@ -51,7 +49,7 @@ select
   sum(net_spend_eur)                 as net_raw
 from superligaen.mart_club_transfers
 where transfer_year in ${inputs.year.value}
-  and transfer_window in ${inputs.window.value}
+  and transfer_month in ${inputs.month.value}
   and team_name in ${inputs.team.value}
 ```
 
@@ -62,7 +60,7 @@ select player_name, player_photo, club, partner,
 from superligaen.mart_club_transfer_log
 where direction = 'Incoming' and fee_eur is not null
   and transfer_year in ${inputs.year.value}
-  and transfer_window in ${inputs.window.value}
+  and transfer_month in ${inputs.month.value}
   and club in ${inputs.team.value}
 order by fee_eur desc
 limit 1
@@ -75,7 +73,7 @@ select player_name, player_photo, club, partner,
 from superligaen.mart_club_transfer_log
 where direction = 'Outgoing' and fee_eur is not null
   and transfer_year in ${inputs.year.value}
-  and transfer_window in ${inputs.window.value}
+  and transfer_month in ${inputs.month.value}
   and club in ${inputs.team.value}
 order by fee_eur desc
 limit 1
@@ -88,7 +86,7 @@ select * from (
     round(sum(net_spend_eur) / 1e6, 2) as net_spend_m
   from superligaen.mart_club_transfers
   where transfer_year in ${inputs.year.value}
-    and transfer_window in ${inputs.window.value}
+    and transfer_month in ${inputs.month.value}
     and team_name in ${inputs.team.value}
   group by team_name
   having sum(signings) + sum(departures) > 0
@@ -104,7 +102,7 @@ select team_name,
   sum(departures) as departures
 from superligaen.mart_club_transfers
 where transfer_year in ${inputs.year.value}
-  and transfer_window in ${inputs.window.value}
+  and transfer_month in ${inputs.month.value}
   and team_name in ${inputs.team.value}
 group by team_name
 having sum(signings) + sum(departures) > 0
@@ -113,12 +111,12 @@ limit 10
 ```
 
 ```sql trend_year
--- Time series: not affected by the Year filter (it is the time axis); Window/Team filters apply.
+-- Time series: not affected by the Year filter (it is the time axis); Month/Team filters apply.
 select cast(cast(transfer_year as integer) as varchar) as transfer_year,
   sum(signings) + sum(departures) as moves,
   round(sum(spend_eur) / 1e6, 1) as spend_m
 from superligaen.mart_club_transfers
-where transfer_window in ${inputs.window.value}
+where transfer_month in ${inputs.month.value}
   and team_name in ${inputs.team.value}
 group by 1
 order by 1
@@ -130,7 +128,7 @@ select player_name, club, partner, cast(transfer_year as integer)::varchar as tr
 from superligaen.mart_club_transfer_log
 where direction = 'Incoming' and fee_eur is not null
   and transfer_year in ${inputs.year.value}
-  and transfer_window in ${inputs.window.value}
+  and transfer_month in ${inputs.month.value}
   and club in ${inputs.team.value}
 order by fee_eur desc
 limit 10
@@ -142,19 +140,19 @@ select player_name, club, partner, cast(transfer_year as integer)::varchar as tr
 from superligaen.mart_club_transfer_log
 where direction = 'Outgoing' and fee_eur is not null
   and transfer_year in ${inputs.year.value}
-  and transfer_window in ${inputs.window.value}
+  and transfer_month in ${inputs.month.value}
   and club in ${inputs.team.value}
 order by fee_eur desc
 limit 10
 ```
 
 ```sql ledger
-select transfer_date, transfer_window, club, direction, transfer_type,
+select transfer_date, transfer_month_name, club, direction, transfer_type,
   player_name, position, partner, partner_country,
   case when fee_eur is null then null else round(fee_eur / 1e6, 2) end as fee_m
 from superligaen.mart_club_transfer_log
 where transfer_year in ${inputs.year.value}
-  and transfer_window in ${inputs.window.value}
+  and transfer_month in ${inputs.month.value}
   and club in ${inputs.team.value}
 order by (fee_eur is null), fee_eur desc, transfer_date desc
 ```
@@ -163,7 +161,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   {#key years[0]?.transfer_year}
   <Dropdown data={years} name=year value=transfer_year multiple=true order="transfer_year desc" defaultValue={[years[0]?.transfer_year]} title="Year" />
   {/key}
-  <Dropdown data={windows} name=window value=transfer_window multiple=true selectAllByDefault=true title="Window" />
+  <Dropdown data={months} name=month value=transfer_month label=transfer_month_name multiple=true selectAllByDefault=true order="transfer_month asc" title="Month" />
   <Dropdown data={teams} name=team value=team_name multiple=true selectAllByDefault=true order="team_name asc" title="Club" />
 </div>
 
@@ -306,7 +304,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <DataTable data={ledger} rows=15 search=true>
     <Column id=transfer_date   title="Date" />
-    <Column id=transfer_window title="Window" align=center />
+    <Column id=transfer_month_name title="Month" align=center />
     <Column id=club            title="Club" />
     <Column id=direction       title="Dir" align=center />
     <Column id=transfer_type   title="Type" />
@@ -316,4 +314,4 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <Column id=fee_m           title="Fee" fmt='"€"0.0"m"' align=right contentType=colorscale colorPalette={['white','#236aa4']} />
 </DataTable>
 
-<div class="mt-8 text-center text-xs text-gray-400">Transfer windows: Summer (Jun–Sep), Winter (Jan–Feb). Fees shown where disclosed.</div>
+<div class="mt-8 text-center text-xs text-gray-400">Fees shown where disclosed.</div>

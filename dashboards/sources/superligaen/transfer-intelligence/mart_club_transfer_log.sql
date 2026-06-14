@@ -6,11 +6,10 @@ WITH league_clubs AS (
 )
 SELECT
     f.transfer_id,
-    d.year  AS transfer_year,
-    d.date  AS transfer_date,
-    CASE WHEN d.month IN (6, 7, 8, 9) THEN 'Summer'
-         WHEN d.month IN (1, 2)       THEN 'Winter'
-         ELSE 'Other' END AS transfer_window,
+    d.year       AS transfer_year,
+    d.month      AS transfer_month,
+    d.month_name AS transfer_month_name,
+    d.date       AS transfer_date,
     t.team_name  AS club,
     t.team_logo  AS club_logo,
     tt.transfer_direction AS direction,

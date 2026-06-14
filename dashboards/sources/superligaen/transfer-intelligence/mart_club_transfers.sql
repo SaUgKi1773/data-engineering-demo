@@ -11,10 +11,9 @@ rows AS (
         t.team_name,
         t.team_code,
         t.team_logo,
-        d.year                AS transfer_year,
-        CASE WHEN d.month IN (6, 7, 8, 9) THEN 'Summer'
-             WHEN d.month IN (1, 2)       THEN 'Winter'
-             ELSE 'Other' END AS transfer_window,
+        d.year       AS transfer_year,
+        d.month      AS transfer_month,
+        d.month_name AS transfer_month_name,
         tt.transfer_direction AS direction,
         tt.transfer_nature    AS nature,
         tt.transfer_basis     AS basis,
@@ -29,7 +28,8 @@ rows AS (
 )
 SELECT
     transfer_year,
-    transfer_window,
+    transfer_month,
+    MAX(transfer_month_name) AS transfer_month_name,
     team_name,
     MAX(team_code) AS team_code,
     MAX(team_logo) AS team_logo,
@@ -47,4 +47,4 @@ SELECT
         - COALESCE(sum(fee) FILTER (WHERE direction = 'Outgoing'), 0) AS net_spend_eur,
     COALESCE(max(fee), 0)                                             AS biggest_fee_eur
 FROM rows
-GROUP BY transfer_year, transfer_window, team_name
+GROUP BY transfer_year, transfer_month, team_name
