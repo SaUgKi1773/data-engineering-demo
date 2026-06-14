@@ -288,6 +288,21 @@ ENDPOINT_MANIFEST = [
         "includes": "team;rival",
         "modes":    ["full", "incremental"],
     },
+    {
+        # Incoming + outgoing transfers per in-scope team. The endpoint returns
+        # both directions; derive direction downstream by comparing
+        # from_team_id / to_team_id against the team. The counterparty club
+        # (fromTeam/toTeam) is frequently foreign and NOT in bronze teams, so
+        # the embedded objects are the only source for its name/logo/country.
+        # Fee `amount` (EUR) is populated only for a subset of permanent moves
+        # from ~2025 onward; loans / free transfers / end-of-loan have none.
+        "table":    "sportmonks__transfers",
+        "path":     "/transfers/teams/{team_id}",
+        "strategy": "team_based",
+        "delete":   "global",
+        "includes": "player;fromTeam;toTeam;type;position;detailedPosition",
+        "modes":    ["full", "incremental"],
+    },
 
     # ══════════════════════════════════════════════════════════════════════════
     # FOOTBALL API — Fixtures  (date-window; 90-day chunks or rolling window)
