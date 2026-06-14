@@ -98,6 +98,8 @@ select * from (
   select team_name,
     sum(net_spend_eur)                 as net_raw,
     round(sum(net_spend_eur) / 1e6, 2) as net_spend_m,
+    case when sum(net_spend_eur) >= 0 then round(sum(net_spend_eur) / 1e6, 2) end as net_buy,
+    case when sum(net_spend_eur) <  0 then round(sum(net_spend_eur) / 1e6, 2) end as net_sell,
     round(sum(spend_eur) / 1e6, 2)     as spend_m,
     round(sum(income_eur) / 1e6, 2)    as income_m
   from superligaen.mart_club_transfers
@@ -127,44 +129,25 @@ limit 10
 ```
 
 ```sql trend_year
--- Time series: not affected by the Year filter (it is the time axis); Month/Team filters apply.
-select cast(cast(transfer_year as integer) as varchar) as transfer_year,
-  sum(signings) + sum(departures) as moves,
-  round(sum(spend_eur) / 1e6, 1) as spend_m
-from superligaen.mart_club_transfers
-where transfer_month in ${inputs.month.value}
-  and team_name in ${inputs.team.value}
+-- Market level (deduped per transfer), matching the KPIs. Not affected by the Year
+-- filter (it is the time axis); Month/Team filters apply.
+with txn as (
+  select distinct transfer_id, transfer_year, fee_eur
+  from superligaen.mart_club_transfer_log
+  where transfer_month in ${inputs.month.value}
+    and club in ${inputs.team.value}
+)
+select cast(transfer_year as integer)::varchar as transfer_year,
+  count(*)                      as transfers,
+  round(sum(fee_eur) / 1e6, 2)  as total_value_m
+from txn
 group by 1
 order by 1
 ```
 
-```sql biggest_signings
-select player_name, club, partner, cast(transfer_year as integer)::varchar as transfer_year,
-  round(fee_eur / 1e6, 2) as fee_m
-from superligaen.mart_club_transfer_log
-where direction = 'Incoming' and fee_eur is not null
-  and transfer_year in ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
-  and club in ${inputs.team.value}
-order by fee_eur desc
-limit 10
-```
-
-```sql biggest_sales
-select player_name, club, partner, cast(transfer_year as integer)::varchar as transfer_year,
-  round(fee_eur / 1e6, 2) as fee_m
-from superligaen.mart_club_transfer_log
-where direction = 'Outgoing' and fee_eur is not null
-  and transfer_year in ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
-  and club in ${inputs.team.value}
-order by fee_eur desc
-limit 10
-```
-
 ```sql ledger
-select transfer_date, transfer_month_name, club, direction, transfer_type,
-  player_name, position, partner, partner_country,
+select transfer_date, transfer_month_name, club, transfer_type,
+  player_name, position, partner,
   case when fee_eur is null then null else round(fee_eur / 1e6, 2) end as fee_m
 from superligaen.mart_club_transfer_log
 where transfer_year in ${inputs.year.value}
@@ -183,22 +166,22 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 mb-3">
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-3xl font-black text-gray-800 leading-none">{kpi[0]?.transfers}</div>
+    <div class="text-3xl font-black text-gray-900 leading-none">{kpi[0]?.transfers}</div>
     <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Transfers</div>
-    <div class="text-[11px] text-gray-500 mt-1">{kpi[0]?.permanent_moves} perm · {kpi[0]?.loan_moves} loan · {kpi[0]?.free_moves} free</div>
+    <div class="text-[11px] text-gray-500 mt-1">{kpi[0]?.permanent_moves} permanent · {kpi[0]?.loan_moves} loan · {kpi[0]?.free_moves} free</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-3xl font-black text-emerald-600 leading-none">€{kpi[0]?.total_value_m}m</div>
+    <div class="text-3xl font-black text-gray-900 leading-none">€{kpi[0]?.total_value_m}m</div>
     <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Total Value</div>
     <div class="text-[11px] text-gray-500 mt-1">disclosed transfer fees</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-3xl font-black text-gray-800 leading-none">€{kpi[0]?.avg_fee_m ?? '—'}m</div>
+    <div class="text-3xl font-black text-gray-900 leading-none">€{kpi[0]?.avg_fee_m ?? '—'}m</div>
     <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Avg Fee</div>
     <div class="text-[11px] text-gray-500 mt-1">per paid deal</div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div class="text-3xl font-black text-violet-600 leading-none">{kpi[0]?.paid_deals}</div>
+    <div class="text-3xl font-black text-gray-900 leading-none">{kpi[0]?.paid_deals}</div>
     <div class="text-gray-400 text-xs mt-1.5 uppercase tracking-wide">Paid Deals</div>
     <div class="text-[11px] text-gray-500 mt-1">with a disclosed fee</div>
   </div>
@@ -227,23 +210,25 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Net Spend by Club
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming permanents minus fees received on outgoing permanents. Top 10 clubs by net balance; positive = net investment, negative = net sales.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming permanents minus fees received on outgoing permanents. Top 10 clubs by net balance — <span style="color:#236aa4;font-weight:600;">blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
 
 <BarChart
     data={by_club}
     x=team_name
-    y=net_spend_m
+    y={['net_buy','net_sell']}
+    type=stacked
     yFmt='#,##0.00'
     title="Net Spend — Top 10 (€m)"
     yAxisTitle="€m"
     sort=false
-    colorPalette={['#236aa4']}
+    legend=false
+    colorPalette={['#236aa4','#16a34a']}
     echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}, tooltip: {formatter: netSpendTip}}}
 />
 
-## Market Activity
+## Busiest Clubs
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Incoming vs outgoing moves per club — top 10 busiest.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;"><span style="color:#16a34a;font-weight:600;">Incoming</span> vs <span style="color:#f97316;font-weight:600;">outgoing</span> moves per club — top 10 busiest.</p>
 
 <BarChart
     data={by_club_busy}
@@ -264,62 +249,37 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 <BarChart
     data={trend_year}
     x=transfer_year
-    y=spend_m
-    title="Spend by Year (€m)"
-    colorPalette={['#16a34a']}
+    y=total_value_m
+    yFmt='#,##0.00'
+    title="Total Value by Year (€m)"
+    colorPalette={['#236aa4']}
     sort=false
 />
 
 <LineChart
     data={trend_year}
     x=transfer_year
-    y=moves
-    title="Moves by Year"
+    y=transfers
+    title="Transfers by Year"
     markers=true
     sort=false
+    colorPalette={['#236aa4']}
 />
-
-</div>
-
-## Record Moves
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<div>
-<p style="font-size:0.8rem;font-weight:600;color:#16a34a;margin:0 0 0.5rem 0;">▼ Biggest Signings (in)</p>
-<DataTable data={biggest_signings} rows=10>
-    <Column id=player_name   title="Player" />
-    <Column id=club          title="Club" />
-    <Column id=partner       title="From" />
-    <Column id=transfer_year title="Yr" align=center />
-    <Column id=fee_m         title="Fee" fmt='"€"0.0"m"' align=right contentType=colorscale colorPalette={['white','#16a34a']} />
-</DataTable>
-</div>
-
-<div>
-<p style="font-size:0.8rem;font-weight:600;color:#f97316;margin:0 0 0.5rem 0;">▲ Biggest Sales (out)</p>
-<DataTable data={biggest_sales} rows=10>
-    <Column id=player_name   title="Player" />
-    <Column id=club          title="Club" />
-    <Column id=partner       title="To" />
-    <Column id=transfer_year title="Yr" align=center />
-    <Column id=fee_m         title="Fee" fmt='"€"0.0"m"' align=right contentType=colorscale colorPalette={['white','#f97316']} />
-</DataTable>
-</div>
 
 </div>
 
 ## Transfer Ledger
 
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every move for the selected clubs, biggest fees first. Search and sort to drill in.</p>
+
 <DataTable data={ledger} rows=15 search=true>
     <Column id=transfer_date   title="Date" />
     <Column id=transfer_month_name title="Month" align=center />
     <Column id=club            title="Club" />
-    <Column id=direction       title="Dir" align=center />
     <Column id=transfer_type   title="Type" />
     <Column id=player_name     title="Player" />
+    <Column id=position        title="Pos" align=center />
     <Column id=partner         title="Counterparty" />
-    <Column id=partner_country  title="Country" />
     <Column id=fee_m           title="Fee" fmt='"€"0.0"m"' align=right contentType=colorscale colorPalette={['white','#236aa4']} />
 </DataTable>
 
