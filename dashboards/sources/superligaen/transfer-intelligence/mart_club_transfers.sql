@@ -1,9 +1,13 @@
--- Per league-club, per calendar-year transfer activity. "League club" = a club
--- that has actually played league matches (appears in fct_team_matches); foreign
--- counterparties are excluded as subjects. Spend / income / net follow the club's
--- perspective: spend on incoming permanents, income on outgoing permanents.
-WITH league_clubs AS (
-    SELECT DISTINCT team_sk FROM superligaen.gold.fct_team_matches WHERE team_sk > 0
+-- Per league-club, per calendar-year transfer activity. A club's transfers are
+-- included only for the years it actually played a league match (a record in
+-- fct_team_matches for that calendar year); foreign counterparties are excluded
+-- as subjects. Spend / income / net follow the club's perspective: spend on
+-- incoming permanents, income on outgoing permanents.
+WITH team_match_years AS (
+    SELECT DISTINCT m.team_sk, dd.year AS match_year
+    FROM superligaen.gold.fct_team_matches m
+    JOIN superligaen.gold.dim_date dd ON dd.date_sk = m.date_sk
+    WHERE m.team_sk > 0
 ),
 rows AS (
     SELECT
@@ -19,10 +23,10 @@ rows AS (
         tt.transfer_basis     AS basis,
         f.transfer_fee_eur    AS fee
     FROM superligaen.gold.fct_team_transfers f
-    JOIN league_clubs                       lc ON lc.team_sk = f.team_sk
-    JOIN superligaen.gold.dim_team          t  ON t.team_sk = f.team_sk
-    JOIN superligaen.gold.dim_date          d  ON d.date_sk = f.date_sk
-    JOIN superligaen.gold.dim_transfer_type tt ON tt.transfer_type_sk = f.transfer_type_sk
+    JOIN superligaen.gold.dim_date          d   ON d.date_sk = f.date_sk
+    JOIN team_match_years                   tmy ON tmy.team_sk = f.team_sk AND tmy.match_year = d.year
+    JOIN superligaen.gold.dim_team          t   ON t.team_sk = f.team_sk
+    JOIN superligaen.gold.dim_transfer_type tt  ON tt.transfer_type_sk = f.transfer_type_sk
     WHERE f.date_sk <> -1
       AND d.year >= 2020
 )
