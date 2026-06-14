@@ -41,8 +41,10 @@ order by transfer_month
 ```
 
 ```sql teams
+-- Only clubs that actually played a league match in the selected year(s).
 select distinct team_name
-from superligaen.mart_club_transfers
+from superligaen.mart_team_match_years
+where match_year in ${inputs.year.value}
 order by team_name
 ```
 
@@ -161,7 +163,9 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   <Dropdown data={years} name=year value=transfer_year multiple=true order="transfer_year desc" defaultValue={[years[0]?.transfer_year]} title="Year" />
   {/key}
   <Dropdown data={months} name=month value=transfer_month label=transfer_month_name multiple=true selectAllByDefault=true order="transfer_month asc" title="Month" />
+  {#key teams?.map(t => t.team_name).join(',')}
   <Dropdown data={teams} name=team value=team_name multiple=true selectAllByDefault=true order="team_name asc" title="Club" />
+  {/key}
 </div>
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 mb-3">
