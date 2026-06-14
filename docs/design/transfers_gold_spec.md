@@ -34,8 +34,10 @@ dimensions as views, no NULLs in dimension attributes, business-friendly names.
   (`to_team`, Incoming) — exactly like a match emits 2 rows.
 - League-agnostic: there is **no internal/external distinction**. Every club a transfer references
   gets a row, and `dim_team` carries every such club. The model scales unchanged to other leagues.
-- `from_team` is always present → an Outgoing row is always emitted. `to_team` is null in 162 rows
-  (destination not captured) → those emit only the Outgoing row, with partner resolving to `-1`.
+- `from_team` is always present → an Outgoing row is always emitted. An Incoming row is emitted only
+  when `to_team` is a **real club** (not null, not a placeholder). The Outgoing row's partner then
+  resolves as: real `to_team` → its SK; `"Retired"` placeholder (`career_ended`) → `-2` Not
+  Applicable; `"TBC"` placeholder or null `to_team` → `-1` Unknown (149 + 8 + 5 = 162 null rows).
 
 **Materialization:** `incremental`, `delete+insert`, `unique_key = ['transfer_id', 'team_sk']`,
 `{{ gold_incremental_filter() }}` in the incremental `WHERE` (house pattern).
@@ -66,11 +68,11 @@ For each `silver.transfers` row, emit one row per club side that has a team:
 
 | Side | Emit when | `team_sk` | `transfer_partner_team_sk` | direction |
 |---|---|---|---|---|
-| Selling side (`from_team`) | always (never null) | `from_team_id` | `to_team_id` (→ `-1` if null) | Outgoing |
-| Buying side (`to_team`) | `to_team_id` not null | `to_team_id` | `from_team_id` | Incoming |
+| Selling side (`from_team`) | always (never null) | `from_team_id` | real `to_team` → its SK; `"Retired"` → `-2`; `"TBC"`/null → `-1` | Outgoing |
+| Buying side (`to_team`) | `to_team` is a real club | `to_team_id` | `from_team_id` | Incoming |
 
-Implemented as a `UNION ALL` of the two sides. No tracked/scope filter — both sides are emitted
-whenever a team is present.
+Implemented as a `UNION ALL` of the two sides. No tracked/scope filter — a row is emitted for every
+side that is a real club.
 
 ### Measure semantics (additivity)
 
@@ -120,24 +122,23 @@ SKs are stable and newly-referenced clubs get new positive SKs.
 
 ## 5. `dim_transfer_type` — new
 
-Combines mechanism, direction **and** the career-ending flag (all low-cardinality, correlated → one
-mini-dimension). 10 business rows + `-1` / `-2`. Natural drill path:
+Combines mechanism **and** direction (low-cardinality, correlated → one mini-dimension).
+9 business rows + `-1` / `-2`. Natural drill path:
 **`transfer_basis` → `transfer_nature` → `transfer_type_name`**.
 
-| `transfer_type_sk` | `transfer_type_name` | `transfer_direction` | `transfer_nature` | `transfer_basis` | `is_fee_bearing` | `is_career_ending` |
-|---|---|---|---|---|---|---|
-| 1 | Permanent Signing | Incoming | Permanent | Permanent | true | false |
-| 2 | Permanent Sale | Outgoing | Permanent | Permanent | true | false |
-| 3 | Free Signing | Incoming | Free | Permanent | false | false |
-| 4 | Free Departure | Outgoing | Free | Permanent | false | false |
-| 5 | Loan In | Incoming | Loan | Loan | false | false |
-| 6 | Loan Out | Outgoing | Loan | Loan | false | false |
-| 7 | Returning from Loan | Incoming | Loan Return | Loan | false | false |
-| 8 | Loan Spell Ended | Outgoing | Loan Return | Loan | false | false |
-| 9 | Final Transfer In | Incoming | Permanent | Permanent | true | true |
-| 10 | Final Transfer Out | Outgoing | Permanent | Permanent | true | true |
-| -1 | Unknown | Unknown | Unknown | Unknown | false | false |
-| -2 | Not Applicable | Not Applicable | Not Applicable | Not Applicable | false | false |
+| `transfer_type_sk` | `transfer_type_name` | `transfer_direction` | `transfer_nature` | `transfer_basis` | `is_fee_bearing` |
+|---|---|---|---|---|---|
+| 1 | Permanent Signing | Incoming | Permanent | Permanent | true |
+| 2 | Permanent Sale | Outgoing | Permanent | Permanent | true |
+| 3 | Free Signing | Incoming | Free | Permanent | false |
+| 4 | Free Departure | Outgoing | Free | Permanent | false |
+| 5 | Loan In | Incoming | Loan | Loan | false |
+| 6 | Loan Out | Outgoing | Loan | Loan | false |
+| 7 | Returning from Loan | Incoming | Loan Return | Loan | false |
+| 8 | Loan Spell Ended | Outgoing | Loan Return | Loan | false |
+| 9 | Retirement | Outgoing | Retirement | Career End | false |
+| -1 | Unknown | Unknown | Unknown | Unknown | false |
+| -2 | Not Applicable | Not Applicable | Not Applicable | Not Applicable | false |
 
 **Source mapping** (`silver.transfers` → row), by source `type_name` and `career_ended`, split by
 whether the club is `to_team` (Incoming) or `from_team` (Outgoing):
@@ -145,21 +146,22 @@ whether the club is `to_team` (Incoming) or `from_team` (Outgoing):
 | Source `type_name` | `career_ended` | `transfer_nature` | Incoming row | Outgoing row |
 |---|---|---|---|---|
 | `Transfer` | false | Permanent | 1 | 2 |
-| `Transfer` | true | Permanent | 9 | 10 |
-| `Free Transfer` | (false) | Free | 3 | 4 |
-| `Loan` | (false) | Loan | 5 | 6 |
-| `End of loan` | (false) | Loan Return | 7 | 8 |
+| `Free Transfer` | false | Free | 3 | 4 |
+| `Loan` | false | Loan | 5 | 6 |
+| `End of loan` | false | Loan Return | 7 | 8 |
+| `Transfer` | true | Retirement | — (no club) | 9 |
 
 Notes:
-- **`is_career_ending`** carries the silver `career_ended` flag — moved here from the status dim per
-  review. Data shows it only ever co-occurs with a completed permanent `Transfer` (54 rows), so it
-  stays a permanent transfer (`transfer_basis = Permanent`) rather than a separate nature; the flag +
-  the `Final Transfer In/Out` labels mark the player's last move.
+- **Retirement** carries the silver `career_ended` flag. In the data these 54 rows are all a
+  `Transfer` whose `to_team` is the placeholder club **"Retired"** (id `268821`, `placeholder=true`)
+  with a NULL fee — the player leaves football, no club gains him. So it is **Outgoing-only**: one
+  row from the last club, partner `-2 Not Applicable`, **no Incoming row** (§2).
 - `transfer_basis` rolls **Free up to Permanent** (a free transfer is a permanent move with no
-  fee) — the economically correct binary, unlike a mechanism-only grouping.
+  fee) — the economically correct binary. `Retirement` is its own basis (`Career End`), as it is
+  neither a permanent move to another club nor a loan.
 - `is_fee_bearing` is true only for `Permanent` (matches the silver note that `amount` is
   populated only for a subset of permanent moves).
-- Rows 7–8 labels are tunable — "End of loan" is an inherently ambiguous event.
+- Rows 7–9 labels are tunable — "End of loan" and the retirement placeholder are inherently fuzzy.
 
 Build as a small static model (`VALUES` / seed-style), incremental-safe SKs, `-1` / `-2` members via `post_hook`.
 
@@ -201,11 +203,10 @@ Scoped to deal state only, per review — `career_ended` moved to `dim_transfer_
 ## 8. Open items for review (round 2)
 
 1. Overall model & grain sign-off (now one row per club per transfer, league-agnostic).
-2. `career_ended` treatment — modeled as `is_career_ending` + `Final Transfer In/Out` rows on
-   `dim_transfer_type` (it's a completed permanent transfer in the data, never a null destination).
-   Confirm, or prefer a distinct `transfer_nature`?
+2. `career_ended` treatment — modeled as a single Outgoing-only `Retirement` type (`to_team` is the
+   "Retired" placeholder; player leaves football). Confirm.
 3. `dim_transfer_type` label wording — rows 7–8 (`Returning from Loan` / `Loan Spell Ended`) and
-   9–10 (`Final Transfer In/Out`).
+   row 9 (`Retirement`).
 
 ---
 
