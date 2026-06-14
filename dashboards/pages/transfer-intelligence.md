@@ -16,8 +16,8 @@ select distinct team_code, team_name from superligaen.mart_club_transfers
 ```
 
 ```sql years
-select distinct transfer_year,
-  (transfer_year = year(current_date)) as is_current
+select distinct cast(transfer_year as integer) as transfer_year,
+  (cast(transfer_year as integer) = year(current_date)) as is_current
 from superligaen.mart_club_transfers
 order by is_current desc, transfer_year desc
 ```
@@ -76,7 +76,7 @@ limit 10
 
 ```sql trend_year
 -- Time series: not affected by the Year filter (it is the time axis); Team filter still applies.
-select cast(transfer_year as varchar) as transfer_year,
+select cast(cast(transfer_year as integer) as varchar) as transfer_year,
   sum(signings) + sum(departures) as moves,
   round(sum(spend_eur) / 1e6, 1) as spend_m
 from superligaen.mart_club_transfers
@@ -86,7 +86,7 @@ order by 1
 ```
 
 ```sql biggest_signings
-select player_name, club, partner, transfer_year,
+select player_name, club, partner, cast(transfer_year as integer)::varchar as transfer_year,
   round(fee_eur / 1e6, 2) as fee_m
 from superligaen.mart_club_transfer_log
 where direction = 'Incoming' and fee_eur is not null
@@ -97,7 +97,7 @@ limit 10
 ```
 
 ```sql biggest_sales
-select player_name, club, partner, transfer_year,
+select player_name, club, partner, cast(transfer_year as integer)::varchar as transfer_year,
   round(fee_eur / 1e6, 2) as fee_m
 from superligaen.mart_club_transfer_log
 where direction = 'Outgoing' and fee_eur is not null
