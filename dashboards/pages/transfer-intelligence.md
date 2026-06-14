@@ -36,6 +36,7 @@ where transfer_year in ${inputs.year.value}
 
 ```sql by_club
 select team_name,
+  max(team_code) as team_code,
   sum(signings) as signings,
   sum(departures) as departures,
   sum(signings) + sum(departures) as total_moves,
@@ -52,6 +53,7 @@ order by sum(net_spend_eur) desc
 
 ```sql by_club_busy
 select team_name,
+  max(team_code) as team_code,
   sum(signings) as signings,
   sum(departures) as departures
 from superligaen.mart_club_transfers
@@ -148,8 +150,9 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <BarChart
     data={by_club}
-    x=team_name
+    x=team_code
     y=net_spend_m
+    tooltipTitle=team_name
     title="Net Spend (€m)"
     yAxisTitle="€m"
     sort=false
@@ -162,8 +165,9 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <BarChart
     data={by_club_busy}
-    x=team_name
+    x=team_code
     y={['signings','departures']}
+    tooltipTitle=team_name
     title="Ins vs Outs by Club"
     type=grouped
     colorPalette={['#16a34a','#f97316']}

@@ -9,6 +9,7 @@ rows AS (
     SELECT
         f.team_sk,
         t.team_name,
+        t.team_code,
         t.team_logo,
         d.year                AS transfer_year,
         tt.transfer_direction AS direction,
@@ -26,6 +27,7 @@ rows AS (
 SELECT
     transfer_year,
     team_name,
+    MAX(team_code) AS team_code,
     MAX(team_logo) AS team_logo,
     count(*) FILTER (WHERE direction = 'Incoming')                    AS signings,
     count(*) FILTER (WHERE direction = 'Outgoing')                    AS departures,
