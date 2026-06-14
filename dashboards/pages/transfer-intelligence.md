@@ -75,17 +75,14 @@ limit 10
 ```
 
 ```sql trend_year
-select transfer_year,
+-- Time series: not affected by the Year filter (it is the time axis); Team filter still applies.
+select cast(transfer_year as varchar) as transfer_year,
   sum(signings) + sum(departures) as moves,
-  sum(permanent_moves) as permanent_moves,
-  sum(loan_moves)      as loan_moves,
-  sum(free_moves)      as free_moves,
   round(sum(spend_eur) / 1e6, 1) as spend_m
 from superligaen.mart_club_transfers
-where transfer_year in ${inputs.year.value}
-  and team_name in ${inputs.team.value}
-group by transfer_year
-order by transfer_year
+where team_name in ${inputs.team.value}
+group by 1
+order by 1
 ```
 
 ```sql biggest_signings
@@ -186,7 +183,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}}}
 />
 
-## Market Over Time
+## Market Over Time <span style="font-size:0.7rem;color:#9ca3af;font-weight:400;">(all years)</span>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
