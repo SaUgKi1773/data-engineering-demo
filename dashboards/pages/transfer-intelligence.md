@@ -12,6 +12,15 @@ select team_name from (
 ) order by ord, team_name
 ```
 
+```sql years
+select label from (
+  select 'All Years' as label, 0 as ord, 9999 as yr
+  union all
+  select distinct transfer_year::varchar as label, 1 as ord, transfer_year as yr
+  from superligaen.mart_transfer_kpis
+) order by ord, yr desc
+```
+
 ```sql league_kpi
 select
   sum(transfers)        as transfers,
@@ -21,6 +30,7 @@ select
   round(sum(total_spend_eur) / 1e6, 1) as total_spend_m,
   round(max(biggest_fee_eur) / 1e6, 1) as biggest_fee_m
 from superligaen.mart_transfer_kpis
+where ('${inputs.year.value}' = 'All Years' or transfer_year = try_cast('${inputs.year.value}' as integer))
 ```
 
 ```sql trend
@@ -35,6 +45,7 @@ select team_name,
   sum(signings) as signings, sum(departures) as departures,
   round(sum(net_spend_eur) / 1e6, 2) as net_spend_m
 from superligaen.mart_club_transfers
+where ('${inputs.year.value}' = 'All Years' or transfer_year = try_cast('${inputs.year.value}' as integer))
 group by team_name
 having sum(signings) + sum(departures) > 0
 order by sum(net_spend_eur) desc
@@ -43,6 +54,7 @@ order by sum(net_spend_eur) desc
 ```sql busiest
 select team_name, sum(signings) as signings, sum(departures) as departures
 from superligaen.mart_club_transfers
+where ('${inputs.year.value}' = 'All Years' or transfer_year = try_cast('${inputs.year.value}' as integer))
 group by team_name
 order by sum(signings) + sum(departures) desc
 limit 12
@@ -53,6 +65,7 @@ select player_name, club, partner, transfer_year,
   round(fee_eur / 1e6, 2) as fee_m
 from superligaen.mart_club_transfer_log
 where direction = 'Incoming' and fee_eur is not null
+  and ('${inputs.year.value}' = 'All Years' or transfer_year = try_cast('${inputs.year.value}' as integer))
 order by fee_eur desc
 limit 10
 ```
@@ -62,6 +75,7 @@ select player_name, club, partner, transfer_year,
   round(fee_eur / 1e6, 2) as fee_m
 from superligaen.mart_club_transfer_log
 where direction = 'Outgoing' and fee_eur is not null
+  and ('${inputs.year.value}' = 'All Years' or transfer_year = try_cast('${inputs.year.value}' as integer))
 order by fee_eur desc
 limit 10
 ```
@@ -76,6 +90,7 @@ select
   sum(net_spend_eur)                  as net_raw
 from superligaen.mart_club_transfers
 where team_name = '${inputs.team.value}'
+  and ('${inputs.year.value}' = 'All Years' or transfer_year = try_cast('${inputs.year.value}' as integer))
 ```
 
 ```sql team_year
@@ -93,6 +108,7 @@ select transfer_date, transfer_window, direction, transfer_type, player_name, po
   case when fee_eur is null then null else round(fee_eur / 1e6, 2) end as fee_m
 from superligaen.mart_club_transfer_log
 where club = '${inputs.team.value}'
+  and ('${inputs.year.value}' = 'All Years' or transfer_year = try_cast('${inputs.year.value}' as integer))
 order by (fee_eur is null), fee_eur desc, transfer_date desc
 ```
 
@@ -114,7 +130,10 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   </div>
 </div>
 
-<Dropdown data={teams} name=team value=team_name label=team_name defaultValue="All Teams" title="Club" />
+<div class="flex flex-wrap gap-3 items-end">
+  <Dropdown data={years} name=year value=label label=label defaultValue="All Years" title="Year" />
+  <Dropdown data={teams} name=team value=team_name label=team_name defaultValue="All Teams" title="Club" />
+</div>
 
 {#if inputs.team.value === 'All Teams'}
 
@@ -181,7 +200,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 </div>
 
-## Market Over Time
+## Market Over Time <span style="font-size:0.7rem;color:#9ca3af;font-weight:400;">(all years)</span>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
