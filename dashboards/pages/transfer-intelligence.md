@@ -224,7 +224,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Total Amount</div>
+    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Total Deal Amount</div>
     <div class="text-3xl font-black text-gray-900 leading-none mt-2 text-center">€{kpi[0]?.total_m}m</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-[11px] text-gray-400">Prev: €{kpi[0]?.prev_total_m ?? '—'}m</span>
@@ -232,7 +232,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Avg Amount</div>
+    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Avg Deal Amount</div>
     <div class="text-3xl font-black text-gray-900 leading-none mt-2 text-center">€{kpi[0]?.avg_m ?? '—'}m</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-[11px] text-gray-400">Prev: €{kpi[0]?.prev_avg_m ?? '—'}m</span>
