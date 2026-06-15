@@ -119,7 +119,7 @@ select club,
   case when net_raw <  0 then round(net_raw / 1e6, 2) end as net_sell,
   spend_m, income_m
 from agg
-order by abs(net_raw) desc
+order by net_raw desc
 limit 8
 ```
 
@@ -274,7 +274,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Top Spenders
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves, biggest net balance first — <span style="color:#236aa4;font-weight:600;">blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves, biggest net spend first — <span style="color:#236aa4;font-weight:600;">blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
 
 <BarChart
     data={by_club}
