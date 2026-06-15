@@ -134,15 +134,6 @@ select * from superligaen.mart_home_summary
   <div class="shrink-0 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
 </a>
 
-<a href="/transfer-intelligence" class="flex items-center no-underline rounded-xl border border-gray-200 bg-white p-4 hover:border-purple-300 hover:shadow-md transition-all duration-200 group shadow-sm">
-  <div class="rounded-xl bg-purple-50 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">🔁</div>
-  <div class="flex-1 min-w-0">
-    <div class="text-sm font-bold text-gray-800 group-hover:text-purple-600 transition-colors">Transfer Intelligence</div>
-    <div class="text-gray-400 text-xs mt-0.5 leading-snug">Net spend, ins &amp; outs, record fees &amp; per-club ledgers</div>
-  </div>
-  <div class="shrink-0 text-gray-300 group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
-</a>
-
 <a href="/stadium-analytics" class="flex items-center no-underline rounded-xl border border-gray-200 bg-white p-4 hover:border-orange-300 hover:shadow-md transition-all duration-200 group shadow-sm">
   <div class="rounded-xl bg-orange-50 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">🏟️</div>
   <div class="flex-1 min-w-0">
@@ -159,6 +150,15 @@ select * from superligaen.mart_home_summary
     <div class="text-gray-400 text-xs mt-0.5 leading-snug">Cards, fouls, home/away bias and discipline trends</div>
   </div>
   <div class="shrink-0 text-gray-300 group-hover:text-red-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
+</a>
+
+<a href="/transfer-intelligence" class="flex items-center no-underline rounded-xl border border-gray-200 bg-white p-4 hover:border-purple-300 hover:shadow-md transition-all duration-200 group shadow-sm">
+  <div class="rounded-xl bg-purple-50 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">🔁</div>
+  <div class="flex-1 min-w-0">
+    <div class="text-sm font-bold text-gray-800 group-hover:text-purple-600 transition-colors">Transfer Intelligence</div>
+    <div class="text-gray-400 text-xs mt-0.5 leading-snug">Net spend, ins &amp; outs, record fees &amp; per-club ledgers</div>
+  </div>
+  <div class="shrink-0 text-gray-300 group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
 </a>
 
 <a href="/glossary" class="flex items-center no-underline rounded-xl border border-gray-200 bg-white p-4 hover:border-slate-400 hover:shadow-md transition-all duration-200 group shadow-sm">
