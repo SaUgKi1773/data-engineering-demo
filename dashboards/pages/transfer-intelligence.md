@@ -125,8 +125,8 @@ limit 8
 
 ```sql by_club_busy
 select club,
-  count(*) filter (where direction = 'Incoming') as signings,
-  count(*) filter (where direction = 'Outgoing') as departures
+  count(*) filter (where direction = 'Incoming') as incoming,
+  count(*) filter (where direction = 'Outgoing') as outgoing
 from superligaen.mart_club_transfer_log
 where transfer_year = ${inputs.year.value}
   and transfer_month in ${inputs.month.value}
@@ -297,8 +297,8 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 <BarChart
     data={by_club_busy}
     x=club
-    y={['signings','departures']}
-    title="Ins vs Outs"
+    y={['incoming','outgoing']}
+    title="Incoming vs Outgoing"
     type=grouped
     colorPalette={['#16a34a','#f97316']}
     seriesOptions={{"barGap": "0%"}}
