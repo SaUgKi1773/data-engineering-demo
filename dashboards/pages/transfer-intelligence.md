@@ -203,7 +203,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <div class="flex flex-wrap gap-3 items-end mb-2">
   {#key years[0]?.transfer_year}
-  <Dropdown data={years} name=year value=transfer_year defaultValue={years[0]?.transfer_year} title="Year" />
+  <Dropdown data={years} name=year value=transfer_year order="transfer_year desc" defaultValue={years[0]?.transfer_year} title="Year" />
   {/key}
   <Dropdown data={months} name=month value=transfer_month label=transfer_month_name multiple=true selectAllByDefault=true order="transfer_month asc" title="Month" />
   <Dropdown data={teams} name=team value=club multiple=true defaultValue={['All Teams']} title="Team" />
@@ -214,32 +214,32 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 my-5">
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-gray-400 text-xs uppercase tracking-wide">Deals</div>
-    <div class="text-3xl font-black text-gray-900 leading-none mt-2">{kpi[0]?.deals}</div>
+    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Deals</div>
+    <div class="text-3xl font-black text-gray-900 leading-none mt-2 text-center">{kpi[0]?.deals}</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-[11px] text-gray-400">Prev: {kpi[0]?.prev_deals ?? '—'}</span>
       {#if kpi[0]?.deals_ratio != null}<span class="text-sm font-bold {kpi[0].deals_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{kpi[0].deals_ratio >= 1 ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-gray-400 text-xs uppercase tracking-wide">Total Amount</div>
-    <div class="text-3xl font-black text-gray-900 leading-none mt-2">€{kpi[0]?.total_m}m</div>
+    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Total Amount</div>
+    <div class="text-3xl font-black text-gray-900 leading-none mt-2 text-center">€{kpi[0]?.total_m}m</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-[11px] text-gray-400">Prev: €{kpi[0]?.prev_total_m ?? '—'}m</span>
       {#if kpi[0]?.total_ratio != null}<span class="text-sm font-bold {kpi[0].total_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{kpi[0].total_ratio >= 1 ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-gray-400 text-xs uppercase tracking-wide">Avg Amount</div>
-    <div class="text-3xl font-black text-gray-900 leading-none mt-2">€{kpi[0]?.avg_m ?? '—'}m</div>
+    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Avg Amount</div>
+    <div class="text-3xl font-black text-gray-900 leading-none mt-2 text-center">€{kpi[0]?.avg_m ?? '—'}m</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-[11px] text-gray-400">Prev: €{kpi[0]?.prev_avg_m ?? '—'}m</span>
       {#if kpi[0]?.avg_ratio != null}<span class="text-sm font-bold {kpi[0].avg_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{kpi[0].avg_ratio >= 1 ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-gray-400 text-xs uppercase tracking-wide">Paid Deals</div>
-    <div class="text-3xl font-black text-gray-900 leading-none mt-2">{kpi[0]?.paid}</div>
+    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Paid Deals</div>
+    <div class="text-3xl font-black text-gray-900 leading-none mt-2 text-center">{kpi[0]?.paid}</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-[11px] text-gray-400">Prev: {kpi[0]?.prev_paid ?? '—'}</span>
       {#if kpi[0]?.paid_ratio != null}<span class="text-sm font-bold {kpi[0].paid_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{kpi[0].paid_ratio >= 1 ? '▲' : '▼'}</span>{/if}
