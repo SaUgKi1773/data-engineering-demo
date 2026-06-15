@@ -191,7 +191,7 @@ limit 1
 
 ```sql ledger
 select transfer_date, transfer_month_name, club, direction, transfer_type, transfer_status,
-  player_name, position, partner, partner_country,
+  player_name, player_age, position, partner, partner_country,
   case when fee_eur is null then null else round(fee_eur / 1e6, 2) end as fee_m
 from superligaen.mart_club_transfer_log
 where transfer_year = ${inputs.year.value}
@@ -344,6 +344,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <Column id=transfer_type   title="Type" />
     <Column id=transfer_status title="Status" align=center />
     <Column id=player_name     title="Player" />
+    <Column id=player_age      title="Age" align=center />
     <Column id=position        title="Pos" align=center />
     <Column id=partner         title="Counterparty" />
     <Column id=fee_m           title="Fee" fmt='"€"0.0"m"' align=right contentType=colorscale colorPalette={['white','#236aa4']} />
