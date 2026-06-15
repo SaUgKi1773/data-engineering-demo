@@ -272,9 +272,9 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   </div>
 </div>
 
-## Net Spend by Club
+## Top Spenders
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves. Top 8 clubs by net balance — <span style="color:#236aa4;font-weight:600;">blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves, biggest net balance first — <span style="color:#236aa4;font-weight:600;">blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
 
 <BarChart
     data={by_club}
@@ -282,7 +282,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     y={['net_buy','net_sell']}
     type=stacked
     yFmt='#,##0.00'
-    title="Net Spend — Top 8 (€m)"
+    title="Net Spend (€m)"
     yAxisTitle="€m"
     sort=false
     legend=false
@@ -290,15 +290,15 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel, overflow: 'none', hideOverlap: false}}, tooltip: {formatter: netSpendTip}}}
 />
 
-## Busiest Clubs
+## Top Active Teams
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;"><span style="color:#16a34a;font-weight:600;">Incoming</span> vs <span style="color:#f97316;font-weight:600;">outgoing</span> moves per club — top 8 busiest.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;"><span style="color:#16a34a;font-weight:600;">Incoming</span> vs <span style="color:#f97316;font-weight:600;">outgoing</span> moves per club, busiest first.</p>
 
 <BarChart
     data={by_club_busy}
     x=club
     y={['signings','departures']}
-    title="Ins vs Outs — Top 8 Busiest"
+    title="Ins vs Outs"
     type=grouped
     colorPalette={['#16a34a','#f97316']}
     seriesOptions={{"barGap": "0%"}}
