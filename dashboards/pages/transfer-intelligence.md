@@ -290,7 +290,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     sort=false
     legend=false
     colorPalette={['#236aa4','#16a34a']}
-    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel, overflow: 'none', hideOverlap: false}}, tooltip: {formatter: netSpendTip}}}
+    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}, tooltip: {formatter: netSpendTip}}}
 />
 
 ## Transfers by Team
@@ -306,7 +306,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     colorPalette={['#16a34a','#f97316']}
     seriesOptions={{"barGap": "0%"}}
     sort=false
-    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel, overflow: 'none', hideOverlap: false}}}}
+    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}}}
 />
 
 ## Market Over Time <span style="font-size:0.7rem;color:#9ca3af;font-weight:400;">(all years)</span>
