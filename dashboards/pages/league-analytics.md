@@ -57,7 +57,7 @@ with curr as (
         round(sum(goals_scored)::double / count(distinct match_id), 2)                                  as goals_per_match,
         round(100.0 * count(*) filter (where team_side='Home' and result='Win')
               / nullif(count(*) filter (where team_side='Home'), 0), 1)                                 as home_win_pct,
-        round(sum(big_chances_created)::double / count(distinct match_id), 2)                            as big_chances_pm,
+        round(100.0 * sum(shots_on_goal) / nullif(sum(total_shots), 0), 1)                              as shot_accuracy,
         round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                               as shot_conversion,
         round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                           as pass_accuracy,
         round(sum(yellow_cards)::double / count(distinct match_id), 2)                                  as yc_per_match,
@@ -72,7 +72,7 @@ prev as (
     select
         sum(goals_scored)                                                                               as prev_total_goals,
         round(sum(goals_scored)::double / count(distinct match_id), 2)                                  as prev_goals_per_match,
-        round(sum(big_chances_created)::double / count(distinct match_id), 2)                            as prev_big_chances_pm,
+        round(100.0 * sum(shots_on_goal) / nullif(sum(total_shots), 0), 1)                              as prev_shot_accuracy,
         round(100.0 * sum(goals_scored) / nullif(sum(total_shots), 0), 1)                               as prev_shot_conversion,
         round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)                           as prev_pass_accuracy,
         round(sum(yellow_cards)::double / count(distinct match_id), 2)                                  as prev_yc_per_match,
@@ -92,7 +92,7 @@ select
     prev.*,
     round(curr.total_goals       / nullif(prev.prev_total_goals,       0), 2) as total_goals_ratio,
     round(curr.goals_per_match   / nullif(prev.prev_goals_per_match,   0), 2) as goals_ratio,
-    round(curr.big_chances_pm    / nullif(prev.prev_big_chances_pm,    0), 2) as big_chances_ratio,
+    round(curr.shot_accuracy     / nullif(prev.prev_shot_accuracy,     0), 2) as shot_acc_ratio,
     round(curr.shot_conversion   / nullif(prev.prev_shot_conversion,   0), 2) as shot_conv_ratio,
     round(curr.pass_accuracy     / nullif(prev.prev_pass_accuracy,     0), 2) as pass_ratio,
     round(curr.yc_per_match      / nullif(prev.prev_yc_per_match,      0), 2) as yc_ratio,
@@ -466,11 +466,11 @@ order by case period_of_day
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Big Chances / Match</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.big_chances_pm}</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Shot Accuracy %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.shot_accuracy}%</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev season: {k.prev_big_chances_pm ?? '—'}</span>
-      {#if k.big_chances_ratio != null}<span class="text-sm font-bold {k.big_chances_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.big_chances_ratio >= 1 ? '▲' : '▼'}</span>{/if}
+      <span class="text-xs text-gray-400">Prev season: {k.prev_shot_accuracy != null ? k.prev_shot_accuracy + '%' : '—'}</span>
+      {#if k.shot_acc_ratio != null}<span class="text-sm font-bold {k.shot_acc_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.shot_acc_ratio >= 1 ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
 
