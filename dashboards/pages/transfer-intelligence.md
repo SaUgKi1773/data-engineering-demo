@@ -75,12 +75,14 @@ with base as (
 ),
 curr as (
   select count(*) as deals, round(sum(fee_eur) / 1e6, 2) as total_m,
-    count(fee_eur) as paid, round(avg(fee_eur) / 1e6, 2) as avg_m
+    count(*) filter (where fee_eur > 0) as paid,
+    round(avg(fee_eur) filter (where fee_eur > 0) / 1e6, 2) as avg_m
   from base where transfer_year = ${inputs.year.value}
 ),
 prev as (
   select count(*) as deals, round(sum(fee_eur) / 1e6, 2) as total_m,
-    count(fee_eur) as paid, round(avg(fee_eur) / 1e6, 2) as avg_m
+    count(*) filter (where fee_eur > 0) as paid,
+    round(avg(fee_eur) filter (where fee_eur > 0) / 1e6, 2) as avg_m
   from base where transfer_year = ${inputs.year.value} - 1
 )
 select
@@ -160,7 +162,7 @@ select player_name, player_photo, club, partner,
   strftime(transfer_date, '%-d %B %Y') as transfer_date_fmt,
   round(fee_eur / 1e6, 2) as fee_m
 from superligaen.mart_club_transfer_log
-where direction = 'Incoming' and fee_eur is not null
+where direction = 'Incoming' and fee_eur > 0
   and transfer_year = ${inputs.year.value}
   and transfer_month in ${inputs.month.value}
   and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
@@ -176,7 +178,7 @@ select player_name, player_photo, club, partner,
   strftime(transfer_date, '%-d %B %Y') as transfer_date_fmt,
   round(fee_eur / 1e6, 2) as fee_m
 from superligaen.mart_club_transfer_log
-where direction = 'Outgoing' and fee_eur is not null
+where direction = 'Outgoing' and fee_eur > 0
   and transfer_year = ${inputs.year.value}
   and transfer_month in ${inputs.month.value}
   and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
