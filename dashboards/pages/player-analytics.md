@@ -76,6 +76,7 @@ select * from (values
   ('assists',                'Assists'),
   ('shots_on_target',        'Shots on Target'),
   ('shot_conv',              'Shot Conv %'),
+  ('shot_acc',               'Shot Accuracy %'),
   ('woodwork_hits',          'Woodwork Hits'),
   -- Creativity
   ('big_chances_created',    'Big Chances Created'),
@@ -177,6 +178,7 @@ with base as (
         assists::double                     as assists,
         shots_on_target::double             as shots_on_target,
         shot_conv::double                   as shot_conv,
+        round(100.0 * shots_on_target / nullif(shots_total, 0), 1)::double as shot_acc,
         woodwork_hits::double               as woodwork_hits,
         big_chances_created::double         as big_chances_created,
         chances_created::double             as all_chances,
@@ -267,6 +269,7 @@ ranked as (
             when 'assists'                then assists
             when 'shots_on_target'        then shots_on_target
             when 'shot_conv'              then shot_conv
+            when 'shot_acc'               then shot_acc
             when 'woodwork_hits'          then woodwork_hits
             when 'big_chances_created'    then big_chances_created
             when 'all_chances'            then all_chances
@@ -352,6 +355,7 @@ ranked as (
                 when 'assists'                then assists
                 when 'shots_on_target'        then shots_on_target
                 when 'shot_conv'              then shot_conv
+                when 'shot_acc'               then shot_acc
                 when 'woodwork_hits'          then woodwork_hits
                 when 'big_chances_created'    then big_chances_created
                 when 'all_chances'            then all_chances
@@ -490,6 +494,7 @@ select
     contributions_per90,
     pass_accuracy,
     shot_conversion,
+    round(100.0 * shots_on_target / nullif(shots_total, 0), 1)  as shot_accuracy,
     duel_win_pct,
     def_actions,
     wins,
@@ -713,15 +718,15 @@ where season = '${inputs.season.value}'
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">G+A / 90</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.contributions_per90}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.goals_per90} G · {p.assists_per90} A per 90</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Chances Created</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.chances_created}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.big_chances_created} big · {p.key_passes} key passes</div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">Shots on Target</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.shots_on_target}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.shots} total shots</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.shots} total · {p.shot_accuracy != null ? p.shot_accuracy + '% on target' : '—'}</div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
