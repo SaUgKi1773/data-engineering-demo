@@ -718,15 +718,15 @@ where season = '${inputs.season.value}'
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Shot Accuracy %</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.shot_accuracy != null ? p.shot_accuracy + '%' : '—'}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.shots_on_target} of {p.shots} on target</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Chances Created</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.chances_created}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.big_chances_created} big · {p.key_passes} key passes</div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">Shots on Target</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{p.shots_on_target}</div>
-    <div class="text-xs text-gray-400 text-center mt-3">{p.shots} total shots</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{p.shots} total · {p.shot_accuracy != null ? p.shot_accuracy + '% on target' : '—'}</div>
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
