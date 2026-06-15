@@ -112,15 +112,18 @@ agg as (
     round(coalesce(sum(fee_eur) filter (where direction = 'Incoming'), 0) / 1e6, 2) as spend_m,
     round(coalesce(sum(fee_eur) filter (where direction = 'Outgoing'), 0) / 1e6, 2) as income_m
   from f group by club
+),
+top8 as (
+  -- the 8 biggest net movers (either direction)
+  select * from agg order by abs(net_raw) desc limit 8
 )
 select club,
   round(net_raw / 1e6, 2) as net_spend_m,
   case when net_raw >= 0 then round(net_raw / 1e6, 2) end as net_buy,
   case when net_raw <  0 then round(net_raw / 1e6, 2) end as net_sell,
   spend_m, income_m
-from agg
+from top8
 order by net_raw desc
-limit 8
 ```
 
 ```sql by_club_busy
@@ -274,7 +277,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Net Spend by Team
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves, biggest net spend first — <span style="color:#236aa4;font-weight:600;">blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves — the biggest net movers, ranked by net spend. <span style="color:#236aa4;font-weight:600;">Blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
 
 <BarChart
     data={by_club}
