@@ -120,7 +120,7 @@ select club,
   spend_m, income_m
 from agg
 order by abs(net_raw) desc
-limit 10
+limit 8
 ```
 
 ```sql by_club_busy
@@ -137,7 +137,7 @@ where transfer_year = ${inputs.year.value}
 group by club
 having count(*) > 0
 order by count(*) desc
-limit 10
+limit 8
 ```
 
 ```sql trend_year
@@ -274,7 +274,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Net Spend by Club
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves. Top 10 clubs by net balance — <span style="color:#236aa4;font-weight:600;">blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves. Top 8 clubs by net balance — <span style="color:#236aa4;font-weight:600;">blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
 
 <BarChart
     data={by_club}
@@ -282,7 +282,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     y={['net_buy','net_sell']}
     type=stacked
     yFmt='#,##0.00'
-    title="Net Spend — Top 10 (€m)"
+    title="Net Spend — Top 8 (€m)"
     yAxisTitle="€m"
     sort=false
     legend=false
@@ -292,13 +292,13 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Busiest Clubs
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;"><span style="color:#16a34a;font-weight:600;">Incoming</span> vs <span style="color:#f97316;font-weight:600;">outgoing</span> moves per club — top 10 busiest.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;"><span style="color:#16a34a;font-weight:600;">Incoming</span> vs <span style="color:#f97316;font-weight:600;">outgoing</span> moves per club — top 8 busiest.</p>
 
 <BarChart
     data={by_club_busy}
     x=club
     y={['signings','departures']}
-    title="Ins vs Outs — Top 10 Busiest"
+    title="Ins vs Outs — Top 8 Busiest"
     type=grouped
     colorPalette={['#16a34a','#f97316']}
     seriesOptions={{"barGap": "0%"}}
