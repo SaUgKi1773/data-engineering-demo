@@ -31,6 +31,9 @@ order by 1 desc
 
 ```sql results
 select *,
+    round(100.0 * total_goals / nullif(total_shots, 0), 1)         as shot_conversion,
+    round(100.0 * total_shots_on_goal / nullif(total_shots, 0), 1) as shot_accuracy,
+    round(total_goals::double / nullif(total_big_chances, 0), 2)   as goals_per_big_chance,
     referee_name as referee,
     '<a href="/match-analysis?match=' || cast(match_id as varchar) || '&season=' || season || '&round=' || cast(cast(match_round_number as integer) as varchar) || '" style="color:#2563eb;font-weight:600;text-decoration:none;">' || match_name       || '</a>' as match_link,
     '<a href="/match-analysis?match=' || cast(match_id as varchar) || '&season=' || season || '&round=' || cast(cast(match_round_number as integer) as varchar) || '" style="color:#2563eb;font-weight:600;text-decoration:none;">' || match_short_name || '</a>' as match_short_link
@@ -44,16 +47,16 @@ order by match_date desc
 with curr as (
     select
         sum(total_goals)                                                                      as total_goals,
-        round(sum(total_goals)::double / count(distinct match_id), 2)                        as avg_goals_per_match,
-        round(sum(total_shots_on_goal)::double / count(distinct match_id), 1)                as avg_shots_on_goal,
+        round(100.0 * sum(total_goals) / nullif(sum(total_shots), 0), 1)                     as shot_conversion_pct,
+        round(100.0 * sum(total_shots_on_goal) / nullif(sum(total_shots), 0), 1)             as shot_accuracy_pct,
         round(sum(total_goals)::double / nullif(sum(total_big_chances), 0), 2)               as goals_per_big_chance
     from ${results}
 ),
 prev as (
     select
         sum(total_goals)                                                                      as prev_total_goals,
-        round(sum(total_goals)::double / count(distinct match_id), 2)                        as prev_avg_goals_per_match,
-        round(sum(total_shots_on_goal)::double / count(distinct match_id), 1)                as prev_avg_shots_on_goal,
+        round(100.0 * sum(total_goals) / nullif(sum(total_shots), 0), 1)                     as prev_shot_conversion_pct,
+        round(100.0 * sum(total_shots_on_goal) / nullif(sum(total_shots), 0), 1)             as prev_shot_accuracy_pct,
         round(sum(total_goals)::double / nullif(sum(total_big_chances), 0), 2)               as prev_goals_per_big_chance
     from superligaen.mart_match_results
     where season = '${inputs.season.value}'
@@ -76,19 +79,19 @@ from curr cross join prev
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Avg Goals / Match</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.avg_goals_per_match}</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Shot Conversion %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.shot_conversion_pct}%</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev round: {k.prev_avg_goals_per_match ?? '—'}</span>
-      {#if k.prev_avg_goals_per_match != null}<span class="text-sm font-bold {k.avg_goals_per_match >= k.prev_avg_goals_per_match ? 'text-green-600' : 'text-red-500'}">{k.avg_goals_per_match >= k.prev_avg_goals_per_match ? '▲' : '▼'}</span>{/if}
+      <span class="text-xs text-gray-400">Prev round: {k.prev_shot_conversion_pct != null ? k.prev_shot_conversion_pct + '%' : '—'}</span>
+      {#if k.prev_shot_conversion_pct != null}<span class="text-sm font-bold {k.shot_conversion_pct >= k.prev_shot_conversion_pct ? 'text-green-600' : 'text-red-500'}">{k.shot_conversion_pct >= k.prev_shot_conversion_pct ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 text-center mb-2">Avg Shots on Target / Match</div>
-    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.avg_shots_on_goal}</div>
+    <div class="text-xs text-gray-500 text-center mb-2">Shot Accuracy %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.shot_accuracy_pct}%</div>
     <div class="flex justify-between items-center mt-3">
-      <span class="text-xs text-gray-400">Prev round: {k.prev_avg_shots_on_goal ?? '—'}</span>
-      {#if k.prev_avg_shots_on_goal != null}<span class="text-sm font-bold {k.avg_shots_on_goal >= k.prev_avg_shots_on_goal ? 'text-green-600' : 'text-red-500'}">{k.avg_shots_on_goal >= k.prev_avg_shots_on_goal ? '▲' : '▼'}</span>{/if}
+      <span class="text-xs text-gray-400">Prev round: {k.prev_shot_accuracy_pct != null ? k.prev_shot_accuracy_pct + '%' : '—'}</span>
+      {#if k.prev_shot_accuracy_pct != null}<span class="text-sm font-bold {k.shot_accuracy_pct >= k.prev_shot_accuracy_pct ? 'text-green-600' : 'text-red-500'}">{k.shot_accuracy_pct >= k.prev_shot_accuracy_pct ? '▲' : '▼'}</span>{/if}
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
@@ -111,10 +114,10 @@ from curr cross join prev
     <Column id=referee             title="Referee"        />
     <Column id=score               title="Score"          align=center />
     <Column id=total_goals         title="Goals"          contentType=colorscale colorPalette={['white','#22c55e']} align=center />
-    <Column id=total_shots         title="Shots"          contentType=bar        colorPalette={['#6366f1']} />
-    <Column id=total_big_chances   title="Big Ch."        contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
-    <Column id=total_yellow_cards  title="YC"             contentType=colorscale colorPalette={['white','#eab308']} align=center />
-    <Column id=total_red_cards     title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
+    <Column id=shot_conversion      title="Shot Conv %"    fmt='0.0"%"' contentType=colorscale colorPalette={['white','#6366f1']} align=center />
+    <Column id=shot_accuracy        title="Shot Acc %"     fmt='0.0"%"' contentType=colorscale colorPalette={['white','#0ea5e9']} align=center />
+    <Column id=goals_per_big_chance title="Goals / Big Ch" fmt='0.00'   contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
+    <Column id=total_red_cards      title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
 </DataTable>
 </div>
 <div class="hidden md:block">
@@ -124,10 +127,10 @@ from curr cross join prev
     <Column id=referee             title="Referee"        />
     <Column id=score               title="Score"          align=center />
     <Column id=total_goals         title="Goals"          contentType=colorscale colorPalette={['white','#22c55e']} align=center />
-    <Column id=total_shots         title="Shots"          contentType=bar        colorPalette={['#6366f1']} />
-    <Column id=total_big_chances   title="Big Chances"    contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
-    <Column id=total_yellow_cards  title="YC"             contentType=colorscale colorPalette={['white','#eab308']} align=center />
-    <Column id=total_red_cards     title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
+    <Column id=shot_conversion      title="Shot Conv %"    fmt='0.0"%"' contentType=colorscale colorPalette={['white','#6366f1']} align=center />
+    <Column id=shot_accuracy        title="Shot Acc %"     fmt='0.0"%"' contentType=colorscale colorPalette={['white','#0ea5e9']} align=center />
+    <Column id=goals_per_big_chance title="Goals / Big Ch" fmt='0.00'   contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
+    <Column id=total_red_cards      title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
 </DataTable>
 </div>
 
