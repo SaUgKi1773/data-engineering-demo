@@ -33,7 +33,11 @@ outgoing AS (
             ELSE -1
         END                                         AS transfer_type_sk,
         completed,
-        amount                                      AS transfer_fee_eur
+        CASE
+            WHEN amount IS NOT NULL                         THEN amount  -- disclosed fee
+            WHEN type_name = 'Transfer' AND NOT career_ended THEN NULL    -- permanent move, fee undisclosed (unknown)
+            ELSE 0                                                        -- free / loan / loan return / retirement: no fee
+        END                                         AS transfer_fee_eur
     FROM transfers
     WHERE from_team_id IS NOT NULL
       AND NOT from_team_placeholder
@@ -56,7 +60,11 @@ incoming AS (
             ELSE -1
         END                                         AS transfer_type_sk,
         completed,
-        amount                                      AS transfer_fee_eur
+        CASE
+            WHEN amount IS NOT NULL                         THEN amount  -- disclosed fee
+            WHEN type_name = 'Transfer' AND NOT career_ended THEN NULL    -- permanent move, fee undisclosed (unknown)
+            ELSE 0                                                        -- free / loan / loan return / retirement: no fee
+        END                                         AS transfer_fee_eur
     FROM transfers
     WHERE to_team_id IS NOT NULL
       AND NOT to_team_placeholder
