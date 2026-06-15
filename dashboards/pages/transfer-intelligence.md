@@ -274,7 +274,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Net Spend by Team
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves — the 8 biggest net movers (largest balance either way). <span style="color:#236aa4;font-weight:600;">Blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves — the 8 biggest net movers (largest balance either way). <span style="color:#16a34a;font-weight:600;">Green = net investment</span>, <span style="color:#f97316;font-weight:600;">orange = net sales</span>.</p>
 
 <BarChart
     data={by_club}
@@ -286,7 +286,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     yAxisTitle="€m"
     sort=false
     legend=false
-    colorPalette={['#236aa4','#16a34a']}
+    colorPalette={['#16a34a','#f97316']}
     echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}, tooltip: {formatter: netSpendTip}}}
 />
 
