@@ -33,7 +33,6 @@ order by 1 desc
 select *,
     round(100.0 * total_goals / nullif(total_shots, 0), 1)         as shot_conversion,
     round(100.0 * total_shots_on_goal / nullif(total_shots, 0), 1) as shot_accuracy,
-    round(total_goals::double / nullif(total_big_chances, 0), 2)   as goals_per_big_chance,
     referee_name as referee,
     '<a href="/match-analysis?match=' || cast(match_id as varchar) || '&season=' || season || '&round=' || cast(cast(match_round_number as integer) as varchar) || '" style="color:#2563eb;font-weight:600;text-decoration:none;">' || match_name       || '</a>' as match_link,
     '<a href="/match-analysis?match=' || cast(match_id as varchar) || '&season=' || season || '&round=' || cast(cast(match_round_number as integer) as varchar) || '" style="color:#2563eb;font-weight:600;text-decoration:none;">' || match_short_name || '</a>' as match_short_link
@@ -116,7 +115,7 @@ from curr cross join prev
     <Column id=total_goals         title="Goals"          contentType=colorscale colorPalette={['white','#22c55e']} align=center />
     <Column id=shot_conversion      title="Shot Conv %"    fmt='0.0"%"' contentType=colorscale colorPalette={['white','#6366f1']} align=center />
     <Column id=shot_accuracy        title="Shot Acc %"     fmt='0.0"%"' contentType=colorscale colorPalette={['white','#0ea5e9']} align=center />
-    <Column id=goals_per_big_chance title="Goals / Big Ch" fmt='0.00'   contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
+    <Column id=total_big_chances    title="Big Chances"    contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
     <Column id=total_red_cards      title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
 </DataTable>
 </div>
@@ -129,7 +128,7 @@ from curr cross join prev
     <Column id=total_goals         title="Goals"          contentType=colorscale colorPalette={['white','#22c55e']} align=center />
     <Column id=shot_conversion      title="Shot Conv %"    fmt='0.0"%"' contentType=colorscale colorPalette={['white','#6366f1']} align=center />
     <Column id=shot_accuracy        title="Shot Acc %"     fmt='0.0"%"' contentType=colorscale colorPalette={['white','#0ea5e9']} align=center />
-    <Column id=goals_per_big_chance title="Goals / Big Ch" fmt='0.00'   contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
+    <Column id=total_big_chances    title="Big Chances"    contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
     <Column id=total_red_cards      title="RC"             contentType=colorscale colorPalette={['white','#ef4444']} align=center />
 </DataTable>
 </div>
