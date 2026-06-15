@@ -76,6 +76,7 @@ select * from (values
   ('assists',                'Assists'),
   ('shots_on_target',        'Shots on Target'),
   ('shot_conv',              'Shot Conv %'),
+  ('shot_acc',               'Shot Accuracy %'),
   ('woodwork_hits',          'Woodwork Hits'),
   -- Creativity
   ('big_chances_created',    'Big Chances Created'),
@@ -177,6 +178,7 @@ with base as (
         assists::double                     as assists,
         shots_on_target::double             as shots_on_target,
         shot_conv::double                   as shot_conv,
+        round(100.0 * shots_on_target / nullif(shots_total, 0), 1)::double as shot_acc,
         woodwork_hits::double               as woodwork_hits,
         big_chances_created::double         as big_chances_created,
         chances_created::double             as all_chances,
@@ -267,6 +269,7 @@ ranked as (
             when 'assists'                then assists
             when 'shots_on_target'        then shots_on_target
             when 'shot_conv'              then shot_conv
+            when 'shot_acc'               then shot_acc
             when 'woodwork_hits'          then woodwork_hits
             when 'big_chances_created'    then big_chances_created
             when 'all_chances'            then all_chances
@@ -352,6 +355,7 @@ ranked as (
                 when 'assists'                then assists
                 when 'shots_on_target'        then shots_on_target
                 when 'shot_conv'              then shot_conv
+                when 'shot_acc'               then shot_acc
                 when 'woodwork_hits'          then woodwork_hits
                 when 'big_chances_created'    then big_chances_created
                 when 'all_chances'            then all_chances
