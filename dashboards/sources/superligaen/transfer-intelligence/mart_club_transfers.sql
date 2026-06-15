@@ -20,7 +20,6 @@ rows AS (
         d.month_name AS transfer_month_name,
         tt.transfer_direction AS direction,
         tt.transfer_nature    AS nature,
-        tt.transfer_basis     AS basis,
         f.transfer_fee_eur    AS fee
     FROM superligaen.gold.fct_team_transfers f
     JOIN superligaen.gold.dim_date          d   ON d.date_sk = f.date_sk
@@ -39,8 +38,6 @@ SELECT
     MAX(team_logo) AS team_logo,
     count(*) FILTER (WHERE direction = 'Incoming')                    AS signings,
     count(*) FILTER (WHERE direction = 'Outgoing')                    AS departures,
-    count(*) FILTER (WHERE direction = 'Incoming' AND basis = 'Loan') AS loans_in,
-    count(*) FILTER (WHERE direction = 'Outgoing' AND basis = 'Loan') AS loans_out,
     count(*) FILTER (WHERE nature = 'Permanent')                      AS permanent_moves,
     count(*) FILTER (WHERE nature = 'Free')                           AS free_moves,
     count(*) FILTER (WHERE nature IN ('Loan', 'Loan Return'))         AS loan_moves,

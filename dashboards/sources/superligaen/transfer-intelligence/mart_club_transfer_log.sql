@@ -19,8 +19,6 @@ SELECT
     tt.transfer_direction AS direction,
     tt.transfer_type_name AS transfer_type,
     tt.transfer_nature    AS nature,
-    tt.transfer_basis     AS basis,
-    tt.is_fee_bearing,
     p.player_name,
     p.player_photo,
     p.player_main_position AS position,

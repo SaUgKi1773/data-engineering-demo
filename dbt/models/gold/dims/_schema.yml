@@ -176,13 +176,11 @@ models:
               arguments:
                 values: ['Incoming', 'Outgoing', 'Unknown', 'Not Applicable']
       - name: transfer_nature
-        tests: [not_null]
-      - name: transfer_basis
         tests:
           - not_null
           - accepted_values:
               arguments:
-                values: ['Permanent', 'Loan', 'Career End', 'Unknown', 'Not Applicable']
+                values: ['Permanent', 'Free', 'Loan', 'Loan Return', 'Retirement', 'Unknown', 'Not Applicable']
 
   - name: dim_transfer_status
     columns:
