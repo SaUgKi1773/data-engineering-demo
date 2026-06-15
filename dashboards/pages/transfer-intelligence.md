@@ -112,24 +112,21 @@ agg as (
     round(coalesce(sum(fee_eur) filter (where direction = 'Incoming'), 0) / 1e6, 2) as spend_m,
     round(coalesce(sum(fee_eur) filter (where direction = 'Outgoing'), 0) / 1e6, 2) as income_m
   from f group by club
-),
-top8 as (
-  -- the 8 biggest net movers (either direction)
-  select * from agg order by abs(net_raw) desc limit 8
 )
 select club,
   round(net_raw / 1e6, 2) as net_spend_m,
   case when net_raw >= 0 then round(net_raw / 1e6, 2) end as net_buy,
   case when net_raw <  0 then round(net_raw / 1e6, 2) end as net_sell,
   spend_m, income_m
-from top8
-order by net_raw desc
+from agg
+order by abs(net_raw) desc
+limit 8
 ```
 
 ```sql by_club_busy
 select club,
-  count(*) filter (where direction = 'Incoming') as signings,
-  count(*) filter (where direction = 'Outgoing') as departures
+  count(*) filter (where direction = 'Incoming') as incoming,
+  count(*) filter (where direction = 'Outgoing') as outgoing
 from superligaen.mart_club_transfer_log
 where transfer_year = ${inputs.year.value}
   and transfer_month in ${inputs.month.value}
@@ -194,7 +191,7 @@ limit 1
 
 ```sql ledger
 select transfer_date, transfer_month_name, club, direction, transfer_type, transfer_status,
-  player_name, position, partner, partner_country,
+  player_name, player_age, position, partner, partner_country,
   case when fee_eur is null then null else round(fee_eur / 1e6, 2) end as fee_m
 from superligaen.mart_club_transfer_log
 where transfer_year = ${inputs.year.value}
@@ -227,7 +224,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Total Amount</div>
+    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Total Deal Amount</div>
     <div class="text-3xl font-black text-gray-900 leading-none mt-2 text-center">€{kpi[0]?.total_m}m</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-[11px] text-gray-400">Prev: €{kpi[0]?.prev_total_m ?? '—'}m</span>
@@ -235,7 +232,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Avg Amount</div>
+    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Avg Deal Amount</div>
     <div class="text-3xl font-black text-gray-900 leading-none mt-2 text-center">€{kpi[0]?.avg_m ?? '—'}m</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-[11px] text-gray-400">Prev: €{kpi[0]?.prev_avg_m ?? '—'}m</span>
@@ -277,7 +274,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Net Spend by Team
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves — the biggest net movers, ranked by net spend. <span style="color:#236aa4;font-weight:600;">Blue = net investment</span>, <span style="color:#16a34a;font-weight:600;">green = net sales</span>.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves — the 8 biggest net movers (largest balance either way). <span style="color:#16a34a;font-weight:600;">Green = net investment</span>, <span style="color:#f97316;font-weight:600;">orange = net sales</span>.</p>
 
 <BarChart
     data={by_club}
@@ -289,7 +286,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     yAxisTitle="€m"
     sort=false
     legend=false
-    colorPalette={['#236aa4','#16a34a']}
+    colorPalette={['#16a34a','#f97316']}
     echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}, tooltip: {formatter: netSpendTip}}}
 />
 
@@ -300,8 +297,8 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 <BarChart
     data={by_club_busy}
     x=club
-    y={['signings','departures']}
-    title="Ins vs Outs"
+    y={['incoming','outgoing']}
+    title="Incoming vs Outgoing"
     type=grouped
     colorPalette={['#16a34a','#f97316']}
     seriesOptions={{"barGap": "0%"}}
@@ -347,6 +344,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <Column id=transfer_type   title="Type" />
     <Column id=transfer_status title="Status" align=center />
     <Column id=player_name     title="Player" />
+    <Column id=player_age      title="Age" align=center />
     <Column id=position        title="Pos" align=center />
     <Column id=partner         title="Counterparty" />
     <Column id=fee_m           title="Fee" fmt='"€"0.0"m"' align=right contentType=colorscale colorPalette={['white','#236aa4']} />

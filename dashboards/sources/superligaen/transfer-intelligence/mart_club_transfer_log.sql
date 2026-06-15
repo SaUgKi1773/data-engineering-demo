@@ -23,6 +23,7 @@ SELECT
     p.player_name,
     p.player_photo,
     p.player_main_position AS position,
+    date_diff('year', p.player_birth_date::date, d.date) AS player_age,
     pt.transfer_partner_team_name    AS partner,
     pt.transfer_partner_team_country AS partner_country,
     f.transfer_fee_eur AS fee_eur
