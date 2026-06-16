@@ -55,7 +55,7 @@ The gold layer follows **Kimball dimensional modelling**. Four fact tables cover
 - **`fct_team_matches`** — one row per team per match (each fixture produces two rows, one per side); team-level stats, results, and tactical data
 - **`fct_player_appearances`** — one row per player per match; individual performance stats and ratings
 - **`fct_match_discussions`** — one row per match per persona; LLM-generated fan discussion comments (via Groq) powering the Fan Forum on the Match Analysis page
-- **`fct_team_transfers`** — one row per club per transfer; incoming/outgoing moves with fee, type, status, counterparty, and player, powering the Transfer Intelligence page
+- **`fct_team_transfers`** — one row per club per transfer; incoming/outgoing moves with fee, type, status, transfer partner, and player, powering the Transfer Intelligence page
 
 ```mermaid
 erDiagram
@@ -329,7 +329,7 @@ The bus matrix shows which dimensions are conformed (shared) across business pro
 | Persona | | | X | |
 | Transfer Type | | | | X |
 | Transfer Status | | | | X |
-| Counterparty Team | | | | X |
+| Transfer Partner | | | | X |
 
 All dimension surrogate keys are **stable across runs** — new records get new SKs, existing records keep theirs. Sentinel rows (`-1 Unknown`, `-2 Not Applicable`) handle missing lookups, with all VARCHAR attributes filled with descriptive defaults (e.g. `'Unknown Stadium Country'`).
 
