@@ -41,7 +41,12 @@
   :global(header img[alt="Home"]) {
     height: 2.5rem;
   }
-  :global(header button[aria-label="Menu"]) {
+  /* Header kebab: keep only the Appearance option */
+  :global(.w-52 [role="group"]:first-of-type [role="menuitem"]:not(:last-of-type)) {
+    display: none;
+  }
+  :global(.w-52 [role="separator"]),
+  :global(.w-52 [role="group"]:not(:first-of-type)) {
     display: none;
   }
   :global(.standings-table table) {
