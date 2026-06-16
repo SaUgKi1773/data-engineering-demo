@@ -152,13 +152,12 @@ select * from superligaen.mart_home_summary
   <div class="shrink-0 text-gray-300 group-hover:text-red-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
 </a>
 
-<a href="/transfer-intelligence" class="flex items-center no-underline rounded-xl border border-gray-200 bg-white p-4 hover:border-purple-300 hover:shadow-md transition-all duration-200 group shadow-sm">
+<a href="/transfer-intelligence" class="relative overflow-hidden flex items-center no-underline rounded-xl border border-gray-200 bg-white p-4 hover:border-purple-300 hover:shadow-md transition-all duration-200 group shadow-sm">
+  <!-- "New" corner ribbon -->
+  <span class="pointer-events-none absolute -right-8 top-3 rotate-45 bg-red-500 px-8 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow">New</span>
   <div class="rounded-xl bg-purple-50 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">🔁</div>
   <div class="flex-1 min-w-0">
-    <div class="flex items-center gap-2">
-      <div class="text-sm font-bold text-gray-800 group-hover:text-purple-600 transition-colors">Transfer Intelligence</div>
-      <span class="text-[9px] font-extrabold uppercase tracking-wide text-white bg-purple-500 rounded px-1.5 py-0.5 leading-none">New</span>
-    </div>
+    <div class="text-sm font-bold text-gray-800 group-hover:text-purple-600 transition-colors">Transfer Intelligence</div>
     <div class="text-gray-400 text-xs mt-0.5 leading-snug">Net spend, ins &amp; outs, record fees &amp; per-club ledgers</div>
   </div>
   <div class="shrink-0 text-gray-300 group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
