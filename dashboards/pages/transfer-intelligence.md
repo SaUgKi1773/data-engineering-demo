@@ -348,7 +348,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <Column id=player_name     title="Player" />
     <Column id=player_age      title="Age" align=center />
     <Column id=position        title="Pos" align=center />
-    <Column id=partner         title="Counterparty" />
+    <Column id=partner         title="Transfer Partner" />
     <Column id=fee_m           title="Fee" fmt='"€"0.0"m"' align=right contentType=colorscale colorPalette={['white','#236aa4']} />
 </DataTable>
 
