@@ -308,25 +308,28 @@ erDiagram
 
 The bus matrix shows which dimensions are conformed (shared) across business processes — the foundation of Kimball integration.
 
-| **BUSINESS PROCESSES →** | Team Match Performance | Player Appearance | Match Discussion |
-|---|:---:|:---:|:---:|
-| **COMMON DIMENSIONS ↓** | | | |
-| Date | X | X | X |
-| Time of Day | X | X | |
-| Match | X | X | X |
-| Team | X | X | |
-| Opponent Team | X | X | |
-| League | X | X | |
-| Stadium / Venue | X | X | |
-| Referee | X | X | |
-| Coach | X | X | |
-| Formation | X | X | |
-| Home / Away | X | X | |
-| Match Result | X | X | |
-| Player | | X | |
-| Playing Position | | X | |
-| Appearance Type | | X | |
-| Persona | | | X |
+| **BUSINESS PROCESSES →** | Team Match Performance | Player Appearance | Match Discussion | Team Transfers |
+|---|:---:|:---:|:---:|:---:|
+| **COMMON DIMENSIONS ↓** | | | | |
+| Date | X | X | X | X |
+| Time of Day | X | X | | |
+| Match | X | X | X | |
+| Team | X | X | | X |
+| Opponent Team | X | X | | |
+| League | X | X | | |
+| Stadium / Venue | X | X | | |
+| Referee | X | X | | |
+| Coach | X | X | | |
+| Formation | X | X | | |
+| Home / Away | X | X | | |
+| Match Result | X | X | | |
+| Player | | X | | X |
+| Playing Position | | X | | |
+| Appearance Type | | X | | |
+| Persona | | | X | |
+| Transfer Type | | | | X |
+| Transfer Status | | | | X |
+| Counterparty Team | | | | X |
 
 All dimension surrogate keys are **stable across runs** — new records get new SKs, existing records keep theirs. Sentinel rows (`-1 Unknown`, `-2 Not Applicable`) handle missing lookups, with all VARCHAR attributes filled with descriptive defaults (e.g. `'Unknown Stadium Country'`).
 
