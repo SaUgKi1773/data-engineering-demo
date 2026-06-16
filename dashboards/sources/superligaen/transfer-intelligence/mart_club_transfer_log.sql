@@ -14,6 +14,13 @@ SELECT
     d.year       AS transfer_year,
     d.month      AS transfer_month,
     d.month_name AS transfer_month_name,
+    -- Derived football transfer window: summer (Jun–Sep) and winter (Dec–Feb)
+    -- registration periods; everything else is outside the windows.
+    CASE
+        WHEN d.month IN (6, 7, 8, 9) THEN 'Summer Window'
+        WHEN d.month IN (12, 1, 2)   THEN 'Winter Window'
+        ELSE 'Outside Window'
+    END AS transfer_window,
     d.date       AS transfer_date,
     t.team_name  AS club,
     t.team_code  AS club_code,

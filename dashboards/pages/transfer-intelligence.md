@@ -40,6 +40,18 @@ from superligaen.mart_club_transfer_log
 order by transfer_month
 ```
 
+```sql windows
+select transfer_window from (
+  select distinct transfer_window,
+    case transfer_window
+      when 'Summer Window' then 1
+      when 'Winter Window' then 2
+      else 3
+    end as ord
+  from superligaen.mart_club_transfer_log
+) order by ord
+```
+
 ```sql teams
 select club from (
   select 'All Teams' as club, 0 as ord
@@ -71,6 +83,7 @@ with base as (
     and direction in ${inputs.direction.value}
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
+    and transfer_window in ${inputs.window.value}
     and transfer_year in (${inputs.year.value}, ${inputs.year.value} - 1)
 ),
 curr as (
@@ -104,6 +117,7 @@ with f as (
     and direction in ${inputs.direction.value}
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
+    and transfer_window in ${inputs.window.value}
 ),
 agg as (
   select club,
@@ -134,6 +148,7 @@ where transfer_year = ${inputs.year.value}
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
+  and transfer_window in ${inputs.window.value}
 group by club
 having count(*) > 0
 order by count(*) desc
@@ -150,6 +165,7 @@ with base as (
     and direction in ${inputs.direction.value}
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
+    and transfer_window in ${inputs.window.value}
 )
 select cast(transfer_year as integer)::varchar as transfer_year,
   count(*)                     as transfers,
@@ -169,6 +185,7 @@ where direction = 'Incoming' and fee_eur > 0
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
+  and transfer_window in ${inputs.window.value}
 order by fee_eur desc
 limit 1
 ```
@@ -185,6 +202,7 @@ where direction = 'Outgoing' and fee_eur > 0
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
+  and transfer_window in ${inputs.window.value}
 order by fee_eur desc
 limit 1
 ```
@@ -200,6 +218,7 @@ where transfer_year = ${inputs.year.value}
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
+  and transfer_window in ${inputs.window.value}
 order by (fee_eur is null), fee_eur desc, transfer_date desc
 ```
 
@@ -207,6 +226,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   {#key years[0]?.transfer_year}
   <Dropdown data={years} name=year value=transfer_year order="transfer_year desc" defaultValue={years[0]?.transfer_year} title="Year" />
   {/key}
+  <Dropdown data={windows} name=window value=transfer_window multiple=true selectAllByDefault=true title="Transfer Window" />
   <Dropdown data={months} name=month value=transfer_month label=transfer_month_name multiple=true selectAllByDefault=true order="transfer_month asc" title="Month" />
   <Dropdown data={teams} name=team value=club multiple=true defaultValue={['All Teams']} title="Team" />
   <Dropdown data={directions} name=direction value=direction multiple=true selectAllByDefault=true title="Direction" />
@@ -240,7 +260,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Paid Deals</div>
+    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Fee Disclosed Deals</div>
     <div class="text-3xl font-black text-gray-900 leading-none mt-2 text-center">{kpi[0]?.paid}</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-[11px] text-gray-400">Prev: {kpi[0]?.prev_paid ?? '—'}</span>
@@ -299,9 +319,8 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     x=club
     y={['incoming','outgoing']}
     title="Incoming vs Outgoing"
-    type=grouped
+    type=stacked
     colorPalette={['#16a34a','#f97316']}
-    seriesOptions={{"barGap": "0%"}}
     sort=false
     echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}}}
 />
