@@ -34,6 +34,16 @@ select transfer_window from (
 ) order by ord
 ```
 
+```sql current_window
+-- Window today's (build-time) date falls in; mirrors the transfer_window logic
+-- in mart_club_transfer_log so the dropdown can default to the live window.
+select case
+  when month(current_date) in (6, 7, 8, 9) then 'Summer Window'
+  when month(current_date) in (12, 1, 2)   then 'Winter Window'
+  else 'Outside Window'
+end as transfer_window
+```
+
 ```sql teams
 select club from (
   select 'All Teams' as club, 0 as ord
@@ -199,12 +209,14 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   {#key years[0]?.transfer_year}
   <Dropdown data={years} name=year value=transfer_year order="transfer_year desc" defaultValue={years[0]?.transfer_year} title="Year" />
   {/key}
-  <Dropdown data={windows} name=window value=transfer_window multiple=true selectAllByDefault=true title="Transfer Window" />
+  <Dropdown data={windows} name=window value=transfer_window multiple=true defaultValue={[current_window[0]?.transfer_window]} title="Transfer Window" />
   <Dropdown data={teams} name=team value=club multiple=true defaultValue={['All Teams']} title="Team" />
   <Dropdown data={directions} name=direction value=direction multiple=true selectAllByDefault=true title="Direction" />
   <Dropdown data={types} name=type value=transfer_type multiple=true selectAllByDefault=true title="Type" />
   <Dropdown data={statuses} name=status value=transfer_status multiple=true selectAllByDefault=true title="Status" />
 </div>
+
+## Transfer Intelligence — {inputs.year.value} · {inputs.window.label}
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 my-5">
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
