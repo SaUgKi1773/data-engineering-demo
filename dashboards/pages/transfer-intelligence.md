@@ -22,12 +22,6 @@ from superligaen.mart_club_transfer_log
 order by is_current desc, transfer_year desc
 ```
 
-```sql months
-select distinct cast(transfer_month as integer) as transfer_month, transfer_month_name
-from superligaen.mart_club_transfer_log
-order by transfer_month
-```
-
 ```sql windows
 select transfer_window from (
   select distinct transfer_window,
@@ -66,8 +60,7 @@ select distinct transfer_status from superligaen.mart_club_transfer_log order by
 with base as (
   select distinct transfer_id, transfer_year, fee_eur
   from superligaen.mart_club_transfer_log
-  where transfer_month in ${inputs.month.value}
-    and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
+  where ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
     and direction in ${inputs.direction.value}
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
@@ -100,7 +93,6 @@ from curr cross join prev
 with f as (
   select * from superligaen.mart_club_transfer_log
   where transfer_year = ${inputs.year.value}
-    and transfer_month in ${inputs.month.value}
     and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
     and direction in ${inputs.direction.value}
     and transfer_type in ${inputs.type.value}
@@ -129,7 +121,6 @@ select club,
   count(*) filter (where direction = 'Outgoing') as outgoing
 from superligaen.mart_club_transfer_log
 where transfer_year = ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
   and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
@@ -146,8 +137,7 @@ limit 8
 with base as (
   select distinct transfer_id, transfer_year, fee_eur
   from superligaen.mart_club_transfer_log
-  where transfer_month in ${inputs.month.value}
-    and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
+  where ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
     and direction in ${inputs.direction.value}
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
@@ -166,7 +156,6 @@ select player_name, player_photo, club, partner,
 from superligaen.mart_club_transfer_log
 where direction = 'Incoming' and fee_eur > 0
   and transfer_year = ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
   and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
@@ -183,7 +172,6 @@ select player_name, player_photo, club, partner,
 from superligaen.mart_club_transfer_log
 where direction = 'Outgoing' and fee_eur > 0
   and transfer_year = ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
   and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
@@ -194,12 +182,11 @@ limit 1
 ```
 
 ```sql ledger
-select transfer_date, transfer_month_name, club, direction, transfer_type, transfer_status,
+select transfer_date, club, direction, transfer_type, transfer_status,
   player_name, player_age, position, partner, partner_country,
   case when fee_eur is null then null else round(fee_eur / 1e6, 2) end as fee_m
 from superligaen.mart_club_transfer_log
 where transfer_year = ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
   and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
@@ -213,7 +200,6 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   <Dropdown data={years} name=year value=transfer_year order="transfer_year desc" defaultValue={years[0]?.transfer_year} title="Year" />
   {/key}
   <Dropdown data={windows} name=window value=transfer_window multiple=true selectAllByDefault=true title="Transfer Window" />
-  <Dropdown data={months} name=month value=transfer_month label=transfer_month_name multiple=true selectAllByDefault=true order="transfer_month asc" title="Month" />
   <Dropdown data={teams} name=team value=club multiple=true defaultValue={['All Teams']} title="Team" />
   <Dropdown data={directions} name=direction value=direction multiple=true selectAllByDefault=true title="Direction" />
   <Dropdown data={types} name=type value=transfer_type multiple=true selectAllByDefault=true title="Type" />
@@ -343,7 +329,6 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <DataTable data={ledger} rows=15 search=true>
     <Column id=transfer_date   title="Date" />
-    <Column id=transfer_month_name title="Month" align=center />
     <Column id=club            title="Club" />
     <Column id=direction       title="Direction" align=center />
     <Column id=transfer_type   title="Type" />
