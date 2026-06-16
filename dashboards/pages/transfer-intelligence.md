@@ -9,18 +9,6 @@ title: Transfer Intelligence
   let nameToCode = {};
   $: nameToCode = Object.fromEntries((team_lookup ?? []).map(r => [r.club, r.club_code]));
   $: shortLabel = (name) => nameToCode[name] ?? name;
-
-  // Net Spend tooltip: full club name + net / spent / received
-  $: clubFin = Object.fromEntries((by_club ?? []).map(r => [r.club, r]));
-  $: netSpendTip = (params) => {
-    const name = (Array.isArray(params) ? params[0] : params).axisValue;
-    const r = clubFin[name];
-    if (!r) return name;
-    return `<strong>${name}</strong>`
-      + `<br/>Net spend: €${r.net_spend_m}m`
-      + `<br/>Spent: €${r.spend_m}m`
-      + `<br/>Received: €${r.income_m}m`;
-  };
 </script>
 
 ```sql team_lookup
@@ -34,10 +22,16 @@ from superligaen.mart_club_transfer_log
 order by is_current desc, transfer_year desc
 ```
 
-```sql months
-select distinct cast(transfer_month as integer) as transfer_month, transfer_month_name
-from superligaen.mart_club_transfer_log
-order by transfer_month
+```sql windows
+select transfer_window from (
+  select distinct transfer_window,
+    case transfer_window
+      when 'Summer Window' then 1
+      when 'Winter Window' then 2
+      else 3
+    end as ord
+  from superligaen.mart_club_transfer_log
+) order by ord
 ```
 
 ```sql teams
@@ -66,11 +60,11 @@ select distinct transfer_status from superligaen.mart_club_transfer_log order by
 with base as (
   select distinct transfer_id, transfer_year, fee_eur
   from superligaen.mart_club_transfer_log
-  where transfer_month in ${inputs.month.value}
-    and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
+  where ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
     and direction in ${inputs.direction.value}
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
+    and transfer_window in ${inputs.window.value}
     and transfer_year in (${inputs.year.value}, ${inputs.year.value} - 1)
 ),
 curr as (
@@ -99,11 +93,11 @@ from curr cross join prev
 with f as (
   select * from superligaen.mart_club_transfer_log
   where transfer_year = ${inputs.year.value}
-    and transfer_month in ${inputs.month.value}
     and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
     and direction in ${inputs.direction.value}
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
+    and transfer_window in ${inputs.window.value}
 ),
 agg as (
   select club,
@@ -115,11 +109,9 @@ agg as (
 )
 select club,
   round(net_raw / 1e6, 2) as net_spend_m,
-  case when net_raw >= 0 then round(net_raw / 1e6, 2) end as net_buy,
-  case when net_raw <  0 then round(net_raw / 1e6, 2) end as net_sell,
   spend_m, income_m
 from agg
-order by abs(net_raw) desc
+order by (spend_m + income_m) desc, abs(net_raw) desc
 limit 8
 ```
 
@@ -129,11 +121,11 @@ select club,
   count(*) filter (where direction = 'Outgoing') as outgoing
 from superligaen.mart_club_transfer_log
 where transfer_year = ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
   and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
+  and transfer_window in ${inputs.window.value}
 group by club
 having count(*) > 0
 order by count(*) desc
@@ -145,11 +137,11 @@ limit 8
 with base as (
   select distinct transfer_id, transfer_year, fee_eur
   from superligaen.mart_club_transfer_log
-  where transfer_month in ${inputs.month.value}
-    and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
+  where ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
     and direction in ${inputs.direction.value}
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
+    and transfer_window in ${inputs.window.value}
 )
 select cast(transfer_year as integer)::varchar as transfer_year,
   count(*)                     as transfers,
@@ -164,11 +156,11 @@ select player_name, player_photo, club, partner,
 from superligaen.mart_club_transfer_log
 where direction = 'Incoming' and fee_eur > 0
   and transfer_year = ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
   and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
+  and transfer_window in ${inputs.window.value}
 order by fee_eur desc
 limit 1
 ```
@@ -180,26 +172,26 @@ select player_name, player_photo, club, partner,
 from superligaen.mart_club_transfer_log
 where direction = 'Outgoing' and fee_eur > 0
   and transfer_year = ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
   and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
+  and transfer_window in ${inputs.window.value}
 order by fee_eur desc
 limit 1
 ```
 
 ```sql ledger
-select transfer_date, transfer_month_name, club, direction, transfer_type, transfer_status,
+select transfer_date, club, direction, transfer_type, transfer_status,
   player_name, player_age, position, partner, partner_country,
   case when fee_eur is null then null else round(fee_eur / 1e6, 2) end as fee_m
 from superligaen.mart_club_transfer_log
 where transfer_year = ${inputs.year.value}
-  and transfer_month in ${inputs.month.value}
   and ('All Teams' in ${inputs.team.value} or club in ${inputs.team.value})
   and direction in ${inputs.direction.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
+  and transfer_window in ${inputs.window.value}
 order by (fee_eur is null), fee_eur desc, transfer_date desc
 ```
 
@@ -207,12 +199,14 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   {#key years[0]?.transfer_year}
   <Dropdown data={years} name=year value=transfer_year order="transfer_year desc" defaultValue={years[0]?.transfer_year} title="Year" />
   {/key}
-  <Dropdown data={months} name=month value=transfer_month label=transfer_month_name multiple=true selectAllByDefault=true order="transfer_month asc" title="Month" />
+  <Dropdown data={windows} name=window value=transfer_window multiple=true selectAllByDefault=true title="Transfer Window" />
   <Dropdown data={teams} name=team value=club multiple=true defaultValue={['All Teams']} title="Team" />
   <Dropdown data={directions} name=direction value=direction multiple=true selectAllByDefault=true title="Direction" />
   <Dropdown data={types} name=type value=transfer_type multiple=true selectAllByDefault=true title="Type" />
   <Dropdown data={statuses} name=status value=transfer_status multiple=true selectAllByDefault=true title="Status" />
 </div>
+
+## Transfer Intelligence — {inputs.year.value}
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 my-5">
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
@@ -240,7 +234,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Paid Deals</div>
+    <div class="text-gray-400 text-xs uppercase tracking-wide text-center">Fee Disclosed Deals</div>
     <div class="text-3xl font-black text-gray-900 leading-none mt-2 text-center">{kpi[0]?.paid}</div>
     <div class="flex justify-between items-center mt-3">
       <span class="text-[11px] text-gray-400">Prev: {kpi[0]?.prev_paid ?? '—'}</span>
@@ -274,21 +268,21 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Net Spend by Team
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves — the 8 biggest net movers (largest balance either way). <span style="color:#16a34a;font-weight:600;">Green = net investment</span>, <span style="color:#f97316;font-weight:600;">orange = net sales</span>.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees <span style="color:#16a34a;font-weight:600;">spent</span> on incoming moves vs <span style="color:#f97316;font-weight:600;">received</span> on outgoing moves, with the resulting <span style="color:#236aa4;font-weight:600;">net spend</span> — the 8 clubs with the highest transfer volume (total fees in + out).</p>
 
-<BarChart
+<Chart
     data={by_club}
     x=club
-    y={['net_buy','net_sell']}
-    type=stacked
-    yFmt='#,##0.00'
-    title="Net Spend (€m)"
+    yFmt='"€"#,##0.00"m"'
+    title="Spent vs Received vs Net (€m)"
     yAxisTitle="€m"
     sort=false
-    legend=false
-    colorPalette={['#16a34a','#f97316']}
-    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}, tooltip: {formatter: netSpendTip}}}
-/>
+    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}}}
+>
+    <Bar y=spend_m name="Spent" fillColor="#16a34a" />
+    <Bar y=income_m name="Received" fillColor="#f97316" />
+    <Scatter y=net_spend_m name="Net Spend" fillColor="#236aa4" pointSize={11} />
+</Chart>
 
 ## Transfers by Team
 
@@ -299,9 +293,8 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     x=club
     y={['incoming','outgoing']}
     title="Incoming vs Outgoing"
-    type=grouped
+    type=stacked
     colorPalette={['#16a34a','#f97316']}
-    seriesOptions={{"barGap": "0%"}}
     sort=false
     echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}}}
 />
@@ -338,7 +331,6 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 <DataTable data={ledger} rows=15 search=true>
     <Column id=transfer_date   title="Date" />
-    <Column id=transfer_month_name title="Month" align=center />
     <Column id=club            title="Club" />
     <Column id=direction       title="Direction" align=center />
     <Column id=transfer_type   title="Type" />
@@ -346,7 +338,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <Column id=player_name     title="Player" />
     <Column id=player_age      title="Age" align=center />
     <Column id=position        title="Pos" align=center />
-    <Column id=partner         title="Counterparty" />
+    <Column id=partner         title="Transfer Partner" />
     <Column id=fee_m           title="Fee" fmt='"€"0.0"m"' align=right contentType=colorscale colorPalette={['white','#236aa4']} />
 </DataTable>
 

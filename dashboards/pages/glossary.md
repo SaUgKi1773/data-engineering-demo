@@ -234,6 +234,23 @@ Unlike the team radar which uses per-match averages, player scores are calculate
 
 ---
 
+## Transfers
+
+<div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
+  <div class="p-3"><div class="font-semibold text-sm">Transfer Window</div><div class="text-sm text-gray-500 mt-0.5">The registration period a transfer falls in, derived from its month: <strong>Summer Window</strong> (Jun–Sep), <strong>Winter Window</strong> (Dec–Feb), and <strong>Outside Window</strong> for any other month (free agents, loan returns, and contract terminations that can occur year-round).</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Deals</div><div class="text-sm text-gray-500 mt-0.5">Count of distinct transfers matching the current filters, regardless of whether a fee was disclosed</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Fee Disclosed Deals</div><div class="text-sm text-gray-500 mt-0.5">Transfers with a reported fee greater than zero. Many moves (free transfers, loans, undisclosed deals) carry no published fee.</div><div class="text-xs text-gray-400 mt-0.5">Count of deals where fee > 0</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Total Deal Amount</div><div class="text-sm text-gray-500 mt-0.5">Sum of all disclosed transfer fees, in millions of euros (€m)</div><div class="text-xs text-gray-400 mt-0.5">Σ disclosed fees ÷ 1,000,000</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Avg Deal Amount</div><div class="text-sm text-gray-500 mt-0.5">Average disclosed fee across fee-disclosed deals, in €m</div><div class="text-xs text-gray-400 mt-0.5">Total Deal Amount ÷ Fee Disclosed Deals</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Spent</div><div class="text-sm text-gray-500 mt-0.5">Fees a club paid on incoming moves — money spent acquiring players</div><div class="text-xs text-gray-400 mt-0.5">Σ fees on Incoming transfers</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Received</div><div class="text-sm text-gray-500 mt-0.5">Fees a club collected on outgoing moves — money received selling players</div><div class="text-xs text-gray-400 mt-0.5">Σ fees on Outgoing transfers</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Net Spend</div><div class="text-sm text-gray-500 mt-0.5">A club's transfer balance. Positive = net investment (bought more than sold); negative = net sales.</div><div class="text-xs text-gray-400 mt-0.5">Spent − Received</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Transfer Volume</div><div class="text-sm text-gray-500 mt-0.5">Total fees moving through a club in both directions — used to rank the busiest clubs by money. Distinct from deal count.</div><div class="text-xs text-gray-400 mt-0.5">Spent + Received</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">Direction</div><div class="text-sm text-gray-500 mt-0.5">Whether a transfer is <strong>Incoming</strong> (player joining the club) or <strong>Outgoing</strong> (player leaving)</div></div>
+</div>
+
+---
+
 ## Competition Format
 
 <div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">

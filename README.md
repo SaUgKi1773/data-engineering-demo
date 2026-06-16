@@ -23,7 +23,8 @@ Sportmonks API        Groq LLM
   Gold layer          Kimball star schema  ─────────────────────────────┐
                       (dims + fct_team_matches                          │
                            + fct_player_appearances                     │
-                           + fct_match_discussions)  (dbt)             │
+                           + fct_match_discussions                      │
+                           + fct_team_transfers)  (dbt)                 │
                                                                         ▼
                                                              Evidence.dev dashboard
                                                              deployed on Vercel
@@ -49,11 +50,12 @@ The nightly GitHub Actions pipeline runs all three layers sequentially, then tri
 
 ## Data model
 
-The gold layer follows **Kimball dimensional modelling**. Three fact tables cover three business processes:
+The gold layer follows **Kimball dimensional modelling**. Four fact tables cover four business processes:
 
 - **`fct_team_matches`** — one row per team per match (each fixture produces two rows, one per side); team-level stats, results, and tactical data
 - **`fct_player_appearances`** — one row per player per match; individual performance stats and ratings
 - **`fct_match_discussions`** — one row per match per persona; LLM-generated fan discussion comments (via Groq) powering the Fan Forum on the Match Analysis page
+- **`fct_team_transfers`** — one row per club per transfer; incoming/outgoing moves with fee, type, status, transfer partner, and player, powering the Transfer Intelligence page
 
 ```mermaid
 erDiagram
@@ -270,6 +272,37 @@ erDiagram
         varchar message
     }
 
+    dim_transfer_type {
+        int transfer_type_sk PK
+        varchar transfer_type_name
+        varchar transfer_direction
+    }
+
+    dim_transfer_status {
+        int transfer_status_sk PK
+        varchar transfer_status
+    }
+
+    dim_transfer_partner_team {
+        int transfer_partner_team_sk PK
+        int transfer_partner_team_id
+        varchar transfer_partner_team_name
+        varchar transfer_partner_team_country
+        varchar transfer_partner_team_logo
+    }
+
+    fct_team_transfers {
+        int transfer_id
+        int date_sk FK
+        int team_sk FK
+        int transfer_partner_team_sk FK
+        int player_sk FK
+        int transfer_type_sk FK
+        int transfer_status_sk FK
+        int transfer_count
+        int transfer_fee_eur
+    }
+
     fct_team_matches }o--|| dim_date : "date_sk"
     fct_team_matches }o--|| dim_time : "time_sk"
     fct_team_matches }o--|| dim_match : "match_sk"
@@ -300,31 +333,40 @@ erDiagram
     fct_match_discussions }o--|| dim_match : "match_sk"
     fct_match_discussions }o--|| dim_persona : "persona_sk"
     fct_match_discussions }o--|| dim_date : "date_sk"
+    fct_team_transfers }o--|| dim_date : "date_sk"
+    fct_team_transfers }o--|| dim_team : "team_sk"
+    fct_team_transfers }o--|| dim_transfer_partner_team : "transfer_partner_team_sk"
+    fct_team_transfers }o--|| dim_player : "player_sk"
+    fct_team_transfers }o--|| dim_transfer_type : "transfer_type_sk"
+    fct_team_transfers }o--|| dim_transfer_status : "transfer_status_sk"
 ```
 
 ### Dimensional model bus matrix
 
 The bus matrix shows which dimensions are conformed (shared) across business processes — the foundation of Kimball integration.
 
-| **BUSINESS PROCESSES →** | Team Match Performance | Player Appearance | Match Discussion |
-|---|:---:|:---:|:---:|
-| **COMMON DIMENSIONS ↓** | | | |
-| Date | X | X | X |
-| Time of Day | X | X | |
-| Match | X | X | X |
-| Team | X | X | |
-| Opponent Team | X | X | |
-| League | X | X | |
-| Stadium / Venue | X | X | |
-| Referee | X | X | |
-| Coach | X | X | |
-| Formation | X | X | |
-| Home / Away | X | X | |
-| Match Result | X | X | |
-| Player | | X | |
-| Playing Position | | X | |
-| Appearance Type | | X | |
-| Persona | | | X |
+| **BUSINESS PROCESSES →** | Team Match Performance | Player Appearance | Match Discussion | Team Transfers |
+|---|:---:|:---:|:---:|:---:|
+| **COMMON DIMENSIONS ↓** | | | | |
+| Date | X | X | X | X |
+| Time of Day | X | X | | |
+| Match | X | X | X | |
+| Team | X | X | | X |
+| Opponent Team | X | X | | |
+| League | X | X | | |
+| Stadium / Venue | X | X | | |
+| Referee | X | X | | |
+| Coach | X | X | | |
+| Formation | X | X | | |
+| Home / Away | X | X | | |
+| Match Result | X | X | | |
+| Player | | X | | X |
+| Playing Position | | X | | |
+| Appearance Type | | X | | |
+| Persona | | | X | |
+| Transfer Type | | | | X |
+| Transfer Status | | | | X |
+| Transfer Partner | | | | X |
 
 All dimension surrogate keys are **stable across runs** — new records get new SKs, existing records keep theirs. Sentinel rows (`-1 Unknown`, `-2 Not Applicable`) handle missing lookups, with all VARCHAR attributes filled with descriptive defaults (e.g. `'Unknown Stadium Country'`).
 
@@ -343,6 +385,7 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 | **Referee Intelligence** | Cards and fouls by referee, strictness rankings, and per-match discipline logs |
 | **Stadium Intelligence** | Interactive stadium map, fortress rankings, and home-advantage stats |
 | **Player Intelligence** | League top-player podium by any measure, individual player deep dive with profile, characteristics radar, performance timeline, and match log |
+| **Transfer Intelligence** | Club transfer market: spend KPIs, record signing & sale, net spend (spent/received/net) and transfer flows by team, market trend over time, and a searchable transfer ledger — filterable by year and transfer window |
 | **About** | Project background, stack overview, and the full build journey |
 | **Data Glossary** | Definitions of all metrics and KPIs used across the dashboard |
 
