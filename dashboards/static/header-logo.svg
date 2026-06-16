@@ -6,9 +6,9 @@
       <stop offset="100%" stop-color="#B8860B"/>
     </linearGradient>
     <linearGradient id="goldH" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#FDE68A"/>
-      <stop offset="50%" stop-color="#F5C13B"/>
-      <stop offset="100%" stop-color="#B8860B"/>
+      <stop offset="0%" stop-color="#E6B23A"/>
+      <stop offset="50%" stop-color="#CF9620"/>
+      <stop offset="100%" stop-color="#9C6E08"/>
     </linearGradient>
     <clipPath id="ball"><circle cx="256" cy="230" r="110"/></clipPath>
   </defs>
@@ -32,5 +32,5 @@
   </svg>
   <line x1="48" y1="5" x2="48" y2="35" stroke="url(#goldH)" stroke-width="1.5"/>
   <text x="56" y="16" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="12" fill="url(#goldH)" letter-spacing="-0.3">Superliga</text>
-  <text x="57" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="#B8860B" letter-spacing="3">ANALYTICS</text>
+  <text x="57" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="#9C6E08" letter-spacing="3">ANALYTICS</text>
 </svg>
