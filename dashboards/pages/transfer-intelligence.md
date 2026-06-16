@@ -9,18 +9,6 @@ title: Transfer Intelligence
   let nameToCode = {};
   $: nameToCode = Object.fromEntries((team_lookup ?? []).map(r => [r.club, r.club_code]));
   $: shortLabel = (name) => nameToCode[name] ?? name;
-
-  // Net Spend tooltip: full club name + net / spent / received
-  $: clubFin = Object.fromEntries((by_club ?? []).map(r => [r.club, r]));
-  $: netSpendTip = (params) => {
-    const name = (Array.isArray(params) ? params[0] : params).axisValue;
-    const r = clubFin[name];
-    if (!r) return name;
-    return `<strong>${name}</strong>`
-      + `<br/>Net spend: €${r.net_spend_m}m`
-      + `<br/>Spent: €${r.spend_m}m`
-      + `<br/>Received: €${r.income_m}m`;
-  };
 </script>
 
 ```sql team_lookup
@@ -129,11 +117,9 @@ agg as (
 )
 select club,
   round(net_raw / 1e6, 2) as net_spend_m,
-  case when net_raw >= 0 then round(net_raw / 1e6, 2) end as net_buy,
-  case when net_raw <  0 then round(net_raw / 1e6, 2) end as net_sell,
   spend_m, income_m
 from agg
-order by abs(net_raw) desc
+order by (spend_m + income_m) desc, abs(net_raw) desc
 limit 8
 ```
 
@@ -294,21 +280,21 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Net Spend by Team
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees paid on incoming moves minus fees received on outgoing moves — the 8 biggest net movers (largest balance either way). <span style="color:#16a34a;font-weight:600;">Green = net investment</span>, <span style="color:#f97316;font-weight:600;">orange = net sales</span>.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees <span style="color:#16a34a;font-weight:600;">spent</span> on incoming moves vs <span style="color:#f97316;font-weight:600;">received</span> on outgoing moves, with the resulting <span style="color:#236aa4;font-weight:600;">net spend</span> — the 8 clubs with the highest transfer volume (total fees in + out).</p>
 
-<BarChart
+<Chart
     data={by_club}
     x=club
-    y={['net_buy','net_sell']}
-    type=stacked
-    yFmt='#,##0.00'
-    title="Net Spend (€m)"
+    yFmt='"€"#,##0.00"m"'
+    title="Spent vs Received vs Net (€m)"
     yAxisTitle="€m"
     sort=false
-    legend=false
-    colorPalette={['#16a34a','#f97316']}
-    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}, tooltip: {formatter: netSpendTip}}}
-/>
+    echartsOptions={{xAxis: {axisLabel: {formatter: shortLabel}}}}
+>
+    <Bar y=spend_m name="Spent" fillColor="#16a34a" />
+    <Bar y=income_m name="Received" fillColor="#f97316" />
+    <Scatter y=net_spend_m name="Net Spend" fillColor="#236aa4" pointSize={11} />
+</Chart>
 
 ## Transfers by Team
 
