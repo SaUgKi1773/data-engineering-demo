@@ -272,6 +272,37 @@ erDiagram
         varchar message
     }
 
+    dim_transfer_type {
+        int transfer_type_sk PK
+        varchar transfer_type_name
+        varchar transfer_direction
+    }
+
+    dim_transfer_status {
+        int transfer_status_sk PK
+        varchar transfer_status
+    }
+
+    dim_transfer_partner_team {
+        int transfer_partner_team_sk PK
+        int transfer_partner_team_id
+        varchar transfer_partner_team_name
+        varchar transfer_partner_team_country
+        varchar transfer_partner_team_logo
+    }
+
+    fct_team_transfers {
+        int transfer_id
+        int date_sk FK
+        int team_sk FK
+        int transfer_partner_team_sk FK
+        int player_sk FK
+        int transfer_type_sk FK
+        int transfer_status_sk FK
+        int transfer_count
+        int transfer_fee_eur
+    }
+
     fct_team_matches }o--|| dim_date : "date_sk"
     fct_team_matches }o--|| dim_time : "time_sk"
     fct_team_matches }o--|| dim_match : "match_sk"
@@ -302,6 +333,12 @@ erDiagram
     fct_match_discussions }o--|| dim_match : "match_sk"
     fct_match_discussions }o--|| dim_persona : "persona_sk"
     fct_match_discussions }o--|| dim_date : "date_sk"
+    fct_team_transfers }o--|| dim_date : "date_sk"
+    fct_team_transfers }o--|| dim_team : "team_sk"
+    fct_team_transfers }o--|| dim_transfer_partner_team : "transfer_partner_team_sk"
+    fct_team_transfers }o--|| dim_player : "player_sk"
+    fct_team_transfers }o--|| dim_transfer_type : "transfer_type_sk"
+    fct_team_transfers }o--|| dim_transfer_status : "transfer_status_sk"
 ```
 
 ### Dimensional model bus matrix
