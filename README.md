@@ -23,7 +23,8 @@ Sportmonks API        Groq LLM
   Gold layer          Kimball star schema  ─────────────────────────────┐
                       (dims + fct_team_matches                          │
                            + fct_player_appearances                     │
-                           + fct_match_discussions)  (dbt)             │
+                           + fct_match_discussions                      │
+                           + fct_team_transfers)  (dbt)                 │
                                                                         ▼
                                                              Evidence.dev dashboard
                                                              deployed on Vercel
@@ -49,11 +50,12 @@ The nightly GitHub Actions pipeline runs all three layers sequentially, then tri
 
 ## Data model
 
-The gold layer follows **Kimball dimensional modelling**. Three fact tables cover three business processes:
+The gold layer follows **Kimball dimensional modelling**. Four fact tables cover four business processes:
 
 - **`fct_team_matches`** — one row per team per match (each fixture produces two rows, one per side); team-level stats, results, and tactical data
 - **`fct_player_appearances`** — one row per player per match; individual performance stats and ratings
 - **`fct_match_discussions`** — one row per match per persona; LLM-generated fan discussion comments (via Groq) powering the Fan Forum on the Match Analysis page
+- **`fct_team_transfers`** — one row per club per transfer; incoming/outgoing moves with fee, type, status, counterparty, and player, powering the Transfer Intelligence page
 
 ```mermaid
 erDiagram
@@ -343,6 +345,7 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 | **Referee Intelligence** | Cards and fouls by referee, strictness rankings, and per-match discipline logs |
 | **Stadium Intelligence** | Interactive stadium map, fortress rankings, and home-advantage stats |
 | **Player Intelligence** | League top-player podium by any measure, individual player deep dive with profile, characteristics radar, performance timeline, and match log |
+| **Transfer Intelligence** | Club transfer market: spend KPIs, record signing & sale, net spend (spent/received/net) and transfer flows by team, market trend over time, and a searchable transfer ledger — filterable by year and transfer window |
 | **About** | Project background, stack overview, and the full build journey |
 | **Data Glossary** | Definitions of all metrics and KPIs used across the dashboard |
 
