@@ -14,6 +14,7 @@
   import { afterNavigate } from '$app/navigation';
   import { inject } from '@vercel/analytics';
   import InstallBanner from '../components/InstallBanner.svelte';
+  import ProjectMenu from '../components/ProjectMenu.svelte';
 
   export let data;
 
@@ -35,18 +36,16 @@
   <slot slot="content" />
 </EvidenceDefaultLayout>
 
+<ProjectMenu />
+
 <InstallBanner />
 
 <style>
   :global(header img[alt="Home"]) {
     height: 2.5rem;
   }
-  /* Header kebab: keep only the Appearance option */
-  :global(.w-52 [role="group"]:first-of-type [role="menuitem"]:not(:last-of-type)) {
-    display: none;
-  }
-  :global(.w-52 [role="separator"]),
-  :global(.w-52 [role="group"]:not(:first-of-type)) {
+  /* Hide Evidence's built-in kebab; replaced by the custom ProjectMenu */
+  :global(header button[aria-label="Menu"]) {
     display: none;
   }
   :global(.standings-table table) {
