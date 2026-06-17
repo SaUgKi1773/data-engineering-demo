@@ -12,7 +12,7 @@
   <!-- Dark inner tile -->
   <rect x="16" y="16" width="480" height="480" rx="84" fill="#0B1220"/>
   <!-- Football -->
-  <circle cx="256" cy="230" r="110" fill="white"/>
+  <circle cx="256" cy="230" r="110" fill="url(#neon)"/>
   <g clip-path="url(#ball)">
     <polygon points="256,145 290,170 278,208 234,208 222,170" fill="#0B1220"/>
     <polygon points="366,185 380,220 350,244 322,228 326,192" fill="#0B1220"/>
