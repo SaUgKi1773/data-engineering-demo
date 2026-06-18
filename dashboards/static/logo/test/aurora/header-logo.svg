@@ -1,14 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40">
   <defs>
     <linearGradient id="neon" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#22D3EE"/>
-      <stop offset="50%" stop-color="#34D399"/>
-      <stop offset="100%" stop-color="#6366F1"/>
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#34D399"/>
     </linearGradient>
     <linearGradient id="neonH" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#22D3EE"/>
-      <stop offset="50%" stop-color="#34D399"/>
-      <stop offset="100%" stop-color="#6366F1"/>
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#34D399"/>
     </linearGradient>
     <clipPath id="ball"><circle cx="256" cy="230" r="110"/></clipPath>
   </defs>
@@ -30,7 +28,7 @@
     <rect x="292" y="355" width="30" height="89" rx="6" fill="url(#neon)"/>
     <rect x="340" y="370" width="30" height="74" rx="6" fill="url(#neon)"/>
   </svg>
-  <line x1="48" y1="5" x2="48" y2="35" stroke="url(#neonH)" stroke-width="1.5"/>
+  <line x1="48" y1="5" x2="48" y2="35" stroke="#3B82F6" stroke-width="1.5"/>
   <text x="56" y="16" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="12" fill="url(#neonH)" letter-spacing="-0.3">Superliga</text>
   <text x="57" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="#64748B" letter-spacing="3">ANALYTICS</text>
 </svg>
