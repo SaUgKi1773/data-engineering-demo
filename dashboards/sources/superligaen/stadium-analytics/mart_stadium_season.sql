@@ -71,6 +71,7 @@ LEFT JOIN (
                                                AND fouls.team_sk   = f.team_sk
 WHERE d.season >= '2020/21'
   AND r.match_result IN ('Win', 'Draw', 'Loss')
+  AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only
   AND st.stadium_latitude  BETWEEN 54.5 AND 57.8
   AND st.stadium_longitude BETWEEN 7.5  AND 15.5
   AND st.stadium_name NOT LIKE '%Unknown%'

@@ -58,6 +58,7 @@ base AS (
     LEFT JOIN player_agg                     pa  ON pa.match_sk     = f.match_sk
                                                AND pa.team_sk       = f.team_sk
     WHERE d.season >= '2020/21'
+      AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only
 )
 SELECT
     match_id,

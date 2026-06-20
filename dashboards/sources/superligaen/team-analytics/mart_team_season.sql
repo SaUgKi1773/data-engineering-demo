@@ -50,6 +50,7 @@ per_match AS (
                                                AND pa.team_sk          = f.team_sk
     WHERE d.season >= '2020/21'
       AND r.match_result IN ('Win', 'Draw', 'Loss')
+      AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only
 ),
 season_agg AS (
     SELECT
@@ -126,6 +127,7 @@ avg_age_calc AS (
         FROM superligaen.gold.fct_player_appearances f
         JOIN superligaen.gold.dim_match_result r ON r.match_result_sk = f.match_result_sk
         WHERE r.match_result IN ('Win', 'Draw', 'Loss')
+          AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only
     ) f
     JOIN superligaen.gold.dim_date   d ON d.date_sk   = f.date_sk
     JOIN superligaen.gold.dim_player p ON p.player_sk = f.player_sk

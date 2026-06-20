@@ -30,5 +30,6 @@ LEFT JOIN fouls_agg                       fa  ON fa.match_sk       = f.match_sk
                                             AND fa.team_sk         = f.team_sk
 WHERE d.season >= '2020/21'
   AND r.match_result IN ('Win', 'Draw', 'Loss')
+  AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only
 GROUP BY d.season, ref.referee_common_name
 ORDER BY d.season DESC, matches_managed DESC
