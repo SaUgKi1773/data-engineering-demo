@@ -88,3 +88,4 @@ JOIN superligaen.gold.dim_formation            df     ON df.formation_sk        
 JOIN superligaen.gold.dim_position             dpos   ON dpos.position_sk        = f.position_sk
 WHERE d.season >= '2020/21'
   AND at_dim.appearance_type IN ('Starter', 'Substitute')
+  AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only

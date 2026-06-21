@@ -26,6 +26,7 @@ WITH base AS (
     JOIN superligaen.gold.dim_stadium       st  ON st.stadium_sk      = f.stadium_sk
     JOIN superligaen.gold.dim_referee       ref ON ref.referee_sk     = f.referee_sk
     WHERE r.match_result = 'Pending'
+      AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only
     GROUP BY m.match_id, d.date, d.season, m.match_round_number, m.match_round_name,
              m.kick_off_time, st.stadium_name, ref.referee_common_name
 )

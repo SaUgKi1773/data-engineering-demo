@@ -25,3 +25,4 @@ JOIN superligaen.gold.dim_team           t  ON t.team_sk         = f.team_sk
 JOIN superligaen.gold.dim_match_result   r  ON r.match_result_sk = f.match_result_sk
 WHERE d.season >= '2020/21'
   AND r.match_result IN ('Win', 'Draw', 'Loss')
+  AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only

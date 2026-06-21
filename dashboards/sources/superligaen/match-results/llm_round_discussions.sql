@@ -17,4 +17,5 @@ from superligaen.gold.fct_match_discussions f
 join superligaen.gold.dim_match             dm on dm.match_sk   = f.match_sk
 join superligaen.gold.dim_persona           dp on dp.persona_sk = f.persona_sk
 join superligaen.gold.dim_date              dd on dd.date_sk    = f.date_sk
+where f.league_sk = (select league_sk from superligaen.gold.dim_league where league_id = 271)  -- Superliga only
 order by dd.date, dm.match_name, dp.sort_order

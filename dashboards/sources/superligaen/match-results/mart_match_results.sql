@@ -63,6 +63,7 @@ base AS (
                                                AND pa.team_sk         = f.team_sk
     WHERE d.season >= '2020/21'
       AND r.match_result IN ('Win', 'Draw', 'Loss')
+      AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only
 )
 SELECT
     match_id,

@@ -1,13 +1,17 @@
 -- Single source for the Transfer Intelligence page: row-level transfer log from
 -- the perspective of each league club. One row per (transfer, league club),
 -- included only for years the club actually played a league match (a
--- fct_team_matches record in that calendar year). Every KPI / chart / table
--- aggregates from this, so all filters affect everything.
+-- fct_team_matches record in that calendar year). A transfer is not bound to a
+-- league, so we scope by the club's league participation rather than tagging the
+-- transfer fact. Every KPI / chart / table aggregates from this, so all filters
+-- affect everything.
 WITH team_match_years AS (
     SELECT DISTINCT m.team_sk, dd.year AS match_year
     FROM superligaen.gold.fct_team_matches m
     JOIN superligaen.gold.dim_date dd ON dd.date_sk = m.date_sk
     WHERE m.team_sk > 0
+      -- fct_team_transfers has no league_sk; scope to clubs via their Superliga matches
+      AND m.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)
 )
 SELECT
     f.transfer_id,

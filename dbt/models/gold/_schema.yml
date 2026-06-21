@@ -35,6 +35,8 @@ models:
           - not_null:
               config:
                 where: "match_result_sk IN (1, 2, 3)"
+      - name: league_sk
+        tests: [not_null]
 
   - name: fct_match_discussions
     tests:
@@ -49,6 +51,8 @@ models:
       - name: date_sk
         tests: [not_null]
       - name: message
+        tests: [not_null]
+      - name: league_sk
         tests: [not_null]
 
   - name: fct_team_transfers
@@ -111,4 +115,6 @@ models:
               arguments:
                 values: [1, 2, -1, -2]
       - name: minutes_played
+        tests: [not_null]
+      - name: league_sk
         tests: [not_null]

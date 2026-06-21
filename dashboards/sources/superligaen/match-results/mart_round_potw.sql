@@ -19,6 +19,7 @@ WITH base AS (
     JOIN superligaen.gold.dim_position             dpos   ON dpos.position_sk        = f.position_sk
     WHERE d.season >= '2020/21'
       AND r.match_result IN ('Win', 'Draw', 'Loss')
+      AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only
       AND f.rating IS NOT NULL
       AND f.minutes_played >= 30
 ),
