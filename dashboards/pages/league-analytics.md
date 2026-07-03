@@ -694,6 +694,7 @@ order by case period_of_day
 
 <div>
 
+{#if points_progression.some(r => r.round_group === 'Championship Group' || r.round_group === 'Relegation Group')}
 <div style="display:flex;gap:1.25rem;align-items:center;font-size:0.75rem;color:#6b7280;margin:0 0 0.5rem 0;">
   <span role="button" tabindex="0" on:click={() => toggleRaceGroup('Championship Group')} on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleRaceGroup('Championship Group')}
         style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
@@ -706,6 +707,7 @@ order by case period_of_day
                font-weight:{raceGroup === 'Relegation Group' ? 700 : 400};">
     <span style="display:inline-block;width:24px;border-top:1.25px solid #9ca3af;"></span>Relegation Group</span>
 </div>
+{/if}
 
 <LineChart
     data={points_progression}
@@ -715,7 +717,7 @@ order by case period_of_day
     xAxisTitle="Round"
     yAxisTitle="Cumulative Points"
     title="Points Race"
-    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; const grpOf = {}; for (const row of points_progression) { grpOf[row.team_name] = row.round_group; if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const vis = params.filter(p => raceGroup === null || grpOf[p.seriesName] === raceGroup); const sorted = vis.sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}, series: (function() { const grpOf = {}; for (const r of points_progression) grpOf[r.team_name] = r.round_group; const order = [...new Set(points_progression.map(r => r.team_name))]; return order.map(name => { const grp = grpOf[name]; const hidden = raceGroup !== null && grp !== raceGroup; const cfg = {lineStyle: {width: grp === 'Championship Group' ? 3.5 : 1.25}}; if (hidden) cfg.data = []; return cfg; }); })()}}
+    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; const grpOf = {}; let hasGroups = false; for (const row of points_progression) { grpOf[row.team_name] = row.round_group; if (row.round_group === 'Championship Group' || row.round_group === 'Relegation Group') hasGroups = true; if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const vis = params.filter(p => !hasGroups || raceGroup === null || grpOf[p.seriesName] === raceGroup); const sorted = vis.sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}, series: (function() { const grpOf = {}; let hasGroups = false; for (const r of points_progression) { grpOf[r.team_name] = r.round_group; if (r.round_group === 'Championship Group' || r.round_group === 'Relegation Group') hasGroups = true; } const order = [...new Set(points_progression.map(r => r.team_name))]; return order.map(name => { const grp = grpOf[name]; const hidden = hasGroups && raceGroup !== null && grp !== raceGroup; const cfg = {lineStyle: {width: !hasGroups ? 2 : (grp === 'Championship Group' ? 3.5 : 1.25)}}; if (hidden) cfg.data = []; return cfg; }); })()}}
     legend=false
     chartAreaHeight=300
 />
