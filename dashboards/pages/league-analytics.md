@@ -10,7 +10,9 @@ title: League Intelligence
   const scatterPalette = ['#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7'];
   let selectedTeam    = null;
   let radarHighlighted = null;
+  let raceGroup        = null;
   function toggleTeam(name) { selectedTeam = selectedTeam === name ? null : name; }
+  function toggleRaceGroup(g) { raceGroup = raceGroup === g ? null : g; }
 </script>
 
 <style>
@@ -216,7 +218,7 @@ from (
 ```
 
 ```sql points_progression
-select match_round_number as round, team_name, cumulative_points, cumulative_gd, cumulative_gf
+select match_round_number as round, team_name, standings_type as round_group, cumulative_points, cumulative_gd, cumulative_gf
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
@@ -692,6 +694,19 @@ order by case period_of_day
 
 <div>
 
+<div style="display:flex;gap:1.25rem;align-items:center;font-size:0.75rem;color:#6b7280;margin:0 0 0.5rem 0;">
+  <span role="button" tabindex="0" on:click={() => toggleRaceGroup('Championship Group')} on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleRaceGroup('Championship Group')}
+        style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
+               opacity:{raceGroup === null || raceGroup === 'Championship Group' ? 1 : 0.35};
+               font-weight:{raceGroup === 'Championship Group' ? 700 : 400};">
+    <span style="display:inline-block;width:24px;border-top:3.5px solid #6b7280;"></span>Championship Group</span>
+  <span role="button" tabindex="0" on:click={() => toggleRaceGroup('Relegation Group')} on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleRaceGroup('Relegation Group')}
+        style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
+               opacity:{raceGroup === null || raceGroup === 'Relegation Group' ? 1 : 0.35};
+               font-weight:{raceGroup === 'Relegation Group' ? 700 : 400};">
+    <span style="display:inline-block;width:24px;border-top:1.25px solid #9ca3af;"></span>Relegation Group</span>
+</div>
+
 <LineChart
     data={points_progression}
     x=round
@@ -700,7 +715,7 @@ order by case period_of_day
     xAxisTitle="Round"
     yAxisTitle="Cumulative Points"
     title="Points Race"
-    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; for (const row of points_progression) { if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const sorted = [...params].sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}}}
+    echartsOptions={{tooltip: {formatter: (function() { const lookup = {}; const grpOf = {}; for (const row of points_progression) { grpOf[row.team_name] = row.round_group; if (!lookup[row.round]) lookup[row.round] = {}; lookup[row.round][row.team_name] = {gd: row.cumulative_gd, gf: row.cumulative_gf}; } return function(params) { const round = params[0].value[0]; const roundData = lookup[round] || {}; const vis = params.filter(p => raceGroup === null || grpOf[p.seriesName] === raceGroup); const sorted = vis.sort((a, b) => { if (b.value[1] !== a.value[1]) return b.value[1] - a.value[1]; const pa = roundData[a.seriesName] || {gd: 0, gf: 0}; const pb = roundData[b.seriesName] || {gd: 0, gf: 0}; if (pb.gd !== pa.gd) return pb.gd - pa.gd; return pb.gf - pa.gf; }); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName + '</span><span style="float:right;margin-left:10px;font-size:12px;">' + p.value[1] + '</span>'; } return out; }; })()}, series: (function() { const grpOf = {}; for (const r of points_progression) grpOf[r.team_name] = r.round_group; const order = [...new Set(points_progression.map(r => r.team_name))]; return order.map(name => { const grp = grpOf[name]; const hidden = raceGroup !== null && grp !== raceGroup; const cfg = {lineStyle: {width: grp === 'Championship Group' ? 3.5 : 1.25}}; if (hidden) cfg.data = []; return cfg; }); })()}}
     legend=false
     chartAreaHeight=300
 />
