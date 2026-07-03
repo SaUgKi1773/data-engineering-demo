@@ -4,6 +4,7 @@ SELECT
     d.season,
     d.is_current_season,
     m.match_round_type,
+    m.match_round_number,
     t.team_name,
     t.team_short_name,
     t.team_logo,
