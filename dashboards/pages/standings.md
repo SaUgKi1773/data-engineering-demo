@@ -14,6 +14,15 @@ select season from (
 ) order by is_current desc, season desc
 ```
 
+```sql rounds
+select
+    min(match_round_number) as min_round,
+    max(match_round_number) as max_round
+from superligaen.mart_standings
+where season = '${inputs.season.value}'
+  and result in ('Win', 'Draw', 'Loss')
+```
+
 <details class="mb-6 rounded-xl border border-blue-100 bg-blue-50">
   <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-blue-700 flex items-center gap-2">
     ℹ️ How does the Danish Superliga season work?
@@ -44,10 +53,16 @@ select season from (
 <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
 {/key}
 
+{#key `${inputs.season.value}:${rounds[0]?.max_round}`}
+<div style="padding:0 1.5rem 0 0;">
+<Slider name=round data={rounds} minColumn=min_round maxColumn=max_round defaultValue=max_round title="Show standings as of round" size=full showInput=true fmt=num0 />
+</div>
+{/key}
+
 ```sql standings
 select
     row_number() over (
-        partition by standings_type
+        partition by round_group
         order by pts desc, gd desc, gf desc
     )                as rank,
     team_name        as team,
@@ -55,13 +70,19 @@ select
     '<div style="display:flex;align-items:center;gap:6px;"><img src="' || team_logo || '" style="height:20px;width:20px;object-fit:contain;" onerror="this.style.display=''none''"><span>' || team_name || '</span></div>'       as team_col,
     '<div style="display:flex;align-items:center;gap:6px;"><img src="' || team_logo || '" style="height:20px;width:20px;object-fit:contain;" onerror="this.style.display=''none''"><span>' || team_short_name || '</span></div>' as team_col_mobile,
     gp, w, d, l, gf, ga, gd, pts,
-    standings_type   as round_group
+    round_group
 from (
     select
         team_name,
         team_short_name,
         max(team_logo)                                    as team_logo,
-        standings_type,
+        -- group is derived from the latest round type each team has played within the selected round window,
+        -- so before the split (rounds 1-22) every team is still 'Regular Season' and no group tables show
+        case arg_max(match_round_type, match_round_number)
+            when 'Championship Round' then 'Championship Group'
+            when 'Relegation Round'   then 'Relegation Group'
+            else                           'Regular Season'
+        end                                               as round_group,
         count(distinct match_id)                          as gp,
         sum(case when result = 'Win'  then 1 else 0 end) as w,
         sum(case when result = 'Draw' then 1 else 0 end) as d,
@@ -73,10 +94,11 @@ from (
     from superligaen.mart_standings
     where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
-    group by team_name, team_short_name, standings_type
+      and match_round_number <= ${inputs.round ?? 999}
+    group by team_name, team_short_name
 )
-where standings_type != 'Regular Season'
-order by standings_type, pts desc, gd desc, gf desc
+where round_group != 'Regular Season'
+order by round_group, pts desc, gd desc, gf desc
 ```
 
 ```sql championship
@@ -115,6 +137,7 @@ from (
     where season = '${inputs.season.value}'
       and result in ('Win', 'Draw', 'Loss')
       and match_round_type = 'Regular Season'
+      and match_round_number <= ${inputs.round ?? 999}
     group by team_name, team_short_name
 )
 ```
@@ -126,13 +149,18 @@ select
     sum(case when result = 'Win'  then 1 else 0 end)  as w,
     sum(case when result = 'Draw' then 1 else 0 end)  as d,
     sum(case when result = 'Loss' then 1 else 0 end)  as l,
-    standings_type                                    as round_group
+    case arg_max(match_round_type, match_round_number)
+        when 'Championship Round' then 'Championship Group'
+        when 'Relegation Round'   then 'Relegation Group'
+        else                           'Regular Season'
+    end                                               as round_group
 from superligaen.mart_standings
 where season = '${inputs.season.value}'
   and result in ('Win', 'Draw', 'Loss')
-group by team_short_name, standings_type
+  and match_round_number <= ${inputs.round ?? 999}
+group by team_short_name
 order by
-    case standings_type
+    case round_group
         when 'Championship Group' then 1
         when 'Relegation Group'   then 2
         else                           3
@@ -141,6 +169,8 @@ order by
 ```
 
 ## {inputs.season.label} Season Standings
+
+<p style="font-size:0.8rem;color:#6b7280;margin:-0.5rem 0 1rem 0;">Showing the table <strong>as of round {inputs.round}</strong>. Drag the slider above to step back through the season.</p>
 
 {#if championship.length > 0}
 
