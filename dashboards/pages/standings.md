@@ -54,7 +54,7 @@ where season = '${inputs.season.value}'
 {/key}
 
 {#key `${inputs.season.value}:${rounds[0]?.max_round}`}
-<div style="padding:0 1.5rem;">
+<div style="padding:0 1.5rem 0 0;">
 <Slider name=round data={rounds} minColumn=min_round maxColumn=max_round defaultValue=max_round title="Show standings as of round" size=full showInput=true fmt=num0 />
 </div>
 {/key}
