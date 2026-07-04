@@ -87,21 +87,29 @@ select opponent_team_name from (
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Slice the league any way you like — by season, team, round, phase, home/away, result or opponent. Every section below updates to the selection, except the official league table and cumulative points race, which always reflect the full season.</p>
 
-<div class="flex flex-wrap gap-3 items-end mb-4">
+<div class="flex flex-wrap gap-3 items-end mb-2">
   {#key seasons[0]?.season}
   <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} title="Season" />
   {/key}
   <Dropdown data={teams} name=team value=team_name label=team_name multiple=true defaultValue={['All Teams']} title="Team" />
-  {#key inputs.season.value}
-  <Dropdown data={rounds} name=round value=round multiple=true selectAllByDefault=true title="Round" />
-  {/key}
-  <Dropdown data={phases} name=phase value=match_round_type multiple=true selectAllByDefault=true title="Phase" />
-  <Dropdown data={venues} name=venue value=team_side multiple=true selectAllByDefault=true title="Home / Away" />
-  <Dropdown data={results} name=result value=result multiple=true selectAllByDefault=true title="Result" />
-  {#key inputs.season.value}
-  <Dropdown data={opponents} name=opponent value=opponent_team_name multiple=true defaultValue={['All Opponents']} title="Opponent" />
-  {/key}
 </div>
+
+<details class="mb-4">
+  <summary class="cursor-pointer inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 select-none w-fit">
+    <span class="text-xs">⚙</span> Additional filters
+  </summary>
+  <div class="flex flex-wrap gap-3 items-end mt-3">
+    {#key inputs.season.value}
+    <Dropdown data={rounds} name=round value=round multiple=true selectAllByDefault=true title="Round" />
+    {/key}
+    <Dropdown data={phases} name=phase value=match_round_type multiple=true selectAllByDefault=true title="Phase" />
+    <Dropdown data={venues} name=venue value=team_side multiple=true selectAllByDefault=true title="Home / Away" />
+    <Dropdown data={results} name=result value=result multiple=true selectAllByDefault=true title="Result" />
+    {#key inputs.season.value}
+    <Dropdown data={opponents} name=opponent value=opponent_team_name multiple=true defaultValue={['All Opponents']} title="Opponent" />
+    {/key}
+  </div>
+</details>
 
 ```sql league_kpis
 with curr as (
