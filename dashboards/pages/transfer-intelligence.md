@@ -321,29 +321,21 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Market Over Time <span style="font-size:0.7rem;color:#9ca3af;font-weight:400;">(all years)</span>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
 <BarChart
     data={trend_year}
     x=transfer_year
     y=total_value_m
+    y2=transfers
+    y2SeriesType=line
     yFmt='#,##0.00'
-    title="Total Value by Year (€m)"
-    colorPalette={['#236aa4']}
+    title="Total Deal Value vs Transfer Count by Year"
+    xAxisTitle="Year"
+    yAxisTitle="Total Value (€m)"
+    y2AxisTitle="Transfers"
+    colorPalette={['#236aa4','#f59e0b']}
     sort=false
+    echartsOptions={{series: [{}, {showSymbol: true, symbol: 'circle', symbolSize: 8}]}}
 />
-
-<LineChart
-    data={trend_year}
-    x=transfer_year
-    y=transfers
-    title="Transfers by Year"
-    markers=true
-    sort=false
-    colorPalette={['#236aa4']}
-/>
-
-</div>
 
 ## Transfer Ledger
 
