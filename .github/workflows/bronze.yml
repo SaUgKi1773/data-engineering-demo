@@ -52,6 +52,8 @@ jobs:
         env:
           LEAGUES: ${{ github.event.inputs.leagues }}
           SEASONS: ${{ github.event.inputs.seasons }}
+          SPORTMONKS_API_KEY: ${{ secrets.SPORTMONKS_API_KEY }}
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           ARGS=""
           if [ "${{ github.event.inputs.mode }}" = "full-load" ]; then
@@ -68,6 +70,3 @@ jobs:
           fi
           echo "Running: python run.py $ARGS --db md:superligaen"
           python run.py $ARGS --db md:superligaen
-        env:
-          SPORTMONKS_API_KEY: ${{ secrets.SPORTMONKS_API_KEY }}
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
