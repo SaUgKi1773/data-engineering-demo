@@ -48,7 +48,18 @@ scores_pivot AS (
 src AS (
     SELECT
         f.id                                                                     AS match_id,
-        sg.name                                                                  AS match_round_type,
+        -- Conformed round type: one vocabulary across leagues.
+        -- Scottish Premiership (501) models its post-split phase as fixture
+        -- GROUPS (stage '2nd Phase' + groups 'Championship Group'/'Relegation
+        -- Group') and names its pre-split stage inconsistently across seasons
+        -- ('Regular Season' in 2025/26, '1st Phase' in 2026/27); map both onto
+        -- the round types the Danish stage names already carry.
+        CASE
+            WHEN f.league_id = 501 AND f.group_name = 'Championship Group' THEN 'Championship Round'
+            WHEN f.league_id = 501 AND f.group_name = 'Relegation Group'   THEN 'Relegation Round'
+            WHEN f.league_id = 501 AND sg.name      = '1st Phase'          THEN 'Regular Season'
+            ELSE sg.name
+        END                                                                      AS match_round_type,
         CASE
             WHEN sg.name != 'Regular Season'
                  AND TRY_CAST(f.round_name AS INTEGER) IS NOT NULL
@@ -66,9 +77,13 @@ src AS (
         CASE WHEN f.state_developer_name IN ('FT', 'FT_PEN', 'AET')
              THEN sp.goals_home::VARCHAR || ' - ' || sp.goals_away::VARCHAR
         END                                                                      AS match_result,
-        lpad(EXTRACT(hour   FROM (f.starting_at::TIMESTAMP AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Copenhagen')::VARCHAR, 2, '0')
+        -- Kick-off in the league's local time: Scottish Premiership (501) is
+        -- Europe/London; Danish Superliga (and default) Europe/Copenhagen
+        lpad(EXTRACT(hour   FROM (f.starting_at::TIMESTAMP AT TIME ZONE 'UTC')
+             AT TIME ZONE (CASE WHEN f.league_id = 501 THEN 'Europe/London' ELSE 'Europe/Copenhagen' END))::VARCHAR, 2, '0')
             || ':'
-            || lpad(EXTRACT(minute FROM (f.starting_at::TIMESTAMP AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Copenhagen')::VARCHAR, 2, '0')
+            || lpad(EXTRACT(minute FROM (f.starting_at::TIMESTAMP AT TIME ZONE 'UTC')
+             AT TIME ZONE (CASE WHEN f.league_id = 501 THEN 'Europe/London' ELSE 'Europe/Copenhagen' END))::VARCHAR, 2, '0')
                                                                                  AS kick_off_time,
         f.state_name                                                             AS match_status
     FROM {{ ref('fixtures') }} f

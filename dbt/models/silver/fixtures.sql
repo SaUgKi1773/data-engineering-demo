@@ -26,6 +26,9 @@ SELECT
     (raw_json->>'stage_id')::INTEGER                    AS stage_id,
     (raw_json->>'round_id')::INTEGER                    AS round_id,
     (raw_json->>'group_id')::INTEGER                    AS group_id,
+    -- Split-phase group (e.g. Scottish Premiership 'Championship Group' /
+    -- 'Relegation Group'); NULL for fixtures outside a grouped stage
+    raw_json->'group'->>'name'                          AS group_name,
     (raw_json->>'aggregate_id')::INTEGER                AS aggregate_id,
     (raw_json->>'venue_id')::INTEGER                    AS venue_id,
     (raw_json->>'state_id')::INTEGER                    AS state_id,
