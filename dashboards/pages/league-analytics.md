@@ -85,7 +85,7 @@ select opponent_team_name from (
 ) order by ord, opponent_team_name
 ```
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Slice the league any way you like — by season, team, round, phase, home/away, result or opponent. Every section below updates to the selection (the cumulative points race always reflects the full season).</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Slice the league any way you like — by season, team, round, phase, home/away, result or opponent. Every section below updates to the selection, except the official league table and cumulative points race, which always reflect the full season.</p>
 
 <div class="flex flex-wrap gap-3 items-end mb-4">
   {#key seasons[0]?.season}
@@ -242,11 +242,7 @@ select
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
-  and result in ${inputs.result.value}
-  and match_round_number in ${inputs.round.value}
-  and match_round_type in ${inputs.phase.value}
-  and team_side in ${inputs.venue.value}
-  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ('Win', 'Draw', 'Loss')
 group by team_name, team_short_name, team_logo, standings_type
 order by
     case standings_type
