@@ -11,6 +11,10 @@ on:
         description: "Target MotherDuck database (superligaen or superligaen_dev). Default: superligaen."
         required: false
         default: ""
+      lookback_days:
+        description: "Incremental lookback for gold facts in days (default 7). Raise after a bronze backfill so the facts sweep it in, e.g. 400."
+        required: false
+        default: ""
 
 concurrency:
   group: ${{ github.workflow }}
@@ -48,8 +52,12 @@ jobs:
           if [[ "$DB" == "superligaen" ]]; then TARGET=prod
           elif [[ "$DB" == "superligaen_dev" ]]; then TARGET=dev
           else echo "Unknown target_db: $DB" && exit 1; fi
+          VARS=""
+          if [ -n "${{ github.event.inputs.lookback_days }}" ]; then
+            VARS='--vars {"incremental_days_back":${{ github.event.inputs.lookback_days }}}'
+          fi
           if [ "${{ github.event.inputs.full_refresh }}" = "true" ]; then
             dbt run --select gold.* --target $TARGET --full-refresh
           else
-            dbt run --select gold.* --target $TARGET
+            dbt run --select gold.* --target $TARGET $VARS
           fi
