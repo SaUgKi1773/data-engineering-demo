@@ -418,7 +418,9 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 │   ├── macros/
 │   └── dbt_project.yml
 │
-├── dashboards/                 # Evidence.dev BI app
+├── dashboards/                 # Evidence.dev BI apps (one per league)
+│   ├── superligaen/            #   Danish Superliga site
+│   └── scotland/               #   Scottish Premiership site
 │   ├── pages/                  # One .md file per dashboard page
 │   └── sources/superligaen/    # SQL sources queried at build time
 │
@@ -479,7 +481,7 @@ cd ..
 python scripts/push_to_prod.py --db superligaen_dev --schema silver gold
 
 # 6. Run the dashboard locally
-cd dashboards
+cd dashboards/superligaen   # or dashboards/scotland
 npm install
 npm run sources   # regenerates parquet cache from MotherDuck
 npm run dev
