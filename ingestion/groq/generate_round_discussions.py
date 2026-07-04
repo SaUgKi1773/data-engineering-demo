@@ -29,6 +29,13 @@ log = logging.getLogger(__name__)
 
 DB_DEFAULT = "superligaen"
 
+# Discussions are generated for the Danish Superliga only. The gold layer now
+# holds multiple leagues, and d.season / round numbers collide across leagues —
+# every match-selection query below must stay pinned to this league.
+LEAGUE_FILTER = (
+    "f.league_sk = (SELECT league_sk FROM {db}.gold.dim_league WHERE league_id = 271)"
+)
+
 BRONZE_CREATE_SQL = """
 CREATE TABLE IF NOT EXISTS {db}.bronze.groq__llm_match_discussions (
     match_id     INTEGER,
@@ -88,6 +95,7 @@ JOIN {db}.gold.dim_date         d  ON d.date_sk          = f.date_sk
 JOIN {db}.gold.dim_match_result mr ON mr.match_result_sk = f.match_result_sk
 WHERE d.season = ?
   AND mr.match_result IN ('Win', 'Draw', 'Loss')
+  AND {league_filter}
 ORDER BY 1
 """
 
@@ -99,6 +107,7 @@ JOIN {db}.gold.dim_date         d  ON d.date_sk          = f.date_sk
 JOIN {db}.gold.dim_match_result mr ON mr.match_result_sk = f.match_result_sk
 WHERE d.season = ?
   AND mr.match_result IN ('Win', 'Draw', 'Loss')
+  AND {league_filter}
 """
 
 MATCH_QUERY = """
@@ -167,6 +176,7 @@ LEFT JOIN player_stats              ps  ON ps.match_sk        = f.match_sk
 WHERE d.season = ?
   AND m.match_round_number::INTEGER = ?
   AND mr.match_result IN ('Win', 'Draw', 'Loss')
+  AND {league_filter}
 GROUP BY
     m.match_id, m.match_name, m.match_result, m.match_round_type,
     d.date, d.day_name, m.kick_off_time, dt.period_of_day, m.match_round_name
@@ -329,7 +339,10 @@ def process_round(
     con, client, personas: list[dict], db: str,
     season: str, round_number: int, force: bool, now,
 ) -> None:
-    rows = con.execute(MATCH_QUERY.format(db=db), [season, round_number]).fetchall()
+    rows = con.execute(
+        MATCH_QUERY.format(db=db, league_filter=LEAGUE_FILTER.format(db=db)),
+        [season, round_number],
+    ).fetchall()
     cols = [d[0] for d in con.description]
 
     if not rows:
@@ -423,7 +436,10 @@ def main() -> None:
                 log.info(f"--force: deleted all bronze rows for season {args.season}")
 
             rounds = [
-                r[0] for r in con.execute(ALL_ROUNDS_SQL.format(db=args.db), [args.season]).fetchall()
+                r[0] for r in con.execute(
+                    ALL_ROUNDS_SQL.format(db=args.db, league_filter=LEAGUE_FILTER.format(db=args.db)),
+                    [args.season],
+                ).fetchall()
             ]
             if not rounds:
                 log.error(f"No completed rounds found for season {args.season}")
@@ -435,7 +451,10 @@ def main() -> None:
         else:
             round_number = args.round
             if round_number is None:
-                result = con.execute(LATEST_ROUND_SQL.format(db=args.db), [args.season]).fetchone()
+                result = con.execute(
+                    LATEST_ROUND_SQL.format(db=args.db, league_filter=LEAGUE_FILTER.format(db=args.db)),
+                    [args.season],
+                ).fetchone()
                 round_number = result[0] if result else None
                 if round_number is None:
                     log.error(f"No completed rounds found for season {args.season}")

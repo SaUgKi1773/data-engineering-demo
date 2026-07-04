@@ -47,7 +47,7 @@ from config import (
     FIRST_SEASON_YEAR,
     INCREMENTAL_DAYS_BACK,
     INCREMENTAL_DAYS_FORWARD,
-    LEAGUE_ID,
+    LEAGUE_IDS,
 )
 from db import delete_global, delete_by_season, delete_by_date, insert_batch
 
@@ -56,9 +56,9 @@ log = logging.getLogger(__name__)
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def _rows(records, season_id=None, date_fn=None):
+def _rows(records, season_id=None, date_fn=None, league_id=None):
     return [
-        (r["id"], json.dumps(r), season_id, date_fn(r) if date_fn else None)
+        (r["id"], json.dumps(r), season_id, date_fn(r) if date_fn else None, league_id)
         for r in records
     ]
 
@@ -68,6 +68,27 @@ def _date_chunks(start: date, end: date, days: int = DATE_CHUNK_DAYS):
     while cursor <= end:
         yield cursor.isoformat(), min(cursor + timedelta(days=days - 1), end).isoformat()
         cursor += timedelta(days=days)
+
+
+def _merged_season_ranges(seasons: list) -> list:
+    """
+    Collapse the seasons' [starting_at, ending_at] ranges into a minimal set of
+    non-overlapping intervals.  With multiple leagues running in parallel
+    (Danish and Scottish seasons overlap almost entirely), this ensures each
+    calendar window is fetched from the date-range endpoint exactly once.
+    Gaps between intervals (summer breaks) are preserved, not spanned.
+    """
+    ranges = sorted(
+        (date.fromisoformat(s["starting_at"]), date.fromisoformat(s["ending_at"]))
+        for s in seasons
+    )
+    merged = []
+    for start, end in ranges:
+        if merged and start <= merged[-1][1] + timedelta(days=1):
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
 
 
 def _all_team_ids(team_map: dict) -> set:
@@ -113,54 +134,107 @@ def _base(entry: dict) -> str:
 
 class _Context:
     """Runtime state built up as the engine walks the manifest in order."""
-    def __init__(self):
-        self.all_seasons: list = []      # all in-scope seasons (>= FIRST_SEASON_YEAR)
-        self.current_seasons: list = []  # seasons where is_current=True (or latest)
+    def __init__(self, leagues: list = None, seasons: list = None):
+        self.league_scope: list = leagues or LEAGUE_IDS
+        # True when the run covers only a subset of the configured leagues —
+        # deletes on league-tagged tables must then be league-scoped so the
+        # out-of-scope leagues' rows survive the run.
+        self.league_subset: bool = set(self.league_scope) != set(LEAGUE_IDS)
+        self.season_scope: set = set(seasons) if seasons else None  # season names
+        self.all_seasons: list = []      # iterated seasons (>= FIRST_SEASON_YEAR, in scope)
+        self.current_seasons: list = []  # one current season PER league (is_current or latest)
+        self.season_league: dict = {}    # {season_id: league_id}
         self.stage_map: dict = {}        # {season_id: [stage, ...]}
         self.round_map: dict = {}        # {season_id: [round, ...]}
         self.team_map: dict = {}         # {season_id: [team, ...]}  (mode-scoped)
         self.all_team_ids: set = set()   # ALL historical team IDs (DB + current load)
 
+    def league_delete_scope(self) -> list:
+        """League ids to constrain deletes to — None means unscoped (all)."""
+        return self.league_scope if self.league_subset else None
+
 
 # ── Strategy handlers ──────────────────────────────────────────────────────────
 
-def _handle_static(conn, entry: dict, _ctx: _Context) -> int:
-    delete_global(conn, entry["table"])
-    records = get_paginated(entry["path"], _params(entry), _base(entry))
-    if not records:
+def _handle_static(conn, entry: dict, ctx: _Context) -> int:
+    """
+    Single paginated call — or one call per league in scope when the path
+    contains a {league_id} placeholder (rows are then tagged with their
+    league, and a league-scoped run only deletes/reloads its own rows).
+    Static tables without the placeholder are cross-league by nature and are
+    always fully truncated + reloaded regardless of league scope.
+    """
+    total = 0
+    if "{league_id}" in entry["path"]:
+        delete_global(conn, entry["table"], ctx.league_delete_scope())
+        for league_id in ctx.league_scope:
+            records = get_paginated(
+                entry["path"].format(league_id=league_id), _params(entry), _base(entry)
+            )
+            insert_batch(conn, entry["table"], _rows(records, league_id=league_id))
+            total += len(records)
+    else:
+        delete_global(conn, entry["table"])
+        records = get_paginated(entry["path"], _params(entry), _base(entry))
+        insert_batch(conn, entry["table"], _rows(records))
+        total = len(records)
+    if not total:
         log.warning("%-46s 0 rows — check endpoint or filter config", entry["table"] + ":")
-    insert_batch(conn, entry["table"], _rows(records))
-    log.info("%-46s %d rows", entry["table"] + ":", len(records))
-    return len(records)
+    log.info("%-46s %d rows", entry["table"] + ":", total)
+    return total
 
 
 def _handle_seasons_from_league(conn, entry: dict, ctx: _Context) -> list:
     """
-    Fetch the league record with include=seasons, extract the seasons[] array,
-    filter by FIRST_SEASON_YEAR, persist, and populate ctx.all_seasons /
-    ctx.current_seasons so season-based entries can iterate correctly.
+    For each league in scope: fetch the league record with include=seasons,
+    extract the seasons[] array, and filter by FIRST_SEASON_YEAR.  Persist the
+    league's COMPLETE season list (bronze stays whole even on --seasons runs)
+    and populate ctx.all_seasons / ctx.current_seasons (one current season per
+    league) / ctx.season_league so season-based entries iterate correctly.
+    A season scope (--seasons) narrows only the ITERATION lists, not storage.
     """
-    delete_global(conn, entry["table"])
-    raw = get(entry["path"], {"include": "seasons"}, _base(entry))["data"]["seasons"]
-    seasons = sorted(
-        [s for s in raw if int(s["name"][:4]) >= FIRST_SEASON_YEAR],
-        key=lambda s: s["starting_at"],
-    )
-    insert_batch(conn, entry["table"], _rows(seasons))
+    delete_global(conn, entry["table"], ctx.league_delete_scope())
+    all_seasons, current_seasons = [], []
+    for league_id in ctx.league_scope:
+        raw = get(
+            entry["path"].format(league_id=league_id),
+            {"include": "seasons"}, _base(entry),
+        )["data"]["seasons"]
+        seasons = sorted(
+            [s for s in raw if int(s["name"][:4]) >= FIRST_SEASON_YEAR],
+            key=lambda s: s["starting_at"],
+        )
+        insert_batch(conn, entry["table"], _rows(seasons, league_id=league_id))
+        ctx.season_league.update({s["id"]: league_id for s in seasons})
 
-    ctx.all_seasons = seasons
-    ctx.current_seasons = [s for s in seasons if s.get("is_current")]
-    if not ctx.current_seasons:
-        ctx.current_seasons = [max(seasons, key=lambda s: s["starting_at"])]
+        in_scope = seasons
+        if ctx.season_scope:
+            in_scope = [s for s in seasons if s["name"] in ctx.season_scope]
+            if not in_scope:
+                log.warning("league %d: no seasons match scope %s",
+                            league_id, sorted(ctx.season_scope))
+        current = [s for s in in_scope if s.get("is_current")]
+        if not current and not ctx.season_scope:
+            current = [max(seasons, key=lambda s: s["starting_at"])]
+        all_seasons.extend(in_scope)
+        current_seasons.extend(current)
 
-    log.info("%-46s %d rows (%s – %s)",
-             entry["table"] + ":", len(seasons),
-             seasons[0]["name"], seasons[-1]["name"])
-    log.info("current season(s): %s", [s["name"] for s in ctx.current_seasons])
-    return seasons
+        log.info("%-46s league %-6d %d rows (%s – %s), %d in scope",
+                 entry["table"] + ":", league_id, len(seasons),
+                 seasons[0]["name"], seasons[-1]["name"], len(in_scope))
+
+    ctx.all_seasons = sorted(all_seasons, key=lambda s: s["starting_at"])
+    ctx.current_seasons = current_seasons
+    if ctx.season_scope and not current_seasons:
+        log.warning("season scope contains no current season — "
+                    "incremental-mode seasonal entries will load 0 seasons")
+    log.info("current season(s): %s",
+             [f"{s['name']} (league {ctx.season_league[s['id']]})"
+              for s in ctx.current_seasons])
+    return ctx.all_seasons
 
 
-def _handle_season_based(conn, entry: dict, seasons: list, _ctx: _Context) -> dict:
+def _handle_season_based(conn, entry: dict, seasons: list, ctx: _Context) -> dict:
     """
     Iterate each season and call the paginated endpoint.
     Returns {season_id: [record, ...]} so the caller can update context maps.
@@ -170,6 +244,7 @@ def _handle_season_based(conn, entry: dict, seasons: list, _ctx: _Context) -> di
     result_map = {}
     for season in seasons:
         sid = season["id"]
+        lid = ctx.season_league.get(sid)
         delete_by_season(conn, entry["table"], sid)
         records = get_paginated(
             entry["path"].format(season_id=sid),
@@ -180,7 +255,7 @@ def _handle_season_based(conn, entry: dict, seasons: list, _ctx: _Context) -> di
         for r in records:
             if r["id"] not in seen:
                 seen.add(r["id"])
-                rows.append((r["id"], json.dumps(r), sid, None))
+                rows.append((r["id"], json.dumps(r), sid, None, lid))
         insert_batch(conn, entry["table"], rows)
         result_map[sid] = records
         log.info("%-46s %-12s %d rows", entry["table"] + ":", season["name"], len(rows))
@@ -193,6 +268,7 @@ def _handle_stage_based(conn, entry: dict, seasons: list, ctx: _Context) -> int:
     total = 0
     for season in seasons:
         sid = season["id"]
+        lid = ctx.season_league.get(sid)
         stages = ctx.stage_map.get(sid) or get_paginated(
             f"/stages/seasons/{sid}", base=API_BASE
         )
@@ -206,7 +282,7 @@ def _handle_stage_based(conn, entry: dict, seasons: list, ctx: _Context) -> int:
             ):
                 if r["id"] not in seen:
                     seen.add(r["id"])
-                    rows.append((r["id"], json.dumps(r), sid, None))
+                    rows.append((r["id"], json.dumps(r), sid, None, lid))
         insert_batch(conn, entry["table"], rows)
         log.info("%-46s %-12s %d rows", entry["table"] + ":", season["name"], len(rows))
         total += len(rows)
@@ -218,6 +294,7 @@ def _handle_round_based(conn, entry: dict, seasons: list, ctx: _Context) -> int:
     total = 0
     for season in seasons:
         sid = season["id"]
+        lid = ctx.season_league.get(sid)
         rounds = ctx.round_map.get(sid) or get_paginated(
             f"/rounds/seasons/{sid}", base=API_BASE
         )
@@ -231,7 +308,7 @@ def _handle_round_based(conn, entry: dict, seasons: list, ctx: _Context) -> int:
             ):
                 if r["id"] not in seen:
                     seen.add(r["id"])
-                    rows.append((r["id"], json.dumps(r), sid, None))
+                    rows.append((r["id"], json.dumps(r), sid, None, lid))
         insert_batch(conn, entry["table"], rows)
         log.info("%-46s %-12s %d rows", entry["table"] + ":", season["name"], len(rows))
         total += len(rows)
@@ -251,18 +328,22 @@ def _handle_team_based(conn, entry: dict, ctx: _Context) -> int:
         ):
             if r["id"] not in seen:
                 seen.add(r["id"])
-                rows.append((r["id"], json.dumps(r), None, None))
+                # league left NULL — a team (and its transfers/rivals) is not
+                # bound to a single league
+                rows.append((r["id"], json.dumps(r), None, None, None))
     insert_batch(conn, entry["table"], rows)
     log.info("%-46s %d rows (%d teams)", entry["table"] + ":", len(rows), len(team_ids))
     return len(rows)
 
 
 
-def _fetch_date_window(conn, entry: dict, from_date: str, to_date: str) -> int:
+def _fetch_date_window(conn, entry: dict, ctx: _Context,
+                       from_date: str, to_date: str) -> int:
     """
     Fetch one date window and upsert.  Behaviour is controlled by optional
     manifest keys:
-      league_filter (bool, default True)  — keep only records matching LEAGUE_ID
+      league_filter (bool, default True)  — keep only records whose league_id
+                                            is in the run's league scope
       date_field    (str, default "starting_at") — field to store as _fixture_date
     Returns 400 from the API if the window is empty — treated as zero rows.
     """
@@ -286,13 +367,14 @@ def _fetch_date_window(conn, entry: dict, from_date: str, to_date: str) -> int:
     date_field    = entry.get("date_field", "starting_at")
 
     if league_filter:
-        kept = [f for f in records if f.get("league_id") == LEAGUE_ID]
+        kept = [f for f in records if f.get("league_id") in ctx.league_scope]
     else:
         kept = records
 
     rows = [
         (f["id"], json.dumps(f), f.get("season_id"),
-         (f.get(date_field) or "")[:10] or None)
+         (f.get(date_field) or "")[:10] or None,
+         f.get("league_id"))
         for f in kept
     ]
     insert_batch(conn, entry["table"], rows)
@@ -307,26 +389,31 @@ def _fetch_date_window(conn, entry: dict, from_date: str, to_date: str) -> int:
 
 
 def _handle_date_based_full(conn, entry: dict, ctx: _Context) -> int:
-    """Full load: iterate 90-day chunks across every season's date range."""
+    """
+    Full load: iterate 90-day chunks across the merged season date ranges.
+    Ranges are merged across all leagues (see _merged_season_ranges) — each
+    window returns every league's records in one call and is filtered
+    client-side, so per-league iteration would only duplicate API traffic.
+    """
     total = 0
-    for season in ctx.all_seasons:
-        start = date.fromisoformat(season["starting_at"])
-        end   = date.fromisoformat(season["ending_at"])
+    for start, end in _merged_season_ranges(ctx.all_seasons):
         for from_date, to_date in _date_chunks(start, end):
-            delete_by_date(conn, entry["table"], from_date, to_date)
-            total += _fetch_date_window(conn, entry, from_date, to_date)
+            delete_by_date(conn, entry["table"], from_date, to_date,
+                           ctx.league_delete_scope())
+            total += _fetch_date_window(conn, entry, ctx, from_date, to_date)
     log.info("%-46s full load complete: %d rows", entry["table"] + ":", total)
     return total
 
 
-def _handle_date_based_incremental(conn, entry: dict, _ctx: _Context) -> int:
+def _handle_date_based_incremental(conn, entry: dict, ctx: _Context) -> int:
     """Incremental load: delete-and-reload a rolling past+future window."""
     days_back    = entry.get("days_back",    INCREMENTAL_DAYS_BACK)
     days_forward = entry.get("days_forward", INCREMENTAL_DAYS_FORWARD)
     from_date = (date.today() - timedelta(days=days_back)).isoformat()
     to_date   = (date.today() + timedelta(days=days_forward)).isoformat()
-    delete_by_date(conn, entry["table"], from_date, to_date)
-    n = _fetch_date_window(conn, entry, from_date, to_date)
+    delete_by_date(conn, entry["table"], from_date, to_date,
+                   ctx.league_delete_scope())
+    n = _fetch_date_window(conn, entry, ctx, from_date, to_date)
     log.info("%-46s incremental: %d rows (%s → %s)",
              entry["table"] + ":", n, from_date, to_date)
     return n
@@ -399,7 +486,8 @@ def _validate_manifest() -> None:
         raise ValueError("ENDPOINT_MANIFEST validation failed:\n" + "\n".join(errors))
 
 
-def run(conn, mode: str = "incremental", tables: set = None) -> None:
+def run(conn, mode: str = "incremental", tables: set = None,
+        leagues: list = None, seasons: list = None) -> None:
     """
     Execute the ingestion pipeline driven by ENDPOINT_MANIFEST.
 
@@ -409,14 +497,32 @@ def run(conn, mode: str = "incremental", tables: set = None) -> None:
                          rolling -7 / +60 day window for fixtures
     tables             — optional set of table names to restrict the run to;
                          if None, all manifest entries for the given mode are run
+    leagues            — optional list of league ids to scope the run to (must
+                         be a subset of LEAGUE_IDS).  Deletes on league-tagged
+                         tables are then league-scoped; cross-league tables
+                         (players, transfers, rivals, reference data) are still
+                         refreshed in full.
+    seasons            — optional list of season names (e.g. "2015/2016") to
+                         restrict seasonal / fixture iteration to.  Intended
+                         for --mode full backfills; bronze season storage stays
+                         complete regardless.
     """
     if mode not in ("full", "incremental"):
         raise ValueError(f"mode must be 'full' or 'incremental', got {mode!r}")
+    if leagues:
+        unknown = set(leagues) - set(LEAGUE_IDS)
+        if unknown:
+            raise ValueError(f"unknown league ids {sorted(unknown)} — "
+                             f"configured leagues: {LEAGUE_IDS}")
 
     _validate_manifest()
     log.info("=== %s LOAD START ===", mode.upper())
+    if leagues:
+        log.info("league scope: %s", leagues)
+    if seasons:
+        log.info("season scope: %s", seasons)
 
-    ctx = _Context()
+    ctx = _Context(leagues=leagues, seasons=seasons)
     active = [e for e in ENDPOINT_MANIFEST if mode in e.get("modes", ["full"])]
     if tables:
         active = [e for e in active if e["table"] in tables]

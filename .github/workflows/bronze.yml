@@ -11,6 +11,20 @@ on:
         options:
           - incremental
           - full-load
+      leagues:
+        description: "League scope (271 = Danish Superliga, 501 = Scottish Premiership)"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - "271"
+          - "501"
+      seasons:
+        description: 'Season names, comma-separated (e.g. "2015/2016,2016/2017"). Empty = all in scope. Use with full-load.'
+        required: false
+        default: ""
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}
@@ -35,12 +49,24 @@ jobs:
 
       - name: Run ingestion
         working-directory: ingestion/sportmonks
-        run: |
-          if [ "${{ github.event.inputs.mode }}" = "full-load" ]; then
-            python run.py --mode full --db md:superligaen
-          else
-            python run.py --mode incremental --db md:superligaen
-          fi
         env:
+          LEAGUES: ${{ github.event.inputs.leagues }}
+          SEASONS: ${{ github.event.inputs.seasons }}
           SPORTMONKS_API_KEY: ${{ secrets.SPORTMONKS_API_KEY }}
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          ARGS=""
+          if [ "${{ github.event.inputs.mode }}" = "full-load" ]; then
+            ARGS="--mode full"
+          else
+            ARGS="--mode incremental"
+          fi
+          if [ -n "$LEAGUES" ] && [ "$LEAGUES" != "all" ]; then
+            ARGS="$ARGS --leagues $LEAGUES"
+          fi
+          SEASONS="${SEASONS// /}"   # "2015/2016, 2016/2017" → no stray word-splits
+          if [ -n "$SEASONS" ]; then
+            ARGS="$ARGS --seasons $SEASONS"
+          fi
+          echo "Running: python run.py $ARGS --db md:superligaen"
+          python run.py $ARGS --db md:superligaen

@@ -27,8 +27,11 @@ detailed AS (
     SELECT
         l.id                                AS team_id,
         COALESCE(nm.display_name, l.name)   AS team_name,
-        nm.team_code                        AS team_code,
-        nm.team_short_name                  AS team_short_name,
+        -- Fall back to API short_code, then a name prefix, for teams not yet
+        -- curated in the team_names seed (e.g. newly backfilled leagues)
+        COALESCE(nm.team_code, l.short_code,
+                 UPPER(LEFT(l.name, 3)))    AS team_code,
+        COALESCE(nm.team_short_name, l.name) AS team_short_name,
         l.country_name                      AS team_country,
         l.founded                           AS team_founded_year,
         l.image_path                        AS team_logo,
