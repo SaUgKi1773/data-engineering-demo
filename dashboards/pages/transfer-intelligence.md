@@ -54,6 +54,10 @@ select distinct transfer_type from superligaen.mart_club_transfer_log order by t
 select distinct transfer_status from superligaen.mart_club_transfer_log order by transfer_status
 ```
 
+```sql fee_states
+select * from (values ('Disclosed'), ('Undisclosed')) t(fee_disclosed)
+```
+
 ```sql kpi
 -- Market level (each transfer counted once via DISTINCT) with a previous-year
 -- benchmark. All filters except year define the set; curr = selected year, prev = year-1.
@@ -65,6 +69,7 @@ with base as (
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
     and transfer_window in ${inputs.window.value}
+    and fee_disclosed in ${inputs.fee.value}
     and transfer_year in (${inputs.year.value}, ${inputs.year.value} - 1)
 ),
 curr as (
@@ -98,6 +103,7 @@ with f as (
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
     and transfer_window in ${inputs.window.value}
+    and fee_disclosed in ${inputs.fee.value}
 ),
 agg as (
   select club,
@@ -126,6 +132,7 @@ where transfer_year = ${inputs.year.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
   and transfer_window in ${inputs.window.value}
+  and fee_disclosed in ${inputs.fee.value}
 group by club
 having count(*) > 0
 order by count(*) desc
@@ -142,6 +149,7 @@ with base as (
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
     and transfer_window in ${inputs.window.value}
+    and fee_disclosed in ${inputs.fee.value}
 )
 select cast(transfer_year as integer)::varchar as transfer_year,
   count(*)                     as transfers,
@@ -161,6 +169,7 @@ where direction = 'Incoming' and fee_eur > 0
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
   and transfer_window in ${inputs.window.value}
+  and fee_disclosed in ${inputs.fee.value}
 order by fee_eur desc
 limit 1
 ```
@@ -177,6 +186,7 @@ where direction = 'Outgoing' and fee_eur > 0
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
   and transfer_window in ${inputs.window.value}
+  and fee_disclosed in ${inputs.fee.value}
 order by fee_eur desc
 limit 1
 ```
@@ -192,6 +202,7 @@ where transfer_year = ${inputs.year.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
   and transfer_window in ${inputs.window.value}
+  and fee_disclosed in ${inputs.fee.value}
 order by (fee_eur is null), fee_eur desc, transfer_date desc
 ```
 
@@ -211,6 +222,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <Dropdown data={directions} name=direction value=direction multiple=true selectAllByDefault=true title="Transfer Direction" />
     <Dropdown data={types} name=type value=transfer_type multiple=true selectAllByDefault=true title="Transfer Type" />
     <Dropdown data={statuses} name=status value=transfer_status multiple=true selectAllByDefault=true title="Transfer Status" />
+    <Dropdown data={fee_states} name=fee value=fee_disclosed multiple=true selectAllByDefault=true title="Fee Disclosed" />
   </div>
 </details>
 

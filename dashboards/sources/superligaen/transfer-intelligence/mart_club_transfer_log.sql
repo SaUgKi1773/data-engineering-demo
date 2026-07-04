@@ -37,7 +37,8 @@ SELECT
     date_diff('year', p.player_birth_date::date, d.date) AS player_age,
     pt.transfer_partner_team_name    AS partner,
     pt.transfer_partner_team_country AS partner_country,
-    f.transfer_fee_eur AS fee_eur
+    f.transfer_fee_eur AS fee_eur,
+    CASE WHEN f.transfer_fee_eur > 0 THEN 'Disclosed' ELSE 'Undisclosed' END AS fee_disclosed
 FROM superligaen.gold.fct_team_transfers        f
 JOIN superligaen.gold.dim_date                  d   ON d.date_sk = f.date_sk
 JOIN team_match_years                           tmy ON tmy.team_sk = f.team_sk AND tmy.match_year = d.year
