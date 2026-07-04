@@ -201,10 +201,18 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   {/key}
   <Dropdown data={windows} name=window value=transfer_window multiple=true selectAllByDefault=true title="Transfer Window" />
   <Dropdown data={teams} name=team value=club multiple=true defaultValue={['All Teams']} title="Team" />
-  <Dropdown data={directions} name=direction value=direction multiple=true selectAllByDefault=true title="Direction" />
-  <Dropdown data={types} name=type value=transfer_type multiple=true selectAllByDefault=true title="Type" />
-  <Dropdown data={statuses} name=status value=transfer_status multiple=true selectAllByDefault=true title="Status" />
 </div>
+
+<details class="mb-4">
+  <summary class="cursor-pointer inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 select-none w-fit">
+    <span class="text-xs">⚙</span> Additional filters
+  </summary>
+  <div class="flex flex-wrap gap-3 items-end mt-3">
+    <Dropdown data={directions} name=direction value=direction multiple=true selectAllByDefault=true title="Transfer Direction" />
+    <Dropdown data={types} name=type value=transfer_type multiple=true selectAllByDefault=true title="Transfer Type" />
+    <Dropdown data={statuses} name=status value=transfer_status multiple=true selectAllByDefault=true title="Transfer Status" />
+  </div>
+</details>
 
 ## Transfer Intelligence — {inputs.year.value}
 
