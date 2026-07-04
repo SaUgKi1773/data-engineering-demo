@@ -24,10 +24,10 @@ dbt/logs/
 dbt/.user.yml
 logs/
 
-# Evidence.dev
-dashboards/.evidence/
-dashboards/build/
-dashboards/node_modules/
+# Evidence.dev (one project per dashboards/<site>/)
+dashboards/*/.evidence/
+dashboards/*/build/
+dashboards/*/node_modules/
 
 # DuckDB
 *.duckdb
