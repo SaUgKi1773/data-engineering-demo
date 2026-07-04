@@ -54,6 +54,10 @@ select distinct transfer_type from superligaen.mart_club_transfer_log order by t
 select distinct transfer_status from superligaen.mart_club_transfer_log order by transfer_status
 ```
 
+```sql fee_states
+select * from (values ('Disclosed'), ('Undisclosed')) t(fee_disclosed)
+```
+
 ```sql kpi
 -- Market level (each transfer counted once via DISTINCT) with a previous-year
 -- benchmark. All filters except year define the set; curr = selected year, prev = year-1.
@@ -65,6 +69,7 @@ with base as (
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
     and transfer_window in ${inputs.window.value}
+    and fee_disclosed in ${inputs.fee.value}
     and transfer_year in (${inputs.year.value}, ${inputs.year.value} - 1)
 ),
 curr as (
@@ -98,6 +103,7 @@ with f as (
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
     and transfer_window in ${inputs.window.value}
+    and fee_disclosed in ${inputs.fee.value}
 ),
 agg as (
   select club,
@@ -126,6 +132,7 @@ where transfer_year = ${inputs.year.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
   and transfer_window in ${inputs.window.value}
+  and fee_disclosed in ${inputs.fee.value}
 group by club
 having count(*) > 0
 order by count(*) desc
@@ -142,6 +149,7 @@ with base as (
     and transfer_type in ${inputs.type.value}
     and transfer_status in ${inputs.status.value}
     and transfer_window in ${inputs.window.value}
+    and fee_disclosed in ${inputs.fee.value}
 )
 select cast(transfer_year as integer)::varchar as transfer_year,
   count(*)                     as transfers,
@@ -161,6 +169,7 @@ where direction = 'Incoming' and fee_eur > 0
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
   and transfer_window in ${inputs.window.value}
+  and fee_disclosed in ${inputs.fee.value}
 order by fee_eur desc
 limit 1
 ```
@@ -177,6 +186,7 @@ where direction = 'Outgoing' and fee_eur > 0
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
   and transfer_window in ${inputs.window.value}
+  and fee_disclosed in ${inputs.fee.value}
 order by fee_eur desc
 limit 1
 ```
@@ -192,6 +202,7 @@ where transfer_year = ${inputs.year.value}
   and transfer_type in ${inputs.type.value}
   and transfer_status in ${inputs.status.value}
   and transfer_window in ${inputs.window.value}
+  and fee_disclosed in ${inputs.fee.value}
 order by (fee_eur is null), fee_eur desc, transfer_date desc
 ```
 
@@ -201,10 +212,19 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   {/key}
   <Dropdown data={windows} name=window value=transfer_window multiple=true selectAllByDefault=true title="Transfer Window" />
   <Dropdown data={teams} name=team value=club multiple=true defaultValue={['All Teams']} title="Team" />
-  <Dropdown data={directions} name=direction value=direction multiple=true selectAllByDefault=true title="Direction" />
-  <Dropdown data={types} name=type value=transfer_type multiple=true selectAllByDefault=true title="Type" />
-  <Dropdown data={statuses} name=status value=transfer_status multiple=true selectAllByDefault=true title="Status" />
 </div>
+
+<details class="mb-4">
+  <summary class="cursor-pointer inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 select-none w-fit">
+    <span class="text-xs">⚙</span> Additional filters
+  </summary>
+  <div class="flex flex-wrap gap-3 items-end mt-3">
+    <Dropdown data={directions} name=direction value=direction multiple=true selectAllByDefault=true title="Transfer Direction" />
+    <Dropdown data={types} name=type value=transfer_type multiple=true selectAllByDefault=true title="Transfer Type" />
+    <Dropdown data={statuses} name=status value=transfer_status multiple=true selectAllByDefault=true title="Transfer Status" />
+    <Dropdown data={fee_states} name=fee value=fee_disclosed multiple=true selectAllByDefault=true title="Fee Disclosed" />
+  </div>
+</details>
 
 ## Transfer Intelligence — {inputs.year.value}
 
@@ -301,29 +321,21 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 
 ## Market Over Time <span style="font-size:0.7rem;color:#9ca3af;font-weight:400;">(all years)</span>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
 <BarChart
     data={trend_year}
     x=transfer_year
     y=total_value_m
+    y2=transfers
+    y2SeriesType=line
     yFmt='#,##0.00'
-    title="Total Value by Year (€m)"
-    colorPalette={['#236aa4']}
+    title="Total Deal Value vs Transfer Count by Year"
+    xAxisTitle="Year"
+    yAxisTitle="Total Value (€m)"
+    y2AxisTitle="Transfers"
+    colorPalette={['#236aa4','#f59e0b']}
     sort=false
+    echartsOptions={{series: [{}, {showSymbol: true, symbol: 'circle', symbolSize: 8}]}}
 />
-
-<LineChart
-    data={trend_year}
-    x=transfer_year
-    y=transfers
-    title="Transfers by Year"
-    markers=true
-    sort=false
-    colorPalette={['#236aa4']}
-/>
-
-</div>
 
 ## Transfer Ledger
 

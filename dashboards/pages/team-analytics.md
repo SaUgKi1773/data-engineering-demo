@@ -31,66 +31,179 @@ where season = '${inputs.season.value}'
 order by team_name
 ```
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a season and team to explore their full season profile — KPIs vs. the previous year, goals timeline, home/away splits, formation breakdowns, and the complete match log.</p>
+```sql rounds
+select distinct match_round_number as round
+from superligaen.mart_team_match
+where season = '${inputs.season.value}'
+order by round
+```
 
-{#key seasons[0]?.season}
-<Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
-{/key}
+```sql phases
+select match_round_type from (
+  select distinct match_round_type,
+    case match_round_type
+      when 'Regular Season'     then 1
+      when 'Championship Round' then 2
+      when 'Relegation Round'   then 3
+      else 4
+    end as ord
+  from superligaen.mart_team_match
+) order by ord
+```
 
-{#key teams[0]?.team_name}
-<Dropdown data={teams} name=team value=team_name label=team_name defaultValue={teams[0]?.team_name} />
-{/key}
+```sql venues
+select distinct team_side from superligaen.mart_team_match order by team_side
+```
+
+```sql results
+select result from (
+  select distinct result,
+    case result when 'Win' then 1 when 'Draw' then 2 when 'Loss' then 3 else 4 end as ord
+  from superligaen.mart_team_match
+) order by ord
+```
+
+```sql opponents
+select opponent_team_name from (
+  select 'All Opponents' as opponent_team_name, 0 as ord
+  union all
+  select distinct opponent_team_name, 1 as ord
+  from superligaen.mart_team_match
+  where season = '${inputs.season.value}'
+    and team_name = '${inputs.team.value}'
+) order by ord, opponent_team_name
+```
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Pick a season and team to explore their profile. Everything responds to the additional filters — the header, KPIs, goals timeline, opponents, home/away, formation, scheduling and match log — benchmarked against the previous season sliced the same way. Only three season-level references stay fixed: Last 5 results, Ranking and Avg Squad Age (none can be derived from a filtered set of matches).</p>
+
+<div class="flex flex-wrap gap-3 items-end mb-2">
+  {#key seasons[0]?.season}
+  <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} title="Season" />
+  {/key}
+  {#key teams[0]?.team_name}
+  <Dropdown data={teams} name=team value=team_name label=team_name defaultValue={teams[0]?.team_name} title="Team" />
+  {/key}
+</div>
+
+<details class="mb-4">
+  <summary class="cursor-pointer inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 select-none w-fit">
+    <span class="text-xs">⚙</span> Additional filters
+  </summary>
+  <div class="flex flex-wrap gap-3 items-end mt-3">
+    {#key inputs.season.value}
+    <Dropdown data={rounds} name=round value=round multiple=true selectAllByDefault=true title="Round" />
+    {/key}
+    <Dropdown data={phases} name=phase value=match_round_type multiple=true selectAllByDefault=true title="Phase" />
+    <Dropdown data={venues} name=venue value=team_side multiple=true selectAllByDefault=true title="Home / Away" />
+    <Dropdown data={results} name=result value=result multiple=true selectAllByDefault=true title="Result" />
+    {#key `${inputs.season.value}:${inputs.team.value}`}
+    <Dropdown data={opponents} name=opponent value=opponent_team_name multiple=true defaultValue={['All Opponents']} title="Opponent" />
+    {/key}
+  </div>
+</details>
 
 ```sql team_header
-select team_name, team_logo, coach_name, pts as points, matches, wins, draws, losses, gf, ga, gd
-from superligaen.mart_team_season
+select
+    '${inputs.team.value}'                                          as team_name,
+    max(team_logo)                                                  as team_logo,
+    (select coach_name from superligaen.mart_team_season s
+       where s.season = '${inputs.season.value}' and s.team_name = '${inputs.team.value}') as coach_name,
+    coalesce(sum(points_earned), 0)::int                           as points,
+    sum(case when result='Win'  then 1 else 0 end)::int            as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int            as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int            as losses,
+    coalesce(sum(goals_scored), 0)::int                            as gf,
+    coalesce(sum(goals_conceded), 0)::int                          as ga,
+    coalesce(sum(goals_scored) - sum(goals_conceded), 0)::int      as gd
+from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
 ```
 
 ```sql team_kpis
+-- Performance metrics are recomputed from match-grain data so they respond to the
+-- additional filters, benchmarked against the previous season sliced the same way.
+-- Ranking is season-only (it needs the whole league table) and stays unaffected by
+-- the additional filters, as does Avg Squad Age.
 with cur as (
-    select * from superligaen.mart_team_season
+    select
+        count(distinct match_id)                                            as matches,
+        round(sum(goals_scored)::double   / nullif(count(distinct match_id), 0), 2) as goals_per_match,
+        round(sum(goals_conceded)::double / nullif(count(distinct match_id), 0), 2) as conceded_per_match,
+        round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)       as pass_accuracy,
+        round(avg(possession_pct), 1)                                       as avg_possession,
+        round(100.0 * sum(case when result='Win' then 1 else 0 end) / nullif(count(distinct match_id), 0), 1) as win_rate,
+        sum(red_cards)::int                                                 as total_red_cards
+    from superligaen.mart_team_match
     where season = '${inputs.season.value}'
       and team_name = '${inputs.team.value}'
+      and result in ${inputs.result.value}
+      and match_round_number in ${inputs.round.value}
+      and match_round_type in ${inputs.phase.value}
+      and team_side in ${inputs.venue.value}
+      and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
 ),
 prev_season as (
-    select max(season) as season from superligaen.mart_team_season
+    select max(season) as season from superligaen.mart_team_match
     where season < '${inputs.season.value}'
+      and team_name = '${inputs.team.value}'
 ),
 prev as (
-    select * from superligaen.mart_team_season
+    select
+        round(sum(goals_scored)::double   / nullif(count(distinct match_id), 0), 2) as goals_per_match,
+        round(sum(goals_conceded)::double / nullif(count(distinct match_id), 0), 2) as conceded_per_match,
+        round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)       as pass_accuracy,
+        round(avg(possession_pct), 1)                                       as avg_possession,
+        round(100.0 * sum(case when result='Win' then 1 else 0 end) / nullif(count(distinct match_id), 0), 1) as win_rate,
+        sum(red_cards)::int                                                 as total_red_cards
+    from superligaen.mart_team_match
     where season = (select season from prev_season)
       and team_name = '${inputs.team.value}'
+      and result in ${inputs.result.value}
+      and match_round_number in ${inputs.round.value}
+      and match_round_type in ${inputs.phase.value}
+      and team_side in ${inputs.venue.value}
+      and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+),
+rank_cur as (
+    select season_rank as current_rank
+    from superligaen.mart_team_season
+    where season = '${inputs.season.value}' and team_name = '${inputs.team.value}'
+),
+rank_prev as (
+    select season_rank as prev_rank
+    from superligaen.mart_team_season
+    where season = (select season from prev_season) and team_name = '${inputs.team.value}'
 )
 select
     cur.goals_per_match,
     cur.conceded_per_match,
     cur.pass_accuracy,
     cur.avg_possession,
-    cur.shot_conv,
-    cur.yc_per_match,
     cur.win_rate,
     cur.total_red_cards,
-    cur.season_rank                                                             as current_rank,
+    rank_cur.current_rank,
+    rank_prev.prev_rank,
     prev.goals_per_match                                                        as prev_goals_per_match,
     prev.conceded_per_match                                                     as prev_conceded_per_match,
     prev.pass_accuracy                                                          as prev_pass_accuracy,
     prev.avg_possession                                                         as prev_avg_possession,
-    prev.shot_conv                                                              as prev_shot_conv,
-    prev.yc_per_match                                                           as prev_yc_per_match,
     prev.win_rate                                                               as prev_win_rate,
     prev.total_red_cards                                                        as prev_total_red_cards,
-    prev.season_rank                                                            as prev_rank,
     round(cur.goals_per_match    / nullif(prev.goals_per_match,    0), 2)       as goals_ratio,
     round(cur.conceded_per_match / nullif(prev.conceded_per_match, 0), 2)       as conceded_ratio,
     round(cur.pass_accuracy      / nullif(prev.pass_accuracy,      0), 2)       as pass_ratio,
-    round(cur.shot_conv          / nullif(prev.shot_conv,          0), 2)       as shot_conv_ratio,
-    round(cur.yc_per_match       / nullif(prev.yc_per_match,       0), 2)       as yc_ratio,
     round(cur.win_rate           / nullif(prev.win_rate,           0), 2)       as win_rate_ratio,
     round(cur.avg_possession     / nullif(prev.avg_possession,     0), 2)       as possession_ratio
 from cur
 left join prev on true
+left join rank_cur on true
+left join rank_prev on true
 ```
 
 ```sql avg_age
@@ -119,7 +232,11 @@ select
 from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
-  and result in ('Win', 'Draw', 'Loss')
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
 order by match_round_number
 ```
 
@@ -132,7 +249,11 @@ select
 from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
-  and result in ('Win', 'Draw', 'Loss')
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
 group by opponent_team_name
 order by goals_scored desc
 ```
@@ -161,7 +282,11 @@ select
 from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
-  and result in ('Win', 'Draw', 'Loss')
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
 order by match_date desc
 ```
 
@@ -183,19 +308,26 @@ select * from (
 ```
 
 ```sql home_away_split
-select 'Home' as venue, home_matches as matches, home_wins as wins, home_draws as draws,
-       home_losses as losses, home_pts as points, home_goals_per_match as goals_per_match,
-       home_conceded_per_match as conceded_per_match, home_avg_possession as avg_possession,
-       home_pass_accuracy as pass_accuracy
-from superligaen.mart_team_season
-where season = '${inputs.season.value}' and team_name = '${inputs.team.value}'
-union all
-select 'Away' as venue, away_matches as matches, away_wins as wins, away_draws as draws,
-       away_losses as losses, away_pts as points, away_goals_per_match as goals_per_match,
-       away_conceded_per_match as conceded_per_match, away_avg_possession as avg_possession,
-       away_pass_accuracy as pass_accuracy
-from superligaen.mart_team_season
-where season = '${inputs.season.value}' and team_name = '${inputs.team.value}'
+select
+    team_side                                                            as venue,
+    count(distinct match_id)::int                                        as matches,
+    sum(case when result='Win'  then 1 else 0 end)::int                  as wins,
+    sum(case when result='Draw' then 1 else 0 end)::int                  as draws,
+    sum(case when result='Loss' then 1 else 0 end)::int                  as losses,
+    sum(points_earned)::int                                              as points,
+    round(sum(goals_scored)::double   / count(distinct match_id), 2)     as goals_per_match,
+    round(sum(goals_conceded)::double / count(distinct match_id), 2)     as conceded_per_match,
+    round(avg(possession_pct), 1)                                        as avg_possession,
+    round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1) as pass_accuracy
+from superligaen.mart_team_match
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+group by team_side
 order by venue desc
 ```
 
@@ -212,7 +344,11 @@ select
 from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
-  and result in ('Win', 'Draw', 'Loss')
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
 group by formation
 order by points_per_match desc
 ```
@@ -230,7 +366,11 @@ select
 from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
-  and result in ('Win', 'Draw', 'Loss')
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
 group by period_of_day
 order by case period_of_day
     when 'Morning'   then 1
@@ -255,7 +395,11 @@ select
 from superligaen.mart_team_match
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
-  and result in ('Win', 'Draw', 'Loss')
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
 group by day_name
 order by case day_name
     when 'Monday'    then 1

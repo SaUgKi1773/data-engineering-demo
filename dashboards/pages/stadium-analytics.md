@@ -10,16 +10,32 @@ from superligaen.mart_stadium_season
 order by season desc
 ```
 
+```sql stadiums
+select stadium_name from (
+  select 'All Stadiums' as stadium_name, 0 as ord
+  union all
+  select distinct stadium_name, 1 as ord
+  from superligaen.mart_stadium_season
+  where season = '${inputs.season.value}'
+) order by ord, stadium_name
+```
+
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a season to explore stadium and surface data — fortress rankings, home win rates, and how grass vs. artificial turf affects the way the game is played.</p>
 
-{#key season_options[0]?.season}
-<Dropdown data={season_options} name=season value=season label=season order="season desc" defaultValue={season_options[0]?.season} />
-{/key}
+<div class="flex flex-wrap gap-3 items-end mb-4">
+  {#key season_options[0]?.season}
+  <Dropdown data={season_options} name=season value=season label=season order="season desc" defaultValue={season_options[0]?.season} title="Season" />
+  {/key}
+  {#key inputs.season.value}
+  <Dropdown data={stadiums} name=stadium value=stadium_name multiple=true defaultValue={['All Stadiums']} title="Stadium" />
+  {/key}
+</div>
 
 ```sql stadium_stats
 select *
 from superligaen.mart_stadium_season
 where season = '${inputs.season.value}'
+  and ('All Stadiums' in ${inputs.stadium.value} OR stadium_name in ${inputs.stadium.value})
 order by home_win_pct desc
 ```
 
@@ -36,6 +52,7 @@ select
     '<div style="display:flex;align-items:center;gap:6px;"><img src="' || team_logo || '" style="height:20px;width:20px;object-fit:contain;" onerror="this.style.display=''none''"><span>' || home_team_short || '</span></div>' as home_team_col_mobile
 from superligaen.mart_stadium_season
 where season = '${inputs.season.value}'
+  and ('All Stadiums' in ${inputs.stadium.value} OR stadium_name in ${inputs.stadium.value})
 order by home_win_pct desc
 ```
 
@@ -50,6 +67,7 @@ select
     sum(case when stadium_surface ilike '%artif%' or stadium_surface ilike '%turf%'    then 1 else 0 end)    as turf_stadiums
 from superligaen.mart_stadium_season
 where season = '${inputs.season.value}'
+  and ('All Stadiums' in ${inputs.stadium.value} OR stadium_name in ${inputs.stadium.value})
 ```
 
 ---
