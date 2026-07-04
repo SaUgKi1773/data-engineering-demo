@@ -111,17 +111,21 @@ from ${referee_trends}
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Season-wide averages across all referees — active officials, yellow and red card rates, and average fouls per match.</p>
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
-    <BigValue data={season_kpis} value=total_referees title="Active Referees" />
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Active Referees</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{season_kpis[0]?.total_referees ?? '—'}</div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
-    <BigValue data={season_kpis} value=league_avg_yellows title="Avg YC / Match" />
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Avg YC / Match</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{season_kpis[0]?.league_avg_yellows ?? '—'}</div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
-    <BigValue data={season_kpis} value=league_avg_reds title="Avg RC / Match" />
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Avg RC / Match</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{season_kpis[0]?.league_avg_reds ?? '—'}</div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 text-center">
-    <BigValue data={season_kpis} value=league_avg_fouls title="Avg Fouls / Match" />
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Avg Fouls / Match</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{season_kpis[0]?.league_avg_fouls ?? '—'}</div>
   </div>
 </div>
 

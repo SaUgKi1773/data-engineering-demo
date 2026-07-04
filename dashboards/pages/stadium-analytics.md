@@ -61,29 +61,100 @@ select * from ${fortress_ranking} limit 3
 ```
 
 ```sql stadium_kpis
+with s as (
+    select distinct stadium_name, stadium_capacity, total_goals
+    from superligaen.mart_stadium_season
+    where season = '${inputs.season.value}'
+      and ('All Stadiums' in ${inputs.stadium.value} OR stadium_name in ${inputs.stadium.value})
+)
 select
-    count(distinct stadium_name)                                                                              as total_stadiums,
-    sum(case when stadium_surface ilike '%grass%' or stadium_surface ilike '%natural%' then 1 else 0 end)    as grass_stadiums,
-    sum(case when stadium_surface ilike '%artif%' or stadium_surface ilike '%turf%'    then 1 else 0 end)    as turf_stadiums
-from superligaen.mart_stadium_season
-where season = '${inputs.season.value}'
-  and ('All Stadiums' in ${inputs.stadium.value} OR stadium_name in ${inputs.stadium.value})
+    count(*)                                     as total_stadiums,
+    sum(stadium_capacity)                        as total_capacity,
+    arg_max(stadium_name, stadium_capacity)      as max_cap_stadium,
+    max(stadium_capacity)                        as max_capacity,
+    arg_min(stadium_name, stadium_capacity)      as min_cap_stadium,
+    min(stadium_capacity)                        as min_capacity,
+    sum(total_goals)                             as total_goals,
+    arg_max(stadium_name, total_goals)           as top_goals_stadium,
+    max(total_goals)                             as top_goals,
+    arg_min(stadium_name, total_goals)           as low_goals_stadium,
+    min(total_goals)                             as low_goals
+from s
+```
+
+```sql surface_breakdown
+with s as (
+    select distinct stadium_name, stadium_surface
+    from superligaen.mart_stadium_season
+    where season = '${inputs.season.value}'
+      and ('All Stadiums' in ${inputs.stadium.value} OR stadium_name in ${inputs.stadium.value})
+)
+select
+    case
+        when stadium_surface ilike '%grass%' or stadium_surface ilike '%natural%' then 'Grass'
+        when stadium_surface ilike '%artif%' or stadium_surface ilike '%turf%'    then 'Artificial'
+        else 'Other'
+    end                                          as surface,
+    count(*)                                     as n
+from s
+group by 1
+order by n desc
 ```
 
 ---
 
 ## Stadium Intelligence — {inputs.season.value}
 
-<div class="grid grid-cols-3 gap-2 sm:gap-4 mb-6 items-stretch">
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-2 sm:p-4 text-center flex flex-col justify-center">
-    <BigValue data={stadium_kpis} value=total_stadiums title="Stadiums" />
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 items-stretch">
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Stadiums</div>
+    <div class="text-4xl font-black text-gray-900 leading-none text-center">{stadium_kpis[0]?.total_stadiums ?? '—'}</div>
+    <div class="mt-3 flex items-center justify-center gap-3" style="min-height:64px;">
+      <div style="width:56px;height:56px;border-radius:50%;flex-shrink:0;background:conic-gradient({(function(){ const arr = surface_breakdown ?? []; const t = arr.reduce((a, d) => a + d.n, 0) || 1; let acc = 0; return arr.map(d => { const col = d.surface === 'Grass' ? '#22c55e' : d.surface === 'Artificial' ? '#f59e0b' : '#6366f1'; const s = (acc / t * 100).toFixed(2); acc += d.n; const e = (acc / t * 100).toFixed(2); return col + ' ' + s + '% ' + e + '%'; }).join(', '); })()});">
+        <div style="width:34px;height:34px;background:#fff;border-radius:50%;margin:11px;"></div>
+      </div>
+      <div class="text-xs text-gray-500 flex flex-col gap-1">
+        {#each surface_breakdown as sf}
+        <span class="inline-flex items-center gap-1.5">
+          <span class="inline-block w-2 h-2 rounded-full" style="background:{sf.surface === 'Grass' ? '#22c55e' : sf.surface === 'Artificial' ? '#f59e0b' : '#6366f1'}"></span>
+          {sf.surface} <span class="font-semibold text-gray-700">{sf.n}</span>
+        </span>
+        {/each}
+      </div>
+    </div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-2 sm:p-4 text-center flex flex-col justify-center">
-    <BigValue data={stadium_kpis} value=grass_stadiums title="Grass" />
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Total Capacity</div>
+    <div class="text-4xl font-black text-gray-900 leading-none text-center">{stadium_kpis[0]?.total_capacity != null ? stadium_kpis[0].total_capacity.toLocaleString('en-US') : '—'}</div>
+    <div class="mt-3 text-xs text-gray-500 flex flex-col justify-center gap-1" style="min-height:64px;">
+      <div class="flex items-center justify-between gap-2">
+        <span><span class="text-green-600 font-bold">▲</span> Largest: <span class="font-semibold text-gray-700">{stadium_kpis[0]?.max_cap_stadium ?? '—'}</span></span>
+        <span class="font-semibold text-gray-700 whitespace-nowrap">{stadium_kpis[0]?.max_capacity != null ? stadium_kpis[0].max_capacity.toLocaleString('en-US') : '—'}</span>
+      </div>
+      <div class="flex items-center justify-between gap-2">
+        <span><span class="text-red-500 font-bold">▼</span> Smallest: <span class="font-semibold text-gray-700">{stadium_kpis[0]?.min_cap_stadium ?? '—'}</span></span>
+        <span class="font-semibold text-gray-700 whitespace-nowrap">{stadium_kpis[0]?.min_capacity != null ? stadium_kpis[0].min_capacity.toLocaleString('en-US') : '—'}</span>
+      </div>
+    </div>
   </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-2 sm:p-4 text-center flex flex-col justify-center">
-    <BigValue data={stadium_kpis} value=turf_stadiums title="Turf" />
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Goals Scored</div>
+    <div class="text-4xl font-black text-gray-900 leading-none text-center">{stadium_kpis[0]?.total_goals != null ? stadium_kpis[0].total_goals.toLocaleString('en-US') : '—'}</div>
+    <div class="mt-3 text-xs text-gray-500 flex flex-col justify-center gap-1" style="min-height:64px;">
+      <div class="flex items-center justify-between gap-2">
+        <span><span class="text-green-600 font-bold">▲</span> Most: <span class="font-semibold text-gray-700">{stadium_kpis[0]?.top_goals_stadium ?? '—'}</span></span>
+        <span class="font-semibold text-gray-700 whitespace-nowrap">{stadium_kpis[0]?.top_goals ?? '—'}</span>
+      </div>
+      <div class="flex items-center justify-between gap-2">
+        <span><span class="text-red-500 font-bold">▼</span> Fewest: <span class="font-semibold text-gray-700">{stadium_kpis[0]?.low_goals_stadium ?? '—'}</span></span>
+        <span class="font-semibold text-gray-700 whitespace-nowrap">{stadium_kpis[0]?.low_goals ?? '—'}</span>
+      </div>
+    </div>
   </div>
+
 </div>
 
 ---
