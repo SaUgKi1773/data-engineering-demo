@@ -3,7 +3,10 @@ import os
 API_BASE      = "https://api.sportmonks.com/v3/football"
 CORE_API_BASE = "https://api.sportmonks.com/v3/core"
 
-LEAGUE_ID         = 271
+# Leagues in scope — both included on the current free plan:
+#   271 = Danish Superliga, 501 = Scottish Premiership
+# (play-off competitions 1659 / 513 are deliberately excluded)
+LEAGUE_IDS        = [271, 501]
 FIRST_SEASON_YEAR = 2010
 MAX_RETRIES       = 8
 REQUEST_TIMEOUT   = 120  # seconds per HTTP request
@@ -28,7 +31,7 @@ DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "superligaen_dev.duckdb")
 #     (not a real error — api.py treats it as the stop signal)
 #   - Fixture date-range endpoint: max ~100 days per window → use 90-day chunks
 #   - Fixture date-range endpoint: ignores the leagueIds query param →
-#     filter client-side on league_id == LEAGUE_ID
+#     filter client-side on league_id ∈ LEAGUE_IDS
 
 # ── Master Endpoint Manifest ────────────────────────────────────────────────────
 #
@@ -103,8 +106,10 @@ ENDPOINT_MANIFEST = [
         "strategy":     "static",
         "delete":       "global",
         "includes":     "",
-        # Filter to Denmark only — global dataset is 3000+ rows across all countries
-        "extra_params": {"filters": "regionCountries:320"},
+        # Filter to league countries only — global dataset is 3000+ rows.
+        # 320 = Denmark, 1161 = Scotland (Scotland currently has 0 regions
+        # in the core data, but keep it in the filter for when that changes).
+        "extra_params": {"filters": "regionCountries:320,1161"},
         "modes":        ["full", "incremental"],
     },
     # core_cities excluded — the API ignores the country_id filter param,
@@ -145,7 +150,8 @@ ENDPOINT_MANIFEST = [
 
     {
         "table":    "sportmonks__league",
-        "path":     f"/leagues/{LEAGUE_ID}",
+        # {league_id} → engine loops over LEAGUE_IDS, one call per league
+        "path":     "/leagues/{league_id}",
         "strategy": "static",
         "delete":   "global",
         "includes": "sport;country;stages;currentSeason;seasons",
@@ -153,10 +159,11 @@ ENDPOINT_MANIFEST = [
     },
     {
         "table":    "sportmonks__seasons",
-        # Extracts the seasons[] array from the league response and filters by
-        # FIRST_SEASON_YEAR.  Also populates ctx.all_seasons / ctx.current_seasons
+        # Extracts the seasons[] array from each league response (one call per
+        # league in LEAGUE_IDS) and filters by FIRST_SEASON_YEAR.  Also populates
+        # ctx.all_seasons / ctx.current_seasons (one current season PER league)
         # so subsequent season_based entries know which seasons to iterate.
-        "path":     f"/leagues/{LEAGUE_ID}",
+        "path":     "/leagues/{league_id}",
         "strategy": "seasons_from_league",
         "delete":   "global",
         "includes": "",
@@ -306,8 +313,11 @@ ENDPOINT_MANIFEST = [
 
     # ══════════════════════════════════════════════════════════════════════════
     # FOOTBALL API — Fixtures  (date-window; 90-day chunks or rolling window)
-    # Fetches all leagues in each window, filters to LEAGUE_ID client-side
+    # Fetches all leagues in each window, filters to LEAGUE_IDS client-side
     # (the API's leagueIds param is unreliable on the date-range endpoint).
+    # Full mode merges overlapping season date ranges across leagues so each
+    # calendar window is fetched exactly once even though the Danish and
+    # Scottish seasons run in parallel.
     # ══════════════════════════════════════════════════════════════════════════
 
     {
