@@ -187,7 +187,6 @@ with ranked as (
       and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
     group by player_name, player_photo, team_name
     having sum(goals_scored) > 0
-      and count(distinct match_id) >= 5
 )
 select * from ranked where rn <= 3 order by rn
 ```
@@ -208,7 +207,6 @@ with ranked as (
       and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
     group by player_name, player_photo, team_name
     having sum(assists) > 0
-      and count(distinct match_id) >= 5
 )
 select * from ranked where rn <= 3 order by rn
 ```
@@ -231,7 +229,6 @@ with ranked as (
       and rating is not null
       and rating > 0
     group by player_name, player_photo, team_name
-    having count(distinct match_id) >= 5
 )
 select * from ranked where rn <= 3 order by rn
 ```
