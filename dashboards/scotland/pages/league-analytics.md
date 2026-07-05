@@ -229,6 +229,7 @@ with ranked as (
       and rating is not null
       and rating > 0
     group by player_name, player_photo, team_name
+    having count(distinct match_id) >= 5
 )
 select * from ranked where rn <= 3 order by rn
 ```
@@ -743,7 +744,7 @@ order by case period_of_day
 
   <!-- Rated rank 1 -->
   <div class="rounded-2xl bg-gradient-to-br from-purple-50 to-violet-100 border border-purple-200 shadow-lg p-5" style="position: relative; z-index: 3;">
-    <div class="text-xs uppercase tracking-widest text-purple-600 font-bold mb-3">⭐ Best Rated</div>
+    <div class="text-xs uppercase tracking-widest text-purple-600 font-bold mb-3">⭐ Best Rated <span class="normal-case tracking-normal text-purple-400 font-normal">· min 5 matches</span></div>
     <div class="flex items-center gap-4">
       <img src="{top_rated[0].player_photo}" alt="{top_rated[0].player_name}" class="w-16 h-16 rounded-full object-cover border-2 border-purple-300 shadow" onerror="this.style.display='none'" />
       <div>
