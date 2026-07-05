@@ -32,7 +32,7 @@ SELECT
     -- goals
     SUM(f.goals_scored)::int                                                                          AS total_goals,
     SUM(f.goals_scored) - (MIN(SUM(f.goals_scored)) OVER (PARTITION BY d.season) - 1)                AS total_goals_scaled,
-    ROUND(SUM(f.goals_scored)::double / COUNT(DISTINCT m.match_id), 2)                               AS goals_per_match,
+    ROUND(SUM(f.goals_scored)::double / COUNT(DISTINCT m.match_id), 1)                               AS goals_per_match,
     -- home win stats
     COUNT(*) FILTER (WHERE ts.team_side = 'Home' AND r.match_result = 'Win')::int                    AS home_wins,
     COUNT(*) FILTER (WHERE ts.team_side = 'Home' AND r.match_result = 'Draw')::int                   AS home_draws,
@@ -43,9 +43,9 @@ SELECT
     ROUND(100.0 * COUNT(*) FILTER (WHERE r.match_result = 'Draw')
           / COUNT(*), 1)                                                                              AS draw_pct,
     ROUND(SUM(f.goals_scored) FILTER (WHERE ts.team_side = 'Home')::double
-          / NULLIF(COUNT(DISTINCT m.match_id) FILTER (WHERE ts.team_side = 'Home'), 0), 2)           AS goals_scored_per_match,
+          / NULLIF(COUNT(DISTINCT m.match_id) FILTER (WHERE ts.team_side = 'Home'), 0), 1)           AS goals_scored_per_match,
     ROUND(SUM(f.goals_conceded) FILTER (WHERE ts.team_side = 'Home')::double
-          / NULLIF(COUNT(DISTINCT m.match_id) FILTER (WHERE ts.team_side = 'Home'), 0), 2)           AS goals_conceded_per_match,
+          / NULLIF(COUNT(DISTINCT m.match_id) FILTER (WHERE ts.team_side = 'Home'), 0), 1)           AS goals_conceded_per_match,
     -- discipline & play style
     ROUND(100.0 * SUM(COALESCE(pa.passes_accurate, 0)) / NULLIF(SUM(COALESCE(pa.total_passes, 0)), 0), 1) AS pass_accuracy,
     ROUND(SUM(f.yellow_cards)::double / COUNT(DISTINCT m.match_id), 2)                               AS yc_per_match,
