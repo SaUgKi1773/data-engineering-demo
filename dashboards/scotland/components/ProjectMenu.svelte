@@ -39,11 +39,23 @@
           class="pointer-events-auto absolute right-0 top-11 z-50 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white py-1.5 text-sm shadow-lg"
           transition:fly={{ y: -4, duration: 130 }}
         >
+          <a href="https://github.com/SaUgKi1773/data-engineering-demo" target="_blank" rel="noreferrer" class="flex items-center justify-between px-4 py-2 text-gray-700 no-underline hover:bg-gray-50" on:click={close}>
+            Source Code on GitHub <span class="text-xs text-gray-300">↗</span>
+          </a>
           <a href="https://saugki1773.github.io/data-engineering-blog" target="_blank" rel="noreferrer" class="flex items-center justify-between px-4 py-2 text-gray-700 no-underline hover:bg-gray-50" on:click={close}>
             Data Engineer's Diary <span class="text-xs text-gray-300">↗</span>
           </a>
-          <a href="https://github.com/SaUgKi1773/data-engineering-demo" target="_blank" rel="noreferrer" class="flex items-center justify-between px-4 py-2 text-gray-700 no-underline hover:bg-gray-50" on:click={close}>
-            Source Code on GitHub <span class="text-xs text-gray-300">↗</span>
+          <a href="https://revolut.me/salihugurkimilli" target="_blank" rel="noreferrer" class="flex items-center justify-between px-4 py-2 text-gray-700 no-underline hover:bg-gray-50" on:click={close}>
+            Support via Revolut <span class="text-xs text-gray-300">↗</span>
+          </a>
+          <a href="https://github.com/SaUgKi1773/data-engineering-demo/issues/new/choose" target="_blank" rel="noreferrer" class="flex items-center justify-between px-4 py-2 text-gray-700 no-underline hover:bg-gray-50" on:click={close}>
+            Share a Suggestion <span class="text-xs text-gray-300">↗</span>
+          </a>
+          <a href="https://www.linkedin.com/in/salih-ugur-kimilli-since1773/" target="_blank" rel="noreferrer" class="flex items-center justify-between px-4 py-2 text-gray-700 no-underline hover:bg-gray-50" on:click={close}>
+            Connect on LinkedIn <span class="text-xs text-gray-300">↗</span>
+          </a>
+          <a href="https://krogvadanalytics.vercel.app/" target="_blank" rel="noreferrer" class="flex items-center justify-between px-4 py-2 text-gray-700 no-underline hover:bg-gray-50" on:click={close}>
+            Krogvad Hub <span class="text-xs text-gray-300">↗</span>
           </a>
           <div class="my-1 border-t border-gray-100"></div>
           <a href="/glossary" class="block px-4 py-2 text-gray-700 no-underline hover:bg-gray-50" on:click={close}>Data Glossary</a>
