@@ -13,14 +13,13 @@ select
     when 501 then 'https://scottishpremiershipanalytics.vercel.app/'
   end as site_url,
   case league_id
-    when 271 then 'Superliga Analytics'
-    when 501 then 'Scottish Premiership Analytics'
-  end as site_name,
+    when 271 then 'Superligaen'
+    when 501 then 'Premiership'
+  end as banner_title,
   case league_id
     when 271 then 'linear-gradient(135deg, #4a0e18 0%, #a01325 45%, #d42a3d 100%)'
     when 501 then 'linear-gradient(135deg, #0a1f3c 0%, #123c78 45%, #1f6fd4 100%)'
-  end as gradient,
-  row_number() over (order by league_id) as platform_no
+  end as gradient
 from hub.league_summary
 order by league_id
 ```
@@ -105,26 +104,20 @@ select * from hub.last_updated
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-2 mb-1">
-                <span class="text-white/40 text-[10px] font-bold uppercase" style="letter-spacing: 0.2em;">Platform {'0' + lg.platform_no}</span>
                 <img src="{lg.league_country_flag}" alt="{lg.league_country}" class="h-3.5 rounded opacity-90" onerror="this.style.display='none'" />
                 <span class="text-white/50 text-[11px] uppercase tracking-widest">{lg.league_country}</span>
-                <span class="rounded-full px-2.5 py-0.5 backdrop-blur inline-flex items-center gap-1.5 text-[10px] font-semibold whitespace-nowrap"
-                      style="{new Date() > new Date(lg.season_end) ? 'background:rgba(100,116,139,0.25);border:1px solid rgba(148,163,184,0.3);color:rgb(203,213,225)' : 'background:rgba(74,222,128,0.2);border:1px solid rgba(74,222,128,0.3);color:rgb(134,239,172)'}">
-                  <span class="inline-block w-1 h-1 rounded-full" style="{new Date() > new Date(lg.season_end) ? 'background:rgb(148,163,184)' : 'background:rgb(74,222,128)'}"></span>
-                  {lg.season} · {new Date() > new Date(lg.season_end) ? 'Ended' : 'Live'}
-                </span>
               </div>
-              <div class="text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight">{lg.site_name}</div>
-              <div class="text-white/60 text-xs mt-1.5 flex items-center gap-1.5">
-                <span class="text-sm leading-none">{new Date() > new Date(lg.season_end) ? '👑' : '🥇'}</span>
-                <span class="text-[10px] font-bold uppercase tracking-widest text-white/40">{new Date() > new Date(lg.season_end) ? 'Champion' : 'Leader'}</span>
-                <span class="text-xs font-black text-white">{lg.leader_name}</span>
-                <span class="text-white/40 text-[11px]">· {lg.leader_pts} pts</span>
-              </div>
+              <div class="text-2xl md:text-3xl font-extrabold tracking-tight text-white leading-tight">{lg.banner_title}</div>
             </div>
           </div>
 
           <div class="flex items-center gap-3 flex-shrink-0">
+            <div class="flex flex-col items-center md:items-end gap-2.5">
+            <span class="rounded-full px-2.5 py-0.5 backdrop-blur inline-flex items-center gap-1.5 text-[10px] font-semibold whitespace-nowrap"
+                  style="{new Date() > new Date(lg.season_end) ? 'background:rgba(100,116,139,0.25);border:1px solid rgba(148,163,184,0.3);color:rgb(203,213,225)' : 'background:rgba(74,222,128,0.2);border:1px solid rgba(74,222,128,0.3);color:rgb(134,239,172)'}">
+              <span class="inline-block w-1 h-1 rounded-full" style="{new Date() > new Date(lg.season_end) ? 'background:rgb(148,163,184)' : 'background:rgb(74,222,128)'}"></span>
+              {lg.season} · {new Date() > new Date(lg.season_end) ? 'Ended' : 'Live'}
+            </span>
             <div class="flex gap-2.5">
               <div class="rounded-xl bg-white/10 backdrop-blur border border-white/20 px-3.5 py-2.5 text-center min-w-[72px]">
                 <div class="text-white text-lg font-black leading-none">{lg.total_goals}</div>
@@ -139,6 +132,7 @@ select * from hub.last_updated
                 <div class="text-white/50 text-[10px] mt-1 uppercase tracking-wide">Teams</div>
               </div>
             </div>
+            </div>
             <div class="text-white/40 text-2xl font-light group-hover:text-white/80 group-hover:translate-x-0.5 transition-all duration-200">→</div>
           </div>
         </div>
@@ -147,7 +141,7 @@ select * from hub.last_updated
 {/each}
 
     <div class="rounded-2xl border-2 border-dashed border-gray-200 px-6 py-5 flex items-center gap-3">
-      <span class="text-gray-300 text-[10px] font-bold uppercase flex-shrink-0" style="letter-spacing: 0.2em;">Platform 03</span>
+      <span class="text-gray-300 text-[10px] font-bold uppercase flex-shrink-0" style="letter-spacing: 0.2em;">Next platform</span>
       <span class="text-gray-400 text-sm">In scouting — the next league joins the group on the same data foundation.</span>
     </div>
   </div>
