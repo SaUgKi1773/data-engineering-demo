@@ -55,7 +55,7 @@
             Connect on LinkedIn <span class="text-xs text-gray-300">↗</span>
           </a>
           <a href="https://krogvadanalytics.vercel.app/" target="_blank" rel="noreferrer" class="flex items-center justify-between px-4 py-2 text-gray-700 no-underline hover:bg-gray-50" on:click={close}>
-            Krogvad Hub <span class="text-xs text-gray-300">↗</span>
+            Krogvad Analytics Hub <span class="text-xs text-gray-300">↗</span>
           </a>
           <div class="my-1 border-t border-gray-100"></div>
           <a href="/glossary" class="block px-4 py-2 text-gray-700 no-underline hover:bg-gray-50" on:click={close}>Data Glossary</a>
