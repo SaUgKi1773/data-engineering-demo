@@ -109,7 +109,7 @@ select * from hub.last_updated
     <span class="text-gray-300">·</span>
     <a href="https://github.com/SaUgKi1773/data-engineering-demo" target="_blank" class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-gray-900 no-underline">GitHub</a>
   </div>
-  <p class="text-gray-400 text-xs mb-0">Data updated {last_updated[0].last_updated?.slice(0, 16).replace('T', ' ')} UTC · SportMonks → MotherDuck → dbt → Evidence · zero cloud bills</p>
+  <p class="text-gray-400 text-xs mb-0">Data updated {last_updated[0].last_updated?.slice(0, 16).replace('T', ' ')} UTC</p>
 </div>
 
 </div>
