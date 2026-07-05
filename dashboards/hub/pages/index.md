@@ -60,27 +60,27 @@ select * from hub.last_updated
   <div class="text-gray-400 text-[11px] font-bold uppercase mb-1" style="letter-spacing: 0.25em;">The group in numbers</div>
   <div class="grid grid-cols-2 md:grid-cols-6 gap-px rounded-2xl overflow-hidden border border-gray-200 bg-gray-200 mt-4">
     <div class="bg-white px-5 py-6">
-      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none">{group_stats[0].leagues}</div>
+      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none"><CountUp value={group_stats[0]?.leagues} duration={900} /></div>
       <div class="text-gray-400 text-[11px] mt-2 uppercase tracking-widest">Leagues</div>
     </div>
     <div class="bg-white px-5 py-6">
-      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none">{group_stats[0].seasons.toLocaleString()}</div>
+      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none"><CountUp value={group_stats[0]?.seasons} duration={1100} /></div>
       <div class="text-gray-400 text-[11px] mt-2 uppercase tracking-widest">Seasons</div>
     </div>
     <div class="bg-white px-5 py-6">
-      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none">{group_stats[0].matches.toLocaleString()}</div>
+      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none"><CountUp value={group_stats[0]?.matches} duration={1400} /></div>
       <div class="text-gray-400 text-[11px] mt-2 uppercase tracking-widest">Matches analysed</div>
     </div>
     <div class="bg-white px-5 py-6">
-      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none">{group_stats[0].goals.toLocaleString()}</div>
+      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none"><CountUp value={group_stats[0]?.goals} duration={1600} /></div>
       <div class="text-gray-400 text-[11px] mt-2 uppercase tracking-widest">Goals recorded</div>
     </div>
     <div class="bg-white px-5 py-6">
-      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none">{group_stats[0].players.toLocaleString()}</div>
+      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none"><CountUp value={group_stats[0]?.players} duration={1400} /></div>
       <div class="text-gray-400 text-[11px] mt-2 uppercase tracking-widest">Players profiled</div>
     </div>
     <div class="bg-white px-5 py-6">
-      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none">{group_stats[0].transfers.toLocaleString()}</div>
+      <div class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-none"><CountUp value={group_stats[0]?.transfers} duration={1800} /></div>
       <div class="text-gray-400 text-[11px] mt-2 uppercase tracking-widest">Transfers tracked</div>
     </div>
   </div>
