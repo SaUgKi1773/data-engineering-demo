@@ -16,7 +16,7 @@ select * from scotland.last_updated
 select * from scotland.mart_home_summary
 ```
 
-<div class="relative rounded-2xl overflow-hidden mb-8 shadow-lg" style="background: linear-gradient(135deg, #1e3a5f 0%, #1a5276 40%, #1a6b4a 100%);">
+<div class="relative rounded-2xl overflow-hidden mb-8 shadow-lg" style="background: linear-gradient(135deg, #0a1f3c 0%, #123c78 45%, #1f6fd4 100%);">
   <!-- pitch lines overlay -->
   <div class="absolute inset-0 opacity-[0.08]" style="background-image: repeating-linear-gradient(90deg, white 0px, white 1px, transparent 1px, transparent 80px), repeating-linear-gradient(0deg, white 0px, white 1px, transparent 1px, transparent 80px);"></div>
   <!-- center circle hint -->

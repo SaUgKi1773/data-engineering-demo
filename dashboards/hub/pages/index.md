@@ -17,8 +17,8 @@ select
     when 501 then 'Scottish Premiership Analytics'
   end as site_name,
   case league_id
-    when 271 then 'linear-gradient(135deg, #3d1e2e 0%, #7a1f2b 45%, #a63a3a 100%)'
-    when 501 then 'linear-gradient(135deg, #1e3a5f 0%, #1a5276 40%, #1a6b4a 100%)'
+    when 271 then 'linear-gradient(135deg, #4a0e18 0%, #a01325 45%, #d42a3d 100%)'
+    when 501 then 'linear-gradient(135deg, #0a1f3c 0%, #123c78 45%, #1f6fd4 100%)'
   end as gradient
 from hub.league_summary
 order by league_id
