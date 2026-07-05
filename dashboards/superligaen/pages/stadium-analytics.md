@@ -175,7 +175,7 @@ order by n desc
     legendType=categorical
     legendTitle="Stadium Surface"
     title="Superligaen Stadiums — {inputs.season.value}"
-    tooltip={[{id: 'stadium_name', showColumnName: false, valueClass: 'font-bold text-sm'}, {id: 'stadium_surface'}, {id: 'total_goals'}, {id: 'goals_per_match'}]}
+    tooltip={[{id: 'stadium_name', showColumnName: false, valueClass: 'font-bold text-sm'}, {id: 'stadium_surface'}, {id: 'total_goals'}, {id: 'goals_per_match', fmt: '0.0'}]}
 />
 
 ---
@@ -244,8 +244,8 @@ order by n desc
     <Column id=home_wins                title="W"                       align=center />
     <Column id=home_draws               title="D"                       align=center />
     <Column id=home_losses              title="L"                       align=center />
-    <Column id=goals_scored_per_match   title="Goals Scored/Match"      />
-    <Column id=goals_conceded_per_match title="Goals Conceded/Match"    />
+    <Column id=goals_scored_per_match   title="Goals Scored/Match"      fmt='0.0' />
+    <Column id=goals_conceded_per_match title="Goals Conceded/Match"    fmt='0.0' />
 </DataTable>
 </div>
 <div class="block md:hidden mt-4">
@@ -257,8 +257,8 @@ order by n desc
     <Column id=home_wins                title="W"                       align=center />
     <Column id=home_draws               title="D"                       align=center />
     <Column id=home_losses              title="L"                       align=center />
-    <Column id=goals_scored_per_match   title="Goals Scored/Match"      />
-    <Column id=goals_conceded_per_match title="Goals Conceded/Match"    />
+    <Column id=goals_scored_per_match   title="Goals Scored/Match"      fmt='0.0' />
+    <Column id=goals_conceded_per_match title="Goals Conceded/Match"    fmt='0.0' />
 </DataTable>
 </div>
 
@@ -319,5 +319,5 @@ order by n desc
     <Column id=cross_accuracy   title="Cross Acc %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#3b82f6']} />
     <Column id=shot_conversion  title="Shot Conv %"      fmt='0.0"%"' contentType=colorscale colorPalette={['white','#22c55e']} />
     <Column id=fouls_per_match  title="Fouls/Match"       contentType=colorscale colorPalette={['white','#f97316']} />
-    <Column id=goals_per_match  title="Goals/Match"      fmt='0.00'   contentType=colorscale colorPalette={['white','#f59e0b']} />
+    <Column id=goals_per_match  title="Goals/Match"      fmt='0.0'   contentType=colorscale colorPalette={['white','#f59e0b']} />
 </DataTable>

@@ -20,7 +20,7 @@ SELECT
     d.season_scotland AS season,
     st.stadium_surface,
     COUNT(DISTINCT m.match_id)::int                                                                 AS matches,
-    ROUND(SUM(f.goals_scored)::double / COUNT(DISTINCT m.match_id), 2)                             AS goals_per_match,
+    ROUND(SUM(f.goals_scored)::double / COUNT(DISTINCT m.match_id), 1)                             AS goals_per_match,
     ROUND(100.0 * COUNT(*) FILTER (WHERE ts.team_side = 'Home' AND r.match_result = 'Win')
           / NULLIF(COUNT(*) FILTER (WHERE ts.team_side = 'Home'), 0), 1)                           AS home_win_pct,
     ROUND(100.0 * COUNT(*) FILTER (WHERE r.match_result = 'Draw') / COUNT(*), 1)                   AS draw_pct,
