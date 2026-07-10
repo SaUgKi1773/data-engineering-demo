@@ -77,13 +77,12 @@ src AS (
         CASE WHEN f.state_developer_name IN ('FT', 'FT_PEN', 'AET')
              THEN sp.goals_home::VARCHAR || ' - ' || sp.goals_away::VARCHAR
         END                                                                      AS match_result,
-        -- Kick-off in the league's local time: Scottish Premiership (501) is
-        -- Europe/London; Danish Superliga (and default) Europe/Copenhagen
+        -- Kick-off in the league's local time
         lpad(EXTRACT(hour   FROM (f.starting_at::TIMESTAMP AT TIME ZONE 'UTC')
-             AT TIME ZONE (CASE WHEN f.league_id = 501 THEN 'Europe/London' ELSE 'Europe/Copenhagen' END))::VARCHAR, 2, '0')
+             AT TIME ZONE {{ league_local_tz('f.league_id') }})::VARCHAR, 2, '0')
             || ':'
             || lpad(EXTRACT(minute FROM (f.starting_at::TIMESTAMP AT TIME ZONE 'UTC')
-             AT TIME ZONE (CASE WHEN f.league_id = 501 THEN 'Europe/London' ELSE 'Europe/Copenhagen' END))::VARCHAR, 2, '0')
+             AT TIME ZONE {{ league_local_tz('f.league_id') }})::VARCHAR, 2, '0')
                                                                                  AS kick_off_time,
         f.state_name                                                             AS match_status
     FROM {{ ref('fixtures') }} f

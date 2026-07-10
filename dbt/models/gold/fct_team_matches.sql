@@ -143,7 +143,7 @@ SELECT
     src.red_cards
 FROM src
 LEFT JOIN {{ ref('dim_date') }}          dd      ON dd.date              = src.starting_at::DATE
-LEFT JOIN {{ ref('dim_time') }}          dt_time ON dt_time.time_sk      = EXTRACT(hour FROM (src.starting_at::TIMESTAMP AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Copenhagen')::INTEGER
+LEFT JOIN {{ ref('dim_time') }}          dt_time ON dt_time.time_sk      = EXTRACT(hour FROM (src.starting_at::TIMESTAMP AT TIME ZONE 'UTC') AT TIME ZONE {{ league_local_tz('src.league_id') }})::INTEGER
 LEFT JOIN {{ ref('dim_team') }}          dteam   ON dteam.team_id        = src.team_id
 LEFT JOIN {{ ref('dim_opponent_team') }} dopp    ON dopp.opponent_team_id = src.opponent_team_id
 LEFT JOIN {{ ref('dim_league') }}        dl      ON dl.league_id         = src.league_id
