@@ -6,6 +6,11 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta property="og:site_name" content="Krogvad Analytics Hub" />
   <meta property="og:type" content="website" />
+  <!-- Absolute URL: LinkedIn/Slack scrapers don't resolve relative og:image paths -->
+  <meta property="og:image" content="https://krogvadanalyticshub.vercel.app/og-card.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://krogvadanalyticshub.vercel.app/og-card.png" />
 </svelte:head>
 
 <script>

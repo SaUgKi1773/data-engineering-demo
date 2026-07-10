@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  Source for static/og-card.png (the social link-preview card).
+  Regenerate after design changes:
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --disable-gpu \
+      --screenshot=static/og-card.png --window-size=1200,630 --hide-scrollbars "file://$PWD/og-card.src.html"
+-->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(150deg, #0b1220 0%, #0e1a30 55%, #12233f 100%);
+    position: relative;
+    color: #fff;
+  }
+  .pitch {
+    position: absolute; inset: 0; opacity: 0.05;
+    background-image:
+      repeating-linear-gradient(90deg, #fff 0px, #fff 1px, transparent 1px, transparent 90px),
+      repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 90px);
+  }
+  .circle { position: absolute; border-radius: 9999px; border: 1px solid #fff; opacity: 0.05; }
+  .c1 { width: 520px; height: 520px; right: -140px; top: -140px; }
+  .c2 { width: 340px; height: 340px; right: -50px; top: -50px; }
+  .content { position: relative; padding: 84px 92px; height: 100%; display: flex; flex-direction: column; }
+  .eyebrow-row { display: flex; align-items: center; gap: 18px; margin-bottom: 48px; }
+  .wordmark {
+    color: rgba(255,255,255,0.4); font-size: 20px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.25em;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05);
+    border-radius: 9999px; padding: 7px 18px;
+    color: rgba(255,255,255,0.6); font-size: 18px; font-weight: 600;
+  }
+  h1 { font-size: 88px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; }
+  .sub {
+    margin-top: 36px; color: rgba(255,255,255,0.6);
+    font-size: 28px; line-height: 1.5; max-width: 900px;
+  }
+  .footer {
+    margin-top: auto; display: flex; align-items: center; justify-content: space-between;
+    color: rgba(255,255,255,0.35); font-size: 20px; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div class="pitch"></div>
+  <div class="circle c1"></div>
+  <div class="circle c2"></div>
+  <div class="content">
+    <div class="eyebrow-row">
+      <span class="wordmark">Krogvad Analytics Hub</span>
+      <span class="pill">📍 Farum, Denmark</span>
+    </div>
+    <h1>Football intelligence,<br/>for the whole world.</h1>
+    <div class="sub">Free, open football analytics — one purpose-built site per league, one shared data warehouse, refreshed every night.</div>
+    <div class="footer">
+      <span>krogvadanalyticshub.vercel.app</span>
+      <span>Free for everyone, forever.</span>
+    </div>
+  </div>
+</body>
+</html>
