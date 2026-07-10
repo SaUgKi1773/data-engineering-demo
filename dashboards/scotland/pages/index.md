@@ -1,7 +1,9 @@
 ---
 sidebar: never
 hide_toc: true
-title: " "
+title: Scottish Premiership Analytics — Scottish football intelligence
+hide_title: true
+description: Free, open analytics for the Scottish Premiership — standings, match results, player, referee and transfer intelligence, refreshed every night. A Krogvad Analytics Hub platform.
 ---
 
 ```sql league
