@@ -4,6 +4,8 @@
   <meta name="apple-mobile-web-app-title" content="Premiership" />
   <meta name="theme-color" content="#1D4ED8" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta property="og:site_name" content="Scottish Premiership Analytics" />
+  <meta property="og:type" content="website" />
 </svelte:head>
 
 <script>
