@@ -1,0 +1,46 @@
+name: Match predictions
+
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Set to 'true' to overwrite predictions already published today."
+        required: false
+        default: "false"
+      target_db:
+        description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
+        required: false
+        default: ""
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Data science — publish match outcome predictions to bronze
+  # ---------------------------------------------------------------------------
+  publish_predictions:
+    name: Publish predictions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Publish predictions
+        run: |
+          DB="${{ github.event.inputs.target_db || 'superligaen' }}"
+          EXTRA_ARGS=""
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS --force"
+          fi
+          python ingestion/datascience/predict_match_outcomes.py --db "$DB" $EXTRA_ARGS
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+
+  # Follow-up PRs extend this workflow with the dbt silver/gold build, the
+  # data-contract test gate, and the Vercel dashboard publish (issue #342).
