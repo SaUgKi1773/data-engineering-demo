@@ -20,6 +20,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   # ---------------------------------------------------------------------------
   # AI discussions — generate fan forum posts into bronze. Bronze only:
