@@ -45,7 +45,10 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          DB="${{ github.event.inputs.target_db || 'superligaen' }}"
+          if [[ "$DB" == "superligaen" ]]; then TARGET=prod
+          elif [[ "$DB" == "superligaen_dev" ]]; then TARGET=dev
+          else echo "Unknown target_db: $DB" && exit 1; fi
           SELECT="${{ github.event.inputs.select }}"
           if [ -n "$SELECT" ]; then
             dbt test --target $TARGET --select "$SELECT"
@@ -58,5 +61,8 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          DB="${{ github.event.inputs.target_db || 'superligaen' }}"
+          if [[ "$DB" == "superligaen" ]]; then TARGET=prod
+          elif [[ "$DB" == "superligaen_dev" ]]; then TARGET=dev
+          else echo "Unknown target_db: $DB" && exit 1; fi
           dbt source freshness --target $TARGET

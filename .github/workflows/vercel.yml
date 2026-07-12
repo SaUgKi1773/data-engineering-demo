@@ -1,4 +1,4 @@
-name: Publish to Vercel
+name: Publish dashboard (Vercel)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Publish to Vercel
+    name: Publish dashboard (Vercel)
     runs-on: ubuntu-latest
     permissions:
       contents: write
