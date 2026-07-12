@@ -14,6 +14,11 @@ contract (see issue #342): append-only, probabilities sum to 1, and
 predictions are only ever produced for fixtures that have not been played —
 so predicted_at is leakage-proof evidence for the accuracy tracker.
 
+Publishing is event-driven, not calendar-driven: a fixture is re-predicted
+only when the model's information set has changed, i.e. when a match in the
+league has finished since the fixture's latest prediction. Reruns during a
+match-free week are no-ops.
+
 Usage:
   python ingestion/datascience/predict_match_outcomes.py                      # MotherDuck, default db
   python ingestion/datascience/predict_match_outcomes.py --db superligaen_dev
@@ -225,16 +230,26 @@ def process_league(con, bronze: str, gold: str, league_id: int, cfg: dict, force
                 WHERE league_id = ? AND model_version = ? AND predicted_at::DATE = ?""",
             [league_id, MODEL_VERSION, now.date()],
         )
-        already_done = set()
+        latest_predicted = {}
     else:
-        # one prediction per fixture per day: later days re-predict with fresher strengths
-        already_done = {
-            r[0] for r in con.execute(
-                f"""SELECT match_id FROM {bronze}.ds__match_predictions
-                    WHERE league_id = ? AND model_version = ? AND predicted_at::DATE = ?""",
-                [league_id, MODEL_VERSION, now.date()],
-            ).fetchall()
-        }
+        latest_predicted = dict(con.execute(
+            f"""SELECT match_id, MAX(predicted_at) FROM {bronze}.ds__match_predictions
+                WHERE league_id = ? AND model_version = ?
+                GROUP BY match_id""",
+            [league_id, MODEL_VERSION],
+        ).fetchall())
+
+    # The model's information set only changes when a match finishes, so a
+    # fixture is re-predicted only if a league match has finished since its
+    # latest prediction (date granularity; the pipeline runs predictions after
+    # the gold refresh, so a same-day rerun is deduped by the today guard).
+    last_finished_date = max(m["match_date"] for m in finished)
+
+    def is_up_to_date(match_id) -> bool:
+        last_pred = latest_predicted.get(match_id)
+        if last_pred is None:
+            return False
+        return last_pred.date() > last_finished_date or last_pred.date() == now.date()
 
     model = fit_league(finished, now.date())
     log.info(
@@ -245,7 +260,7 @@ def process_league(con, bronze: str, gold: str, league_id: int, cfg: dict, force
 
     to_insert = []
     for fx in pending:
-        if fx["match_id"] in already_done:
+        if is_up_to_date(fx["match_id"]):
             continue
         pred = predict(model, fx["home_team_id"], fx["away_team_id"])
         to_insert.append((
@@ -264,7 +279,7 @@ def process_league(con, bronze: str, gold: str, league_id: int, cfg: dict, force
             """,
             to_insert,
         )
-    log.info(f"{cfg['name']}: inserted {len(to_insert)}, skipped {len(pending) - len(to_insert)} already predicted today")
+    log.info(f"{cfg['name']}: inserted {len(to_insert)}, skipped {len(pending) - len(to_insert)} already up to date")
     return len(to_insert)
 
 
