@@ -1,4 +1,4 @@
-name: AI round discussions
+name: Bronze ingestion (AI discussions)
 
 on:
   workflow_dispatch:
@@ -25,7 +25,7 @@ jobs:
   # AI discussions — generate fan forum posts
   # ---------------------------------------------------------------------------
   ai_discussions:
-    name: AI round discussions
+    name: AI discussions ingestion
     runs-on: ubuntu-latest
     timeout-minutes: 120  # full-season backfill can take ~45 min per season
 

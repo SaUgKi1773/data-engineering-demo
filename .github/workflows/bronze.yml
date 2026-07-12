@@ -1,4 +1,4 @@
-name: Bronze Ingestion
+name: Bronze ingestion (Sportmonks)
 
 on:
   workflow_dispatch:
@@ -32,7 +32,7 @@ concurrency:
 
 jobs:
   ingest:
-    name: Ingest → MotherDuck
+    name: Bronze ingestion
     runs-on: ubuntu-latest
     timeout-minutes: 360   # full load across 16 seasons can take a while
 
