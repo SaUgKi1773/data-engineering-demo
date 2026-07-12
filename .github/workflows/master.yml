@@ -34,7 +34,7 @@ jobs:
   # Bronze — ingest raw API data from Sportmonks
   # ---------------------------------------------------------------------------
   ingest:
-    name: Bronze ingestion
+    name: Bronze ingestion (Sportmonks)
     runs-on: ubuntu-latest
     timeout-minutes: 360  # 6h max — covers a full load
 
@@ -67,7 +67,7 @@ jobs:
   # after the round completes.
   # ---------------------------------------------------------------------------
   ai_discussions:
-    name: AI discussions ingestion
+    name: Bronze ingestion (AI discussions)
     runs-on: ubuntu-latest
     timeout-minutes: 120  # all_discussions backfill can take ~45 min per season
 
