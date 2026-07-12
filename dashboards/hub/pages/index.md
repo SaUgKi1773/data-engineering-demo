@@ -4,7 +4,7 @@ hide_toc: true
 full_width: true
 title: Krogvad Analytics Hub — Football intelligence for the whole world
 hide_title: true
-description: Free, open football analytics platforms from Farum, Denmark. One purpose-built site per league, one shared data warehouse, refreshed every night.
+description: Free, open football analytics platforms from Farum, Denmark. A dedicated home for every league, one shared data warehouse, refreshed every night.
 ---
 
 ```sql leagues
@@ -43,21 +43,29 @@ select * from hub.last_updated
   <div class="absolute -right-20 -top-20 w-96 h-96 rounded-full border border-white opacity-[0.05] pointer-events-none"></div>
   <div class="absolute -right-8 -top-8 w-64 h-64 rounded-full border border-white opacity-[0.05] pointer-events-none"></div>
 
-  <div class="relative px-8 py-14 md:px-16 md:py-20">
+  <div class="relative px-8 py-12 md:px-16 md:py-16">
     <div class="flex flex-wrap items-center gap-3 mb-6">
       <span class="text-white/40 text-[11px] font-bold uppercase" style="letter-spacing: 0.25em;">Krogvad Analytics Hub</span>
       <span class="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-white/60 text-[11px] font-semibold whitespace-nowrap">📍 Farum, Denmark</span>
     </div>
     <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.05] mb-5" style="margin-top:0;">Football intelligence,<br/>for the whole world.</h1>
-    <p class="text-white/60 text-base md:text-lg max-w-2xl leading-relaxed mb-4">From beautiful Farum, we build football analytics platforms — one purpose-built site per league, each with its own identity, all powered by a single shared data warehouse. Every match, every goal, every transfer flows through the same modelled, tested pipeline, refreshed end-to-end every night while the town sleeps.</p>
-    <p class="text-white/60 text-base md:text-lg max-w-2xl leading-relaxed mb-4">It started as a small idea in a new home. Our founder had just moved to Denmark — a lifelong football fan who suddenly knew nothing about the league playing twenty minutes down the road: the clubs, the players, the rivalries, how the season even worked. Learning it from league tables felt thin. So the idea took shape: <em class="text-white/80 not-italic font-semibold">what if the Danish Superliga had the same data platform a serious company runs on?</em> Not a spreadsheet, not a toy — real live data, a properly modelled warehouse, a product you'd actually open on a Saturday before kick-off.</p>
-    <p class="text-white/60 text-base md:text-lg max-w-2xl leading-relaxed mb-4">One rule was set on day one: it had to be free — open-source tools only, nothing behind a credit card, so it could stay free for the people using it too. That discipline forced the platform to be built right, and building it right turned out to be the whole point: a warehouse done properly for one league is ready for any league. The small idea became a site, the site earned its first users, and the users pulled it into what it is today — a multi-league football analytics hub.</p>
-    <p class="text-white/60 text-base md:text-lg max-w-2xl leading-relaxed mb-8">Our aim hasn't changed since that day: bring warehouse-grade football analytics to every league in the world — open source, shaped by the people who use it, and free for everyone, forever.</p>
+    <p class="text-white/60 text-base md:text-lg max-w-2xl leading-relaxed mb-8">From beautiful Farum, we build football analytics platforms — a dedicated home for every league, each with its own identity, all powered by a single shared data warehouse. Every match, every goal, every transfer flows through the same modelled, tested pipeline, refreshed end-to-end every night while the town sleeps.</p>
     <div class="flex flex-wrap items-center gap-3">
       <a href="#platforms" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-gray-900 text-sm font-bold no-underline hover:bg-gray-100 transition-colors">Explore our platforms <span class="text-gray-400">↓</span></a>
-      <a href="https://saugki1773.github.io/data-engineering-blog/" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/25 text-white text-sm font-semibold no-underline hover:bg-white/10 transition-colors">Our story <span class="text-white/40">↗</span></a>
+      <a href="https://saugki1773.github.io/data-engineering-blog/" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/25 text-white text-sm font-semibold no-underline hover:bg-white/10 transition-colors">Read the diary <span class="text-white/40">↗</span></a>
     </div>
   </div>
+</div>
+
+<!-- ══ OUR STORY ═════════════════════════════════════════════════════════ -->
+<div class="mb-14">
+  <div class="text-gray-400 text-[11px] font-bold uppercase mb-1" style="letter-spacing: 0.25em;">Our story</div>
+  <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mb-6" style="margin-top:0.25rem;">A small idea in a new home.</h2>
+  <StoryPager labels={['The idea', 'The rule', 'The aim']}>
+    <p class="text-gray-600 text-base md:text-lg max-w-3xl leading-relaxed mb-0" style="margin-top:0;">It started as a small idea in a new home. Our founder had just moved to Denmark — a lifelong football fan who suddenly knew nothing about the league playing twenty minutes down the road: the clubs, the players, the rivalries, how the season even worked. Learning it from league tables felt thin. So the idea took shape: <em class="text-gray-900 not-italic font-semibold">what if the Danish Superliga had the same data platform a serious company runs on?</em> Not a spreadsheet, not a toy — real live data, a properly modelled warehouse, a product you'd actually open on a Saturday before kick-off.</p>
+    <p class="text-gray-600 text-base md:text-lg max-w-3xl leading-relaxed mb-0" style="margin-top:0;">One rule was set on day one: it had to be free — open-source tools only, nothing behind a credit card, so it could stay free for the people using it too. That discipline forced the platform to be built right, and building it right turned out to be the whole point: a warehouse done properly for one league is ready for any league. The small idea became a site, the site earned its first users, and the users pulled it into what it is today — a multi-league football analytics hub.</p>
+    <p class="text-gray-600 text-base md:text-lg max-w-3xl leading-relaxed mb-0" style="margin-top:0;">Our aim hasn't changed since that day: bring warehouse-grade football analytics to every league in the world — open source, shaped by the people who use it, and free for everyone, forever.</p>
+  </StoryPager>
 </div>
 
 <!-- ══ GROUP IN NUMBERS ══════════════════════════════════════════════════ -->
