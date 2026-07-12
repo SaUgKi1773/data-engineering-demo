@@ -55,6 +55,43 @@ models:
       - name: league_sk
         tests: [not_null]
 
+  - name: fct_match_predictions
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [match_sk, team_side_sk, prediction_model_sk, predicted_at]
+    columns:
+      - name: match_sk
+        tests: [not_null]
+      - name: team_sk
+        tests: [not_null]
+      - name: opponent_team_sk
+        tests: [not_null]
+      - name: league_sk
+        tests: [not_null]
+      - name: date_sk
+        tests: [not_null]
+      - name: team_side_sk
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, -1, -2]
+      - name: prediction_model_sk
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, -1, -2]
+      - name: predicted_at
+        tests: [not_null]
+      - name: win_probability
+        tests: [not_null]
+      - name: draw_probability
+        tests: [not_null]
+      - name: loss_probability
+        tests: [not_null]
+
   - name: fct_team_transfers
     tests:
       - dbt_utils.unique_combination_of_columns:

@@ -39,3 +39,6 @@ WHERE expected_sk NOT IN (SELECT transfer_type_sk   FROM {{ ref('dim_transfer_ty
 UNION ALL
 SELECT 'dim_transfer_status', expected_sk FROM (VALUES (-1), (-2)) t(expected_sk)
 WHERE expected_sk NOT IN (SELECT transfer_status_sk FROM {{ ref('dim_transfer_status') }})
+UNION ALL
+SELECT 'dim_prediction_model', expected_sk FROM (VALUES (-1), (-2)) t(expected_sk)
+WHERE expected_sk NOT IN (SELECT prediction_model_sk FROM {{ ref('dim_prediction_model') }})

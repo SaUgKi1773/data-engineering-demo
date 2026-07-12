@@ -46,7 +46,10 @@ select
     kick_off_time,
     stadium,
     referee,
-    season
+    season,
+    home_win_prob,
+    draw_prob,
+    away_win_prob
 from scotland.mart_upcoming
 where home_team is not null
   and match_round_number in ${inputs.round.value}
@@ -88,10 +91,26 @@ from (
       <span class="font-semibold text-gray-800 truncate hidden md:inline">{m.away_team}</span>
     </div>
   </div>
+  {#if m.home_win_prob != null}
+  <div class="mt-3 max-w-md mx-auto">
+    <div class="flex h-1.5 rounded-full overflow-hidden gap-[2px]">
+      <div class="bg-[#3b82f6] rounded-l-full" style="width:{(m.home_win_prob*100).toFixed(1)}%"></div>
+      <div class="bg-[#94a3b8]" style="width:{(m.draw_prob*100).toFixed(1)}%"></div>
+      <div class="bg-[#f97316] rounded-r-full" style="width:{(m.away_win_prob*100).toFixed(1)}%"></div>
+    </div>
+    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+      <span><span class="inline-block w-2 h-2 rounded-full bg-[#3b82f6] mr-1"></span>{m.home_team_short} {Math.round(m.home_win_prob*100)}%</span>
+      <span><span class="inline-block w-2 h-2 rounded-full bg-[#94a3b8] mr-1"></span>Draw {Math.round(m.draw_prob*100)}%</span>
+      <span><span class="inline-block w-2 h-2 rounded-full bg-[#f97316] mr-1"></span>{m.away_team_short} {Math.round(m.away_win_prob*100)}%</span>
+    </div>
+  </div>
+  {/if}
   <div class="text-[11px] text-gray-400 text-center mt-2 uppercase tracking-wide">{m.stadium} &middot; {m.kick_off_time}</div>
 </div>
 </a>
 {/each}
+
+<p style="font-size:0.7rem;color:#9ca3af;margin:1.5rem 0 0 0;font-style:italic;">Win probabilities are produced by our data science team's model before each round. See how it scores against reality on the <a href="/prediction-tracker" style="color:#6b7280;">Prediction Tracker</a>.</p>
 
 {:else}
 

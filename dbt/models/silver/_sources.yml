@@ -42,3 +42,10 @@ sources:
         description: Raw Groq API responses for fan forum discussions, one row per match.
         loaded_at_field: generated_at
         freshness: null
+      - name: ds__match_predictions
+        description: >
+          Match outcome predictions published by the data science pipeline
+          (ingestion/datascience). Append-only, governed by the data contract in
+          issue #342; one row per fixture per prediction run.
+        loaded_at_field: predicted_at
+        freshness: null

@@ -114,6 +114,15 @@ select * from scotland.mart_home_summary
   <div class="shrink-0 text-gray-300 group-hover:text-violet-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
 </a>
 
+<a href="/prediction-tracker" class="flex items-center no-underline rounded-xl border border-gray-200 bg-white p-4 hover:border-rose-300 hover:shadow-md transition-all duration-200 group shadow-sm">
+  <div class="rounded-xl bg-rose-50 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">🎯</div>
+  <div class="flex-1 min-w-0">
+    <div class="text-sm font-bold text-gray-800 group-hover:text-rose-600 transition-colors">Prediction Tracker</div>
+    <div class="text-gray-400 text-xs mt-0.5 leading-snug">Model vs reality — how our win probabilities score against results</div>
+  </div>
+  <div class="shrink-0 text-gray-300 group-hover:text-rose-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
+</a>
+
 <a href="/league-analytics" class="flex items-center no-underline rounded-xl border border-gray-200 bg-white p-4 hover:border-emerald-300 hover:shadow-md transition-all duration-200 group shadow-sm">
   <div class="rounded-xl bg-emerald-50 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">📈</div>
   <div class="flex-1 min-w-0">
