@@ -30,7 +30,7 @@ jobs:
   # silver/gold parsing happens in the silver/gold workflows or the nightly run.
   # ---------------------------------------------------------------------------
   ai_discussions:
-    name: AI discussions ingestion
+    name: Bronze ingestion (AI discussions)
     runs-on: ubuntu-latest
     timeout-minutes: 120  # full-season backfill can take ~45 min per season
 

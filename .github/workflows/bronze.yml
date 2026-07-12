@@ -36,7 +36,7 @@ concurrency:
 
 jobs:
   ingest:
-    name: Bronze ingestion
+    name: Bronze ingestion (Sportmonks)
     runs-on: ubuntu-latest
     timeout-minutes: 360   # full load across 16 seasons can take a while
 
