@@ -25,6 +25,10 @@ on:
         required: false
         default: ""
         type: string
+      target_db:
+        description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
+        required: false
+        default: ""
 
 concurrency:
   group: ${{ github.workflow }}
@@ -68,5 +72,6 @@ jobs:
           if [ -n "$SEASONS" ]; then
             ARGS="$ARGS --seasons $SEASONS"
           fi
-          echo "Running: python run.py $ARGS --db md:superligaen"
-          python run.py $ARGS --db md:superligaen
+          DB="md:${{ github.event.inputs.target_db || 'superligaen' }}"
+          echo "Running: python run.py $ARGS --db $DB"
+          python run.py $ARGS --db $DB

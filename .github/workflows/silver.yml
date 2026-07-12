@@ -44,7 +44,10 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          DB="${{ github.event.inputs.target_db || 'superligaen' }}"
+          if [[ "$DB" == "superligaen" ]]; then TARGET=prod
+          elif [[ "$DB" == "superligaen_dev" ]]; then TARGET=dev
+          else echo "Unknown target_db: $DB" && exit 1; fi
           dbt seed --target $TARGET
 
       - name: Run silver
@@ -52,7 +55,10 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          TARGET=$([ "${{ github.event.inputs.target_db || 'superligaen' }}" = "superligaen" ] && echo "prod" || echo "dev")
+          DB="${{ github.event.inputs.target_db || 'superligaen' }}"
+          if [[ "$DB" == "superligaen" ]]; then TARGET=prod
+          elif [[ "$DB" == "superligaen_dev" ]]; then TARGET=dev
+          else echo "Unknown target_db: $DB" && exit 1; fi
           if [ "${{ github.event.inputs.full_refresh }}" = "true" ]; then
             dbt run --select silver.* --target $TARGET --full-refresh
           else
