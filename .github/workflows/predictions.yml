@@ -1,0 +1,41 @@
+name: Bronze ingestion (match predictions)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_db:
+        description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
+        required: false
+        default: ""
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Match predictions — the "data science team" writes win/draw/loss
+  # probabilities for upcoming fixtures into bronze. Bronze only:
+  # silver/gold modeling happens in the silver/gold workflows or the nightly run.
+  # ---------------------------------------------------------------------------
+  match_predictions:
+    name: Bronze ingestion (match predictions)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Predict upcoming fixtures
+        run: |
+          DB="${{ github.event.inputs.target_db || 'superligaen' }}"
+          python ingestion/datascience/predict_match_outcomes.py --db "$DB"
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
