@@ -101,15 +101,43 @@ jobs:
           DB:               ${{ github.event.inputs.target_db || 'superligaen' }}
 
   # ---------------------------------------------------------------------------
+  # Match predictions — the "data science team" writes win/draw/loss
+  # probabilities for upcoming fixtures into bronze, parallel to ingest.
+  # Reads the previous night's gold, so predictions for newly announced
+  # fixtures land the night after the fixtures do.
+  # ---------------------------------------------------------------------------
+  match_predictions:
+    name: Bronze ingestion (match predictions)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Predict upcoming fixtures
+        run: |
+          DB="${{ github.event.inputs.target_db || 'superligaen' }}"
+          python ingestion/datascience/predict_match_outcomes.py --db "$DB"
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+
+  # ---------------------------------------------------------------------------
   # Silver — transform bronze JSON into structured tables (dbt).
-  # Waits for both bronze ingestions; a failed AI generation shows red but does
-  # not block the pipeline (discussions just stay stale that night).
+  # Waits for all bronze ingestions; a failed AI generation or prediction run
+  # shows red but does not block the pipeline (that data just stays stale).
   # ---------------------------------------------------------------------------
   transform:
     name: Silver transformation
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    needs: [ingest, ai_discussions]
+    needs: [ingest, ai_discussions, match_predictions]
     if: ${{ !cancelled() && needs.ingest.result == 'success' }}
 
     steps:
