@@ -48,6 +48,7 @@ SELECT
         WHEN 'Left Wing'          THEN 'LW'
         WHEN 'Right Wing'         THEN 'RW'
         WHEN 'Attacker'           THEN 'ST'
+        WHEN 'Centre Forward'     THEN 'CF'
     END                    AS position_short_code,
     position_group
 FROM dominant
