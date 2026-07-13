@@ -35,8 +35,8 @@ src AS (
         CASE mt.location WHEN 'home' THEN s.home_win_prob  ELSE s.away_win_prob  END AS win_probability,
         s.draw_prob                                                                  AS draw_probability,
         CASE mt.location WHEN 'home' THEN s.away_win_prob  ELSE s.home_win_prob  END AS loss_probability,
-        CASE mt.location WHEN 'home' THEN s.home_goals_exp ELSE s.away_goals_exp END AS goals_expected_scored,
-        CASE mt.location WHEN 'home' THEN s.away_goals_exp ELSE s.home_goals_exp END AS goals_expected_conceded,
+        CASE mt.location WHEN 'home' THEN s.home_goals_exp ELSE s.away_goals_exp END AS expected_goals_scored,
+        CASE mt.location WHEN 'home' THEN s.away_goals_exp ELSE s.home_goals_exp END AS expected_goals_conceded,
         s.model_version,
         s.predicted_at
     FROM {{ ref('match_predictions') }} s
@@ -56,9 +56,9 @@ SELECT
     src.win_probability,
     src.draw_probability,
     src.loss_probability,
-    src.goals_expected_scored,
-    src.goals_expected_conceded,
-    ROUND(3 * src.win_probability + src.draw_probability, 4) AS points_expected,
+    src.expected_goals_scored,
+    src.expected_goals_conceded,
+    ROUND(3 * src.win_probability + src.draw_probability, 4) AS expected_points,
     src.model_version,
     src.predicted_at
 FROM src

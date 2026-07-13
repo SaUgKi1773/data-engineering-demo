@@ -66,11 +66,11 @@ models:
         tests: [not_null]
       - name: loss_probability
         tests: [not_null]
-      - name: goals_expected_scored
+      - name: expected_goals_scored
         tests: [not_null]
-      - name: goals_expected_conceded
+      - name: expected_goals_conceded
         tests: [not_null]
-      - name: points_expected
+      - name: expected_points
         tests: [not_null]
       - name: model_version
         tests: [not_null]
