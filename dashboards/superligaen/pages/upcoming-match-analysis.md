@@ -37,6 +37,13 @@ where match_id = cast('${inputs.match.value}' as bigint)
 limit 1
 ```
 
+```sql prediction
+select *
+from superligaen.mart_upcoming_predictions
+where match_id = cast('${inputs.match.value}' as bigint)
+limit 1
+```
+
 ```sql h2h_seasons
 select distinct mc.season
 from superligaen.mart_match_card mc
@@ -142,6 +149,46 @@ limit 5
   </div>
   <div class="text-xs text-gray-400 uppercase tracking-widest mt-3">{match_info[0].stadium} &middot; {match_info[0].kick_off_time}</div>
 </div>
+
+{#if prediction.length > 0 && prediction[0].home_pct !== null}
+
+---
+
+### The Model's View
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Win, draw and loss probabilities from our data science team's match model — frozen before kickoff and scored against reality afterwards.</p>
+
+<div class="grid grid-cols-3 gap-4 mb-4">
+  <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center">
+    <div class="text-3xl font-black text-blue-600">{prediction[0].home_pct}%</div>
+    <div class="text-xs text-blue-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].home_team_short} Win</div>
+  </div>
+  <div class="rounded-xl border border-gray-200 bg-gray-100 p-4 text-center">
+    <div class="text-3xl font-black text-gray-500">{prediction[0].draw_pct}%</div>
+    <div class="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-wide">Draw</div>
+  </div>
+  <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-center">
+    <div class="text-3xl font-black text-red-500">{prediction[0].away_pct}%</div>
+    <div class="text-xs text-red-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].away_team_short} Win</div>
+  </div>
+</div>
+
+<div class="rounded-xl border border-gray-200 bg-gray-50 p-4 mb-4">
+  <div class="text-xs text-gray-400 text-center font-semibold uppercase tracking-widest mb-2">Expected Goals</div>
+  <div class="flex items-center justify-center gap-6">
+    <div class="text-center w-24">
+      <div class="text-3xl font-black text-blue-600">{prediction[0].expected_home_goals.toFixed(1)}</div>
+      <div class="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].home_team_short}</div>
+    </div>
+    <div class="text-2xl font-black text-gray-300 shrink-0">&ndash;</div>
+    <div class="text-center w-24">
+      <div class="text-3xl font-black text-red-500">{prediction[0].expected_away_goals.toFixed(1)}</div>
+      <div class="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].away_team_short}</div>
+    </div>
+  </div>
+</div>
+
+{/if}
 
 ---
 
