@@ -4,8 +4,8 @@ WITH base AS (
         ROUND(p.win_probability  * 100)::INT AS home_pct,
         ROUND(p.draw_probability * 100)::INT AS draw_pct,
         ROUND(p.loss_probability * 100)::INT AS away_pct,
-        ROUND(p.expected_goals_scored,   1)  AS expected_home_goals,
-        ROUND(p.expected_goals_conceded, 1)  AS expected_away_goals,
+        ROUND(p.predicted_goals_scored,   1)  AS predicted_home_goals,
+        ROUND(p.predicted_goals_conceded, 1)  AS predicted_away_goals,
         p.model_version
     FROM superligaen.gold.fct_match_predictions p
     JOIN superligaen.gold.dim_match         m ON m.match_sk         = p.match_sk
