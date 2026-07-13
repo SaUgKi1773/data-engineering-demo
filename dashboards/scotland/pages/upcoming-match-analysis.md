@@ -174,15 +174,15 @@ limit 5
 </div>
 
 <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 mb-4">
-  <div class="text-xs text-gray-400 text-center font-semibold uppercase tracking-widest mb-2">Expected Goals</div>
+  <div class="text-xs text-gray-400 text-center font-semibold uppercase tracking-widest mb-2">Predicted Goals</div>
   <div class="flex items-center justify-center gap-6">
     <div class="text-center w-24">
-      <div class="text-3xl font-black text-blue-600">{prediction[0].expected_home_goals.toFixed(1)}</div>
+      <div class="text-3xl font-black text-blue-600">{prediction[0].predicted_home_goals.toFixed(1)}</div>
       <div class="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].home_team_short}</div>
     </div>
     <div class="text-2xl font-black text-gray-300 shrink-0">&ndash;</div>
     <div class="text-center w-24">
-      <div class="text-3xl font-black text-red-500">{prediction[0].expected_away_goals.toFixed(1)}</div>
+      <div class="text-3xl font-black text-red-500">{prediction[0].predicted_away_goals.toFixed(1)}</div>
       <div class="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].away_team_short}</div>
     </div>
   </div>
