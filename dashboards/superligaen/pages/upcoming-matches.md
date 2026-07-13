@@ -30,29 +30,33 @@ order by round_number asc
 
 ```sql upcoming
 select
-    cast(cast(match_id as bigint) as varchar)   as match_key,
-    home_team || ' - ' || away_team             as match_name,
-    round,
-    match_round_number,
-    home_team,
-    away_team,
-    home_team_short,
-    away_team_short,
-    match_short_name,
-    home_team_logo,
-    away_team_logo,
-    strftime(match_date, '%Y-%m-%d')            as match_date,
-    strftime(match_date, '%A %d %B')            as match_day,
-    kick_off_time,
-    stadium,
-    referee,
-    season
-from superligaen.mart_upcoming
-where home_team is not null
-  and match_round_number in ${inputs.round.value}
-  and (home_team in ${inputs.team.value}
-       or away_team in ${inputs.team.value})
-order by match_date asc, kick_off_time asc
+    cast(cast(u.match_id as bigint) as varchar) as match_key,
+    u.home_team || ' - ' || u.away_team         as match_name,
+    u.round,
+    u.match_round_number,
+    u.home_team,
+    u.away_team,
+    u.home_team_short,
+    u.away_team_short,
+    u.match_short_name,
+    u.home_team_logo,
+    u.away_team_logo,
+    strftime(u.match_date, '%Y-%m-%d')          as match_date,
+    strftime(u.match_date, '%A %d %B')          as match_day,
+    u.kick_off_time,
+    u.stadium,
+    u.referee,
+    u.season,
+    p.home_pct,
+    p.draw_pct,
+    p.away_pct
+from superligaen.mart_upcoming u
+left join superligaen.mart_upcoming_predictions p on p.match_id = u.match_id
+where u.home_team is not null
+  and u.match_round_number in ${inputs.round.value}
+  and (u.home_team in ${inputs.team.value}
+       or u.away_team in ${inputs.team.value})
+order by u.match_date asc, u.kick_off_time asc
 ```
 
 ```sql round_title
@@ -89,6 +93,19 @@ from (
     </div>
   </div>
   <div class="text-[11px] text-gray-400 text-center mt-2 uppercase tracking-wide">{m.stadium} &middot; {m.kick_off_time}</div>
+  {#if m.home_pct !== null && m.home_pct !== undefined}
+  <div class="mt-2 max-w-md mx-auto">
+    <div class="flex h-1.5 rounded-full overflow-hidden gap-[2px]" title="Win probability: {m.home_team_short} {m.home_pct}% · Draw {m.draw_pct}% · {m.away_team_short} {m.away_pct}%">
+      <div class="bg-blue-600 rounded-full" style="width:{m.home_pct}%"></div>
+      <div class="bg-gray-300 rounded-full" style="width:{m.draw_pct}%"></div>
+      <div class="bg-red-500 rounded-full" style="width:{m.away_pct}%"></div>
+    </div>
+    <div class="flex justify-between text-[10px] mt-1 font-semibold">
+      <span class="text-blue-600">{m.home_pct}%</span>
+      <span class="text-red-500">{m.away_pct}%</span>
+    </div>
+  </div>
+  {/if}
 </div>
 </a>
 {/each}

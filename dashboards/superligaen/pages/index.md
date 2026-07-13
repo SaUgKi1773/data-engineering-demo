@@ -170,6 +170,17 @@ select * from superligaen.mart_home_summary
   <div class="shrink-0 text-gray-300 group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
 </a>
 
+<a href="/predictions" class="relative overflow-hidden flex items-center no-underline rounded-xl border border-gray-200 bg-white p-4 hover:border-fuchsia-300 hover:shadow-md transition-all duration-200 group shadow-sm">
+  <!-- "New" corner ribbon -->
+  <span class="pointer-events-none absolute -right-8 top-3 rotate-45 bg-red-500 px-8 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow">New</span>
+  <div class="rounded-xl bg-fuchsia-50 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">🔮</div>
+  <div class="flex-1 min-w-0">
+    <div class="text-sm font-bold text-gray-800 group-hover:text-fuchsia-600 transition-colors">Prediction Module</div>
+    <div class="text-gray-400 text-xs mt-0.5 leading-snug">Win probabilities for every fixture &amp; the model's track record</div>
+  </div>
+  <div class="shrink-0 text-gray-300 group-hover:text-fuchsia-400 group-hover:translate-x-1 transition-all duration-200 ml-3">→</div>
+</a>
+
 <a href="/glossary" class="flex items-center no-underline rounded-xl border border-gray-200 bg-white p-4 hover:border-slate-400 hover:shadow-md transition-all duration-200 group shadow-sm">
   <div class="rounded-xl bg-slate-100 w-11 h-11 flex items-center justify-center text-xl flex-shrink-0 mr-4">📖</div>
   <div class="flex-1 min-w-0">
