@@ -4,6 +4,10 @@ hide_toc: true
 title: Data Glossary
 ---
 
+<script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
+</script>
+
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1.5rem 0;font-style:italic;">Reference for all metrics, abbreviations, and KPIs used across the dashboard. Formulas shown in grey where applicable.</p>
 
 ---
@@ -272,3 +276,9 @@ Unlike the team radar which uses per-match averages, player scores are calculate
   <div class="p-3"><div class="font-semibold text-sm">Surface</div><div class="text-sm text-gray-500 mt-0.5">The playing surface at the stadium — either natural grass or artificial turf (3G / 4G). Some Superligaen clubs use artificial pitches year-round.</div></div>
   <div class="p-3"><div class="font-semibold text-sm">Home Win Rate / Fortress Ranking</div><div class="text-sm text-gray-500 mt-0.5">Share of home matches won at a given stadium. Used to rank venues by how difficult they are for visiting teams.</div><div class="text-xs text-gray-400 mt-0.5">Home Wins ÷ Home Matches Played × 100</div></div>
 </div>
+
+```sql last_updated
+select * from superligaen.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

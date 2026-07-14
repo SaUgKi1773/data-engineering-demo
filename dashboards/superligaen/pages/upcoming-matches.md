@@ -4,6 +4,10 @@ hide_toc: true
 title: Upcoming Fixtures
 ---
 
+<script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
+</script>
+
 ```sql teams
 select distinct team_name from (
     select home_team as team_name from superligaen.mart_upcoming where home_team is not null
@@ -119,3 +123,9 @@ from (
 </div>
 
 {/if}
+
+```sql last_updated
+select * from superligaen.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

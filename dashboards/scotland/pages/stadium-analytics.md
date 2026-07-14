@@ -4,6 +4,10 @@ hide_toc: true
 title: Stadium Intelligence
 ---
 
+<script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
+</script>
+
 ```sql season_options
 select distinct season
 from scotland.mart_stadium_season
@@ -321,3 +325,9 @@ order by n desc
     <Column id=fouls_per_match  title="Fouls/Match"       contentType=colorscale colorPalette={['white','#f97316']} />
     <Column id=goals_per_match  title="Goals/Match"      fmt='0.0'   contentType=colorscale colorPalette={['white','#f59e0b']} />
 </DataTable>
+
+```sql last_updated
+select * from scotland.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

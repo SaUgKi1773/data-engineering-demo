@@ -6,6 +6,10 @@ hide_title: true
 description: Free, open analytics for Superligaen, the Danish premier football league — standings, match results, player, referee and transfer intelligence, refreshed every night. A Krogvad Analytics Hub platform.
 ---
 
+<script>
+  import SiteFooter from '../components/SiteFooter.svelte';
+</script>
+
 ```sql league
 select * from superligaen.league_info
 ```
@@ -201,7 +205,4 @@ select * from superligaen.mart_home_summary
 
 </div>
 
-<div class="mt-16 border-t border-gray-100 pt-6 pb-2 text-center">
-  <a href="https://krogvadanalyticshub.vercel.app/" target="_blank" rel="noreferrer" class="text-xs text-gray-400 no-underline transition-colors hover:text-gray-600">A <span class="font-semibold">Krogvad Analytics Hub</span> platform · Built in Farum, Denmark</a>
-  <div class="mt-1.5 text-[11px] text-gray-400">Data last updated: {last_updated[0]?.last_updated}</div>
-</div>
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

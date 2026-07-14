@@ -5,6 +5,7 @@ title: Match Preview
 ---
 
 <script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
   import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
 
   const pageInputs = getInputContext();
@@ -303,3 +304,9 @@ limit 5
 </div>
 
 {/if}
+
+```sql last_updated
+select * from scotland.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

@@ -5,6 +5,7 @@ title: Match Analysis
 ---
 
 <script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
   import MatchLineup from '../../components/MatchLineup.svelte';
   import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
 
@@ -390,3 +391,9 @@ order by team_side desc, position_group, position_name
     </div>
   </div>
 </div>
+
+```sql last_updated
+select * from superligaen.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

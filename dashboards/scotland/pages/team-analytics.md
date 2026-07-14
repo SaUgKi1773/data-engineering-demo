@@ -5,6 +5,7 @@ title: Team Intelligence
 ---
 
 <script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
   import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
   const pageInputs = getInputContext();
 
@@ -731,3 +732,9 @@ end
     <Column id=yellow_cards  title="YC"          align=center contentType=colorscale colorPalette={['white','#eab308']} />
 </DataTable>
 </div>
+
+```sql last_updated
+select * from scotland.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

@@ -5,6 +5,7 @@ title: League Intelligence
 ---
 
 <script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
   import TeamRadar from '../../components/TeamRadar.svelte';
 
   const scatterPalette = ['#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7'];
@@ -1094,3 +1095,8 @@ order by case period_of_day
     <Column id=goals_scored        title="Goals"            align=center contentType=colorscale colorPalette={['white','#3b82f6']} />
 </DataTable>
 
+```sql last_updated
+select * from superligaen.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

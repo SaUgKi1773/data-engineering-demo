@@ -5,6 +5,7 @@ title: Transfer Intelligence
 ---
 
 <script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
   // axis shows the short code; the full club name stays in the data (and tooltip)
   let nameToCode = {};
   $: nameToCode = Object.fromEntries((team_lookup ?? []).map(r => [r.club, r.club_code]));
@@ -355,3 +356,9 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
 </DataTable>
 
 <div class="mt-8 text-center text-xs text-gray-400">Fees shown where disclosed.</div>
+
+```sql last_updated
+select * from scotland.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

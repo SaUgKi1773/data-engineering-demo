@@ -4,6 +4,10 @@ hide_toc: true
 title: About This Project
 ---
 
+<script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
+</script>
+
 ## The Idea
 
 I am **Salih Ugur Kimilli**, a data engineer who loves turning raw data into insights. This site started life as [Superliga Analytics](https://saugki1773.github.io/data-engineering-blog/) — an end-to-end data engineering project for Danish football built entirely on free, open-source tools: no vendor lock-in, no cloud bills.
@@ -56,3 +60,9 @@ Have a suggestion for the dashboard? Open an issue on GitHub — no account need
   LinkedIn — Salih Ugur Kimilli
 </a>
 </div>
+
+```sql last_updated
+select * from scotland.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />
