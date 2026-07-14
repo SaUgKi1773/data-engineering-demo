@@ -66,14 +66,21 @@ with totals as (
     select
         team_short_name,
         coalesce(sum(points_earned), 0)
-            + coalesce(sum(predicted_points) filter (not is_scored), 0) as expected_total
+            + coalesce(sum(predicted_points) filter (not is_scored), 0)          as expected_total,
+        coalesce(sum(goals_scored - goals_conceded) filter (is_scored), 0)
+            + coalesce(sum(predicted_goals_scored - predicted_goals_conceded)
+                       filter (not is_scored), 0)                                as expected_gd,
+        coalesce(sum(goals_scored) filter (is_scored), 0)
+            + coalesce(sum(predicted_goals_scored) filter (not is_scored), 0)    as expected_gf
     from scotland.mart_prediction_facts
     where match_id is not null
       and season = '${inputs.season.value}'
     group by team_short_name
 ),
 ranked as (
-    select *, row_number() over (order by expected_total desc) as rk
+    -- standings-style tiebreak: points, goal difference, goals for
+    select *, row_number() over (order by expected_total desc, expected_gd desc,
+                                          expected_gf desc, team_short_name) as rk
     from totals
 )
 select
@@ -92,20 +99,22 @@ where rk <= 2
 -- (0, 0) so every team starts the race at the origin. Pending fixtures
 -- (postponed ones included) never contribute here — they live in the dashed
 -- forecast series.
-select round, team_name, round_group, cumulative_points
+select round, team_name, round_group, cumulative_points, cumulative_gd
 from (
     select
         round_number as round,
         team_name,
         standings_type as round_group,
-        sum(points_earned) over (partition by team_name order by round_number)::int as cumulative_points
+        sum(points_earned) over (partition by team_name order by round_number)::int as cumulative_points,
+        sum(goals_scored - goals_conceded)
+            over (partition by team_name order by round_number)::int                as cumulative_gd
     from scotland.mart_prediction_facts
     where match_id is not null
       and is_scored
       and season = '${inputs.season.value}'
       and ('All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value})
     union all
-    select distinct 0, team_name, standings_type, 0
+    select distinct 0, team_name, standings_type, 0, 0
     from scotland.mart_prediction_facts
     where match_id is not null
       and season = '${inputs.season.value}'
@@ -120,7 +129,8 @@ order by max(cumulative_points) over (partition by team_name) desc, team_name, r
 -- A postponed fixture from an earlier round blends into the first forecast
 -- segment (never plotted at or before the anchor, which would draw a step).
 with rows as (
-    select round_number, team_name, standings_type, is_scored, points_earned, predicted_points
+    select round_number, team_name, standings_type, is_scored, points_earned, predicted_points,
+           goals_scored, goals_conceded, predicted_goals_scored, predicted_goals_conceded
     from scotland.mart_prediction_facts
     where match_id is not null
       and season = '${inputs.season.value}'
@@ -131,6 +141,7 @@ base as (
         team_name,
         max(standings_type)                                    as round_group,
         coalesce(sum(points_earned), 0)                        as actual_total,
+        coalesce(sum(goals_scored - goals_conceded), 0)        as actual_gd,
         coalesce(max(case when is_scored then round_number end), 0) as last_played_round
     from rows
     group by team_name
@@ -139,18 +150,26 @@ pending as (
     select
         r.team_name,
         b.round_group,
+        r.round_number as orig_round,
         greatest(r.round_number, b.last_played_round + 1) as round,
         b.actual_total
-            + sum(r.predicted_points) over (partition by r.team_name order by r.round_number) as cum
+            + sum(r.predicted_points) over (partition by r.team_name order by r.round_number) as cum,
+        b.actual_gd
+            + sum(r.predicted_goals_scored - r.predicted_goals_conceded)
+                  over (partition by r.team_name order by r.round_number)                     as cum_gd
     from rows r
     join base b using (team_name)
     where not r.is_scored
 )
-select team_name, round_group, round, round(max(cum), 1) as cumulative_points
+select team_name, round_group, round,
+       round(max_by(cum,    orig_round), 1) as cumulative_points,
+       round(max_by(cum_gd, orig_round), 1) as cumulative_gd
 from pending
 group by team_name, round_group, round
 union all
-select team_name, round_group, last_played_round as round, actual_total::decimal(10,1) as cumulative_points
+select team_name, round_group, last_played_round as round,
+       actual_total::decimal(10,1) as cumulative_points,
+       actual_gd::decimal(10,1)    as cumulative_gd
 from base
 order by team_name, round
 ```
@@ -306,7 +325,7 @@ order by match_date desc
     xAxisTitle="Round"
     yAxisTitle="Cumulative Points"
     colorPalette={teamPalette}
-    echartsOptions={{tooltip: {formatter: (function() { const grpOf = {}; for (const r of race) grpOf[r.team_name] = r.round_group; for (const r of race_forecast) if (!(r.team_name in grpOf)) grpOf[r.team_name] = r.round_group; const hasGroups = Object.values(grpOf).some(g => g === 'Championship Group' || g === 'Relegation Group'); return function(params) { const seen = new Set(); const uniq = params.filter(p => { const nm = p.seriesName.replace(' (forecast)', ''); if (p.value == null || p.value[1] == null || seen.has(nm)) return false; if (hasGroups && raceGroup !== null && grpOf[nm] !== raceGroup) return false; seen.add(nm); return true; }); if (uniq.length === 0) return ''; const round = uniq[0].value[0]; const sorted = [...uniq].sort((a, b) => b.value[1] - a.value[1]); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { const isFc = p.seriesName.includes(' (forecast)'); out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName.replace(' (forecast)', '') + '</span><span style="float:right;margin-left:10px;font-size:12px;' + (isFc ? 'font-style:italic;color:#9ca3af;' : '') + '">' + (isFc ? '~' : '') + p.value[1] + '</span>'; } return out; }; })()}, series: (function() { const grpOf = {}; for (const r of race) grpOf[r.team_name] = r.round_group; for (const r of race_forecast) if (!(r.team_name in grpOf)) grpOf[r.team_name] = r.round_group; const hasGroups = Object.values(grpOf).some(g => g === 'Championship Group' || g === 'Relegation Group'); const widthOf = (t) => !hasGroups ? 2 : (grpOf[t] === 'Championship Group' ? 3.5 : 1.25); const hiddenOf = (t) => hasGroups && raceGroup !== null && grpOf[t] !== raceGroup; const solidTeams = [...new Set(race.map(r => r.team_name))]; const fcTeams = [...new Set(race_forecast.map(r => r.team_name))]; const allTeams = [...solidTeams]; for (const t of fcTeams) if (!allTeams.includes(t)) allTeams.push(t); const colorOf = {}; allTeams.forEach((t, i) => { colorOf[t] = teamPalette[i % teamPalette.length]; }); const byTeam = {}; for (const r of race_forecast) { (byTeam[r.team_name] = byTeam[r.team_name] || []).push([Number(r.round), Number(r.cumulative_points)]); } const base = solidTeams.map(t => { const cfg = {lineStyle: {width: widthOf(t)}}; if (hiddenOf(t)) cfg.data = []; return cfg; }); const fc = fcTeams.map(t => ({name: t + ' (forecast)', type: 'line', showSymbol: false, color: colorOf[t], lineStyle: {type: 'dashed', width: widthOf(t)}, data: hiddenOf(t) ? [] : byTeam[t]})); return base.concat(fc); })()}}
+    echartsOptions={{tooltip: {formatter: (function() { const grpOf = {}; for (const r of race) grpOf[r.team_name] = r.round_group; for (const r of race_forecast) if (!(r.team_name in grpOf)) grpOf[r.team_name] = r.round_group; const hasGroups = Object.values(grpOf).some(g => g === 'Championship Group' || g === 'Relegation Group'); const gdOf = {}; for (const r of race) gdOf[r.team_name + '|' + r.round] = Number(r.cumulative_gd); for (const r of race_forecast) { const k = r.team_name + '|' + r.round; if (!(k in gdOf)) gdOf[k] = Number(r.cumulative_gd); } return function(params) { const seen = new Set(); const uniq = params.filter(p => { const nm = p.seriesName.replace(' (forecast)', ''); if (p.value == null || p.value[1] == null || seen.has(nm)) return false; if (hasGroups && raceGroup !== null && grpOf[nm] !== raceGroup) return false; seen.add(nm); return true; }); if (uniq.length === 0) return ''; const round = uniq[0].value[0]; const gd = (p) => gdOf[p.seriesName.replace(' (forecast)', '') + '|' + p.value[0]] ?? 0; const sorted = [...uniq].sort((a, b) => (b.value[1] - a.value[1]) || (gd(b) - gd(a))); let out = '<span style="font-weight:600;">Round ' + round + '</span>'; for (const p of sorted) { const isFc = p.seriesName.includes(' (forecast)'); out += '<br><span style="font-size:11px;">' + p.marker + ' ' + p.seriesName.replace(' (forecast)', '') + '</span><span style="float:right;margin-left:10px;font-size:12px;' + (isFc ? 'font-style:italic;color:#9ca3af;' : '') + '">' + (isFc ? '~' : '') + p.value[1] + '</span>'; } return out; }; })()}, series: (function() { const grpOf = {}; for (const r of race) grpOf[r.team_name] = r.round_group; for (const r of race_forecast) if (!(r.team_name in grpOf)) grpOf[r.team_name] = r.round_group; const hasGroups = Object.values(grpOf).some(g => g === 'Championship Group' || g === 'Relegation Group'); const widthOf = (t) => !hasGroups ? 2 : (grpOf[t] === 'Championship Group' ? 3.5 : 1.25); const hiddenOf = (t) => hasGroups && raceGroup !== null && grpOf[t] !== raceGroup; const solidTeams = [...new Set(race.map(r => r.team_name))]; const fcTeams = [...new Set(race_forecast.map(r => r.team_name))]; const allTeams = [...solidTeams]; for (const t of fcTeams) if (!allTeams.includes(t)) allTeams.push(t); const colorOf = {}; allTeams.forEach((t, i) => { colorOf[t] = teamPalette[i % teamPalette.length]; }); const byTeam = {}; for (const r of race_forecast) { (byTeam[r.team_name] = byTeam[r.team_name] || []).push([Number(r.round), Number(r.cumulative_points)]); } const base = solidTeams.map(t => { const cfg = {lineStyle: {width: widthOf(t)}}; if (hiddenOf(t)) cfg.data = []; return cfg; }); const fc = fcTeams.map(t => ({name: t + ' (forecast)', type: 'line', showSymbol: false, color: colorOf[t], lineStyle: {type: 'dashed', width: widthOf(t)}, data: hiddenOf(t) ? [] : byTeam[t]})); return base.concat(fc); })()}}
     legend=false
     chartAreaHeight=300
 />
