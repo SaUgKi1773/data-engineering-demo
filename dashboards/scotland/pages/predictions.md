@@ -339,11 +339,11 @@ order by match_date desc
     <Column id="Date"            />
     <Column id="Round"           align=center />
     <Column id="Match"           />
+    <Column id="Predicted Goals" align=center />
     <Column id="Home %"          align=center />
     <Column id="Draw %"          align=center />
     <Column id="Away %"          align=center />
     <Column id="Model Pick"      align=center />
-    <Column id="Predicted Goals" align=center />
 </DataTable>
 
 ## The Track Record
