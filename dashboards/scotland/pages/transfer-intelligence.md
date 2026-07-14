@@ -287,7 +287,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   </div>
 </div>
 
-## Net Spend by Team
+## Transfer Volume by Team
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees <span style="color:#16a34a;font-weight:600;">spent</span> on incoming moves vs <span style="color:#f97316;font-weight:600;">received</span> on outgoing moves, with the resulting <span style="color:#236aa4;font-weight:600;">net spend</span> — the 8 clubs with the highest transfer volume (total fees in + out).</p>
 
