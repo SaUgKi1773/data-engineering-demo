@@ -17,7 +17,6 @@
   import { inject } from '@vercel/analytics';
   import InstallBanner from '../components/InstallBanner.svelte';
   import ProjectMenu from '../components/ProjectMenu.svelte';
-  import GroupMark from '../components/GroupMark.svelte';
 
   export let data;
 
@@ -38,7 +37,6 @@
 <EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true} hideMenu={true} logo="/header-logo.svg">
   <div slot="content">
     <slot />
-    <GroupMark />
   </div>
 </EvidenceDefaultLayout>
 
