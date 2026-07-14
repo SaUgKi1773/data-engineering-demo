@@ -264,7 +264,7 @@ order by match_date desc
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
   <div class="rounded-xl border border-gray-200 bg-white p-4">
-    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Completed Match Prediction</div>
+    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Completed Match Predictions</div>
     <div class="text-3xl font-black text-gray-800 my-2 text-center">{cards[0].matches_scored}</div>
     <div class="flex justify-between text-xs mt-3">
       <span class="text-gray-500">Correct picks: <span class="font-bold text-gray-700">{cards[0].correct_picks}</span></span>
