@@ -305,9 +305,9 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <Scatter y=net_spend_m name="Net Spend" fillColor="#236aa4" pointSize={11} />
 </Chart>
 
-## Transfers by Team
+## Transfer Count by Team
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;"><span style="color:#16a34a;font-weight:600;">Incoming</span> vs <span style="color:#f97316;font-weight:600;">outgoing</span> moves per club, busiest first.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;"><span style="color:#16a34a;font-weight:600;">Incoming</span> vs <span style="color:#f97316;font-weight:600;">outgoing</span> player moves per club, busiest first.</p>
 
 <BarChart
     data={by_club_busy}
