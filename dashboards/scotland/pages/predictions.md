@@ -331,7 +331,7 @@ order by match_date desc
     chartAreaHeight=300
 />
 
-### Next Predictions
+### On the Books
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every fixture currently on the books. Predicted goals are the model's expected goals for each side — 1.7 is a real expectation, even if no one ever scores 0.7 of a goal.</p>
 
