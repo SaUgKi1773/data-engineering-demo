@@ -340,9 +340,9 @@ order by match_date desc
     <Column id="Round"           align=center />
     <Column id="Match"           />
     <Column id="Predicted Goals" align=center />
-    <Column id="Home %"          align=center />
-    <Column id="Draw %"          align=center />
-    <Column id="Away %"          align=center />
+    <Column id="Home %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
+    <Column id="Draw %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
+    <Column id="Away %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
     <Column id="Model Pick"      align=center />
 </DataTable>
 
@@ -376,9 +376,9 @@ order by match_date desc
     <Column id="Match"           />
     <Column id="Score"           align=center />
     <Column id="Predicted Goals" align=center />
-    <Column id="Home %"          align=center />
-    <Column id="Draw %"          align=center />
-    <Column id="Away %"          align=center />
+    <Column id="Home %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
+    <Column id="Draw %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
+    <Column id="Away %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
     <Column id="Model Pick"      align=center />
     <Column id="Result"          align=center />
     <Column id="Hit"             contentType=html align=center />
