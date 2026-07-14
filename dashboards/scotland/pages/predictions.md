@@ -87,12 +87,10 @@ ranked as (
 select
     (select max(round_number) from scotland.mart_prediction_facts
      where match_id is not null and season = '${inputs.season.value}')        as as_of_round,
-    max(case when rk = 1 then team_short_name end)                            as leader,
-    round(max(case when rk = 1 then expected_total end), 1)                   as leader_pts,
-    round(max(case when rk = 1 then expected_total end)
-          - max(case when rk = 2 then expected_total end), 1)                 as lead_margin
+    team_short_name                                                           as leader,
+    round(expected_total, 1)                                                  as leader_pts
 from ranked
-where rk <= 2
+where rk = 1
 ```
 
 ```sql race
@@ -281,11 +279,11 @@ order by match_date desc
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4">
-    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Predicted Leader · Round {leader_card[0].as_of_round}</div>
+    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Predicted Leader</div>
     <div class="text-2xl font-black text-gray-800 my-2 text-center leading-9">{leader_card[0]?.leader ?? '–'}</div>
     <div class="flex justify-between text-xs mt-3">
+      <span class="text-gray-500">As of <span class="font-bold text-gray-700">Round {leader_card[0]?.as_of_round ?? '–'}</span></span>
       <span class="text-gray-500">Expected points: <span class="font-bold text-gray-700">{leader_card[0]?.leader_pts == null ? '–' : '~' + leader_card[0].leader_pts}</span></span>
-      <span class="text-gray-500">Lead over 2nd: <span class="font-bold text-gray-700">{leader_card[0]?.lead_margin == null ? '–' : '+' + leader_card[0].lead_margin}</span></span>
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4">
