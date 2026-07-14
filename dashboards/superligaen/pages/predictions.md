@@ -185,7 +185,7 @@ select
         when 'Win'  then team_short_name
         when 'Loss' then opponent_team_short_name
         else 'Draw'
-    end                                     as "Model Pick",
+    end                                     as "Predicted Result",
     printf('%.1f – %.1f', predicted_goals_scored, predicted_goals_conceded) as "Predicted Goals"
 from superligaen.mart_prediction_facts
 where match_id is not null
@@ -201,7 +201,7 @@ order by match_date asc
 ```sql rounds_record
 select
     round_number                                     as round,
-    case when hit then 'Correct' else 'Missed' end   as outcome,
+    case when hit then 'Correct' else 'Incorrect' end   as outcome,
     count(*)::int                                    as picks
 from superligaen.mart_prediction_facts
 where match_id is not null
@@ -229,7 +229,7 @@ select
         when 'Win'  then team_short_name
         when 'Loss' then opponent_team_short_name
         else 'Draw'
-    end                                     as "Model Pick",
+    end                                     as "Predicted Result",
     case actual_result
         when 'Win'  then team_short_name
         when 'Loss' then opponent_team_short_name
@@ -238,7 +238,7 @@ select
     case when hit
          then '<span class="inline-flex items-center justify-center w-6 h-5 text-xs font-bold rounded bg-green-500 text-white">✓</span>'
          else '<span class="inline-flex items-center justify-center w-6 h-5 text-xs font-bold rounded bg-red-500 text-white">✗</span>'
-    end                                     as "Hit"
+    end                                     as "Correct"
 from superligaen.mart_prediction_facts
 where match_id is not null
   and is_scored
@@ -250,7 +250,7 @@ where match_id is not null
 order by match_date desc
 ```
 
-<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1.5rem 0;">Before every fixture, our data science team's match model publishes win, draw and loss probabilities. This page looks forward — what the model expects next — and keeps the receipts: every prediction is frozen before kickoff, never edited afterwards, and scored against what actually happened.</p>
+<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1.5rem 0;">Before every fixture, the match model publishes win, draw and loss probabilities. Predictions are locked three hours before kickoff and never revised; once a match is completed, the prediction is evaluated against the actual result. This page shows the current projection, upcoming predictions, and the model's accuracy to date.</p>
 
 <div class="flex flex-wrap gap-3 items-end mb-6">
   {#key seasons[0]?.season}
@@ -287,7 +287,7 @@ order by match_date desc
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4">
-    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Predictions on the Books</div>
+    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Pending Predictions</div>
     <div class="text-3xl font-black text-gray-800 my-2 text-center">{cards[0].pending_predictions}</div>
     <div class="flex justify-between text-xs mt-3">
       <span class="text-gray-500">Next kickoff: <span class="font-bold text-gray-700">{cards[0].first_kickoff ?? '–'}</span></span>
@@ -295,13 +295,13 @@ order by match_date desc
   </div>
 </div>
 
-### The Points Race — Played & Forecast
+### Cumulative Points — Actual & Projected
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Cumulative points round by round: solid lines are real results, dashed lines are the model's frozen predictions for the fixtures still to come. Hover a round to see the full ranking.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Cumulative points by round. Solid lines show actual results; dashed lines show the projection based on the model's locked predictions for the remaining fixtures. Hover a round for the full ranking.</p>
 
 <div style="display:flex;flex-wrap:wrap;gap:1.25rem;align-items:center;font-size:0.75rem;color:#6b7280;margin:0 0 0.5rem 0;">
-  <span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-block;width:24px;border-top:2px solid #6b7280;"></span>Played</span>
-  <span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-block;width:24px;border-top:2px dashed #6b7280;"></span>Forecast</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-block;width:24px;border-top:2px solid #6b7280;"></span>Actual</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-block;width:24px;border-top:2px dashed #6b7280;"></span>Projected</span>
   {#if race.some(r => r.round_group === 'Championship Group' || r.round_group === 'Relegation Group')}
   <span role="button" tabindex="0" on:click={() => toggleRaceGroup('Championship Group')} on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleRaceGroup('Championship Group')}
         style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
@@ -331,11 +331,11 @@ order by match_date desc
     chartAreaHeight=300
 />
 
-### On the Books
+### Upcoming Predictions
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every fixture currently on the books. Predicted goals are the model's expected goals for each side — 1.7 is a real expectation, even if no one ever scores 0.7 of a goal.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">All fixtures with a locked prediction. Predicted goals are the model's expected goals for each side, shown unrounded.</p>
 
-<DataTable data={upcoming} rows=10 search=true emptySet=pass emptyMessage="No predictions on the books right now">
+<DataTable data={upcoming} rows=10 search=true emptySet=pass emptyMessage="No upcoming predictions">
     <Column id="Date"            />
     <Column id="Round"           align=center />
     <Column id="Match"           />
@@ -343,34 +343,36 @@ order by match_date desc
     <Column id="Home %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
     <Column id="Draw %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
     <Column id="Away %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
-    <Column id="Model Pick"      align=center />
+    <Column id="Predicted Result" align=center />
 </DataTable>
 
-## The Track Record
+## Model Performance
 
-### The Round-by-Round Record
+<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1.5rem 0;">All figures below cover completed matches only, comparing each locked prediction against the actual result.</p>
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every round's predictions, split into picks that landed and picks that missed — the season's form guide for the model itself.</p>
+### Accuracy by Round
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Correct and incorrect result predictions per round.</p>
 
 <BarChart
     data={rounds_record}
     emptySet=pass
-    emptyMessage="No predictions scored yet"
+    emptyMessage="No completed matches yet"
     x=round
     y=picks
     series=outcome
     type=stacked
-    seriesColors={{'Correct': '#22c55e', 'Missed': '#ef4444'}}
+    seriesColors={{'Correct': '#22c55e', 'Incorrect': '#ef4444'}}
     xAxisTitle="Round"
     yAxisTitle="Predictions"
     chartAreaHeight=280
 />
 
-### Every Prediction, Scored
+### Prediction History
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">The full record — every fixture the model predicted before kickoff and how it turned out, scoreline expectations included. Nothing is removed or restated.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">The complete list of evaluated predictions: pre-match probabilities, the predicted and actual result, and the predicted and actual score. Records are never removed or revised.</p>
 
-<DataTable data={log} rows=15 search=true emptySet=pass emptyMessage="No predictions scored yet — the first verdicts land after the opening fixtures">
+<DataTable data={log} rows=15 search=true emptySet=pass emptyMessage="No completed matches yet — evaluation starts after the opening fixtures">
     <Column id="Date"            />
     <Column id="Round"           align=center />
     <Column id="Match"           />
@@ -379,12 +381,12 @@ order by match_date desc
     <Column id="Home %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
     <Column id="Draw %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
     <Column id="Away %"          align=center contentType=colorscale scaleColor=#6366f1 colorMin=0 colorMax=100 />
-    <Column id="Model Pick"      align=center />
+    <Column id="Predicted Result" align=center />
     <Column id="Result"          align=center />
-    <Column id="Hit"             contentType=html align=center />
+    <Column id="Correct"         contentType=html align=center />
 </DataTable>
 
-<p style="font-size:0.6875rem;color:#9ca3af;margin:2rem 0 0 0;">How it works: probabilities come from a Poisson goals model fitted on the last two seasons of results. Predictions refresh nightly until three hours before kickoff, then freeze — nothing is ever predicted or revised after a match has started. The model's pick is its highest-probability outcome; a hit means that outcome happened. Points expected by the model are 3 × win probability + 1 × draw probability. With a team selected, the goals card compares that team's own goals to the model's expectation; on All Teams it compares full-match totals.</p>
+<p style="font-size:0.6875rem;color:#9ca3af;margin:2rem 0 0 0;">Methodology: probabilities are produced by a Poisson goals model fitted on the previous two seasons of results. Predictions refresh nightly and are locked three hours before kickoff; nothing is predicted or revised after a match has started. The predicted result is the highest-probability outcome, and a prediction counts as correct when that outcome occurs. Expected points are 3 × win probability + 1 × draw probability. For reference, always predicting a home win has historically yielded around 45% accuracy. The model estimates draw probabilities but rarely selects a draw as the most likely outcome — a draw is seldom more probable than the stronger side winning.</p>
 
 ```sql last_updated
 select * from superligaen.last_updated
