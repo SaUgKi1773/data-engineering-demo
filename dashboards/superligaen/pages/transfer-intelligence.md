@@ -207,6 +207,8 @@ where transfer_year = ${inputs.year.value}
 order by (fee_eur is null), fee_eur desc, transfer_date desc
 ```
 
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a year and slice the transfer market — by window, team, direction, type, status or fee disclosure. Every section below updates to the selection.</p>
+
 <div class="flex flex-wrap gap-3 items-end mb-2">
   {#key years[0]?.transfer_year}
   <Dropdown data={years} name=year value=transfer_year order="transfer_year desc" defaultValue={years[0]?.transfer_year} title="Year" />
@@ -287,7 +289,7 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
   </div>
 </div>
 
-## Net Spend by Team
+## Transfer Volume by Team
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Fees <span style="color:#16a34a;font-weight:600;">spent</span> on incoming moves vs <span style="color:#f97316;font-weight:600;">received</span> on outgoing moves, with the resulting <span style="color:#236aa4;font-weight:600;">net spend</span> — the 8 clubs with the highest transfer volume (total fees in + out).</p>
 
@@ -305,9 +307,9 @@ order by (fee_eur is null), fee_eur desc, transfer_date desc
     <Scatter y=net_spend_m name="Net Spend" fillColor="#236aa4" pointSize={11} />
 </Chart>
 
-## Transfers by Team
+## Transfer Count by Team
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;"><span style="color:#16a34a;font-weight:600;">Incoming</span> vs <span style="color:#f97316;font-weight:600;">outgoing</span> moves per club, busiest first.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;"><span style="color:#16a34a;font-weight:600;">Incoming</span> vs <span style="color:#f97316;font-weight:600;">outgoing</span> player moves per club, busiest first.</p>
 
 <BarChart
     data={by_club_busy}
