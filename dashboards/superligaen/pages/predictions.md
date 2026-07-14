@@ -243,45 +243,39 @@ order by match_date desc
   {/key}
 </div>
 
-{#if cards[0].matches_scored > 0}
-
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
   <div class="rounded-xl border border-gray-200 bg-white p-4">
     <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Completed Matches Predicted</div>
     <div class="text-3xl font-black text-gray-800 my-2 text-center">{cards[0].matches_scored}</div>
     <div class="flex justify-between text-xs mt-3">
       <span class="text-gray-500">Correct picks: <span class="font-bold text-gray-700">{cards[0].correct_picks}</span></span>
-      <span class="text-gray-500">Success rate: <span class="font-bold {cards[0].hit_pct >= 50 ? 'text-green-600' : cards[0].hit_pct >= 40 ? 'text-amber-600' : 'text-red-600'}">{cards[0].hit_pct}%</span></span>
+      <span class="text-gray-500">Success rate: <span class="font-bold {cards[0].hit_pct == null ? 'text-gray-700' : cards[0].hit_pct >= 50 ? 'text-green-600' : cards[0].hit_pct >= 40 ? 'text-amber-600' : 'text-red-600'}">{cards[0].hit_pct == null ? '–' : cards[0].hit_pct + '%'}</span></span>
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4">
     <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Goals · Predicted vs Actual</div>
-    <div class="text-3xl font-black text-gray-800 my-2 text-center">{cards[0].pred_goals_total} <span class="text-gray-300 text-xl">/</span> {cards[0].act_goals_total}</div>
+    <div class="text-3xl font-black text-gray-800 my-2 text-center">{cards[0].pred_goals_total ?? '–'} <span class="text-gray-300 text-xl">/</span> {cards[0].act_goals_total}</div>
     <div class="flex justify-between text-xs mt-3">
-      <span class="text-gray-500">Avg. miss: <span class="font-bold {cards[0].avg_goal_miss <= 0.8 ? 'text-green-600' : cards[0].avg_goal_miss <= 1.2 ? 'text-amber-600' : 'text-red-600'}">{cards[0].avg_goal_miss} goals</span></span>
-      <span class="text-gray-500">Within ±1 goal: <span class="font-bold {cards[0].goals_within1_pct >= 65 ? 'text-green-600' : cards[0].goals_within1_pct >= 50 ? 'text-amber-600' : 'text-red-600'}">{cards[0].goals_within1_pct}%</span></span>
+      <span class="text-gray-500">Avg. miss: <span class="font-bold {cards[0].avg_goal_miss == null ? 'text-gray-700' : cards[0].avg_goal_miss <= 0.8 ? 'text-green-600' : cards[0].avg_goal_miss <= 1.2 ? 'text-amber-600' : 'text-red-600'}">{cards[0].avg_goal_miss == null ? '–' : cards[0].avg_goal_miss + ' goals'}</span></span>
+      <span class="text-gray-500">Within ±1 goal: <span class="font-bold {cards[0].goals_within1_pct == null ? 'text-gray-700' : cards[0].goals_within1_pct >= 65 ? 'text-green-600' : cards[0].goals_within1_pct >= 50 ? 'text-amber-600' : 'text-red-600'}">{cards[0].goals_within1_pct == null ? '–' : cards[0].goals_within1_pct + '%'}</span></span>
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4">
     <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Predicted Leader · Round {leader_card[0].as_of_round}</div>
-    <div class="text-2xl font-black text-gray-800 my-2 text-center leading-9">{leader_card[0].leader}</div>
+    <div class="text-2xl font-black text-gray-800 my-2 text-center leading-9">{leader_card[0]?.leader ?? '–'}</div>
     <div class="flex justify-between text-xs mt-3">
-      <span class="text-gray-500">Expected points: <span class="font-bold text-gray-700">~{leader_card[0].leader_pts}</span></span>
-      <span class="text-gray-500">Lead over 2nd: <span class="font-bold text-gray-700">+{leader_card[0].lead_margin}</span></span>
+      <span class="text-gray-500">Expected points: <span class="font-bold text-gray-700">{leader_card[0]?.leader_pts == null ? '–' : '~' + leader_card[0].leader_pts}</span></span>
+      <span class="text-gray-500">Lead over 2nd: <span class="font-bold text-gray-700">{leader_card[0]?.lead_margin == null ? '–' : '+' + leader_card[0].lead_margin}</span></span>
     </div>
   </div>
   <div class="rounded-xl border border-gray-200 bg-white p-4">
     <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Predictions on the Books</div>
     <div class="text-3xl font-black text-gray-800 my-2 text-center">{cards[0].pending_predictions}</div>
     <div class="flex justify-between text-xs mt-3">
-      {#if cards[0].first_kickoff}
-      <span class="text-gray-500">Next kickoff: <span class="font-bold text-gray-700">{cards[0].first_kickoff}</span></span>
-      {/if}
+      <span class="text-gray-500">Next kickoff: <span class="font-bold text-gray-700">{cards[0].first_kickoff ?? '–'}</span></span>
     </div>
   </div>
 </div>
-
-{/if}
 
 ### The Points Race — Played & Forecast
 
@@ -321,8 +315,6 @@ order by match_date desc
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every fixture currently on the books. Predicted goals are the model's expected goals for each side — 1.7 is a real expectation, even if no one ever scores 0.7 of a goal.</p>
 
-{#if cards[0].pending_predictions > 0}
-
 <DataTable data={upcoming} rows=10 search=true>
     <Column id="Date"            />
     <Column id="Round"           align=center />
@@ -334,15 +326,7 @@ order by match_date desc
     <Column id="Predicted Goals" align=center />
 </DataTable>
 
-{:else}
-
-<p style="font-size:0.8125rem;color:#9ca3af;margin:0 0 1.5rem 0;">No predictions on the books right now — the model publishes its probabilities as soon as upcoming fixtures are confirmed.</p>
-
-{/if}
-
 ## The Track Record
-
-{#if cards[0].matches_scored > 0}
 
 ### The Round-by-Round Record
 
@@ -377,21 +361,5 @@ order by match_date desc
     <Column id="Result"          align=center />
     <Column id="Hit"             contentType=html align=center />
 </DataTable>
-
-{:else}
-
-<div class="flex flex-col items-center justify-center py-24 text-center">
-  <div class="text-5xl mb-4">🔮</div>
-  <div class="text-xl font-bold text-gray-700 mb-2">The Track Record Starts Soon</div>
-  <div class="text-gray-400 text-sm max-w-md">
-    {#if cards[0].pending_predictions > 0}
-      {cards[0].pending_predictions} predictions are already on the books, frozen before kickoff. The first verdicts land after the opening fixtures on {cards[0].first_kickoff} — from then on, every prediction is scored here against reality.
-    {:else}
-      No fixtures are on the prediction books yet. As soon as the schedule is announced, the model publishes its probabilities — and this page starts keeping score.
-    {/if}
-  </div>
-</div>
-
-{/if}
 
 <p style="font-size:0.6875rem;color:#9ca3af;margin:2rem 0 0 0;">How it works: probabilities come from a Poisson goals model fitted on the last two seasons of results. Predictions refresh nightly until three hours before kickoff, then freeze — nothing is ever predicted or revised after a match has started. The model's pick is its highest-probability outcome; a hit means that outcome happened. Points expected by the model are 3 × win probability + 1 × draw probability. With a team selected, the goals card compares that team's own goals to the model's expectation; on All Teams it compares full-match totals.</p>
