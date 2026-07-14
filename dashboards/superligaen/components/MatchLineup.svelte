@@ -27,7 +27,85 @@
     return 0;
   }
 
+  // Depth of each in-match position within its group: lower = closer to own
+  // goal. Splits a group across the formation's bands (e.g. the DM is the '1'
+  // of a 4-1-3-2; the wingers are the '2' of a 3-4-2-1).
+  const DEPTH = {
+    Defender:   { 'Centre Back': 0, 'Right Back': 1, 'Left Back': 1 },
+    Midfielder: { 'Defensive Midfield': 0, 'Central Midfield': 1, 'Right Midfield': 2, 'Left Midfield': 2, 'Attacking Midfield': 3 },
+    Attacker:   { 'Right Wing': 0, 'Left Wing': 0, 'Centre Forward': 1, 'Attacker': 1 },
+  };
+
+  function parseFormation(f) {
+    if (!f) return null;
+    const bands = String(f).trim().split('-').map(Number);
+    if (bands.length < 2 || bands.some(n => !Number.isInteger(n) || n < 1)) return null;
+    if (bands.reduce((a, b) => a + b, 0) !== 10) return null;
+    return bands;
+  }
+
+  function placeBand(bandPlayers, k, nCols, side, out) {
+    const gkX = 0.055, attX = 0.455;
+    const fracHome = gkX + (k / (nCols - 1)) * (attX - gkX);
+    const x = PX + (side === 'home' ? fracHome : 1 - fracHome) * PW;
+    const sorted = [...bandPlayers].sort((a, b) => {
+      const d = sideOrder(a.position_name) - sideOrder(b.position_name);
+      return side === 'away' ? -d : d;
+    });
+    const n = sorted.length;
+    const vpad = n <= 1 ? PH / 2 : Math.max(MIN_VPAD, (PH - (n - 1) * TARGET_SPACING) / 2);
+    sorted.forEach((p, i) => {
+      const y = n <= 1
+        ? PY + PH / 2
+        : PY + vpad + (i / (n - 1)) * (PH - 2 * vpad);
+      out.push({ ...p, cx: x, cy: y });
+    });
+  }
+
+  // Formation-true layout: bands come from the formation string ("4-1-3-2"),
+  // players are dealt into bands by position group, and a group spanning
+  // several bands (four midfielders across the '1' and the '3') is split by
+  // position depth. Returns null when labels and formation can't be
+  // reconciled — caller falls back to the position-group layout.
+  function formationLayout(players, side) {
+    const bands = parseFormation(players[0]?.formation);
+    if (!bands) return null;
+    const groups = { Goalkeeper: [], Defender: [], Midfielder: [], Attacker: [] };
+    for (const p of players) {
+      if (!(p.position_group in groups)) return null;
+      groups[p.position_group].push(p);
+    }
+    if (groups.Goalkeeper.length !== 1) return null;
+    const D = groups.Defender.length, M = groups.Midfielder.length, A = groups.Attacker.length;
+    const sum = (a, b) => bands.slice(a, b).reduce((x, y) => x + y, 0);
+    let split = null;
+    for (let i = 1; i <= bands.length && !split; i++) {
+      for (let j = i; j <= bands.length && !split; j++) {
+        if (sum(0, i) === D && sum(i, j) === M && sum(j, bands.length) === A) split = { i, j };
+      }
+    }
+    if (!split) return null;
+    const sortedGroup = {};
+    for (const g of ['Defender', 'Midfielder', 'Attacker']) {
+      sortedGroup[g] = [...groups[g]].sort((a, b) =>
+        (DEPTH[g][a.position_name] ?? 1) - (DEPTH[g][b.position_name] ?? 1));
+    }
+    const cursor = { Defender: 0, Midfielder: 0, Attacker: 0 };
+    const byBand = [groups.Goalkeeper];
+    bands.forEach((size, k) => {
+      const g = k < split.i ? 'Defender' : k < split.j ? 'Midfielder' : 'Attacker';
+      byBand.push(sortedGroup[g].slice(cursor[g], cursor[g] + size));
+      cursor[g] += size;
+    });
+    const out = [];
+    byBand.forEach((bandPlayers, k) => placeBand(bandPlayers, k, byBand.length, side, out));
+    return out;
+  }
+
   function computeLayout(players, side) {
+    if (players.length === 0) return [];
+    const byFormation = formationLayout(players, side);
+    if (byFormation) return byFormation;
     const rows = {};
     for (const p of players) {
       const pos = ['Goalkeeper','Defender','Midfielder','Attacker'].includes(p.position_group)
