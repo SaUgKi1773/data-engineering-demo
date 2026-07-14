@@ -319,6 +319,8 @@ order by match_date desc
 
 <LineChart
     data={race}
+    emptySet=pass
+    emptyMessage="No predictions for this season yet"
     x=round
     y=cumulative_points
     series=team_name
@@ -334,7 +336,7 @@ order by match_date desc
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every fixture currently on the books. Predicted goals are the model's expected goals for each side — 1.7 is a real expectation, even if no one ever scores 0.7 of a goal.</p>
 
-<DataTable data={upcoming} rows=10 search=true>
+<DataTable data={upcoming} rows=10 search=true emptySet=pass emptyMessage="No predictions on the books right now">
     <Column id="Date"            />
     <Column id="Round"           align=center />
     <Column id="Match"           />
@@ -353,6 +355,8 @@ order by match_date desc
 
 <BarChart
     data={rounds_record}
+    emptySet=pass
+    emptyMessage="No predictions scored yet"
     x=round
     y=picks
     series=outcome
@@ -367,7 +371,7 @@ order by match_date desc
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">The full record — every fixture the model predicted before kickoff and how it turned out, scoreline expectations included. Nothing is removed or restated.</p>
 
-<DataTable data={log} rows=15 search=true>
+<DataTable data={log} rows=15 search=true emptySet=pass emptyMessage="No predictions scored yet — the first verdicts land after the opening fixtures">
     <Column id="Date"            />
     <Column id="Round"           align=center />
     <Column id="Match"           />
