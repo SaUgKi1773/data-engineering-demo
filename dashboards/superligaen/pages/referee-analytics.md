@@ -5,6 +5,7 @@ title: Referee Intelligence
 ---
 
 <script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
   import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
   const pageInputs = getInputContext();
 
@@ -428,3 +429,9 @@ where referee_name = '${inputs.referee.value}'
 />
 
 </div>
+
+```sql last_updated
+select * from superligaen.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

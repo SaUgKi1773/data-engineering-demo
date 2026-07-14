@@ -4,6 +4,10 @@ hide_toc: true
 title: Match Results
 ---
 
+<script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
+</script>
+
 ```sql seasons
 select season from (
   select season, max(is_current_season::int) as is_current
@@ -164,3 +168,9 @@ order by sort_order
   {/each}
 </div>
 {/if}
+
+```sql last_updated
+select * from scotland.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

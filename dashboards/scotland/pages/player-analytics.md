@@ -5,6 +5,7 @@ title: Player Intelligence
 ---
 
 <script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
   import TeamRadar from '../../components/TeamRadar.svelte';
   import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
   const pageInputs = getInputContext();
@@ -1348,3 +1349,9 @@ select * from (values
 </div>
 
 {/key}
+
+```sql last_updated
+select * from scotland.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

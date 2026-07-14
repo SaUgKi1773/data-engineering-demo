@@ -5,6 +5,7 @@ title: Prediction Module
 ---
 
 <script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
   const teamPalette = ['#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7'];
   let raceGroup = null;
   function toggleRaceGroup(g) { raceGroup = raceGroup === g ? null : g; }
@@ -386,3 +387,9 @@ order by match_date desc
 </DataTable>
 
 <p style="font-size:0.6875rem;color:#9ca3af;margin:2rem 0 0 0;">How it works: probabilities come from a Poisson goals model fitted on the last two seasons of results. Predictions refresh nightly until three hours before kickoff, then freeze — nothing is ever predicted or revised after a match has started. The model's pick is its highest-probability outcome; a hit means that outcome happened. Points expected by the model are 3 × win probability + 1 × draw probability. With a team selected, the goals card compares that team's own goals to the model's expectation; on All Teams it compares full-match totals.</p>
+
+```sql last_updated
+select * from scotland.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

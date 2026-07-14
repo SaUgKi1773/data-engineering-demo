@@ -4,6 +4,10 @@ hide_toc: true
 title: Standings
 ---
 
+<script>
+  import SiteFooter from '../../components/SiteFooter.svelte';
+</script>
+
 
 
 ```sql seasons
@@ -297,3 +301,9 @@ order by
     type=stacked
     colorPalette={['#22c55e','#eab308','#ef4444']}
 />
+
+```sql last_updated
+select * from scotland.last_updated
+```
+
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />
