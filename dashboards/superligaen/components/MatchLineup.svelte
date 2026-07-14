@@ -11,7 +11,7 @@
   const CY = PY + PH / 2;   // 280
   const R  = 20;
   const MIN_VPAD      = R + 30;  // 50px — keeps circle + emoji above just inside pitch
-  const TARGET_SPACING = 85;     // ideal px gap between adjacent player centers
+  const TARGET_SPACING = 110;    // ideal px gap between adjacent player centers
 
   // Fixed X column per position tier (as fraction of PW) — home stays left of 0.5, away right
   const posX = {
