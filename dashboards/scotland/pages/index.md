@@ -22,35 +22,44 @@ select * from scotland.last_updated
 select * from scotland.mart_home_summary
 ```
 
-<!-- ══ HERO — Apple-style clean tile (mirrors the Krogvad Hub platform card) ══ -->
+<!-- ══ HERO — flag-colored banner with pitch lines (compact layout) ══ -->
 <!-- phone & tablet (incl. iPad landscape): centered stack · laptop/desktop (>=1280px): compact horizontal row -->
-<div class="rounded-3xl px-6 py-7 xl:px-12 xl:py-6 mb-8 text-center xl:text-left flex flex-col xl:flex-row items-center xl:justify-between gap-4 xl:gap-6" style="background:#f5f5f7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-
-  <!-- left: league identity -->
-  <div class="flex flex-col xl:flex-row items-center xl:items-center gap-3 xl:gap-5">
-    <img src="{league[0].league_logo}" alt="Scottish Premiership" class="h-12 xl:h-14 w-auto flex-shrink-0" onerror="this.style.display='none'" />
-    <div>
-      <div class="flex items-center justify-center xl:justify-start gap-2 mb-1">
-        <img src="{league[0].league_country_flag}" alt="Scotland" class="h-3.5 rounded" onerror="this.style.display='none'" />
-        <span class="text-gray-400 text-[11px] uppercase" style="letter-spacing: 0.14em;">Scotland</span>
-      </div>
-      <div class="text-3xl xl:text-4xl font-bold tracking-tight text-gray-900 leading-none">Premiership</div>
-      <div class="text-gray-400 text-[13px] mt-1.5">
-        <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{new Date() > new Date(summary[0].season_end) ? '#a1a1a6' : '#30b14e'};"></span>{summary[0].season} · {new Date() > new Date(summary[0].season_end) ? 'Ended' : 'Live'}
-      </div>
-    </div>
+<div class="relative rounded-3xl overflow-hidden shadow-lg mb-8" style="background: linear-gradient(135deg, #0a1f3c 0%, #123c78 45%, #1f6fd4 100%); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <!-- pitch lines overlay -->
+  <div class="absolute inset-0 opacity-[0.08]" style="background-image: repeating-linear-gradient(90deg, white 0px, white 1px, transparent 1px, transparent 80px), repeating-linear-gradient(0deg, white 0px, white 1px, transparent 1px, transparent 80px);"></div>
+  <!-- center circle hint -->
+  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+    <div class="rounded-full border border-white opacity-[0.06]" style="width:320px;height:320px;"></div>
   </div>
 
-  <!-- right: stats + leader -->
-  <div class="flex flex-col items-center xl:items-end gap-2">
-    <div class="text-gray-500 text-sm xl:text-base">
-      <span class="font-semibold text-gray-900">{summary[0].total_goals}</span> goals · <span class="font-semibold text-gray-900">{summary[0].total_matches}</span> matches · <span class="font-semibold text-gray-900">{summary[0].total_teams}</span> teams
+  <div class="relative px-6 py-7 xl:px-12 xl:py-6 text-center xl:text-left flex flex-col xl:flex-row items-center xl:justify-between gap-4 xl:gap-6">
+
+    <!-- left: league identity -->
+    <div class="flex flex-col xl:flex-row items-center xl:items-center gap-3 xl:gap-5">
+      <img src="{league[0].league_logo}" alt="Scottish Premiership" class="h-12 xl:h-14 w-auto flex-shrink-0" onerror="this.style.display='none'" />
+      <div>
+        <div class="flex items-center justify-center xl:justify-start gap-2 mb-1">
+          <img src="{league[0].league_country_flag}" alt="Scotland" class="h-3.5 rounded opacity-90" onerror="this.style.display='none'" />
+          <span class="text-white/50 text-[11px] uppercase" style="letter-spacing: 0.14em;">Scotland</span>
+        </div>
+        <div class="text-3xl xl:text-4xl font-bold tracking-tight text-white leading-none">Premiership</div>
+        <div class="text-white/60 text-[13px] mt-1.5">
+          <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{new Date() > new Date(summary[0].season_end) ? '#cbd5e1' : '#4ade80'};"></span>{summary[0].season} · {new Date() > new Date(summary[0].season_end) ? 'Ended' : 'Live'}
+        </div>
+      </div>
     </div>
 
-    <div class="inline-flex items-center gap-2 text-[15px]">
-      <span class="leading-none">{new Date() > new Date(summary[0].season_end) ? '👑' : '🥇'}</span>
-      <span class="text-gray-400 text-[11px] font-semibold uppercase" style="letter-spacing: 0.12em;">{new Date() > new Date(summary[0].season_end) ? 'Champion' : 'Leader'}</span>
-      <span class="font-semibold text-gray-900"><span class="xl:hidden">{summary[0]?.leader_short}</span><span class="hidden xl:inline">{summary[0]?.leader_name}</span></span>
+    <!-- right: stats + leader -->
+    <div class="flex flex-col items-center xl:items-end gap-2">
+      <div class="text-white/70 text-sm xl:text-base">
+        <span class="font-semibold text-white">{summary[0].total_goals}</span> goals · <span class="font-semibold text-white">{summary[0].total_matches}</span> matches · <span class="font-semibold text-white">{summary[0].total_teams}</span> teams
+      </div>
+
+      <div class="inline-flex items-center gap-2 text-[15px]">
+        <span class="leading-none">{new Date() > new Date(summary[0].season_end) ? '👑' : '🥇'}</span>
+        <span class="text-white/50 text-[11px] font-semibold uppercase" style="letter-spacing: 0.12em;">{new Date() > new Date(summary[0].season_end) ? 'Champion' : 'Leader'}</span>
+        <span class="font-semibold text-white"><span class="xl:hidden">{summary[0]?.leader_short}</span><span class="hidden xl:inline">{summary[0]?.leader_name}</span></span>
+      </div>
     </div>
   </div>
 </div>
