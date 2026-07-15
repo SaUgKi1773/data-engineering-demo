@@ -22,64 +22,35 @@ select * from superligaen.last_updated
 select * from superligaen.mart_home_summary
 ```
 
-<div class="relative rounded-2xl overflow-hidden mb-8 shadow-lg" style="background: linear-gradient(135deg, #4a0e18 0%, #a01325 45%, #d42a3d 100%);">
-  <!-- pitch lines overlay -->
-  <div class="absolute inset-0 opacity-[0.08]" style="background-image: repeating-linear-gradient(90deg, white 0px, white 1px, transparent 1px, transparent 80px), repeating-linear-gradient(0deg, white 0px, white 1px, transparent 1px, transparent 80px);"></div>
-  <!-- center circle hint -->
-  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-    <div class="rounded-full border border-white opacity-[0.06]" style="width:320px;height:320px;"></div>
-  </div>
+<!-- ══ HERO — Apple-style clean tile (mirrors the Krogvad Hub platform card) ══ -->
+<!-- mobile: centered stack · desktop: compact horizontal row so the page fits the window -->
+<div class="rounded-3xl px-6 py-7 md:px-12 md:py-6 mb-8 text-center md:text-left flex flex-col md:flex-row items-center md:justify-between gap-4 md:gap-6" style="background:#f5f5f7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
 
-  <div class="relative px-6 py-8 md:px-12 md:py-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
-    <!-- left: league identity -->
-    <div class="flex items-center gap-5">
-      <div class="bg-white/10 backdrop-blur rounded-2xl p-3 shadow-inner flex-shrink-0">
-        <img src="{league[0].league_logo}" alt="Superligaen" class="h-14 md:h-20 w-auto" onerror="this.style.display='none'" />
+  <!-- left: league identity -->
+  <div class="flex flex-col md:flex-row items-center md:items-center gap-3 md:gap-5">
+    <img src="{league[0].league_logo}" alt="Superligaen" class="h-12 md:h-14 w-auto flex-shrink-0" onerror="this.style.display='none'" />
+    <div>
+      <div class="flex items-center justify-center md:justify-start gap-2 mb-1">
+        <img src="{league[0].league_country_flag}" alt="Denmark" class="h-3.5 rounded" onerror="this.style.display='none'" />
+        <span class="text-gray-400 text-[11px] uppercase" style="letter-spacing: 0.14em;">Denmark</span>
       </div>
-      <div>
-        <div class="flex items-center gap-2 mb-1">
-          <img src="{league[0].league_country_flag}" alt="Denmark" class="h-4 rounded opacity-90" onerror="this.style.display='none'" />
-          <span class="text-white/50 text-xs uppercase tracking-widest">Denmark</span>
-        </div>
-        <div class="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">Superligaen</div>
-        <div class="text-white/50 text-xs mt-1 tracking-wide italic">Powered by data. Built for football.</div>
+      <div class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 leading-none">Superligaen</div>
+      <div class="text-gray-400 text-[13px] mt-1.5">
+        <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{new Date() > new Date(summary[0].season_end) ? '#a1a1a6' : '#30b14e'};"></span>{summary[0].season} · {new Date() > new Date(summary[0].season_end) ? 'Ended' : 'Live'}
       </div>
     </div>
+  </div>
 
-    <!-- right: season status + KPI boxes + champion -->
-    <div class="flex flex-col items-center md:items-end gap-3">
-      <!-- season status chip -->
-      <div class="rounded-full px-3.5 py-1 backdrop-blur flex items-center gap-2 text-xs font-semibold whitespace-nowrap"
-           style="{new Date() > new Date(summary[0].season_end) ? 'background:rgba(100,116,139,0.2);border:1px solid rgba(148,163,184,0.3);color:rgb(203,213,225)' : 'background:rgba(74,222,128,0.2);border:1px solid rgba(74,222,128,0.3);color:rgb(134,239,172)'}">
-        <span class="inline-block w-1.5 h-1.5 rounded-full" style="{new Date() > new Date(summary[0].season_end) ? 'background:rgb(148,163,184)' : 'background:rgb(74,222,128)'}"></span>
-        {summary[0].season} · {new Date() > new Date(summary[0].season_end) ? 'Ended' : 'Live'}
-      </div>
+  <!-- right: stats + leader -->
+  <div class="flex flex-col items-center md:items-end gap-2">
+    <div class="text-gray-500 text-sm md:text-base">
+      <span class="font-semibold text-gray-900">{summary[0].total_goals}</span> goals · <span class="font-semibold text-gray-900">{summary[0].total_matches}</span> matches · <span class="font-semibold text-gray-900">{summary[0].total_teams}</span> teams
+    </div>
 
-      <!-- KPI boxes + champion: same width, aligned edges -->
-      <div class="flex flex-col items-stretch gap-3">
-        <div class="flex gap-3">
-          <div class="flex-1 rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-3 text-center min-w-[80px]">
-            <div class="text-white text-xl font-black leading-none">{summary[0].total_goals}</div>
-            <div class="text-white/50 text-xs mt-1 uppercase tracking-wide">Goals</div>
-          </div>
-          <div class="flex-1 rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-3 text-center min-w-[80px]">
-            <div class="text-white text-xl font-black leading-none">{summary[0].total_matches}</div>
-            <div class="text-white/50 text-xs mt-1 uppercase tracking-wide">Matches</div>
-          </div>
-          <div class="flex-1 rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-3 text-center min-w-[80px]">
-            <div class="text-white text-xl font-black leading-none">{summary[0].total_teams}</div>
-            <div class="text-white/50 text-xs mt-1 uppercase tracking-wide">Teams</div>
-          </div>
-        </div>
-
-        <!-- champion / leader: glassy pill spanning the KPI boxes -->
-        <div class="rounded-xl bg-white/10 backdrop-blur border border-white/20 px-4 py-2.5 flex items-center gap-2.5">
-          <span class="text-lg leading-none">{new Date() > new Date(summary[0].season_end) ? '👑' : '🥇'}</span>
-          <span class="text-[10px] font-bold uppercase tracking-widest text-white/50 flex-shrink-0">{new Date() > new Date(summary[0].season_end) ? 'Champion' : 'Leader'}</span>
-          <div class="flex-1"></div>
-          <span class="text-sm font-black text-white leading-none">{summary[0]?.leader_name}</span>
-        </div>
-      </div>
+    <div class="inline-flex items-center gap-2 text-[15px]">
+      <span class="leading-none">{new Date() > new Date(summary[0].season_end) ? '👑' : '🥇'}</span>
+      <span class="text-gray-400 text-[11px] font-semibold uppercase" style="letter-spacing: 0.12em;">{new Date() > new Date(summary[0].season_end) ? 'Champion' : 'Leader'}</span>
+      <span class="font-semibold text-gray-900"><span class="md:hidden">{summary[0]?.leader_short}</span><span class="hidden md:inline">{summary[0]?.leader_name}</span></span>
     </div>
   </div>
 </div>
