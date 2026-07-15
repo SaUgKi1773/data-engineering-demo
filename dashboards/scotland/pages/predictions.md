@@ -261,23 +261,7 @@ order by match_date desc
   {/key}
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-  <div class="rounded-xl border border-gray-200 bg-white p-4">
-    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Completed Match Predictions</div>
-    <div class="text-3xl font-black text-gray-800 my-2 text-center">{cards[0].matches_scored}</div>
-    <div class="flex justify-between text-xs mt-3">
-      <span class="text-gray-500">Correct picks: <span class="font-bold text-gray-700">{cards[0].correct_picks}</span></span>
-      <span class="text-gray-500">Success rate: <span class="font-bold {cards[0].hit_pct == null ? 'text-gray-700' : cards[0].hit_pct >= 50 ? 'text-green-600' : cards[0].hit_pct >= 40 ? 'text-amber-600' : 'text-red-600'}">{cards[0].hit_pct == null ? '–' : cards[0].hit_pct + '%'}</span></span>
-    </div>
-  </div>
-  <div class="rounded-xl border border-gray-200 bg-white p-4">
-    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Goals · Predicted vs Actual</div>
-    <div class="text-3xl font-black text-gray-800 my-2 text-center">{cards[0].pred_goals_total ?? '–'} <span class="text-gray-300 text-xl">/</span> {cards[0].act_goals_total}</div>
-    <div class="flex justify-between text-xs mt-3">
-      <span class="text-gray-500">Avg. miss: <span class="font-bold {cards[0].avg_goal_miss == null ? 'text-gray-700' : cards[0].avg_goal_miss <= 0.8 ? 'text-green-600' : cards[0].avg_goal_miss <= 1.2 ? 'text-amber-600' : 'text-red-600'}">{cards[0].avg_goal_miss == null ? '–' : cards[0].avg_goal_miss + ' goals'}</span></span>
-      <span class="text-gray-500">Within ±1 goal: <span class="font-bold {cards[0].goals_within1_pct == null ? 'text-gray-700' : cards[0].goals_within1_pct >= 65 ? 'text-green-600' : cards[0].goals_within1_pct >= 50 ? 'text-amber-600' : 'text-red-600'}">{cards[0].goals_within1_pct == null ? '–' : cards[0].goals_within1_pct + '%'}</span></span>
-    </div>
-  </div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
   <div class="rounded-xl border border-gray-200 bg-white p-4">
     <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Predicted Leader</div>
     <div class="text-2xl font-black text-gray-800 my-2 text-center leading-9">{leader_card[0]?.leader ?? '–'}</div>
@@ -349,6 +333,25 @@ order by match_date desc
 ## Model Performance
 
 <p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1.5rem 0;">All figures below cover completed matches only, comparing each locked prediction against the actual result.</p>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+  <div class="rounded-xl border border-gray-200 bg-white p-4">
+    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Completed Match Predictions</div>
+    <div class="text-3xl font-black text-gray-800 my-2 text-center">{cards[0].matches_scored}</div>
+    <div class="flex justify-between text-xs mt-3">
+      <span class="text-gray-500">Correct picks: <span class="font-bold text-gray-700">{cards[0].correct_picks}</span></span>
+      <span class="text-gray-500">Success rate: <span class="font-bold {cards[0].hit_pct == null ? 'text-gray-700' : cards[0].hit_pct >= 50 ? 'text-green-600' : cards[0].hit_pct >= 40 ? 'text-amber-600' : 'text-red-600'}">{cards[0].hit_pct == null ? '–' : cards[0].hit_pct + '%'}</span></span>
+    </div>
+  </div>
+  <div class="rounded-xl border border-gray-200 bg-white p-4">
+    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Goals · Predicted vs Actual</div>
+    <div class="text-3xl font-black text-gray-800 my-2 text-center">{cards[0].pred_goals_total ?? '–'} <span class="text-gray-300 text-xl">/</span> {cards[0].act_goals_total}</div>
+    <div class="flex justify-between text-xs mt-3">
+      <span class="text-gray-500">Avg. miss: <span class="font-bold {cards[0].avg_goal_miss == null ? 'text-gray-700' : cards[0].avg_goal_miss <= 0.8 ? 'text-green-600' : cards[0].avg_goal_miss <= 1.2 ? 'text-amber-600' : 'text-red-600'}">{cards[0].avg_goal_miss == null ? '–' : cards[0].avg_goal_miss + ' goals'}</span></span>
+      <span class="text-gray-500">Within ±1 goal: <span class="font-bold {cards[0].goals_within1_pct == null ? 'text-gray-700' : cards[0].goals_within1_pct >= 65 ? 'text-green-600' : cards[0].goals_within1_pct >= 50 ? 'text-amber-600' : 'text-red-600'}">{cards[0].goals_within1_pct == null ? '–' : cards[0].goals_within1_pct + '%'}</span></span>
+    </div>
+  </div>
+</div>
 
 ### Accuracy by Round
 
