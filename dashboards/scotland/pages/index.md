@@ -23,18 +23,18 @@ select * from scotland.mart_home_summary
 ```
 
 <!-- ══ HERO — Apple-style clean tile (mirrors the Krogvad Hub platform card) ══ -->
-<!-- mobile: centered stack · desktop: compact horizontal row so the page fits the window -->
-<div class="rounded-3xl px-6 py-7 md:px-12 md:py-6 mb-8 text-center md:text-left flex flex-col md:flex-row items-center md:justify-between gap-4 md:gap-6" style="background:#f5f5f7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+<!-- phone & tablet (incl. iPad landscape): centered stack · laptop/desktop (>=1280px): compact horizontal row -->
+<div class="rounded-3xl px-6 py-7 xl:px-12 xl:py-6 mb-8 text-center xl:text-left flex flex-col xl:flex-row items-center xl:justify-between gap-4 xl:gap-6" style="background:#f5f5f7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
 
   <!-- left: league identity -->
-  <div class="flex flex-col md:flex-row items-center md:items-center gap-3 md:gap-5">
-    <img src="{league[0].league_logo}" alt="Scottish Premiership" class="h-12 md:h-14 w-auto flex-shrink-0" onerror="this.style.display='none'" />
+  <div class="flex flex-col xl:flex-row items-center xl:items-center gap-3 xl:gap-5">
+    <img src="{league[0].league_logo}" alt="Scottish Premiership" class="h-12 xl:h-14 w-auto flex-shrink-0" onerror="this.style.display='none'" />
     <div>
-      <div class="flex items-center justify-center md:justify-start gap-2 mb-1">
+      <div class="flex items-center justify-center xl:justify-start gap-2 mb-1">
         <img src="{league[0].league_country_flag}" alt="Scotland" class="h-3.5 rounded" onerror="this.style.display='none'" />
         <span class="text-gray-400 text-[11px] uppercase" style="letter-spacing: 0.14em;">Scotland</span>
       </div>
-      <div class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 leading-none">Premiership</div>
+      <div class="text-3xl xl:text-4xl font-bold tracking-tight text-gray-900 leading-none">Premiership</div>
       <div class="text-gray-400 text-[13px] mt-1.5">
         <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{new Date() > new Date(summary[0].season_end) ? '#a1a1a6' : '#30b14e'};"></span>{summary[0].season} · {new Date() > new Date(summary[0].season_end) ? 'Ended' : 'Live'}
       </div>
@@ -42,15 +42,15 @@ select * from scotland.mart_home_summary
   </div>
 
   <!-- right: stats + leader -->
-  <div class="flex flex-col items-center md:items-end gap-2">
-    <div class="text-gray-500 text-sm md:text-base">
+  <div class="flex flex-col items-center xl:items-end gap-2">
+    <div class="text-gray-500 text-sm xl:text-base">
       <span class="font-semibold text-gray-900">{summary[0].total_goals}</span> goals · <span class="font-semibold text-gray-900">{summary[0].total_matches}</span> matches · <span class="font-semibold text-gray-900">{summary[0].total_teams}</span> teams
     </div>
 
     <div class="inline-flex items-center gap-2 text-[15px]">
       <span class="leading-none">{new Date() > new Date(summary[0].season_end) ? '👑' : '🥇'}</span>
       <span class="text-gray-400 text-[11px] font-semibold uppercase" style="letter-spacing: 0.12em;">{new Date() > new Date(summary[0].season_end) ? 'Champion' : 'Leader'}</span>
-      <span class="font-semibold text-gray-900"><span class="md:hidden">{summary[0]?.leader_short}</span><span class="hidden md:inline">{summary[0]?.leader_name}</span></span>
+      <span class="font-semibold text-gray-900"><span class="xl:hidden">{summary[0]?.leader_short}</span><span class="hidden xl:inline">{summary[0]?.leader_name}</span></span>
     </div>
   </div>
 </div>
