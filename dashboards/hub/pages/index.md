@@ -96,18 +96,27 @@ select * from hub.last_updated
   <div class="flex flex-col gap-4">
 {#each leagues as lg}
     <a href="{lg.site_url}" class="block no-underline group">
-      <div class="rounded-2xl px-6 py-11 md:py-12 text-center transition-transform duration-200 group-hover:scale-[1.005]" style="background:#f5f5f7;">
-        <img src="{lg.league_logo}" alt="{lg.league_name}" class="h-14 md:h-16 w-auto mx-auto" onerror="this.style.display='none'" />
-        <div class="flex items-center justify-center gap-2 mt-5 mb-1">
-          <img src="{lg.league_country_flag}" alt="{lg.league_country}" class="h-3.5 rounded" onerror="this.style.display='none'" />
-          <span class="text-gray-400 text-[11px] uppercase" style="letter-spacing: 0.14em;">{lg.league_country}</span>
+      <!-- mobile: centered stack · desktop: compact horizontal row -->
+      <div class="rounded-2xl px-6 py-8 md:px-10 md:py-8 text-center md:text-left flex flex-col md:flex-row items-center md:justify-between gap-4 md:gap-6 transition-transform duration-200 group-hover:scale-[1.005]" style="background:#f5f5f7;">
+        <!-- left: league identity -->
+        <div class="flex flex-col md:flex-row items-center md:items-center gap-3 md:gap-5">
+          <img src="{lg.league_logo}" alt="{lg.league_name}" class="h-14 md:h-14 w-auto flex-shrink-0" onerror="this.style.display='none'" />
+          <div>
+            <div class="flex items-center justify-center md:justify-start gap-2 mb-1">
+              <img src="{lg.league_country_flag}" alt="{lg.league_country}" class="h-3.5 rounded" onerror="this.style.display='none'" />
+              <span class="text-gray-400 text-[11px] uppercase" style="letter-spacing: 0.14em;">{lg.league_country}</span>
+            </div>
+            <div class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 leading-none">{lg.banner_title}</div>
+            <div class="text-gray-400 text-[13px] mt-1.5">
+              <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{new Date() > new Date(lg.season_end) ? '#a1a1a6' : '#30b14e'};"></span>{lg.season} · {new Date() > new Date(lg.season_end) ? 'Ended' : 'Live'}
+            </div>
+          </div>
         </div>
-        <div class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">{lg.banner_title}</div>
-        <div class="text-gray-400 text-[13px] mt-2">
-          <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{new Date() > new Date(lg.season_end) ? '#a1a1a6' : '#30b14e'};"></span>{lg.season} · {new Date() > new Date(lg.season_end) ? 'Ended' : 'Live'}
+        <!-- right: stats + explore CTA -->
+        <div class="flex flex-col items-center md:items-end gap-2">
+          <div class="text-gray-500 text-sm"><span class="font-semibold text-gray-900">{lg.total_goals}</span> goals · <span class="font-semibold text-gray-900">{lg.total_matches}</span> matches · <span class="font-semibold text-gray-900">{lg.total_teams}</span> teams</div>
+          <div class="text-[15px] font-medium text-gray-900">Explore {lg.banner_title} <span style="color:#c8102e;">›</span></div>
         </div>
-        <div class="text-gray-500 text-sm mt-4"><span class="font-semibold text-gray-900">{lg.total_goals}</span> goals · <span class="font-semibold text-gray-900">{lg.total_matches}</span> matches · <span class="font-semibold text-gray-900">{lg.total_teams}</span> teams</div>
-        <div class="mt-5 text-[15px] font-medium text-gray-900">Explore {lg.banner_title} <span style="color:#c8102e;">›</span></div>
       </div>
     </a>
 {/each}
