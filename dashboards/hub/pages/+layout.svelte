@@ -2,7 +2,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Krogvad Hub" />
-  <meta name="theme-color" content="#1D4ED8" />
+  <meta name="theme-color" content="#ffffff" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta property="og:site_name" content="Krogvad Analytics Hub" />
   <meta property="og:type" content="website" />

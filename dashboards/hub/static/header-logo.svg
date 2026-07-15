@@ -1,28 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 40">
   <defs>
     <clipPath id="ball"><circle cx="256" cy="230" r="110"/></clipPath>
   </defs>
-  <!-- App icon (original blue treatment) -->
+  <!-- Mark: near-black badge with Dannebrog-red analytics bars -->
   <svg x="0" y="0" width="40" height="40" viewBox="0 0 512 512">
-    <circle cx="256" cy="256" r="256" fill="#1D4ED8"/>
+    <circle cx="256" cy="256" r="256" fill="#1d1d1f"/>
     <circle cx="256" cy="230" r="110" fill="white"/>
     <g clip-path="url(#ball)">
-      <polygon points="256,145 290,170 278,208 234,208 222,170" fill="#1D4ED8"/>
-      <polygon points="366,185 380,220 350,244 322,228 326,192" fill="#1D4ED8"/>
-      <polygon points="328,295 344,330 316,352 286,336 284,300" fill="#1D4ED8"/>
-      <polygon points="184,295 168,330 196,352 226,336 228,300" fill="#1D4ED8"/>
-      <polygon points="146,185 186,192 190,228 162,244 132,220" fill="#1D4ED8"/>
+      <polygon points="256,145 290,170 278,208 234,208 222,170" fill="#1d1d1f"/>
+      <polygon points="366,185 380,220 350,244 322,228 326,192" fill="#1d1d1f"/>
+      <polygon points="328,295 344,330 316,352 286,336 284,300" fill="#1d1d1f"/>
+      <polygon points="184,295 168,330 196,352 226,336 228,300" fill="#1d1d1f"/>
+      <polygon points="146,185 186,192 190,228 162,244 132,220" fill="#1d1d1f"/>
     </g>
-    <circle cx="256" cy="230" r="110" fill="none" stroke="#1D4ED8" stroke-width="6"/>
-    <rect x="148" y="380" width="30" height="64" rx="6" fill="white" opacity="0.9"/>
-    <rect x="196" y="360" width="30" height="84" rx="6" fill="white" opacity="0.9"/>
-    <rect x="244" y="340" width="30" height="104" rx="6" fill="white" opacity="0.9"/>
-    <rect x="292" y="355" width="30" height="89" rx="6" fill="white" opacity="0.9"/>
-    <rect x="340" y="370" width="30" height="74" rx="6" fill="white" opacity="0.9"/>
+    <circle cx="256" cy="230" r="110" fill="none" stroke="#1d1d1f" stroke-width="6"/>
+    <rect x="148" y="380" width="30" height="64" rx="6" fill="#ff5a6a"/>
+    <rect x="196" y="360" width="30" height="84" rx="6" fill="#ff4657"/>
+    <rect x="244" y="340" width="30" height="104" rx="6" fill="#f5233a"/>
+    <rect x="292" y="355" width="30" height="89" rx="6" fill="#ff4657"/>
+    <rect x="340" y="370" width="30" height="74" rx="6" fill="#ff5a6a"/>
   </svg>
-  <!-- Divider -->
-  <line x1="48" y1="5" x2="48" y2="35" stroke="#1D4ED8" stroke-width="1.5"/>
-  <!-- Wordmark -->
-  <text x="56" y="16" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="12" fill="#1D4ED8" letter-spacing="-0.3">Krogvad</text>
-  <text x="57" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="#1D4ED8" letter-spacing="2">ANALYTICS HUB</text>
+  <!-- Wordmark: system font, no divider -->
+  <text x="50" y="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="600" font-size="14" fill="#1d1d1f" letter-spacing="-0.4">Krogvad</text>
+  <text x="51" y="30" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="500" font-size="7.5" fill="#6e6e73" letter-spacing="1.8">ANALYTICS HUB</text>
 </svg>
