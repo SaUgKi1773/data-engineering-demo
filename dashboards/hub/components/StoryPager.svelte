@@ -18,10 +18,11 @@
     if (!pagesEl) return;
     [...pagesEl.children].forEach((el, j) => {
       const on = j === i;
-      const wasVisible = el.style.display === 'block';
-      // explicit 'block' so the active page overrides the pre-hydration
-      // CSS that hides everything but the first chapter
-      el.style.display = on ? 'block' : 'none';
+      const wasVisible = el.style.visibility === 'visible';
+      // explicit 'visible' so the active page overrides the pre-hydration
+      // CSS that hides everything but the first chapter; hidden chapters
+      // keep their grid cell so the card never changes height
+      el.style.visibility = on ? 'visible' : 'hidden';
       if (on && !wasVisible && el.animate) {
         el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: 'ease' });
       }
@@ -78,18 +79,22 @@
 
 <style>
   .sp-card {
-    border: 1px solid #e5e7eb;
-    border-radius: 1rem;
+    background: #ffffff;
+    border-radius: 1.25rem;
     padding: 1.5rem;
   }
-  .sp-pages {
-    min-height: 15rem;
-  }
-  /* Browsers running JS collapse to one chapter before hydration, so the
-     stacked SSR markup never flashes; no-JS visitors keep all chapters. */
+  /* Browsers running JS overlay all chapters in one grid cell, so the card
+     is always as tall as the longest chapter and page switches never resize
+     it; no-JS visitors keep the chapters stacked in normal flow. */
   @media (scripting: enabled) {
+    .sp-pages {
+      display: grid;
+    }
+    .sp-pages > :global(*) {
+      grid-area: 1 / 1;
+    }
     .sp-pages > :global(:not(:first-child)) {
-      display: none;
+      visibility: hidden;
     }
   }
   .sp-nav {
@@ -161,9 +166,6 @@
   @media (min-width: 768px) {
     .sp-card {
       padding: 2rem 2.25rem;
-    }
-    .sp-pages {
-      min-height: 11rem;
     }
   }
 </style>
