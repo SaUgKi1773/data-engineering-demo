@@ -39,3 +39,9 @@ WHERE expected_sk NOT IN (SELECT transfer_type_sk   FROM {{ ref('dim_transfer_ty
 UNION ALL
 SELECT 'dim_transfer_status', expected_sk FROM (VALUES (-1), (-2)) t(expected_sk)
 WHERE expected_sk NOT IN (SELECT transfer_status_sk FROM {{ ref('dim_transfer_status') }})
+UNION ALL
+SELECT 'dim_event_type',   expected_sk FROM (VALUES (-1), (-2)) t(expected_sk)
+WHERE expected_sk NOT IN (SELECT event_type_sk   FROM {{ ref('dim_event_type') }})
+UNION ALL
+SELECT 'dim_match_minute', expected_sk FROM (VALUES (-1), (-2)) t(expected_sk)
+WHERE expected_sk NOT IN (SELECT match_minute_sk FROM {{ ref('dim_match_minute') }})
