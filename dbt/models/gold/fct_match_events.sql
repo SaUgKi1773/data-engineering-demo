@@ -122,7 +122,14 @@ resolved AS (
         COALESCE(dl.league_sk,          -1) AS league_sk,
         COALESCE(dteam.team_sk,         -1) AS team_sk,
         COALESCE(dopp.opponent_team_sk, -1) AS opponent_team_sk,
-        COALESCE(dp.player_sk,          -1) AS player_sk,
+        -- Card and VAR events can lack a player BY NATURE (bench/coach
+        -- bookings, situational reviews) -> Not Applicable. A player-less
+        -- goal or substitution always had an actor -> Unknown (data gap).
+        CASE
+            WHEN src.player_id IS NULL
+                 AND det.event_group IN ('Card', 'VAR') THEN -2
+            ELSE COALESCE(dp.player_sk, -1)
+        END                                 AS player_sk,
         COALESCE(dr.referee_sk,         -1) AS referee_sk,
         COALESCE(ds.stadium_sk,         -1) AS stadium_sk,
         COALESCE(det.match_event_type_sk, -1) AS match_event_type_sk,
