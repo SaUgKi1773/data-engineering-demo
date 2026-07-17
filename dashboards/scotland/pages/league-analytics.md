@@ -797,47 +797,6 @@ order by case period_of_day
 
 ---
 
-## The Rhythm of a Match
-
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">League-wide event timing by 15-minute interval — when goals go in, when referees reach for cards, and when benches turn. Stoppage time (45+, 90+) counted separately.</p>
-
-```sql league_event_timing
-select minute_bucket, minute_bucket_sort, goals, goals_per_match, cards_per_match, subs_per_match
-from scotland.mart_league_event_timing
-where season = '${inputs.season.value}'
-order by minute_bucket_sort
-```
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<BarChart
-    data={league_event_timing}
-    x=minute_bucket
-    y=goals_per_match
-    title="Goals per Match by Minute"
-    xAxisTitle="Match Minute"
-    yAxisTitle="Goals / Match"
-    colorPalette={['#3b82f6']}
-    sort=false
-/>
-
-<BarChart
-    data={league_event_timing}
-    x=minute_bucket
-    y={['cards_per_match','subs_per_match']}
-    title="Cards & Substitutions per Match by Minute"
-    xAxisTitle="Match Minute"
-    yAxisTitle="Events / Match"
-    colorPalette={['#eab308','#8b5cf6']}
-    type=grouped
-    seriesOptions={{"barGap": "0%"}}
-    sort=false
-/>
-
-</div>
-
----
-
 ## Standings & Points Race
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Cumulative points race round by round alongside the current league table. Hover a round on the line chart to see the full ranking.</p>
@@ -1053,6 +1012,72 @@ order by minute_bucket_sort
     swapXY=true
     sort=true
     fmt='0.0%'
+/>
+
+</div>
+
+---
+
+## The Rhythm of a Match
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">League-wide event timing by 15-minute interval — when goals go in, when referees reach for cards, and when benches turn. Stoppage time (45+, 90+) counted separately.</p>
+
+```sql league_event_timing
+select
+    minute_bucket,
+    minute_bucket_sort,
+    sum(goals)                                          as goals,
+    sum(goals) filter (where team_side = 'Home')        as goals_home,
+    sum(goals) filter (where team_side = 'Away')        as goals_away,
+    sum(cards)                                          as cards,
+    sum(substitutions)                                  as substitutions
+from scotland.mart_league_event_timing
+where season = '${inputs.season.value}'
+  and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+group by minute_bucket, minute_bucket_sort
+order by minute_bucket_sort
+```
+
+```sql league_goal_pyramid
+select minute_bucket, minute_bucket_sort, -goals_home as home_goals, goals_away as away_goals
+from ${league_event_timing}
+order by minute_bucket_sort desc
+```
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={league_goal_pyramid}
+    x=minute_bucket
+    y={['home_goals','away_goals']}
+    title="Goals by Minute — Home vs Away"
+    yAxisTitle="Goals"
+    yFmt='#,##0;#,##0'
+    colorPalette={['#3b82f6','#f97316']}
+    type=stacked
+    swapXY=true
+    chartAreaHeight=260
+    sort=false
+    echartsOptions={{xAxis: {position: 'bottom'}}}
+/>
+
+<BarChart
+    data={league_event_timing}
+    x=minute_bucket
+    y={['cards','substitutions']}
+    title="Cards & Substitutions by Minute"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Events"
+    colorPalette={['#eab308','#8b5cf6']}
+    type=grouped
+    chartAreaHeight=260
+    seriesOptions={{"barGap": "0%"}}
+    sort=false
 />
 
 </div>

@@ -703,10 +703,21 @@ end
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Match events by 15-minute interval — when this team scores and concedes, and when the bench makes its moves. Stoppage time (45+, 90+) counted separately.</p>
 
 ```sql team_event_timing
-select minute_bucket, minute_bucket_sort, goals_for, goals_against, substitutions
+select
+    minute_bucket,
+    minute_bucket_sort,
+    sum(goals_for)      as goals_for,
+    sum(goals_against)  as goals_against,
+    sum(substitutions)  as substitutions
 from superligaen.mart_team_event_timing
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+group by minute_bucket, minute_bucket_sort
 order by minute_bucket_sort
 ```
 
@@ -745,10 +756,19 @@ order by minute_bucket_sort
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">How the season went when things got hard: points rescued after falling behind, and leads that slipped away. "Trailing" means behind at any point in the match.</p>
 
 ```sql game_state
-select *
+select
+    count(*) filter (where trailed and result = 'Win')  as comeback_wins,
+    coalesce(sum(points_earned) filter (where trailed), 0) as points_from_trailing,
+    count(*) filter (where ht_state = 'Behind' and result = 'Win')  as ht_comeback_wins,
+    count(*) filter (where led and result = 'Loss')     as leads_lost
 from superligaen.mart_team_game_state
 where season = '${inputs.season.value}'
   and team_name = '${inputs.team.value}'
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
 ```
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -770,24 +790,77 @@ where season = '${inputs.season.value}'
   </div>
 </div>
 
-```sql game_state_table
-select team_logo, team_name, matches_trailed, comeback_wins, comeback_draws, points_from_trailing, ht_comeback_wins, leads_lost, points_dropped_leading
+```sql game_state_outcomes
+select 'Trailed at Some Point' as game_state, 1 as ord,
+    count(*) filter (where trailed and result = 'Win')  as wins,
+    count(*) filter (where trailed and result = 'Draw') as draws,
+    count(*) filter (where trailed and result = 'Loss') as losses
 from superligaen.mart_team_game_state
 where season = '${inputs.season.value}'
-order by points_from_trailing desc
+  and team_name = '${inputs.team.value}'
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+union all
+select 'Led at Some Point', 2,
+    count(*) filter (where led and result = 'Win'),
+    count(*) filter (where led and result = 'Draw'),
+    count(*) filter (where led and result = 'Loss')
+from superligaen.mart_team_game_state
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+order by ord
 ```
 
-<DataTable data={game_state_table} rows=14>
-    <Column id=team_logo title=" " contentType=image height=22 />
-    <Column id=team_name title="Team" />
-    <Column id=matches_trailed title="Trailed" />
-    <Column id=comeback_wins title="Comeback W" />
-    <Column id=comeback_draws title="Comeback D" />
-    <Column id=points_from_trailing title="Pts From Trailing" />
-    <Column id=ht_comeback_wins title="HT-Deficit W" />
-    <Column id=leads_lost title="Leads Lost" />
-    <Column id=points_dropped_leading title="Pts Dropped Leading" />
-</DataTable>
+```sql ht_ft_outcomes
+select
+    ht_state || ' at HT' as ht_state,
+    case ht_state when 'Ahead' then 1 when 'Level' then 2 else 3 end as ord,
+    count(*) filter (where result = 'Win')  as wins,
+    count(*) filter (where result = 'Draw') as draws,
+    count(*) filter (where result = 'Loss') as losses
+from superligaen.mart_team_game_state
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+group by ht_state
+order by ord
+```
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={game_state_outcomes}
+    x=game_state
+    y={['wins','draws','losses']}
+    title="Outcomes by Game State"
+    colorPalette={['#22c55e','#eab308','#ef4444']}
+    type=stacked
+    sort=false
+/>
+
+<BarChart
+    data={ht_ft_outcomes}
+    x=ht_state
+    y={['wins','draws','losses']}
+    title="Half-Time vs Full-Time"
+    colorPalette={['#22c55e','#eab308','#ef4444']}
+    type=stacked
+    sort=false
+/>
+
+</div>
 
 ---
 
