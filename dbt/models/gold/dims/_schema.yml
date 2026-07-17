@@ -176,6 +176,61 @@ models:
               arguments:
                 values: ['Incoming', 'Outgoing', 'Unknown', 'Not Applicable']
 
+  - name: dim_match_event_type
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [event_type_code, event_sub_type_code]
+    columns:
+      - name: match_event_type_sk
+        tests: [not_null, unique]
+      - name: event_group
+        tests:
+          - not_null
+          # A new provider event type lands in 'Unclassified Event Group',
+          # which is deliberately NOT accepted here: the failure is the signal
+          # to classify it in dim_match_event_type
+          - accepted_values:
+              arguments:
+                values: ['Goal', 'Missed Penalty', 'Card', 'Substitution', 'VAR', 'Corner', 'Penalty Shootout', 'Unknown Event Group', 'Not Applicable Event Group']
+      - name: event_type_name
+        tests: [not_null]
+      - name: event_sub_type_name
+        tests: [not_null]
+
+  - name: dim_match_minute
+    columns:
+      - name: match_minute_sk
+        tests: [not_null, unique]
+      - name: minute_label
+        tests: [not_null, unique]
+      - name: stoppage_offset
+        tests:
+          - not_null:
+              config: {where: "match_minute_sk > 0"}
+      - name: period_name
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['First Half', 'Second Half', 'Extra Time', 'Unknown Period', 'Not Applicable Period']
+      - name: minute_of_match
+        tests:
+          - not_null:
+              config: {where: "match_minute_sk > 0"}
+      - name: minute_type
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Regulation', 'Stoppage', 'Unknown Minute Type', 'Not Applicable Minute Type']
+      - name: minute_bucket
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['0-15', '16-30', '31-45', '45+', '46-60', '61-75', '76-90', '90+', 'Extra Time', 'Unknown Minute Bucket', 'Not Applicable Minute Bucket']
+
   - name: dim_transfer_status
     columns:
       - name: transfer_status_sk
