@@ -46,20 +46,19 @@ main_referee AS (
     FROM {{ ref('fixture_referees') }}
     WHERE type_id = 6
 ),
--- Goals scored against each team, with the minute they occurred
+-- Goals scored against each team, with the minute they occurred. The provider
+-- attributes OWNGOAL events to the team AWARDED the goal (validated in #425),
+-- so the conceding team is the event team's opponent for every scoring type.
 goals_against_team AS (
     SELECT
         fe.fixture_id,
-        CASE
-            WHEN fe.type_developer_name = 'OWNGOAL' THEN fe.team_id
-            ELSE fp_opp.team_id
-        END                                      AS conceding_team_id,
+        fp_opp.team_id                           AS conceding_team_id,
         fe.minute + COALESCE(fe.extra_minute, 0) AS goal_minute
     FROM {{ ref('fixture_events') }} fe
     LEFT JOIN {{ ref('fixture_participants') }} fp_opp
         ON  fp_opp.fixture_id = fe.fixture_id
         AND fp_opp.team_id   != fe.team_id
-    WHERE fe.type_developer_name IN ('GOAL', 'OWNGOAL')
+    WHERE fe.type_developer_name IN ('GOAL', 'OWNGOAL', 'PENALTY')
       AND fe.team_id IS NOT NULL
       AND fe.minute  IS NOT NULL
 ),
