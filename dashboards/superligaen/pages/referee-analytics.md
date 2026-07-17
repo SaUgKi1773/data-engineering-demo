@@ -430,6 +430,111 @@ where referee_name = '${inputs.referee.value}'
 
 </div>
 
+---
+
+## Card Timing — {inputs.referee.value}
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When this referee reaches for the cards, by 15-minute interval, against the league baseline for the selected season. Stoppage time (45+, 90+) counted separately.</p>
+
+```sql ref_card_timing
+select minute_bucket, minute_bucket_sort, cards_per_match, league_cards_per_match, yellow_cards, second_yellow_cards, red_cards
+from superligaen.mart_referee_card_timing
+where season = '${inputs.season.value}'
+  and referee_name = '${inputs.referee.value}'
+order by minute_bucket_sort
+```
+
+```sql ref_card_timing_compare
+select minute_bucket, minute_bucket_sort, league_cards_per_match as cards_per_match, 'League Avg' as source
+from ${ref_card_timing}
+union all
+select minute_bucket, minute_bucket_sort, cards_per_match, '${inputs.referee.value}' as source
+from ${ref_card_timing}
+order by minute_bucket_sort
+```
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={ref_card_timing_compare}
+    x=minute_bucket
+    y=cards_per_match
+    series=source
+    title="Cards per Match by Minute — vs League"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Cards / Match"
+    colorPalette={['#d1d5db','#eab308']}
+    type=grouped
+    seriesOptions={{"barGap": "0%"}}
+    sort=false
+/>
+
+<BarChart
+    data={ref_card_timing}
+    x=minute_bucket
+    y={['yellow_cards','second_yellow_cards','red_cards']}
+    title="Card Types by Minute"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Cards"
+    colorPalette={['#eab308','#f97316','#ef4444']}
+    type=stacked
+    sort=false
+/>
+
+</div>
+
+---
+
+## VAR Decisions
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Video-assistant involvement for the selected referee and season — reviews, overturned goals, and penalty calls. Reviews without a categorized outcome count toward the total only.</p>
+
+```sql ref_var
+select *
+from superligaen.mart_referee_var
+where season = '${inputs.season.value}'
+  and referee_name = '${inputs.referee.value}'
+```
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">VAR Reviews</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{ref_var[0]?.var_reviews ?? '—'}</div>
+  </div>
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Reviews / Match</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{ref_var[0]?.var_per_match ?? '—'}</div>
+  </div>
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Goals Disallowed</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{ref_var[0]?.goals_disallowed ?? '—'}</div>
+  </div>
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Goals Awarded</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{ref_var[0]?.goals_awarded ?? '—'}</div>
+  </div>
+</div>
+
+```sql var_table
+select referee_name, matches, var_reviews, var_per_match, goals_disallowed, goals_awarded, penalties_confirmed, penalties_cancelled, card_reviews
+from superligaen.mart_referee_var
+where season = '${inputs.season.value}'
+order by var_per_match desc
+```
+
+<DataTable data={var_table} rows=20>
+    <Column id=referee_name title="Referee" />
+    <Column id=matches title="Matches" />
+    <Column id=var_reviews title="Reviews" />
+    <Column id=var_per_match title="Reviews / Match" />
+    <Column id=goals_disallowed title="Goals Disallowed" />
+    <Column id=goals_awarded title="Goals Awarded" />
+    <Column id=penalties_confirmed title="Pens Confirmed" />
+    <Column id=penalties_cancelled title="Pens Cancelled" />
+    <Column id=card_reviews title="Card Reviews" />
+</DataTable>
+
+
 ```sql last_updated
 select * from superligaen.last_updated
 ```

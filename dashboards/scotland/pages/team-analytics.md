@@ -698,6 +698,99 @@ end
 
 ---
 
+## When Goals Happen
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Match events by 15-minute interval — when this team scores and concedes, and when the bench makes its moves. Stoppage time (45+, 90+) counted separately.</p>
+
+```sql team_event_timing
+select minute_bucket, minute_bucket_sort, goals_for, goals_against, substitutions
+from scotland.mart_team_event_timing
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+order by minute_bucket_sort
+```
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={team_event_timing}
+    x=minute_bucket
+    y={['goals_for','goals_against']}
+    title="Goals Scored vs Conceded by Minute"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Goals"
+    colorPalette={['#3b82f6','#f97316']}
+    type=grouped
+    seriesOptions={{"barGap": "0%"}}
+    sort=false
+/>
+
+<BarChart
+    data={team_event_timing}
+    x=minute_bucket
+    y=substitutions
+    title="Substitutions by Minute"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Substitutions"
+    colorPalette={['#8b5cf6']}
+    sort=false
+/>
+
+</div>
+
+---
+
+## Game State & Comebacks
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">How the season went when things got hard: points rescued after falling behind, and leads that slipped away. "Trailing" means behind at any point in the match.</p>
+
+```sql game_state
+select *
+from scotland.mart_team_game_state
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+```
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Comeback Wins</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{game_state[0]?.comeback_wins ?? '—'}</div>
+  </div>
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Points From Trailing</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{game_state[0]?.points_from_trailing ?? '—'}</div>
+  </div>
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">HT-Deficit Wins</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{game_state[0]?.ht_comeback_wins ?? '—'}</div>
+  </div>
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Leads Lost</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{game_state[0]?.leads_lost ?? '—'}</div>
+  </div>
+</div>
+
+```sql game_state_table
+select team_logo, team_name, matches_trailed, comeback_wins, comeback_draws, points_from_trailing, ht_comeback_wins, leads_lost, points_dropped_leading
+from scotland.mart_team_game_state
+where season = '${inputs.season.value}'
+order by points_from_trailing desc
+```
+
+<DataTable data={game_state_table} rows=14>
+    <Column id=team_logo title=" " contentType=image height=22 />
+    <Column id=team_name title="Team" />
+    <Column id=matches_trailed title="Trailed" />
+    <Column id=comeback_wins title="Comeback W" />
+    <Column id=comeback_draws title="Comeback D" />
+    <Column id=points_from_trailing title="Pts From Trailing" />
+    <Column id=ht_comeback_wins title="HT-Deficit W" />
+    <Column id=leads_lost title="Leads Lost" />
+    <Column id=points_dropped_leading title="Pts Dropped Leading" />
+</DataTable>
+
+---
+
 ## Match Log
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Full match-by-match record for the selected team and season, including possession, pass accuracy, shots on goal, and shot conversion.</p>

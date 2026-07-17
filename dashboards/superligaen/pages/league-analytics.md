@@ -797,6 +797,47 @@ order by case period_of_day
 
 ---
 
+## The Rhythm of a Match
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">League-wide event timing by 15-minute interval — when goals go in, when referees reach for cards, and when benches turn. Stoppage time (45+, 90+) counted separately.</p>
+
+```sql league_event_timing
+select minute_bucket, minute_bucket_sort, goals, goals_per_match, cards_per_match, subs_per_match
+from superligaen.mart_league_event_timing
+where season = '${inputs.season.value}'
+order by minute_bucket_sort
+```
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={league_event_timing}
+    x=minute_bucket
+    y=goals_per_match
+    title="Goals per Match by Minute"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Goals / Match"
+    colorPalette={['#3b82f6']}
+    sort=false
+/>
+
+<BarChart
+    data={league_event_timing}
+    x=minute_bucket
+    y={['cards_per_match','subs_per_match']}
+    title="Cards & Substitutions per Match by Minute"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Events / Match"
+    colorPalette={['#eab308','#8b5cf6']}
+    type=grouped
+    seriesOptions={{"barGap": "0%"}}
+    sort=false
+/>
+
+</div>
+
+---
+
 ## Standings & Points Race
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Cumulative points race round by round alongside the current league table. Hover a round on the line chart to see the full ranking.</p>
