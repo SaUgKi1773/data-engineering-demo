@@ -187,9 +187,12 @@ models:
       - name: event_group
         tests:
           - not_null
+          # A new provider event type lands in 'Unclassified Event Group',
+          # which is deliberately NOT accepted here: the failure is the signal
+          # to classify it in dim_match_event_type
           - accepted_values:
               arguments:
-                values: ['Goal', 'Missed Penalty', 'Card', 'Substitution', 'VAR', 'Unknown Event Group', 'Not Applicable Event Group']
+                values: ['Goal', 'Missed Penalty', 'Card', 'Substitution', 'VAR', 'Corner', 'Penalty Shootout', 'Unknown Event Group', 'Not Applicable Event Group']
       - name: event_type_name
         tests: [not_null]
       - name: event_sub_type_name

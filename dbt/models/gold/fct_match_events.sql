@@ -81,8 +81,8 @@ enriched AS (
             WHEN e.minute <= 90 THEN 'Second Half'
             ELSE                     'Extra Time'
         END) AS period_name,
-        COALESCE(det.match_event_type_sk, det_fb.match_event_type_sk, -1) AS match_event_type_sk,
-        COALESCE(det.event_group,   det_fb.event_group)       AS event_group,
+        COALESCE(det.match_event_type_sk, -1) AS match_event_type_sk,
+        det.event_group,
         e.type_developer_name IN ('GOAL', 'OWNGOAL', 'PENALTY') AS is_scoring,
         -- The provider's result string ("2-1" after the event) is the
         -- authoritative score source: it stays correct even in the handful of
@@ -102,13 +102,12 @@ enriched AS (
     LEFT JOIN periods       pd  ON pd.id          = e.period_id
     LEFT JOIN participants  pt  ON pt.fixture_id  = e.fixture_id AND pt.team_id  = e.team_id
     LEFT JOIN participants  opp ON opp.fixture_id = e.fixture_id AND opp.location != pt.location
+    -- Natural-key join; the dim derives from this same silver table in the
+    -- same run, so every observed combo resolves. Joined here rather than in
+    -- the final block because event_group must exist before the windows.
     LEFT JOIN {{ ref('dim_match_event_type') }} det
         ON  det.event_type_code     = e.type_developer_name
         AND det.event_sub_type_code = COALESCE(e.sub_type_developer_name, 'UNSPECIFIED')
-    -- Unseen future sub-types degrade gracefully to the type's Unspecified row
-    LEFT JOIN {{ ref('dim_match_event_type') }} det_fb
-        ON  det_fb.event_type_code     = e.type_developer_name
-        AND det_fb.event_sub_type_code = 'UNSPECIFIED'
 ),
 src AS (
     SELECT
