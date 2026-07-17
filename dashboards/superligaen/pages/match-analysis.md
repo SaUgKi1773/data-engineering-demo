@@ -7,6 +7,7 @@ title: Match Analysis
 <script>
   import SiteFooter from '../../components/SiteFooter.svelte';
   import MatchLineup from '../../components/MatchLineup.svelte';
+  import MatchTimeline from '../../components/MatchTimeline.svelte';
   import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
 
   const pageInputs = getInputContext();
@@ -83,6 +84,22 @@ select persona_name, sort_order, message, comment_date
 from superligaen.llm_round_discussions
 where match_id = cast('${inputs.match.value}' as bigint)
 order by sort_order
+```
+
+```sql timeline
+select
+    minute_label,
+    period_name,
+    team_side,
+    event_group,
+    event_type_name,
+    event_sub_type_name,
+    player_name,
+    home_score,
+    away_score
+from superligaen.mart_match_events
+where match_id = cast('${inputs.match.value}' as bigint)
+order by minute_of_match, stoppage_offset, event_group_sequence
 ```
 
 ```sql lineup
@@ -309,6 +326,14 @@ order by team_side desc, position_group, position_name
   Loading match data…
 </div>
 {/if}
+
+---
+
+## Match Timeline
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Minute by minute — goals, cards, substitutions and VAR calls as the match unfolded. Home on the left, away on the right.</p>
+
+<MatchTimeline events={timeline} home_team={mc[0]?.home_team_short} away_team={mc[0]?.away_team_short} />
 
 ---
 
