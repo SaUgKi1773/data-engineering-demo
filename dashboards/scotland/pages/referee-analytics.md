@@ -9,11 +9,11 @@ title: Referee Intelligence
   import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
   const pageInputs = getInputContext();
 
-  $: if (season_stats?.length > 0) {
+  $: if (referees?.length > 0) {
     pageInputs.update(($i) => {
-      const currentIsValid = season_stats.some(r => r.referee_name === $i.referee?.value);
+      const currentIsValid = referees.some(r => r.referee_name === $i.referee?.value);
       if (currentIsValid) return $i;
-      const first = season_stats[0];
+      const first = referees[0];
       return { ...$i, referee: { value: first.referee_name, label: first.referee_name, rawValues: [{ value: first.referee_name, label: first.referee_name, selected: true }] } };
     });
   }
@@ -25,249 +25,74 @@ from scotland.mart_referee_season
 order by season desc
 ```
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a season to explore referee discipline patterns — league averages, strictness rankings, home/away bias, and individual referee deep dives.</p>
-
-{#key seasons[0]?.season}
-<Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} />
-{/key}
-
-```sql season_kpis
-select
-    count(*)                                                                            as total_referees,
-    round(sum(total_yellow_cards)::double / sum(matches_managed), 2)                   as league_avg_yellows,
-    round(sum(total_red_cards)::double    / sum(matches_managed), 3)                   as league_avg_reds,
-    round(sum(total_fouls)::double        / sum(matches_managed), 1)                   as league_avg_fouls,
-    round((sum(total_yellow_cards) + sum(total_red_cards) * 3)::double
-          / sum(matches_managed), 2)                                                   as league_severity_index
-from scotland.mart_referee_season
-where season = '${inputs.season.value}'
-```
-
-```sql season_stats
-select
-    referee_name,
-    matches_managed,
-    total_yellow_cards,
-    total_red_cards,
-    total_fouls,
-    avg_yellows_per_match,
-    avg_reds_per_match,
-    avg_fouls_per_match,
-    card_severity_index,
-    home_yc_per_match,
-    away_yc_per_match,
-    home_yc_pct
+```sql referees
+select referee_name, matches_managed
 from scotland.mart_referee_season
 where season = '${inputs.season.value}'
 order by matches_managed desc
 ```
 
-```sql top3_strictest
-select * from ${season_stats} order by avg_yellows_per_match desc limit 3
-```
-
-```sql top3_lenient
-select * from ${season_stats} order by avg_yellows_per_match asc limit 3
-```
-
-```sql historical_trends
+```sql league_kpis
+-- League-wide officiating summary for the season. Card/foul/VAR rates are per
+-- match. One referee per match, so sum(matches_managed) = matches officiated.
+-- Home card share weights each referee's home-yellow % by their yellow volume.
 select
-    substr(season, 3, 2) || '/' || right(season, 2)                                        as season,
-    round(sum(total_yellow_cards)::double / sum(matches_managed), 2)                        as yc_per_match,
-    round(sum(total_red_cards)::double    / sum(matches_managed), 4)                        as rc_per_match,
-    round(sum(total_fouls)::double        / sum(matches_managed), 1)                        as fouls_per_match,
-    round((sum(total_yellow_cards) + sum(total_red_cards) * 3)::double
-          / sum(matches_managed), 2)                                                        as severity_index
+    count(*)                                                                   as total_referees,
+    sum(matches_managed)                                                       as matches,
+    round(sum(total_yellow_cards)::double / sum(matches_managed), 2)           as yc_per_match,
+    round(sum(total_red_cards)::double    / sum(matches_managed), 2)           as rc_per_match,
+    round(sum(total_fouls)::double        / sum(matches_managed), 1)           as fouls_per_match,
+    round(sum(var_reviews)::double / sum(matches_managed), 2)                  as var_per_match,
+    sum(var_reviews)                                                            as total_var_reviews,
+    sum(goals_disallowed)                                                       as total_goals_disallowed,
+    round(sum(coalesce(home_card_pct, 0) * total_cards)::double
+          / nullif(sum(total_cards), 0), 1)                                    as home_card_share
 from scotland.mart_referee_season
-group by season
-order by season asc
+where season = '${inputs.season.value}'
 ```
 
-```sql referee_trends
+```sql landscape
 select
-    substr(season, 3, 2) || '/' || right(season, 2)                                        as season,
-    avg_yellows_per_match                                                                   as yc_per_match,
-    avg_reds_per_match                                                                      as rc_per_match,
-    avg_fouls_per_match                                                                     as fouls_per_match,
-    card_severity_index                                                                     as severity_index
+    referee_name,
+    matches_managed,
+    total_yellow_cards,
+    total_red_cards,
+    avg_yellows_per_match,
+    avg_reds_per_match,
+    avg_fouls_per_match,
+    home_card_pct,
+    var_reviews,
+    goals_disallowed,
+    penalties_cancelled
 from scotland.mart_referee_season
-where referee_name = '${inputs.referee.value}'
-order by season asc
+where season = '${inputs.season.value}'
+order by matches_managed desc
 ```
 
-```sql combined_trends
-select season, yc_per_match, rc_per_match, fouls_per_match, severity_index, 'League Avg' as source
-from ${historical_trends}
-union all
-select season, yc_per_match, rc_per_match, fouls_per_match, severity_index, '${inputs.referee.value}' as source
-from ${referee_trends}
+```sql var_by_team
+with t as (
+    select
+        team_name,
+        goals_disallowed, penalties_cancelled,
+        goals_disallowed + penalties_cancelled as total
+    from scotland.mart_var_team
+    where season = '${inputs.season.value}'
+),
+long as (
+    select team_name, total, 'Goals Disallowed'    as outcome, goals_disallowed    as decisions from t
+    union all select team_name, total, 'Penalties Cancelled',  penalties_cancelled              from t
+)
+select team_name, outcome, decisions
+from long
+where total > 0
+order by total desc, team_name
 ```
 
----
-
-## Referee Intelligence — {inputs.season.value}
-
-### League Discipline Snapshot
-
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Season-wide averages across all referees — active officials, yellow and red card rates, and average fouls per match.</p>
-
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Active Referees</div>
-    <div class="text-3xl font-black text-gray-900 leading-none text-center">{season_kpis[0]?.total_referees ?? '—'}</div>
-  </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Avg YC / Match</div>
-    <div class="text-3xl font-black text-gray-900 leading-none text-center">{season_kpis[0]?.league_avg_yellows ?? '—'}</div>
-  </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Avg RC / Match</div>
-    <div class="text-3xl font-black text-gray-900 leading-none text-center">{season_kpis[0]?.league_avg_reds ?? '—'}</div>
-  </div>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Avg Fouls / Match</div>
-    <div class="text-3xl font-black text-gray-900 leading-none text-center">{season_kpis[0]?.league_avg_fouls ?? '—'}</div>
-  </div>
-</div>
-
----
-
-## Strictest vs Most Lenient Referees
-
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top 3 referees by yellow cards per match at each extreme — who runs the tightest game and who lets the most go.</p>
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-
-<div>
-  <div class="text-sm font-bold text-red-500 uppercase tracking-widest mb-3">🟨 Most Strict</div>
-  <div class="flex flex-col gap-3">
-    {#each top3_strictest as r, i}
-      <div class="rounded-xl border border-red-100 bg-gradient-to-r from-red-50 to-orange-50 p-4 flex items-center gap-4">
-        <div class="text-2xl font-black text-red-400 w-8 text-center">{i+1}</div>
-        <div class="flex-1">
-          <div class="font-bold text-gray-800">{r.referee_name}</div>
-          <div class="text-xs text-gray-400 mt-0.5">{r.matches_managed} games · {r.total_yellow_cards} yellows · {r.total_red_cards} reds</div>
-        </div>
-        <div class="text-right">
-          <div class="text-xl font-black text-red-500">{r.avg_yellows_per_match}</div>
-          <div class="text-xs text-gray-400">YC/match</div>
-        </div>
-      </div>
-    {/each}
-  </div>
-</div>
-
-<div>
-  <div class="text-sm font-bold text-green-500 uppercase tracking-widest mb-3">🟩 Least Strict</div>
-  <div class="flex flex-col gap-3">
-    {#each top3_lenient as r, i}
-      <div class="rounded-xl border border-green-100 bg-gradient-to-r from-green-50 to-teal-50 p-4 flex items-center gap-4">
-        <div class="text-2xl font-black text-green-400 w-8 text-center">{i+1}</div>
-        <div class="flex-1">
-          <div class="font-bold text-gray-800">{r.referee_name}</div>
-          <div class="text-xs text-gray-400 mt-0.5">{r.matches_managed} games · {r.total_yellow_cards} yellows · {r.total_red_cards} reds</div>
-        </div>
-        <div class="text-right">
-          <div class="text-xl font-black text-green-600">{r.avg_yellows_per_match}</div>
-          <div class="text-xs text-gray-400">YC/match</div>
-        </div>
-      </div>
-    {/each}
-  </div>
-</div>
-
-</div>
-
----
-
-## Season Leaderboard
-
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">All referees ranked by matches managed. Includes cards, fouls, severity index, and home/away yellow card split.</p>
-
-<DataTable data={season_stats} rows=20>
-    <Column id=referee_name          title="Referee"              wrap=true />
-    <Column id=matches_managed       title="Games"                contentType=colorscale colorPalette={['white','#3b82f6']} align=center />
-    <Column id=total_yellow_cards    title="Yellow Cards"         contentType=colorscale colorPalette={['white','#eab308']} align=center />
-    <Column id=total_red_cards       title="Red Cards"            contentType=colorscale colorPalette={['white','#ef4444']} align=center />
-    <Column id=avg_yellows_per_match title="Avg YC / Match"       contentType=colorscale colorPalette={['white','#eab308']} />
-    <Column id=avg_reds_per_match    title="Avg RC / Match"       contentType=colorscale colorPalette={['white','#ef4444']} />
-    <Column id=avg_fouls_per_match   title="Avg Fouls / Match"    contentType=colorscale colorPalette={['white','#f97316']} />
-    <Column id=card_severity_index   title="Severity Index"       contentType=colorscale colorPalette={['white','#dc2626']} />
-    <Column id=home_yc_pct           title="Home YC %"            fmt='0.0"%"' contentType=colorscale colorPalette={['white','#6366f1']} />
-</DataTable>
-
----
-
-## Home / Away Bias
-
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">A neutral referee should book home and away teams equally. Values near 50% = balanced. Above 50% = more cards to home team.</p>
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<BarChart
-    data={season_stats}
-    x=referee_name
-    y={['home_yc_per_match','away_yc_per_match']}
-    title="YC per Match — Home vs Away Teams"
-    yAxisTitle="YC / Match"
-    colorPalette={['#3b82f6','#f97316']}
-    swapXY=true
-    type=stacked
-/>
-
-<BarChart
-    data={season_stats}
-    x=referee_name
-    y=home_yc_pct
-    title="% of Yellow Cards Given to Home Team"
-    yAxisTitle="Home YC %"
-    yFmt='0.0'
-    colorPalette={['#6366f1']}
-    swapXY=true
-    sort=true
-/>
-
-</div>
-
----
-
-## Cards & Fouls per Match
-
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Per-match averages for every referee. Sorted highest to lowest so outliers are immediately visible.</p>
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<BarChart
-    data={season_stats}
-    x=referee_name
-    y={['avg_yellows_per_match','avg_reds_per_match']}
-    title="Cards per Match — {inputs.season.value}"
-    colorPalette={['#eab308','#ef4444']}
-    swapXY=true
-    sort=true
-/>
-
-<BarChart
-    data={season_stats}
-    x=referee_name
-    y=avg_fouls_per_match
-    title="Fouls per Match — {inputs.season.value}"
-    colorPalette={['#f97316']}
-    swapXY=true
-    sort=true
-/>
-
-</div>
-
----
-
-## Referee Deep Dive
-
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Select a referee to see their personal profile, team exposure, match log, and how their card rates compare to the league average across all seasons.</p>
-
-{#key season_stats[0]?.referee_name}
-<Dropdown data={season_stats} name=referee value=referee_name label=referee_name defaultValue={season_stats[0]?.referee_name} />
-{/key}
+```sql ref_profile
+select * from scotland.mart_referee_season
+where season = '${inputs.season.value}'
+  and referee_name = '${inputs.referee.value}'
+```
 
 ```sql referee_team_exposure
 select team_name, count(*)::int as matches
@@ -284,256 +109,204 @@ order by matches desc
 
 ```sql referee_match_log
 select
-    match_date,
-    match_round_name                            as round,
-    match_name,
-    score,
-    (home_yc + away_yc)::int                   as yellow_cards,
-    (home_rc + away_rc)::int                   as red_cards,
-    (home_fouls + away_fouls)::int             as fouls
-from scotland.mart_match_card
-where referee_name = '${inputs.referee.value}'
-  and season = '${inputs.season.value}'
-order by match_date desc
+    mc.match_date,
+    mc.match_round_name                            as round,
+    mc.match_name,
+    mc.score,
+    (mc.home_yc + mc.away_yc)::int                 as yellow_cards,
+    (mc.home_rc + mc.away_rc)::int                 as red_cards,
+    (mc.home_fouls + mc.away_fouls)::int           as fouls,
+    coalesce(vm.var_reviews, 0)::int               as var_reviews,
+    coalesce(vm.goals_disallowed, 0)::int          as goals_disallowed,
+    coalesce(vm.penalties_cancelled, 0)::int       as penalties_cancelled
+from scotland.mart_match_card mc
+left join scotland.mart_var_match vm on vm.match_id = mc.match_id
+where mc.referee_name = '${inputs.referee.value}'
+  and mc.season = '${inputs.season.value}'
+order by mc.match_date desc
 ```
 
-```sql referee_kpis
-select * from ${season_stats}
-where referee_name = '${inputs.referee.value}'
-```
+<p style="font-size:0.85rem;color:#4b5563;margin:0 0 1.25rem 0;">A season-long read on how the Superliga is officiated — the discipline every referee brings to a match, how evenly they treat home and away sides, and the growing footprint of VAR. Pick a season to reset the league landscape, then drop into any referee for their personal profile.</p>
 
-{#each referee_kpis as r}
-<div class="rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 md:p-8 mb-6 shadow-xl">
+<div class="flex flex-wrap gap-3 items-end mb-6">
+  {#key seasons[0]?.season}
+  <Dropdown data={seasons} name=season value=season label=season order="season desc" defaultValue={seasons[0]?.season} title="Season" />
+  {/key}
+</div>
+
+## The Season in Discipline — {inputs.season.value}
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every headline officiating number for the season at a glance — how freely cards and fouls are given, how routine VAR has become, and whether the league leans toward the home side. Card, foul and VAR figures are per match.</p>
+
+{#each league_kpis as k}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Referees</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.total_referees ?? '—'}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{k.matches} matches officiated</div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Yellow Cards / Match</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.yc_per_match ?? '—'}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{k.rc_per_match} red · {k.fouls_per_match} fouls / match</div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Home Team Card Share</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.home_card_share != null ? k.home_card_share + '%' : '—'}</div>
+    {#if k.home_card_share == null}
+    <div class="text-xs text-gray-400 text-center mt-3">—</div>
+    {:else if k.home_card_share < 45}
+    <div class="text-sm font-bold text-red-500 text-center mt-3">✗ Home Team Biased</div>
+    {:else if k.home_card_share > 55}
+    <div class="text-sm font-bold text-red-500 text-center mt-3">✗ Away Team Biased</div>
+    {:else}
+    <div class="text-sm font-bold text-green-600 text-center mt-3">✓ Not Biased</div>
+    {/if}
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">VAR Reviews / Match</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.var_per_match ?? '—'}</div>
+    <div class="text-xs text-gray-400 text-center mt-3">{k.total_var_reviews} reviews · {k.total_goals_disallowed} goals disallowed</div>
+  </div>
+
+</div>
+{/each}
+
+---
+
+## Strictness & Bias
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every referee ranked by how freely they book (left), then by how evenly they treat the two sides (right). The league averages <b>{league_kpis[0]?.yc_per_match}</b> yellows per match; a referee above 50% on the right gives more of their cards to the home team.</p>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={landscape}
+    x=referee_name
+    y={['avg_yellows_per_match','avg_reds_per_match']}
+    title="Cards per Match"
+    yAxisTitle="Cards / Match"
+    colorPalette={['#eab308','#ef4444']}
+    swapXY=true
+    type=stacked
+    sort=true
+/>
+
+<BarChart
+    data={landscape}
+    x=referee_name
+    y=home_card_pct
+    title="Share of Cards to the Home Team"
+    yAxisTitle="Home Card %"
+    yFmt='0.0'
+    colorPalette={['#6366f1']}
+    swapXY=true
+    sort=true
+/>
+
+</div>
+
+---
+
+## Who VAR Ruled Against — {inputs.season.value}
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">The calls that went against each team this season — goals ruled out and penalties scrubbed by video review — ranked by how often a team was on the wrong end. Each decision is counted for the team it was taken from; the goals and penalties VAR awarded, and routine card checks, are left out. Categorised from 2023/24 onward.</p>
+
+<BarChart
+    data={var_by_team}
+    x=team_name
+    y=decisions
+    series=outcome
+    title="VAR Rulings Against Each Team"
+    xAxisTitle="Team"
+    yAxisTitle="Decisions against"
+    type=stacked
+    swapXY=true
+    colorPalette={['#ef4444','#f59e0b']}
+    sort=true
+/>
+
+---
+
+## Season Leaderboard
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">The full table behind the charts above — cards, fouls, and the VAR rulings that landed in each referee's matches this season. Sortable and searchable; the colour scales highlight the outliers at a glance.</p>
+
+<DataTable data={landscape} rows=15 search=true downloadable=true>
+    <Column id=referee_name          title="Referee"           wrap=true />
+    <Column id=matches_managed       title="Games"             contentType=colorscale colorPalette={['white','#3b82f6']} align=center />
+    <Column id=total_yellow_cards    title="YC"                contentType=colorscale colorPalette={['white','#eab308']} align=center />
+    <Column id=total_red_cards       title="RC"                contentType=colorscale colorPalette={['white','#ef4444']} align=center />
+    <Column id=avg_fouls_per_match   title="Fouls / Match"     contentType=colorscale colorPalette={['white','#f97316']} />
+    <Column id=var_reviews           title="VAR Reviews"       contentType=colorscale colorPalette={['white','#6366f1']} align=center />
+    <Column id=goals_disallowed      title="Goals Disallowed"  contentType=colorscale colorPalette={['white','#ef4444']} align=center />
+    <Column id=penalties_cancelled   title="Pens Cancelled"    contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
+</DataTable>
+
+<div class="border-t-2 border-gray-100 mt-12 mb-2"></div>
+
+## Referee Deep Dive
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Zoom into a single official — their season profile, the clubs they saw most, and their full match-by-match record including the VAR calls in each game.</p>
+
+{#key referees[0]?.referee_name}
+<div class="flex flex-wrap gap-3 items-end mb-6">
+  <Dropdown data={referees} name=referee value=referee_name label=referee_name defaultValue={referees[0]?.referee_name} title="Referee" />
+</div>
+{/key}
+
+{#each ref_profile as r}
+<div class="rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 md:p-8 mb-8 shadow-xl">
   <div class="text-center md:text-left">
-    <div class="text-3xl font-extrabold text-white mb-1">{r.referee_name}</div>
-    <div class="text-gray-400 text-sm mb-5">{inputs.season.value} · {r.matches_managed} matches officiated</div>
-    <div class="flex flex-wrap justify-center md:justify-start gap-6">
-      <div class="text-center">
-        <div class="text-3xl font-black text-yellow-400">{r.total_yellow_cards}</div>
-        <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Yellow Cards</div>
-      </div>
-      <div class="text-center">
-        <div class="text-3xl font-black text-red-400">{r.total_red_cards}</div>
-        <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Red Cards</div>
-      </div>
-      <div class="text-center">
-        <div class="text-3xl font-black text-orange-400">{r.avg_yellows_per_match}</div>
-        <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">YC / Match</div>
-      </div>
-      <div class="text-center">
-        <div class="text-3xl font-black text-white">{r.avg_fouls_per_match}</div>
-        <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Fouls / Match</div>
-      </div>
-      <div class="text-center">
-        <div class="text-3xl font-black text-purple-400">{r.card_severity_index}</div>
-        <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Severity Index</div>
-      </div>
-      <div class="text-center">
-        <div class="text-3xl font-black {r.home_yc_pct > 55 ? 'text-red-400' : r.home_yc_pct < 45 ? 'text-blue-400' : 'text-green-400'}">{r.home_yc_pct}%</div>
-        <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Home YC %</div>
-      </div>
+    <div class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">{r.referee_name}</div>
+    <div class="text-gray-400 text-sm mt-1 mb-5">{inputs.season.value} · {r.matches_managed} matches officiated</div>
+    <div class="flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-4">
+      <div class="text-center"><div class="text-2xl font-black text-yellow-400">{r.total_yellow_cards}</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Yellow Cards</div></div>
+      <div class="text-center"><div class="text-2xl font-black text-red-400">{r.total_red_cards}</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Red Cards</div></div>
+      <div class="text-center"><div class="text-2xl font-black text-white">{r.avg_yellows_per_match}</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">YC / Match</div></div>
+      <div class="text-center"><div class="text-2xl font-black text-white">{r.avg_fouls_per_match}</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Fouls / Match</div></div>
+      <div class="text-center"><div class="text-2xl font-black {r.home_card_pct > 55 ? 'text-red-400' : r.home_card_pct < 45 ? 'text-blue-400' : 'text-green-400'}">{r.home_card_pct}%</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Home Card %</div></div>
+      <div class="text-center"><div class="text-2xl font-black text-white">{r.var_reviews}</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">VAR Reviews</div></div>
     </div>
   </div>
 </div>
 {/each}
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<div>
-
 ### Team Exposure
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Which clubs {inputs.referee.value} took charge of most this season.</p>
 
 <BarChart
     data={referee_team_exposure}
     x=team_name
     y=matches
-    title="Matches per Team — {inputs.referee.value}"
+    title="Matches per Team"
+    yAxisTitle="Matches"
     colorPalette={['#6366f1']}
     swapXY=true
+    sort=true
 />
-
-</div>
-
-<div>
 
 ### Match Log
 
-<DataTable data={referee_match_log} rows=5>
-    <Column id=match_date    title="Date"   />
-    <Column id=round         title="Round"  />
-    <Column id=match_name    title="Match"  wrap=true />
-    <Column id=score         title="Score"  align=center />
-    <Column id=yellow_cards  title="YC"     contentType=colorscale colorPalette={['white','#eab308']} align=center />
-    <Column id=red_cards     title="RC"     contentType=colorscale colorPalette={['white','#ef4444']} align=center />
-    <Column id=fouls         title="Fouls"  contentType=colorscale colorPalette={['white','#f97316']} align=center />
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">The full game-by-game record — cards and fouls, plus what the video team changed in each match: reviews, goals ruled out, and penalties scrubbed.</p>
+
+<DataTable data={referee_match_log} rows=10 search=true downloadable=true>
+    <Column id=match_date          title="Date"   />
+    <Column id=round               title="Round"  />
+    <Column id=match_name          title="Match"  wrap=true />
+    <Column id=score               title="Score"  align=center />
+    <Column id=yellow_cards        title="YC"     contentType=colorscale colorPalette={['white','#eab308']} align=center />
+    <Column id=red_cards           title="RC"     contentType=colorscale colorPalette={['white','#ef4444']} align=center />
+    <Column id=fouls               title="Fouls"  contentType=colorscale colorPalette={['white','#f97316']} align=center />
+    <Column id=var_reviews         title="VAR"    contentType=colorscale colorPalette={['white','#6366f1']} align=center />
+    <Column id=goals_disallowed    title="Goals Disallowed" contentType=colorscale colorPalette={['white','#ef4444']} align=center />
+    <Column id=penalties_cancelled title="Pens Cancelled"   contentType=colorscale colorPalette={['white','#f59e0b']} align=center />
 </DataTable>
-
-</div>
-
-</div>
-
----
-
-## Historical Discipline Trends
-
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Season-by-season league averages (grey) overlaid with the selected referee's own trend line — spot referees who have become stricter or more lenient over time.</p>
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<LineChart
-    data={combined_trends}
-    x=season
-    y=yc_per_match
-    series=source
-    title="Yellow Cards per Match — All Seasons"
-    xAxisTitle="Season"
-    yAxisTitle="YC / Match"
-    colorPalette={['#d1d5db','#eab308']}
-    sort=false
-/>
-
-<LineChart
-    data={combined_trends}
-    x=season
-    y=fouls_per_match
-    series=source
-    title="Fouls per Match — All Seasons"
-    xAxisTitle="Season"
-    yAxisTitle="Fouls / Match"
-    colorPalette={['#d1d5db','#f97316']}
-    sort=false
-/>
-
-<LineChart
-    data={combined_trends}
-    x=season
-    y=severity_index
-    series=source
-    title="Card Severity Index — All Seasons"
-    xAxisTitle="Season"
-    yAxisTitle="Severity Index"
-    colorPalette={['#d1d5db','#dc2626']}
-    sort=false
-/>
-
-<LineChart
-    data={combined_trends}
-    x=season
-    y=rc_per_match
-    series=source
-    title="Red Cards per Match — All Seasons"
-    xAxisTitle="Season"
-    yAxisTitle="RC / Match"
-    colorPalette={['#d1d5db','#ef4444']}
-    sort=false
-/>
-
-</div>
-
----
-
-## Card Timing — {inputs.referee.value}
-
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When this referee reaches for the cards, by 15-minute interval, against the league baseline for the selected season. Stoppage time (45+, 90+) counted separately.</p>
-
-```sql ref_card_timing
-select minute_bucket, minute_bucket_sort, cards_per_match, league_cards_per_match, yellow_cards, second_yellow_cards, red_cards
-from scotland.mart_referee_card_timing
-where season = '${inputs.season.value}'
-  and referee_name = '${inputs.referee.value}'
-order by minute_bucket_sort
-```
-
-```sql ref_card_timing_compare
-select minute_bucket, minute_bucket_sort, league_cards_per_match as cards_per_match, 'League Avg' as source
-from ${ref_card_timing}
-union all
-select minute_bucket, minute_bucket_sort, cards_per_match, '${inputs.referee.value}' as source
-from ${ref_card_timing}
-order by minute_bucket_sort
-```
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-<BarChart
-    data={ref_card_timing_compare}
-    x=minute_bucket
-    y=cards_per_match
-    series=source
-    title="Cards per Match by Minute — vs League"
-    xAxisTitle="Match Minute"
-    yAxisTitle="Cards / Match"
-    colorPalette={['#d1d5db','#eab308']}
-    type=grouped
-    seriesOptions={{"barGap": "0%"}}
-    sort=false
-/>
-
-<BarChart
-    data={ref_card_timing}
-    x=minute_bucket
-    y={['yellow_cards','second_yellow_cards','red_cards']}
-    title="Card Types by Minute"
-    xAxisTitle="Match Minute"
-    yAxisTitle="Cards"
-    colorPalette={['#eab308','#f97316','#ef4444']}
-    type=stacked
-    sort=false
-/>
-
-</div>
-
----
-
-## VAR Decisions
-
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Video-assistant involvement for the selected referee and season — reviews, overturned goals, and penalty calls. Reviews without a categorized outcome count toward the total only.</p>
-
-```sql ref_var
-select *
-from scotland.mart_referee_var
-where season = '${inputs.season.value}'
-  and referee_name = '${inputs.referee.value}'
-```
-
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-  <div>
-    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">VAR Reviews</div>
-    <div class="text-3xl font-black text-gray-900 leading-none text-center">{ref_var[0]?.var_reviews ?? '—'}</div>
-  </div>
-  <div>
-    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Reviews / Match</div>
-    <div class="text-3xl font-black text-gray-900 leading-none text-center">{ref_var[0]?.var_per_match ?? '—'}</div>
-  </div>
-  <div>
-    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Goals Disallowed</div>
-    <div class="text-3xl font-black text-gray-900 leading-none text-center">{ref_var[0]?.goals_disallowed ?? '—'}</div>
-  </div>
-  <div>
-    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Goals Awarded</div>
-    <div class="text-3xl font-black text-gray-900 leading-none text-center">{ref_var[0]?.goals_awarded ?? '—'}</div>
-  </div>
-</div>
-
-```sql var_table
-select referee_name, matches, var_reviews, var_per_match, goals_disallowed, goals_awarded, penalties_confirmed, penalties_cancelled, card_reviews
-from scotland.mart_referee_var
-where season = '${inputs.season.value}'
-order by var_per_match desc
-```
-
-<DataTable data={var_table} rows=20>
-    <Column id=referee_name title="Referee" />
-    <Column id=matches title="Matches" />
-    <Column id=var_reviews title="Reviews" />
-    <Column id=var_per_match title="Reviews / Match" />
-    <Column id=goals_disallowed title="Goals Disallowed" />
-    <Column id=goals_awarded title="Goals Awarded" />
-    <Column id=penalties_confirmed title="Pens Confirmed" />
-    <Column id=penalties_cancelled title="Pens Cancelled" />
-    <Column id=card_reviews title="Card Reviews" />
-</DataTable>
-
 
 ```sql last_updated
 select * from scotland.last_updated
