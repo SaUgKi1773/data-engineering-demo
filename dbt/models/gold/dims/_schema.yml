@@ -176,13 +176,13 @@ models:
               arguments:
                 values: ['Incoming', 'Outgoing', 'Unknown', 'Not Applicable']
 
-  - name: dim_event_type
+  - name: dim_match_event_type
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [event_type_code, event_sub_type_code]
     columns:
-      - name: event_type_sk
+      - name: match_event_type_sk
         tests: [not_null, unique]
       - name: event_group
         tests:
@@ -196,13 +196,15 @@ models:
         tests: [not_null]
 
   - name: dim_match_minute
-    tests:
-      - dbt_utils.unique_combination_of_columns:
-          arguments:
-            combination_of_columns: [period_name, minute_of_match, minute_type]
     columns:
       - name: match_minute_sk
         tests: [not_null, unique]
+      - name: minute_label
+        tests: [not_null, unique]
+      - name: stoppage_offset
+        tests:
+          - not_null:
+              config: {where: "match_minute_sk > 0"}
       - name: period_name
         tests:
           - not_null

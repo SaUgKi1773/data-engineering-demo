@@ -81,7 +81,7 @@ enriched AS (
             WHEN e.minute <= 90 THEN 'Second Half'
             ELSE                     'Extra Time'
         END) AS period_name,
-        COALESCE(det.event_type_sk, det_fb.event_type_sk, -1) AS event_type_sk,
+        COALESCE(det.match_event_type_sk, det_fb.match_event_type_sk, -1) AS match_event_type_sk,
         COALESCE(det.event_group,   det_fb.event_group)       AS event_group,
         e.type_developer_name IN ('GOAL', 'OWNGOAL', 'PENALTY') AS is_scoring,
         -- The provider's result string ("2-1" after the event) is the
@@ -102,11 +102,11 @@ enriched AS (
     LEFT JOIN periods       pd  ON pd.id          = e.period_id
     LEFT JOIN participants  pt  ON pt.fixture_id  = e.fixture_id AND pt.team_id  = e.team_id
     LEFT JOIN participants  opp ON opp.fixture_id = e.fixture_id AND opp.location != pt.location
-    LEFT JOIN {{ ref('dim_event_type') }} det
+    LEFT JOIN {{ ref('dim_match_event_type') }} det
         ON  det.event_type_code     = e.type_developer_name
         AND det.event_sub_type_code = COALESCE(e.sub_type_developer_name, 'UNSPECIFIED')
     -- Unseen future sub-types degrade gracefully to the type's Unspecified row
-    LEFT JOIN {{ ref('dim_event_type') }} det_fb
+    LEFT JOIN {{ ref('dim_match_event_type') }} det_fb
         ON  det_fb.event_type_code     = e.type_developer_name
         AND det_fb.event_sub_type_code = 'UNSPECIFIED'
 ),
@@ -159,7 +159,7 @@ SELECT
         WHEN 'away' THEN 2
         ELSE -1
     END                                 AS team_side_sk,
-    src.event_type_sk,
+    src.match_event_type_sk,
     COALESCE(dmm.match_minute_sk,   -1) AS match_minute_sk,
     src.event_group_sequence,
     src.home_score_after_event,
@@ -176,12 +176,13 @@ LEFT JOIN {{ ref('dim_player') }}        dp      ON dp.player_id          = src.
 LEFT JOIN main_referee                   mr      ON mr.fixture_id         = src.fixture_id
 LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id         = mr.referee_id
 LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id         = src.venue_id
--- Contradictory source combos (e.g. a first-half event at minute 60) resolve
--- to the Unknown row rather than a silently wrong bucket
+-- Natural-key join on the match clock; the period condition is an anomaly
+-- guard so contradictory source combos (e.g. a first-half event at minute 60)
+-- resolve to the Unknown row rather than a silently wrong bucket
 LEFT JOIN {{ ref('dim_match_minute') }}  dmm
-    ON  dmm.period_name     = src.period_name
-    AND dmm.minute_of_match = src.minute
-    AND dmm.minute_type     = CASE WHEN src.extra_minute > 0 THEN 'Stoppage' ELSE 'Regulation' END
+    ON  dmm.minute_label = src.minute::VARCHAR
+            || CASE WHEN src.extra_minute > 0 THEN '+' || src.extra_minute::VARCHAR ELSE '' END
+    AND dmm.period_name  = src.period_name
 {% if is_incremental() %}
 WHERE {{ gold_incremental_filter() }}
 {% endif %}

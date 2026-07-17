@@ -72,4 +72,4 @@ FROM (VALUES
     (58, 'VAR', 'VAR Card Review', 'Review',             'VAR_CARD', 'REVIEW'),
     (-1, 'Unknown Event Group',        'Unknown Event Type',        'Unknown Event Sub Type',        'UNKNOWN',        'UNKNOWN'),
     (-2, 'Not Applicable Event Group', 'Not Applicable Event Type', 'Not Applicable Event Sub Type', 'NOT_APPLICABLE', 'NOT_APPLICABLE')
-) t(event_type_sk, event_group, event_type_name, event_sub_type_name, event_type_code, event_sub_type_code)
+) t(match_event_type_sk, event_group, event_type_name, event_sub_type_name, event_type_code, event_sub_type_code)
