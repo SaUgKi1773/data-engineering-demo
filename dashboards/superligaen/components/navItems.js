@@ -12,7 +12,6 @@ export const navGroups = [
   {
     label: 'Overview',
     items: [
-      { href: '/', label: 'Home', logo: '/logo-circle.svg' },
       { href: '/standings', label: 'Standings', emoji: '🏆', tint: '#fffbeb' },
       { href: '/upcoming-matches', label: 'Upcoming Fixtures', emoji: '📅', tint: '#f5f3ff' }
     ]
