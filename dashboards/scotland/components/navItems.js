@@ -12,13 +12,13 @@ export const navGroups = [
   {
     label: 'Overview',
     items: [
-      { href: '/standings', label: 'Standings', emoji: '🏆', tint: '#fffbeb' },
-      { href: '/upcoming-matches', label: 'Upcoming Fixtures', emoji: '📅', tint: '#f5f3ff' }
+      { href: '/standings', label: 'Standings', emoji: '🏆', tint: '#fffbeb' }
     ]
   },
   {
     label: 'Matches',
     items: [
+      { href: '/upcoming-matches', label: 'Upcoming Fixtures', emoji: '📅', tint: '#f5f3ff' },
       { href: '/match-results', label: 'Match Results', emoji: '⚽', tint: '#eff6ff' },
       { href: '/predictions', label: 'Prediction Module', emoji: '🔮', tint: '#fdf4ff' }
     ]
