@@ -25,6 +25,16 @@ A fully automated data pipeline that:
 - Serves analytics via this **Evidence.dev** dashboard, deployed on **Vercel**
 - Runs nightly via **GitHub Actions**
 
+## Source Code
+
+Everything — the ingestion scripts, dbt models, and this Evidence dashboard — is open source.
+
+<div class="-mt-3">
+<a href="https://github.com/SaUgKi1773/data-engineering-demo" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-700 transition-colors no-underline">
+  Source Code on GitHub
+</a>
+</div>
+
 ## The Full Journey
 
 The complete story — every decision, every mistake, every fix — is documented in the blog:
@@ -50,6 +60,16 @@ Have a suggestion for the dashboard? Open an issue on GitHub — no account need
 <div class="-mt-3">
 <a href="https://github.com/SaUgKi1773/data-engineering-demo/issues/new?template=suggestion.md" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-colors no-underline">
   Share a Suggestion
+</a>
+</div>
+
+## Part of Krogvad Analytics Hub
+
+This dashboard is one of several data products under the Krogvad Analytics Hub.
+
+<div class="-mt-3">
+<a href="https://krogvadanalyticshub.vercel.app/" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors no-underline">
+  Krogvad Analytics Hub
 </a>
 </div>
 

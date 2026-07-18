@@ -16,11 +16,16 @@
   import { afterNavigate } from '$app/navigation';
   import { inject } from '@vercel/analytics';
   import InstallBanner from '../components/InstallBanner.svelte';
-  import ProjectMenu from '../components/ProjectMenu.svelte';
+  import HeaderMenuButton from '../components/HeaderMenuButton.svelte';
+  import SideNav from '../components/SideNav.svelte';
+  import BottomNav from '../components/BottomNav.svelte';
 
   export let data;
 
+  let menuOpen = false;
+
   afterNavigate(() => {
+    menuOpen = false;
     setTimeout(() => window.scrollTo(0, 0), 0);
   });
 
@@ -35,20 +40,28 @@
 </script>
 
 <EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true} hideMenu={true} logo="/header-logo.svg">
-  <div slot="content">
+  <div slot="content" class="nav-content">
     <slot />
   </div>
 </EvidenceDefaultLayout>
 
-<ProjectMenu />
+<HeaderMenuButton on:open={() => (menuOpen = true)} />
+<SideNav open={menuOpen} on:close={() => (menuOpen = false)} />
+<BottomNav />
 
 <InstallBanner />
 
 <style>
+  /* Keep page content clear of the fixed bottom nav bar (mobile only, where it shows). */
+  @media (max-width: 767px) {
+    .nav-content {
+      padding-bottom: calc(4rem + env(safe-area-inset-bottom) + 1rem);
+    }
+  }
   :global(header img[alt="Home"]) {
     height: 2.5rem;
   }
-  /* Hide Evidence's built-in kebab; replaced by the custom ProjectMenu */
+  /* Hide Evidence's built-in kebab; navigation is the custom side pane + bottom bar. */
   :global(header button[aria-label="Menu"]) {
     display: none;
   }
