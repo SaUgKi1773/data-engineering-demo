@@ -1027,8 +1027,8 @@ select
     minute_bucket,
     minute_bucket_sort,
     sum(goals)                                          as goals,
-    sum(goals) filter (where team_side = 'Home')        as goals_home,
-    sum(goals) filter (where team_side = 'Away')        as goals_away,
+    sum(goals) filter (where team_side = 'Home')        as home_goals,
+    sum(goals) filter (where team_side = 'Away')        as away_goals,
     sum(cards)                                          as cards,
     sum(substitutions)                                  as substitutions
 from superligaen.mart_league_event_timing
@@ -1043,27 +1043,19 @@ group by minute_bucket, minute_bucket_sort
 order by minute_bucket_sort
 ```
 
-```sql league_goal_pyramid
-select minute_bucket, minute_bucket_sort, -goals_home as home_goals, goals_away as away_goals
-from ${league_event_timing}
-order by minute_bucket_sort desc
-```
-
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
 <BarChart
-    data={league_goal_pyramid}
+    data={league_event_timing}
     x=minute_bucket
     y={['home_goals','away_goals']}
     title="Goals by Minute — Home vs Away"
+    xAxisTitle="Match Minute"
     yAxisTitle="Goals"
-    yFmt='#,##0;#,##0'
     colorPalette={['#3b82f6','#f97316']}
     type=stacked
-    swapXY=true
     chartAreaHeight=260
     sort=false
-    echartsOptions={{xAxis: {position: 'bottom'}}}
 />
 
 <BarChart

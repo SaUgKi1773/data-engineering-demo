@@ -156,15 +156,6 @@ order by mc.match_date desc
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">Home Team Card Share</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.home_card_share != null ? k.home_card_share + '%' : '—'}</div>
-    {#if k.home_card_share == null}
-    <div class="text-xs text-gray-400 text-center mt-3">—</div>
-    {:else if k.home_card_share < 45}
-    <div class="text-sm font-bold text-red-500 text-center mt-3">✗ Home Team Biased</div>
-    {:else if k.home_card_share > 55}
-    <div class="text-sm font-bold text-red-500 text-center mt-3">✗ Away Team Biased</div>
-    {:else}
-    <div class="text-sm font-bold text-green-600 text-center mt-3">✓ Not Biased</div>
-    {/if}
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
@@ -269,7 +260,7 @@ order by mc.match_date desc
       <div class="text-center"><div class="text-2xl font-black text-red-400">{r.total_red_cards}</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Red Cards</div></div>
       <div class="text-center"><div class="text-2xl font-black text-white">{r.avg_yellows_per_match}</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">YC / Match</div></div>
       <div class="text-center"><div class="text-2xl font-black text-white">{r.avg_fouls_per_match}</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Fouls / Match</div></div>
-      <div class="text-center"><div class="text-2xl font-black {r.home_card_pct > 55 ? 'text-red-400' : r.home_card_pct < 45 ? 'text-blue-400' : 'text-green-400'}">{r.home_card_pct}%</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Home Card %</div></div>
+      <div class="text-center"><div class="text-2xl font-black text-white">{r.home_card_pct}%</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Home Card %</div></div>
       <div class="text-center"><div class="text-2xl font-black text-white">{r.var_reviews}</div><div class="text-xs text-gray-400 uppercase tracking-widest mt-1">VAR Reviews</div></div>
     </div>
   </div>

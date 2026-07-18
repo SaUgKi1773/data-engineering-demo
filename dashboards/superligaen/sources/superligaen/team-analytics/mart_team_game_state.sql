@@ -15,7 +15,6 @@ WITH match_extremes AS (
 SELECT
     d.season,
     t.team_name,
-    t.team_logo,
     ot.opponent_team_name,
     m.match_round_number,
     m.match_round_type,

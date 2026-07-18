@@ -69,6 +69,7 @@ LEFT JOIN var_agg                         v   ON v.season          = d.season
 WHERE d.season >= '2020/21'
   AND r.match_result IN ('Win', 'Draw', 'Loss')
   AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 271)  -- Superliga only
+  AND f.referee_sk > 0  -- exclude the "Unknown Referee" placeholder
 GROUP BY d.season, ref.referee_common_name,
          v.var_reviews, v.goals_disallowed, v.goals_awarded,
          v.penalties_confirmed, v.penalties_cancelled, v.card_reviews

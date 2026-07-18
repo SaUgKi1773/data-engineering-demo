@@ -589,7 +589,7 @@ end
 
 ## Home vs Away
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Results, goals, possession, and pass accuracy split by home and away fixtures.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Results and goals split by home and away fixtures.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -612,24 +612,6 @@ end
     colorPalette={['#3b82f6','#f97316']}
     type=grouped
     seriesOptions={{"barGap": "0%"}}
-    sort=false
-/>
-
-<BarChart
-    data={home_away_split}
-    x=venue
-    y=avg_possession
-    title="Avg Possession %"
-    colorPalette={['#8b5cf6']}
-    sort=false
-/>
-
-<BarChart
-    data={home_away_split}
-    x=venue
-    y=pass_accuracy
-    title="Pass Accuracy %"
-    colorPalette={['#3b82f6']}
     sort=false
 />
 
