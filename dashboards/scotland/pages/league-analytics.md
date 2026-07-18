@@ -1018,6 +1018,64 @@ order by case period_of_day
 
 ---
 
+## The Rhythm of a Match
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">League-wide event timing by 15-minute interval — when goals go in, when referees reach for cards, and when benches turn. Stoppage time (45+, 90+) counted separately.</p>
+
+```sql league_event_timing
+select
+    minute_bucket,
+    minute_bucket_sort,
+    sum(goals)                                          as goals,
+    sum(goals) filter (where team_side = 'Home')        as home_goals,
+    sum(goals) filter (where team_side = 'Away')        as away_goals,
+    sum(cards)                                          as cards,
+    sum(substitutions)                                  as substitutions
+from scotland.mart_league_event_timing
+where season = '${inputs.season.value}'
+  and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+group by minute_bucket, minute_bucket_sort
+order by minute_bucket_sort
+```
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={league_event_timing}
+    x=minute_bucket
+    y={['home_goals','away_goals']}
+    title="Goals by Minute — Home vs Away"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Goals"
+    colorPalette={['#3b82f6','#f97316']}
+    type=stacked
+    chartAreaHeight=260
+    sort=false
+/>
+
+<BarChart
+    data={league_event_timing}
+    x=minute_bucket
+    y={['cards','substitutions']}
+    title="Cards & Substitutions by Minute"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Events"
+    colorPalette={['#eab308','#8b5cf6']}
+    type=grouped
+    chartAreaHeight=260
+    seriesOptions={{"barGap": "0%"}}
+    sort=false
+/>
+
+</div>
+
+---
+
 ## Match Schedule
 
 <p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">When are Premiership matches played? The left chart breaks down fixtures by day of week and time of day; the right shows whether kick-off time influences scoring. Time slots: Morning 05:00–10:59 · Noon 11:00–13:59 · Afternoon 14:00–17:59 · Evening 18:00–20:59 · Night 21:00–04:59.</p>

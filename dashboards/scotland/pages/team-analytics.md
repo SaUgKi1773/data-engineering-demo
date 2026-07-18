@@ -589,7 +589,7 @@ end
 
 ## Home vs Away
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Results, goals, possession, and pass accuracy split by home and away fixtures.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Results and goals split by home and away fixtures.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -612,24 +612,6 @@ end
     colorPalette={['#3b82f6','#f97316']}
     type=grouped
     seriesOptions={{"barGap": "0%"}}
-    sort=false
-/>
-
-<BarChart
-    data={home_away_split}
-    x=venue
-    y=avg_possession
-    title="Avg Possession %"
-    colorPalette={['#8b5cf6']}
-    sort=false
-/>
-
-<BarChart
-    data={home_away_split}
-    x=venue
-    y=pass_accuracy
-    title="Pass Accuracy %"
-    colorPalette={['#3b82f6']}
     sort=false
 />
 
@@ -689,6 +671,172 @@ end
     x=period_of_day
     y={['wins','draws','losses']}
     title="W/D/L by Time of Day"
+    colorPalette={['#22c55e','#eab308','#ef4444']}
+    type=stacked
+    sort=false
+/>
+
+</div>
+
+---
+
+## When Goals Happen
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Match events by 15-minute interval — when this team scores and concedes, and when the bench makes its moves. Stoppage time (45+, 90+) counted separately.</p>
+
+```sql team_event_timing
+select
+    minute_bucket,
+    minute_bucket_sort,
+    sum(goals_for)      as goals_for,
+    sum(goals_against)  as goals_against,
+    sum(substitutions)  as substitutions
+from scotland.mart_team_event_timing
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+group by minute_bucket, minute_bucket_sort
+order by minute_bucket_sort
+```
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={team_event_timing}
+    x=minute_bucket
+    y={['goals_for','goals_against']}
+    title="Goals Scored vs Conceded by Minute"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Goals"
+    colorPalette={['#3b82f6','#f97316']}
+    type=grouped
+    seriesOptions={{"barGap": "0%"}}
+    sort=false
+/>
+
+<BarChart
+    data={team_event_timing}
+    x=minute_bucket
+    y=substitutions
+    title="Substitutions by Minute"
+    xAxisTitle="Match Minute"
+    yAxisTitle="Substitutions"
+    colorPalette={['#8b5cf6']}
+    sort=false
+/>
+
+</div>
+
+---
+
+## Game State & Comebacks
+
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">How the season went when things got hard: points rescued after falling behind, and leads that slipped away. "Trailing" means behind at any point in the match.</p>
+
+```sql game_state
+select
+    count(*) filter (where trailed and result = 'Win')  as comeback_wins,
+    coalesce(sum(points_earned) filter (where trailed), 0) as points_from_trailing,
+    count(*) filter (where ht_state = 'Behind' and result = 'Win')  as ht_comeback_wins,
+    count(*) filter (where led and result = 'Loss')     as leads_lost
+from scotland.mart_team_game_state
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+```
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Comeback Wins</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{game_state[0]?.comeback_wins ?? '—'}</div>
+  </div>
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Points From Trailing</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{game_state[0]?.points_from_trailing ?? '—'}</div>
+  </div>
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">HT-Deficit Wins</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{game_state[0]?.ht_comeback_wins ?? '—'}</div>
+  </div>
+  <div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Leads Lost</div>
+    <div class="text-3xl font-black text-gray-900 leading-none text-center">{game_state[0]?.leads_lost ?? '—'}</div>
+  </div>
+</div>
+
+```sql game_state_outcomes
+select 'Trailed at Some Point' as game_state, 1 as ord,
+    count(*) filter (where trailed and result = 'Win')  as wins,
+    count(*) filter (where trailed and result = 'Draw') as draws,
+    count(*) filter (where trailed and result = 'Loss') as losses
+from scotland.mart_team_game_state
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+union all
+select 'Led at Some Point', 2,
+    count(*) filter (where led and result = 'Win'),
+    count(*) filter (where led and result = 'Draw'),
+    count(*) filter (where led and result = 'Loss')
+from scotland.mart_team_game_state
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+order by ord
+```
+
+```sql ht_ft_outcomes
+select
+    ht_state || ' at HT' as ht_state,
+    case ht_state when 'Ahead' then 1 when 'Level' then 2 else 3 end as ord,
+    count(*) filter (where result = 'Win')  as wins,
+    count(*) filter (where result = 'Draw') as draws,
+    count(*) filter (where result = 'Loss') as losses
+from scotland.mart_team_game_state
+where season = '${inputs.season.value}'
+  and team_name = '${inputs.team.value}'
+  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+  and result in ${inputs.result.value}
+  and match_round_number in ${inputs.round.value}
+  and match_round_type in ${inputs.phase.value}
+  and team_side in ${inputs.venue.value}
+group by ht_state
+order by ord
+```
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+<BarChart
+    data={game_state_outcomes}
+    x=game_state
+    y={['wins','draws','losses']}
+    title="Outcomes by Game State"
+    colorPalette={['#22c55e','#eab308','#ef4444']}
+    type=stacked
+    sort=false
+/>
+
+<BarChart
+    data={ht_ft_outcomes}
+    x=ht_state
+    y={['wins','draws','losses']}
+    title="Half-Time vs Full-Time"
     colorPalette={['#22c55e','#eab308','#ef4444']}
     type=stacked
     sort=false
