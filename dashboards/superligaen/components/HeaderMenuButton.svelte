@@ -1,14 +1,14 @@
 <script>
-  // Sidebar-toggle icon pinned in the header (just left of the logo), mirroring
-  // the F1 product's panel toggle. Opens the hideable side pane.
+  // Sidebar-toggle icon pinned to the far right of the header. Opens the
+  // hideable side pane. The logo stays the flush-left brand anchor.
   import { createEventDispatcher } from 'svelte';
   const dispatch = createEventDispatcher();
 </script>
 
 <!-- Full-width bar matching Evidence's header container so the button lines up
-     to the same left padding as the logo, which we nudge right to make room. -->
+     to the container's right edge. -->
 <div class="pointer-events-none fixed top-0 left-0 z-50 h-12 w-full print:hidden">
-  <div class="mx-auto flex h-full max-w-7xl items-center px-5 sm:px-6 md:px-12">
+  <div class="mx-auto flex h-full max-w-7xl items-center justify-end px-5 sm:px-6 md:px-12">
     <button
       type="button"
       aria-label="Open navigation"

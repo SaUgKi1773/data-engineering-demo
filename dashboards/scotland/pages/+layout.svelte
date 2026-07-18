@@ -61,10 +61,6 @@
   :global(header img[alt="Home"]) {
     height: 2.5rem;
   }
-  /* Make room for the header menu toggle to the left of the logo. */
-  :global(header > div > a:first-child) {
-    padding-left: 2.75rem;
-  }
   /* Hide Evidence's built-in kebab; navigation is the custom side pane + bottom bar. */
   :global(header button[aria-label="Menu"]) {
     display: none;
