@@ -75,7 +75,9 @@ This dashboard is one of several data products under the Krogvad Analytics Hub.
 
 ## Connect
 
-<div class="mt-2">
+Happy to chat about the project, data behind it, or the design choices along the way. Let's connect!
+
+<div class="-mt-3">
 <a href="https://www.linkedin.com/in/salih-ugur-kimilli-since1773/" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors no-underline">
   LinkedIn — Salih Ugur Kimilli
 </a>
