@@ -344,12 +344,36 @@ group by team_name
 ```sql team_domain_stats
 select
     team_name,
-    round(sum(goals_scored)::double        / count(distinct match_id), 2)                          as goals_pm,
-    round(sum(big_chances_created)::double / count(distinct match_id), 2)                          as big_chances_pm,
-    sum(passes_accurate)::double           / nullif(sum(total_passes), 0)                          as pass_acc_pct,
-    round(sum(goals_conceded)::double      / count(distinct match_id), 2)                          as conceded_pm,
-    sum(duels_won)::double                 / nullif(sum(duels_total), 0)                           as duel_win_pct,
-    sum(case when result = 'Win' then 1 else 0 end)::double / count(distinct match_id)             as win_pct
+    -- Attacking (higher = better)
+    sum(goals_scored)::double           / count(distinct match_id)                     as goals_pm,
+    sum(shots_on_goal)::double          / count(distinct match_id)                     as sog_pm,
+    sum(shots_on_goal)::double          / nullif(sum(total_shots), 0)                  as shot_acc_pct,
+    sum(corner_kicks)::double           / count(distinct match_id)                     as corners_pm,
+    -- Creativity & Playmaking (higher = better)
+    sum(chances_created)::double        / count(distinct match_id)                     as chances_pm,
+    sum(big_chances_created)::double    / count(distinct match_id)                     as big_chances_pm,
+    sum(key_passes)::double             / count(distinct match_id)                     as key_passes_pm,
+    sum(big_chances_created)::double    / nullif(sum(chances_created), 0)              as chance_quality_pct,
+    sum(crosses_accurate)::double       / nullif(sum(crosses_total), 0)               as cross_acc_pct,
+    sum(passes_final_third)::double     / count(distinct match_id)                     as passes_final_third_pm,
+    -- Possession & Control (higher = better)
+    avg(possession_pct)::double         / 100.0                                        as possession_pct,
+    sum(passes_accurate)::double        / nullif(sum(total_passes), 0)                as pass_acc_pct,
+    sum(dribbles_completed)::double     / nullif(sum(dribbles_attempts), 0)           as dribble_success_pct,
+    -- Defending (mixed — see chart ordering)
+    sum(goals_conceded)::double         / count(distinct match_id)                     as conceded_pm,
+    sum(tackles_won)::double            / nullif(sum(tackles), 0)                      as tackle_success_pct,
+    sum(errors_leading_to_goal)::double / count(distinct match_id)                     as errors_pm,
+    sum(balls_recovered)::double        / count(distinct match_id)                     as balls_recovered_pm,
+    sum(times_dribbled_past)::double    / count(distinct match_id)                     as times_dribbled_past_pm,
+    -- Physicality (higher = better)
+    sum(duels_won)::double              / nullif(sum(duels_total), 0)                 as duel_win_pct,
+    sum(fouls_drawn)::double            / count(distinct match_id)                     as fouls_drawn_pm,
+    sum(aerials_won)::double            / nullif(sum(aerials_won) + sum(aerials_lost), 0) as aerial_success_pct,
+    -- Winning (higher = better)
+    sum(case when result = 'Win' then 1 else 0 end)::double / count(distinct match_id)      as win_pct,
+    sum(points_earned)::double          / count(distinct match_id)                     as points_pm,
+    sum(case when goals_conceded = 0 then 1 else 0 end)::double / count(distinct match_id)  as clean_sheet_pct
 from superligaen.mart_match_facts
 where season = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
@@ -359,7 +383,7 @@ where season = '${inputs.season.value}'
   and team_side in ${inputs.venue.value}
   and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
 group by team_name
-order by conceded_pm asc
+order by team_name
 ```
 
 ```sql radar_data
@@ -933,86 +957,227 @@ order by case period_of_day
 
 ## Team Rankings by Domain
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">All teams ranked within each performance dimension. Sorted best to worst so the strongest performers are always at the top — for goals conceded that means the tightest defence leads.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">All teams ranked within each performance dimension. Pick the measure that matters to you from each dropdown. Sorted best to worst so the strongest performers are always at the top — for goals conceded, errors and times dribbled past, lower is better, so the tightest teams lead.</p>
+
+```sql attacking_ranked
+with wide as ( select * from ${team_domain_stats} ),
+up as (
+    unpivot wide
+    on goals_pm, sog_pm, shot_acc_pct, corners_pm
+    into name measure value val
+)
+select team_name, measure, val from up
+where measure = '${inputs.attack_measure.value}'
+order by val desc
+```
+
+```sql creativity_ranked
+with wide as ( select * from ${team_domain_stats} ),
+up as (
+    unpivot wide
+    on chances_pm, big_chances_pm, key_passes_pm, chance_quality_pct, cross_acc_pct, passes_final_third_pm
+    into name measure value val
+)
+select team_name, measure, val from up
+where measure = '${inputs.creativity_measure.value}'
+order by val desc
+```
+
+```sql possession_ranked
+with wide as ( select * from ${team_domain_stats} ),
+up as (
+    unpivot wide
+    on possession_pct, pass_acc_pct, dribble_success_pct
+    into name measure value val
+)
+select team_name, measure, val from up
+where measure = '${inputs.possession_measure.value}'
+order by val desc
+```
+
+```sql defending_ranked
+with wide as ( select * from ${team_domain_stats} ),
+up as (
+    unpivot wide
+    on conceded_pm, tackle_success_pct, errors_pm, balls_recovered_pm, times_dribbled_past_pm
+    into name measure value val
+)
+select team_name, measure, val from up
+where measure = '${inputs.defense_measure.value}'
+order by case when measure in ('conceded_pm', 'errors_pm', 'times_dribbled_past_pm') then val else -val end asc
+```
+
+```sql physicality_ranked
+with wide as ( select * from ${team_domain_stats} ),
+up as (
+    unpivot wide
+    on duel_win_pct, fouls_drawn_pm, aerial_success_pct
+    into name measure value val
+)
+select team_name, measure, val from up
+where measure = '${inputs.physicality_measure.value}'
+order by val desc
+```
+
+```sql winning_ranked
+with wide as ( select * from ${team_domain_stats} ),
+up as (
+    unpivot wide
+    on win_pct, points_pm, clean_sheet_pct
+    into name measure value val
+)
+select team_name, measure, val from up
+where measure = '${inputs.winning_measure.value}'
+order by val desc
+```
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
-<BarChart
-    data={team_domain_stats}
-    x=team_name
-    y=goals_pm
-    title="Attacking — Goals per Match"
-    yAxisTitle="Goals / Match"
-    colorPalette={['#3b82f6']}
-    swapXY=true
-    sort=true
-/>
+<div>
+
+<Dropdown name=attack_measure title="Measure" defaultValue="goals_pm">
+    <DropdownOption value="goals_pm" valueLabel="Goals per Match" />
+    <DropdownOption value="sog_pm" valueLabel="Shots on Goal per Match" />
+    <DropdownOption value="shot_acc_pct" valueLabel="Shot Accuracy %" />
+    <DropdownOption value="corners_pm" valueLabel="Corners per Match" />
+</Dropdown>
 
 <BarChart
-    data={team_domain_stats}
+    data={attacking_ranked}
     x=team_name
-    y=big_chances_pm
-    title="Creativity — Big Chances Created per Match"
-    yAxisTitle="Big Chances / Match"
+    y=val
+    title={'Attacking — ' + (inputs.attack_measure.label || '')}
+    yAxisTitle={inputs.attack_measure.label}
+    colorPalette={['#3b82f6']}
+    swapXY=true
+    sort=false
+    fmt={(inputs.attack_measure.value || '').endsWith('_pct') ? '0.0%' : '0.00'}
+/>
+
+</div>
+
+<div>
+
+<Dropdown name=creativity_measure title="Measure" defaultValue="big_chances_pm">
+    <DropdownOption value="chances_pm" valueLabel="Chances Created per Match" />
+    <DropdownOption value="big_chances_pm" valueLabel="Big Chances Created per Match" />
+    <DropdownOption value="key_passes_pm" valueLabel="Key Passes per Match" />
+    <DropdownOption value="chance_quality_pct" valueLabel="Big-Chance Share %" />
+    <DropdownOption value="cross_acc_pct" valueLabel="Cross Accuracy %" />
+    <DropdownOption value="passes_final_third_pm" valueLabel="Passes into Final Third per Match" />
+</Dropdown>
+
+<BarChart
+    data={creativity_ranked}
+    x=team_name
+    y=val
+    title={'Creativity — ' + (inputs.creativity_measure.label || '')}
+    yAxisTitle={inputs.creativity_measure.label}
     colorPalette={['#06b6d4']}
     swapXY=true
-    sort=true
+    sort=false
+    fmt={(inputs.creativity_measure.value || '').endsWith('_pct') ? '0.0%' : '0.00'}
 />
+
+</div>
 
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
-<BarChart
-    data={team_domain_stats}
-    x=team_name
-    y=pass_acc_pct
-    title="Possession & Control — Pass Accuracy %"
-    yAxisTitle="Pass Accuracy %"
-    colorPalette={['#8b5cf6']}
-    swapXY=true
-    sort=true
-    fmt='0.0%'
-/>
+<div>
+
+<Dropdown name=possession_measure title="Measure" defaultValue="pass_acc_pct">
+    <DropdownOption value="possession_pct" valueLabel="Average Possession %" />
+    <DropdownOption value="pass_acc_pct" valueLabel="Pass Accuracy %" />
+    <DropdownOption value="dribble_success_pct" valueLabel="Dribble Success %" />
+</Dropdown>
 
 <BarChart
-    data={team_domain_stats}
+    data={possession_ranked}
     x=team_name
-    y=conceded_pm
-    title="Defending — Goals Conceded per Match"
-    yAxisTitle="Goals Conceded / Match"
+    y=val
+    title={'Possession & Control — ' + (inputs.possession_measure.label || '')}
+    yAxisTitle={inputs.possession_measure.label}
+    colorPalette={['#8b5cf6']}
+    swapXY=true
+    sort=false
+    fmt={(inputs.possession_measure.value || '').endsWith('_pct') ? '0.0%' : '0.00'}
+/>
+
+</div>
+
+<div>
+
+<Dropdown name=defense_measure title="Measure" defaultValue="conceded_pm">
+    <DropdownOption value="conceded_pm" valueLabel="Goals Conceded per Match" />
+    <DropdownOption value="tackle_success_pct" valueLabel="Tackle Success %" />
+    <DropdownOption value="errors_pm" valueLabel="Errors Leading to Goal per Match" />
+    <DropdownOption value="balls_recovered_pm" valueLabel="Balls Recovered per Match" />
+    <DropdownOption value="times_dribbled_past_pm" valueLabel="Times Dribbled Past per Match" />
+</Dropdown>
+
+<BarChart
+    data={defending_ranked}
+    x=team_name
+    y=val
+    title={'Defending — ' + (inputs.defense_measure.label || '')}
+    yAxisTitle={inputs.defense_measure.label}
     colorPalette={['#f97316']}
     swapXY=true
     sort=false
+    fmt={(inputs.defense_measure.value || '').endsWith('_pct') ? '0.0%' : '0.00'}
 />
+
+</div>
 
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
-<BarChart
-    data={team_domain_stats}
-    x=team_name
-    y=duel_win_pct
-    title="Physicality — Duel Win %"
-    yAxisTitle="Duel Win %"
-    colorPalette={['#14b8a6']}
-    swapXY=true
-    sort=true
-    fmt='0.0%'
-/>
+<div>
+
+<Dropdown name=physicality_measure title="Measure" defaultValue="duel_win_pct">
+    <DropdownOption value="duel_win_pct" valueLabel="Duel Win %" />
+    <DropdownOption value="fouls_drawn_pm" valueLabel="Fouls Drawn per Match" />
+    <DropdownOption value="aerial_success_pct" valueLabel="Aerial Success %" />
+</Dropdown>
 
 <BarChart
-    data={team_domain_stats}
+    data={physicality_ranked}
     x=team_name
-    y=win_pct
-    title="Winning — Win Rate %"
-    yAxisTitle="Win Rate %"
+    y=val
+    title={'Physicality — ' + (inputs.physicality_measure.label || '')}
+    yAxisTitle={inputs.physicality_measure.label}
+    colorPalette={['#14b8a6']}
+    swapXY=true
+    sort=false
+    fmt={(inputs.physicality_measure.value || '').endsWith('_pct') ? '0.0%' : '0.00'}
+/>
+
+</div>
+
+<div>
+
+<Dropdown name=winning_measure title="Measure" defaultValue="win_pct">
+    <DropdownOption value="win_pct" valueLabel="Win Rate %" />
+    <DropdownOption value="points_pm" valueLabel="Points per Match" />
+    <DropdownOption value="clean_sheet_pct" valueLabel="Clean Sheet %" />
+</Dropdown>
+
+<BarChart
+    data={winning_ranked}
+    x=team_name
+    y=val
+    title={'Winning — ' + (inputs.winning_measure.label || '')}
+    yAxisTitle={inputs.winning_measure.label}
     colorPalette={['#22c55e']}
     swapXY=true
-    sort=true
-    fmt='0.0%'
+    sort=false
+    fmt={(inputs.winning_measure.value || '').endsWith('_pct') ? '0.0%' : '0.00'}
 />
+
+</div>
 
 </div>
 
