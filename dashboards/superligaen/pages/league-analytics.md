@@ -1062,7 +1062,7 @@ order by val desc
     <DropdownOption value="chances_pm" valueLabel="Chances Created per Match" />
     <DropdownOption value="big_chances_pm" valueLabel="Big Chances Created per Match" />
     <DropdownOption value="key_passes_pm" valueLabel="Key Passes per Match" />
-    <DropdownOption value="chance_quality_pct" valueLabel="Chance Quality %" />
+    <DropdownOption value="chance_quality_pct" valueLabel="Big-Chance Share %" />
     <DropdownOption value="cross_acc_pct" valueLabel="Cross Accuracy %" />
     <DropdownOption value="passes_final_third_pm" valueLabel="Passes into Final Third per Match" />
 </Dropdown>
