@@ -1,8 +1,8 @@
 # Football Analytics Platform
 
-An end-to-end data engineering project tracking two football leagues — the Danish Superliga and the Scottish Premiership — from raw API ingestion through a Kimball warehouse to live analytics dashboards, one site per league.
+An end-to-end data engineering project tracking the Danish Superliga — from raw API ingestion through a Kimball warehouse to a live analytics dashboard.
 
-**Live dashboards →** [superligaanalytics.vercel.app](https://superligaanalytics.vercel.app/) · [scottishpremiershipanalytics.vercel.app](https://scottishpremiershipanalytics.vercel.app/)
+**Live dashboard →** [superligaanalytics.vercel.app](https://superligaanalytics.vercel.app/)
 
 ---
 
@@ -28,12 +28,12 @@ Sportmonks API        Groq LLM        Poisson prediction model
                            + fct_match_discussions                      │
                            + fct_team_transfers)  (dbt)                 │
                                                                         ▼
-                                                          Evidence.dev dashboards
-                                                          (Superliga + Premiership)
+                                                          Evidence.dev dashboard
+                                                          (Superliga)
                                                           deployed on Vercel
 ```
 
-The nightly GitHub Actions pipeline runs the three bronze producers in parallel (API ingestion, LLM discussions, match predictions), then silver and gold sequentially with data-quality tests, and finally triggers a Vercel rebuild so both dashboards always reflect last night's data.
+The nightly GitHub Actions pipeline runs the three bronze producers in parallel (API ingestion, LLM discussions, match predictions), then silver and gold sequentially with data-quality tests, and finally triggers a Vercel rebuild so the dashboard always reflects last night's data.
 
 ---
 
@@ -402,7 +402,7 @@ All dimension surrogate keys are **stable across runs** — new records get new 
 
 ## Dashboard pages
 
-Both league sites ship the same page set (15 pages each), with a shared footer showing data freshness.
+The dashboard ships 15 pages, with a shared footer showing data freshness.
 
 | Page | Description |
 |---|---|
@@ -523,7 +523,7 @@ cd ..
 python scripts/push_to_prod.py --db superligaen_dev --schema silver gold
 
 # 6. Run the dashboard locally
-cd dashboards/superligaen   # or dashboards/scotland
+cd dashboards/superligaen
 npm install
 npm run sources   # regenerates parquet cache from MotherDuck
 npm run dev
