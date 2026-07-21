@@ -1,8 +1,8 @@
-# Football Analytics Platform
+# Football Intelligence Platform
 
-An end-to-end data engineering project tracking two football leagues — the Danish Superliga and the Scottish Premiership — from raw API ingestion through a Kimball warehouse to live analytics dashboards, one site per league.
+An end-to-end data engineering project powering **Krogvad Analytics Hub** — football intelligence for the whole world. The platform builds a dedicated analytics home for every league, each with its own identity, all on one shared data warehouse and refreshed every night. It runs the full modern-data-stack pipeline from raw API to live dashboard.
 
-**Live dashboards →** [superligaanalytics.vercel.app](https://superligaanalytics.vercel.app/) · [scottishpremiershipanalytics.vercel.app](https://scottishpremiershipanalytics.vercel.app/)
+**Live →** [Krogvad Analytics Hub](https://krogvadanalyticshub.vercel.app/) — the front door to every league site, all built from this pipeline.
 
 ---
 
@@ -24,6 +24,7 @@ Sportmonks API        Groq LLM        Poisson prediction model
   Gold layer          Kimball star schema  ─────────────────────────────┐
                       (dims + fct_team_matches                          │
                            + fct_player_appearances                     │
+                           + fct_match_events                           │
                            + fct_match_predictions                      │
                            + fct_match_discussions                      │
                            + fct_team_transfers)  (dbt)                 │
@@ -54,10 +55,11 @@ The nightly GitHub Actions pipeline runs the three bronze producers in parallel 
 
 ## Data model
 
-The gold layer follows **Kimball dimensional modelling**. Five fact tables cover five business processes:
+The gold layer follows **Kimball dimensional modelling**. Six fact tables cover six business processes:
 
 - **`fct_team_matches`** — one row per team per match (each fixture produces two rows, one per side); team-level stats, results, and tactical data
 - **`fct_player_appearances`** — one row per player per match; individual performance stats and ratings
+- **`fct_match_events`** — one row per in-match event (goal, card, substitution, VAR decision); event type/sub-type, minute on the match clock, running scoreline after the event, and per-group sequence — powering the Match Analysis timeline, league/team event-timing charts, team game-state (time leading/level/trailing) analysis, and referee VAR intelligence. Reloaded per fixture, since the provider rewrites a match's whole event list when VAR overturns a decision
 - **`fct_match_predictions`** — one row per team per predicted fixture (mirroring `fct_team_matches` grain); pre-kickoff win/draw/loss probabilities, expected goals and expected points from the Poisson model, frozen three hours before kickoff and never revised — powering the Prediction Module page
 - **`fct_match_discussions`** — one row per match per persona; LLM-generated fan discussion comments (via Groq) powering the Fan Forum on the Match Analysis page
 - **`fct_team_transfers`** — one row per club per transfer; incoming/outgoing moves with fee, type, status, transfer partner, and player, powering the Transfer Intelligence page
@@ -125,6 +127,25 @@ erDiagram
         decimal rating
     }
 
+    fct_match_events {
+        int date_sk FK
+        int time_sk FK
+        int match_sk FK
+        int league_sk FK
+        int team_sk FK
+        int opponent_team_sk FK
+        int player_sk FK
+        int referee_sk FK
+        int stadium_sk FK
+        int team_side_sk FK
+        int match_event_type_sk FK
+        int match_minute_sk FK
+        int event_group_sequence
+        int home_score_after_event
+        int away_score_after_event
+        int event_count
+    }
+
     dim_date {
         int date_sk PK
         date date
@@ -159,6 +180,26 @@ erDiagram
         varchar match_status
         varchar match_result
         varchar kick_off_time
+    }
+
+    dim_match_event_type {
+        int match_event_type_sk PK
+        varchar event_group
+        varchar event_type_name
+        varchar event_sub_type_name
+        varchar event_type_code
+        varchar event_sub_type_code
+    }
+
+    dim_match_minute {
+        int match_minute_sk PK
+        varchar minute_label
+        varchar period_name
+        int minute_of_match
+        int stoppage_offset
+        varchar minute_type
+        varchar minute_bucket
+        int minute_bucket_sort
     }
 
     dim_team {
@@ -352,6 +393,18 @@ erDiagram
     fct_player_appearances }o--|| dim_team_side : "team_side_sk"
     fct_player_appearances }o--|| dim_match_result : "match_result_sk"
     fct_player_appearances }o--|| dim_appearance_type : "appearance_type_sk"
+    fct_match_events }o--|| dim_date : "date_sk"
+    fct_match_events }o--|| dim_time : "time_sk"
+    fct_match_events }o--|| dim_match : "match_sk"
+    fct_match_events }o--|| dim_league : "league_sk"
+    fct_match_events }o--|| dim_team : "team_sk"
+    fct_match_events }o--|| dim_opponent_team : "opponent_team_sk"
+    fct_match_events }o--|| dim_player : "player_sk"
+    fct_match_events }o--|| dim_referee : "referee_sk"
+    fct_match_events }o--|| dim_stadium : "stadium_sk"
+    fct_match_events }o--|| dim_team_side : "team_side_sk"
+    fct_match_events }o--|| dim_match_event_type : "match_event_type_sk"
+    fct_match_events }o--|| dim_match_minute : "match_minute_sk"
     fct_match_discussions }o--|| dim_match : "match_sk"
     fct_match_discussions }o--|| dim_persona : "persona_sk"
     fct_match_discussions }o--|| dim_date : "date_sk"
@@ -373,28 +426,30 @@ erDiagram
 
 The bus matrix shows which dimensions are conformed (shared) across business processes — the foundation of Kimball integration.
 
-| **BUSINESS PROCESSES →** | Team Match Performance | Player Appearance | Match Prediction | Match Discussion | Team Transfers |
-|---|:---:|:---:|:---:|:---:|:---:|
-| **COMMON DIMENSIONS ↓** | | | | | |
-| Date | X | X | X | X | X |
-| Time of Day | X | X | | | |
-| Match | X | X | X | X | |
-| Team | X | X | X | | X |
-| Opponent Team | X | X | X | | |
-| League | X | X | X | | |
-| Stadium / Venue | X | X | | | |
-| Referee | X | X | | | |
-| Coach | X | X | | | |
-| Formation | X | X | | | |
-| Home / Away | X | X | X | | |
-| Match Result | X | X | | | |
-| Player | | X | | | X |
-| Playing Position | | X | | | |
-| Appearance Type | | X | | | |
-| Persona | | | | X | |
-| Transfer Type | | | | | X |
-| Transfer Status | | | | | X |
-| Transfer Partner | | | | | X |
+| **BUSINESS PROCESSES →** | Team Match Performance | Player Appearance | Match Events | Match Prediction | Match Discussion | Team Transfers |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **COMMON DIMENSIONS ↓** | | | | | | |
+| Date | X | X | X | X | X | X |
+| Time of Day | X | X | X | | | |
+| Match | X | X | X | X | X | |
+| Team | X | X | X | X | | X |
+| Opponent Team | X | X | X | X | | |
+| League | X | X | X | X | | |
+| Stadium / Venue | X | X | X | | | |
+| Referee | X | X | X | | | |
+| Coach | X | X | | | | |
+| Formation | X | X | | | | |
+| Home / Away | X | X | X | X | | |
+| Match Result | X | X | | | | |
+| Player | | X | X | | | X |
+| Playing Position | | X | | | | |
+| Appearance Type | | X | | | | |
+| Match Event Type | | | X | | | |
+| Match Minute | | | X | | | |
+| Persona | | | | | X | |
+| Transfer Type | | | | | | X |
+| Transfer Status | | | | | | X |
+| Transfer Partner | | | | | | X |
 
 All dimension surrogate keys are **stable across runs** — new records get new SKs, existing records keep theirs. Sentinel rows (`-1 Unknown`, `-2 Not Applicable`) handle missing lookups, with all VARCHAR attributes filled with descriptive defaults (e.g. `'Unknown Stadium Country'`).
 
@@ -413,9 +468,9 @@ Both league sites ship the same page set (15 pages each), with a shared footer s
 | **Upcoming Fixtures** | Next fixtures with head-to-head history and last-5 form guide |
 | **Upcoming Match Analysis** | Pre-match preview: head-to-head record, form, and the model's view with expected goals |
 | **Prediction Module** | The match model's track record: cumulative points race (actual & projected), upcoming predictions with probabilities and expected goals, accuracy by round, and the full prediction history — every prediction frozen before kickoff |
-| **League Intelligence** | Season awards podium, standings race, cross-team landscape and radar benchmarks |
-| **Team Intelligence** | Per-team KPIs, form, performance vs previous season, shooting and possession breakdowns |
-| **Referee Intelligence** | Cards and fouls by referee, strictness rankings, and per-match discipline logs |
+| **League Intelligence** | Season awards podium, standings race, cross-team landscape and radar benchmarks, per-domain team rankings, and "The Rhythm of a Match" — when goals and cards land across the match clock league-wide |
+| **Team Intelligence** | Per-team KPIs, form, performance vs previous season, shooting and possession breakdowns, event-timing profile (when this team plays best / concedes), and game-state analysis (time spent leading, level and trailing, plus comebacks) |
+| **Referee Intelligence** | Cards and fouls by referee, strictness rankings, VAR decisions (who VAR ruled against), and per-match discipline logs |
 | **Stadium Intelligence** | Interactive stadium map, fortress rankings, and home-advantage stats |
 | **Player Intelligence** | League top-player podium by any measure, individual player deep dive with profile, characteristics radar, performance timeline, and match log |
 | **Transfer Intelligence** | Club transfer market: spend KPIs, record signing & sale, transfer volume and transfer count by team, market trend over time, and a searchable transfer ledger — filterable by year, window, team, direction, type, status and fee disclosure |
@@ -445,9 +500,10 @@ Both league sites ship the same page set (15 pages each), with a shared footer s
 │   ├── models/
 │   │   ├── silver/             # 39 models: bronze JSON → structured tables
 │   │   └── gold/
-│   │       ├── dims/           # 19 dim_* models (Kimball dims)
+│   │       ├── dims/           # 21 dim_* models (Kimball dims)
 │   │       ├── fct_team_matches.sql
 │   │       ├── fct_player_appearances.sql
+│   │       ├── fct_match_events.sql
 │   │       ├── fct_match_predictions.sql
 │   │       ├── fct_match_discussions.sql
 │   │       └── fct_team_transfers.sql
