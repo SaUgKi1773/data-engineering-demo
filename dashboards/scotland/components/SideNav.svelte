@@ -4,7 +4,7 @@
   import { createEventDispatcher } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { page } from '$app/stores';
-  import { icons, navGroups } from './navItems.js';
+  import { icons, navGroups, externalLinks } from './navItems.js';
 
   export let open = false;
 
@@ -76,5 +76,25 @@
         {/each}
       {/each}
     </nav>
+
+    <!-- external links, mirrored from the About page -->
+    <div class="flex-none border-t border-gray-100 px-4 py-3">
+      <div class="flex items-center gap-1">
+        {#each externalLinks as link}
+          <a
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={link.label}
+            aria-label={link.label}
+            class="flex h-9 w-9 flex-none items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d={link.path} />
+            </svg>
+          </a>
+        {/each}
+      </div>
+    </div>
   </aside>
 {/if}
