@@ -276,7 +276,7 @@ jobs:
   # so a failed test never reaches external consumers.
   # ---------------------------------------------------------------------------
   share:
-    name: Refresh public share
+    name: Refresh DB Share
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: dq_tests

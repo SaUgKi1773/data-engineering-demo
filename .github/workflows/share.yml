@@ -1,4 +1,4 @@
-name: Refresh public share
+name: Refresh DB Share
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   share:
-    name: Refresh public share
+    name: Refresh DB Share
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
