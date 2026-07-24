@@ -120,18 +120,32 @@ def insert_batch(conn: duckdb.DuckDBPyConnection, table: str, rows: list) -> Non
 
 
 def pending_detail_matches(conn: duckdb.DuckDBPyConnection, league_id: int,
-                           seasons: list) -> list:
+                           seasons: list, from_date=None, to_date=None) -> list:
     """
     Finished matches that have no detail row yet, newest first.
 
-    Newest first is deliberate: the live site should catch up on the current
-    season before the run starts chipping into history, so an interrupted
+    Newest first is deliberate: without a date window the run should catch up
+    on the most recent football before chipping into history, so an interrupted
     backfill always leaves the most-viewed data current.
+
+    from_date/to_date narrow the selection to a window — the manual backfill
+    seeds history a window at a time, and the eventual nightly run will pass a
+    rolling last-N-days window the same way the Sportmonks ingest does.
     """
     if not seasons:
         return []
     placeholders = ",".join("?" * len(seasons))
     state_ph = ",".join("?" * len(FINISHED_STATES))
+    params = [league_id, *seasons, *FINISHED_STATES]
+
+    window = ""
+    if from_date is not None:
+        window += " AND m._fixture_date >= ?"
+        params.append(from_date)
+    if to_date is not None:
+        window += " AND m._fixture_date <= ?"
+        params.append(to_date)
+
     rows = conn.execute(
         f"""
         SELECT m.id, m._season_id, m._fixture_date
@@ -144,9 +158,10 @@ def pending_detail_matches(conn: duckdb.DuckDBPyConnection, league_id: int,
           -- statement binding DuckDB resolves -> to the array-index overload
           -- and fails casting the object to a number.
           AND json_extract_string(m.raw_json, '$.state.description') IN ({state_ph})
+          {window}
         ORDER BY m._fixture_date DESC NULLS LAST
         """,
-        [league_id, *seasons, *FINISHED_STATES],
+        params,
     ).fetchall()
     return [(r[0], r[1], r[2]) for r in rows]
 

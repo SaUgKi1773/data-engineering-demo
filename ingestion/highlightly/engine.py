@@ -1,13 +1,22 @@
 """
 Highlightly bronze ingestion.
 
-The daily job and the historical backfill are the SAME run. Each night it
-refreshes the current season's match list and standings, then spends whatever
-budget is left fetching match details that are still missing — newest first.
-After roughly a week the backlog is gone and the same run simply keeps the
-current season up to date. Nothing tracks backfill progress except the data:
-the work outstanding is the finished matches in `matches` with no row in
-`match_details`.
+Runs manually for now, against an explicit date window, while the historical
+backfill is seeded by hand a window at a time. It is not in the nightly chain
+yet — once coverage is complete it joins as a parallel bronze job on a rolling
+last-N-days window, the same shape as the Sportmonks ingest.
+
+Two passes per run:
+
+  1. Season lists — cheap (4 calls per season) and refreshed whole, because the
+     list also carries scheduled fixtures, states and scores that the site needs
+     current. Only the seasons a run actually touches are re-listed.
+  2. Match details — the expensive pass, one call per finished match. Scoped to
+     the date window when given, otherwise newest-first across the whole scope.
+
+Nothing tracks progress except the data: the work outstanding is the finished
+matches in `matches` with no row in `match_details`, so an interrupted run
+resumes simply by being run again.
 """
 
 import json
@@ -22,6 +31,7 @@ from config import (
     MATCHES_TABLE,
     STANDINGS_TABLE,
     current_season,
+    seasons_covering,
     seasons_in_scope,
 )
 
@@ -60,16 +70,18 @@ def refresh_standings(conn, season: int) -> int:
     return len(groups)
 
 
-def fetch_details(conn, seasons: list, limit: int = None) -> int:
+def fetch_details(conn, seasons: list, from_date=None, to_date=None,
+                  limit: int = None) -> int:
     """
-    Spend the remaining budget on missing match details, newest first.
+    Spend the remaining budget on missing match details.
 
     Writes in batches so an exhausted budget mid-run still persists everything
     already fetched — the next run picks up exactly where this one stopped.
     """
-    pending = db.pending_detail_matches(conn, LEAGUE_ID, seasons)
+    pending = db.pending_detail_matches(conn, LEAGUE_ID, seasons,
+                                        from_date=from_date, to_date=to_date)
     if not pending:
-        log.info("no match details outstanding")
+        log.info("no match details outstanding for this scope")
         return 0
 
     budget = api.budget_left()
@@ -104,20 +116,36 @@ def _flush(conn, batch: list) -> int:
 
 
 def run(conn, mode: str = "incremental", seasons: list = None,
-        details_limit: int = None) -> None:
-    scope = seasons or seasons_in_scope()
-    current = current_season()
-
-    # Which season lists to refresh. Historical seasons are finished and do not
-    # change, so re-listing them nightly would waste 4 calls each; incremental
-    # lists only the current season and lets the detail backlog do the rest.
-    to_list = scope if mode == "full" else [s for s in scope if s == current]
+        from_date=None, to_date=None, details_limit: int = None) -> None:
+    """
+    mode      full        re-list every season in scope
+              incremental re-list only the seasons the run touches
+    seasons   explicit season scope; overrides what the window would imply
+    from/to   date window for the detail pass (and, absent an explicit season
+              scope, the seasons that get re-listed)
+    """
     if seasons:
-        to_list = scope
+        scope = seasons
+    elif from_date and to_date:
+        scope = seasons_covering(from_date, to_date)
+    else:
+        scope = seasons_in_scope()
 
-    # Remaining budget is not reported here: it is only known once the API has
-    # answered once. The closing summary has the verified figure.
-    log.info("mode=%s scope=%s listing=%s", mode, scope, to_list)
+    if not scope:
+        log.warning("no seasons in scope — nothing to do "
+                    "(a window before FIRST_SEASON resolves to nothing)")
+        return
+
+    # Historical seasons are finished and do not change, so re-listing them on
+    # every run would waste 4 calls each. Incremental lists only what the run
+    # touches; full re-lists the whole scope.
+    if mode == "full" or seasons or (from_date and to_date):
+        to_list = scope
+    else:
+        to_list = [s for s in scope if s == current_season()]
+
+    log.info("mode=%s scope=%s listing=%s window=%s..%s",
+             mode, scope, to_list, from_date or "-", to_date or "-")
 
     try:
         for season in to_list:
@@ -127,8 +155,11 @@ def run(conn, mode: str = "incremental", seasons: list = None,
         log.warning("budget spent during listing: %s", exc)
         return
 
-    fetch_details(conn, scope, limit=details_limit)
+    fetch_details(conn, scope, from_date=from_date, to_date=to_date,
+                  limit=details_limit)
 
+    # Remaining budget is only known once the API has answered, so the verified
+    # figure lands here rather than at the top of the run.
     log.info("calls used this run: %d (remaining %d)", api.calls_made(), api.remaining())
     for season, listed, finished, detailed in db.coverage(conn, LEAGUE_ID):
         pct = (detailed / finished * 100) if finished else 0.0

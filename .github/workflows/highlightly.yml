@@ -11,8 +11,18 @@ on:
         options:
           - incremental
           - full
+      from_date:
+        description: "Start of the match-detail window (YYYY-MM-DD). Empty = no window; details are fetched newest-first."
+        required: false
+        default: ""
+        type: string
+      to_date:
+        description: "End of the match-detail window (YYYY-MM-DD). Defaults to today when from_date is set."
+        required: false
+        default: ""
+        type: string
       seasons:
-        description: 'Highlightly season years, comma-separated (e.g. "2024,2025"). Empty = all in scope (2024+).'
+        description: 'Highlightly season years, comma-separated (e.g. "2024,2025"). Overrides the date window.'
         required: false
         default: ""
         type: string
@@ -34,8 +44,9 @@ jobs:
   ingest:
     name: Bronze ingestion (Highlightly / Liga MX)
     runs-on: ubuntu-latest
-    # The free plan caps the run at 100 API calls, so it always finishes fast —
-    # the historical backfill spreads over nightly runs, not one long job.
+    # The free plan caps a run at 100 API calls, so it always finishes fast.
+    # History is seeded a window at a time by dispatching this manually; the
+    # run stops cleanly when the daily quota is spent and resumes next time.
     timeout-minutes: 60
 
     steps:
@@ -53,6 +64,8 @@ jobs:
         working-directory: ingestion/highlightly
         env:
           SEASONS:              ${{ github.event.inputs.seasons }}
+          FROM_DATE:            ${{ github.event.inputs.from_date }}
+          TO_DATE:              ${{ github.event.inputs.to_date }}
           DETAILS_LIMIT:        ${{ github.event.inputs.details_limit }}
           HIGHLIGHTLY_API_KEY:  ${{ secrets.HIGHLIGHTLY_API_KEY }}
           MOTHERDUCK_TOKEN:     ${{ secrets.MOTHERDUCK_TOKEN }}
@@ -61,6 +74,12 @@ jobs:
           SEASONS="${SEASONS// /}"
           if [ -n "$SEASONS" ]; then
             ARGS="$ARGS --seasons $SEASONS"
+          fi
+          if [ -n "$FROM_DATE" ]; then
+            ARGS="$ARGS --from-date $FROM_DATE"
+          fi
+          if [ -n "$TO_DATE" ]; then
+            ARGS="$ARGS --to-date $TO_DATE"
           fi
           if [ -n "$DETAILS_LIMIT" ]; then
             ARGS="$ARGS --details-limit $DETAILS_LIMIT"

@@ -56,15 +56,27 @@ _PROJECT_ROOT   = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", 
 DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "superligaen_dev.duckdb")
 
 
-def current_season(today: date = None) -> int:
+def season_of(day: date) -> int:
     """
-    The season label covering `today`. Apertura kicks off in July, so a date in
+    The season label covering `day`. Apertura kicks off in July, so a date in
     the first half of a calendar year belongs to the previous season's Clausura
     (March 2026 is Clausura 2026, which lives under season=2025).
     """
-    today = today or date.today()
-    return today.year if today.month >= 6 else today.year - 1
+    return day.year if day.month >= 6 else day.year - 1
+
+
+def current_season(today: date = None) -> int:
+    return season_of(today or date.today())
 
 
 def seasons_in_scope(today: date = None) -> list[int]:
     return list(range(FIRST_SEASON, current_season(today) + 1))
+
+
+def seasons_covering(from_date: date, to_date: date) -> list[int]:
+    """
+    Seasons a date window touches, clamped to the configured scope. A window
+    spanning the July boundary covers two seasons.
+    """
+    lo, hi = season_of(from_date), season_of(to_date)
+    return [s for s in range(lo, hi + 1) if s >= FIRST_SEASON]
