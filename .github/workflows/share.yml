@@ -1,0 +1,51 @@
+name: Refresh public share
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_db:
+        description: "Source MotherDuck database to publish gold from. Default: superligaen."
+        required: false
+        default: ""
+      target_db:
+        description: "Share MotherDuck database to rebuild. Default: superligaen_share."
+        required: false
+        default: ""
+      dry_run:
+        description: "Set to 'true' to log the plan without writing to the share."
+        required: false
+        default: "false"
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  share:
+    name: Refresh public share
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Refresh share
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          SOURCE="${{ github.event.inputs.source_db || 'superligaen' }}"
+          TARGET="${{ github.event.inputs.target_db || 'superligaen_share' }}"
+          EXTRA_ARGS=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            EXTRA_ARGS="--dry-run"
+          fi
+          python scripts/refresh_share.py --source "$SOURCE" --target "$TARGET" $EXTRA_ARGS

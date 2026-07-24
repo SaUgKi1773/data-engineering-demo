@@ -270,6 +270,39 @@ jobs:
           dbt source freshness --target $TARGET
 
   # ---------------------------------------------------------------------------
+  # Public share — mirror gold into superligaen_share, the database handed out
+  # via MotherDuck sharing. Shares are database-wide, so gold gets its own
+  # database rather than exposing bronze and silver alongside it. Runs after DQ
+  # so a failed test never reaches external consumers.
+  # ---------------------------------------------------------------------------
+  share:
+    name: Refresh public share
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: dq_tests
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Refresh share
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          DB="${{ github.event.inputs.target_db || 'superligaen' }}"
+          if [[ "$DB" != "superligaen" ]]; then
+            echo "Nightly ran against $DB — skipping the public share refresh."
+            exit 0
+          fi
+          python scripts/refresh_share.py --source superligaen --target superligaen_share
+
+  # ---------------------------------------------------------------------------
   # Dashboard — push to publish_dashboard/vercel to trigger Vercel rebuild
   # ---------------------------------------------------------------------------
   publish:
