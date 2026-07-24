@@ -1,11 +1,15 @@
 """
-Highlightly bronze ingestion entry point (Liga MX).
+Highlightly bronze ingestion entry point.
+
+Every league in config.LEAGUES rides the same code path; adding one is a line
+of config, and --leagues scopes a run to a subset.
 
 Usage
 -----
   python run.py --from-date 2024-07-01 --to-date 2024-12-31   # seed a window
   python run.py --days-back 7                                 # rolling window
   python run.py --seasons 2024                                # a whole season
+  python run.py --leagues 223746                              # one league only
   python run.py --details-limit 20                            # cap detail calls
   python run.py --db md:superligaen                           # target MotherDuck
 
@@ -32,11 +36,14 @@ match details (one call per finished match — the expensive part).
 
 Budget
 ------
-The free plan allows 100 requests/day. The client reads the remaining quota
-from every response and stops cleanly when it runs out, so a large window is
-safe to ask for: it fetches what it can and the next run resumes. Nothing
-stores a cursor — the outstanding work is derived from the data (finished
-matches with no detail row).
+The free plan allows 100 requests/day, shared across every league on the key.
+The client reads the remaining quota from every response and stops cleanly when
+it runs out, so a large window is safe to ask for: it fetches what it can and
+the next run resumes. Nothing stores a cursor — the outstanding work is derived
+from the data (finished matches with no detail row).
+
+With more than one league in scope the detail pass interleaves them, so the
+quota is shared rather than drained by whichever league comes first.
 """
 
 import argparse
@@ -70,13 +77,16 @@ def _parse_date(value: str, flag: str) -> date:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Highlightly (Liga MX) bronze ingestion",
+        description="Highlightly bronze ingestion",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--mode", choices=["full", "incremental"], default="incremental",
                         help="full = re-list every season in scope (default: only those touched)")
     parser.add_argument("--db", default=None, metavar="PATH_OR_URL",
                         help="DuckDB path or MotherDuck URL. Falls back to DUCKDB_PATH.")
+    parser.add_argument("--leagues", default=None, metavar="ID1,ID2",
+                        help="Comma-separated Highlightly league ids "
+                             "(default: every league in config.LEAGUES).")
     parser.add_argument("--seasons", default=None, metavar="YEAR1,YEAR2",
                         help="Comma-separated Highlightly season years; overrides the date window.")
     parser.add_argument("--from-date", default=None, metavar="YYYY-MM-DD",
@@ -115,12 +125,15 @@ def main() -> None:
         sys.exit(2)
 
     seasons = [int(s) for s in args.seasons.split(",")] if args.seasons else None
+    leagues = None
+    if args.leagues and args.leagues.strip().lower() != "all":
+        leagues = [int(x) for x in args.leagues.split(",")]
 
     conn = connect(args.db)
     ensure_schema(conn)
     started_at = datetime.now(timezone.utc).replace(tzinfo=None)
     try:
-        engine.run(conn, mode=args.mode, seasons=seasons,
+        engine.run(conn, mode=args.mode, leagues=leagues, seasons=seasons,
                    from_date=from_date, to_date=to_date,
                    details_limit=args.details_limit)
         conn.execute(

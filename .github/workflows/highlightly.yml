@@ -1,8 +1,13 @@
-name: Bronze ingestion (Highlightly / Liga MX)
+name: Bronze ingestion (Highlightly)
 
 on:
   workflow_dispatch:
     inputs:
+      leagues:
+        description: 'Highlightly league ids, comma-separated (e.g. "223746" = Liga MX). Empty or "all" = every league in config.LEAGUES.'
+        required: false
+        default: ""
+        type: string
       mode:
         description: "Which season lists to refresh. incremental = only the seasons this run touches (the date window's, or the current one). full = every season in scope."
         required: true
@@ -42,7 +47,7 @@ concurrency:
 
 jobs:
   ingest:
-    name: Bronze ingestion (Highlightly / Liga MX)
+    name: Bronze ingestion (Highlightly)
     runs-on: ubuntu-latest
     # The free plan caps a run at 100 API calls, so it always finishes fast.
     # History is seeded a window at a time by dispatching this manually; the
@@ -63,6 +68,7 @@ jobs:
       - name: Run ingestion
         working-directory: ingestion/highlightly
         env:
+          LEAGUES:              ${{ github.event.inputs.leagues }}
           SEASONS:              ${{ github.event.inputs.seasons }}
           FROM_DATE:            ${{ github.event.inputs.from_date }}
           TO_DATE:              ${{ github.event.inputs.to_date }}
@@ -71,6 +77,10 @@ jobs:
           MOTHERDUCK_TOKEN:     ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           ARGS="--mode ${{ github.event.inputs.mode }}"
+          LEAGUES="${LEAGUES// /}"
+          if [ -n "$LEAGUES" ]; then
+            ARGS="$ARGS --leagues $LEAGUES"
+          fi
           SEASONS="${SEASONS// /}"
           if [ -n "$SEASONS" ]; then
             ARGS="$ARGS --seasons $SEASONS"
