@@ -16,8 +16,8 @@ WITH all_fixtures AS (
         f.state_developer_name IN ('FT', 'FT_PEN', 'AET') AS is_finished
     FROM {{ ref('fixtures') }} f
     JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
-    -- League matches only: excludes KNOCK_OUT stages (European cup / relegation play-offs)
-    WHERE sg.type_developer_name = 'GROUP_STAGE'
+    -- League matches only; what counts varies by league (see the macro)
+    WHERE {{ is_league_match('f.league_id', 'sg.type_developer_name') }}
 ),
 coaches AS (
     SELECT fixture_id, team_id, coach_id
@@ -127,11 +127,14 @@ SELECT
         ELSE                                                 3
     END                                AS match_result_sk,
     CASE
-        WHEN NOT src.is_finished                                                       THEN NULL
-        WHEN src.stage_type = 'GROUP_STAGE' AND src.goals_scored > src.goals_conceded THEN 3
-        WHEN src.stage_type = 'GROUP_STAGE' AND src.goals_scored = src.goals_conceded THEN 1
-        WHEN src.stage_type = 'GROUP_STAGE'                                            THEN 0
-        ELSE NULL
+        WHEN NOT src.is_finished                   THEN NULL
+        -- Knockout phases inside a league (e.g. a title play-off) are league
+        -- matches but put nothing on the table -> NULL, not 0.
+        WHEN NOT {{ awards_league_points('src.league_id', 'src.stage_type') }}
+                                                   THEN NULL
+        WHEN src.goals_scored > src.goals_conceded THEN 3
+        WHEN src.goals_scored = src.goals_conceded THEN 1
+        ELSE                                            0
     END                                AS points_earned,
     src.goals_scored,
     src.goals_conceded,

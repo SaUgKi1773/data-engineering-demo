@@ -67,9 +67,15 @@ src AS (
             THEN TRY_CAST(f.round_name AS INTEGER) + rsm.max_round
             ELSE TRY_CAST(f.round_name AS INTEGER)
         END                                                                      AS match_round_number,
-        CASE sg.type_developer_name
-            WHEN 'GROUP_STAGE' THEN 'Group Stage'
-            WHEN 'KNOCK_OUT'   THEN 'Knockout'
+        -- match_type is the POINTS-BEARING distinction, not a description of
+        -- the format: 'Regular League' puts points on the table, 'Knockout'
+        -- does not. The two happen to coincide with format for every league we
+        -- hold, but do not infer format from the label — a league running its
+        -- title play-off as a round-robin would still be 'Knockout' here.
+        CASE
+            WHEN {{ awards_league_points('f.league_id', 'sg.type_developer_name') }}
+            THEN 'Regular League'
+            ELSE 'Knockout'
         END                                                                      AS match_type,
         COALESCE(nm_h.display_name, pp.home_team_name, '') || ' - ' || COALESCE(nm_a.display_name, pp.away_team_name, '') AS match_name,
         COALESCE(nm_h.short_name, pp.home_team_code, pp.home_team_name, '')
@@ -92,9 +98,8 @@ src AS (
     LEFT JOIN scores_pivot             sp  ON sp.fixture_id  = f.id
     LEFT JOIN name_map                 nm_h ON nm_h.team_id = pp.home_team_id
     LEFT JOIN name_map                 nm_a ON nm_a.team_id = pp.away_team_id
-    -- League matches only: Regular Season, Championship Round, Relegation Round.
-    -- Excludes KNOCK_OUT stages (European cup play-offs, relegation play-offs).
-    WHERE sg.type_developer_name = 'GROUP_STAGE'
+    -- League matches only; what counts varies by league (see the macro)
+    WHERE {{ is_league_match('f.league_id', 'sg.type_developer_name') }}
 )
 SELECT
     {% if is_incremental() %}
