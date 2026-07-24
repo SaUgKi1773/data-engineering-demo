@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "Load mode. incremental = current season list + backfill chip; full = re-list every season in scope."
+        description: "Which season lists to refresh. incremental = only the seasons this run touches (the date window's, or the current one). full = every season in scope."
         required: true
         default: "incremental"
         type: choice
