@@ -43,6 +43,14 @@ models:
         tests:
           - not_null:
               config: {where: "match_sk > 0"}
+      - name: match_type
+        # The points-bearing distinction, not the format. A new league whose
+        # phases are not classified would surface here rather than silently.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Regular League', 'Knockout', 'Unknown Match Type', 'Not Applicable Match Type']
 
   - name: dim_player
     columns:

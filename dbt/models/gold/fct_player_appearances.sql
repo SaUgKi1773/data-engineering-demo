@@ -15,8 +15,8 @@ WITH finished_fixtures AS (
     FROM {{ ref('fixtures') }} f
     JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
     WHERE f.state_developer_name IN ('FT', 'FT_PEN', 'AET')
-      -- League matches only: excludes KNOCK_OUT stages (European cup / relegation play-offs)
-      AND sg.type_developer_name = 'GROUP_STAGE'
+      -- League matches only; what counts varies by league (see the macro)
+      AND {{ is_league_match('f.league_id', 'sg.type_developer_name') }}
 ),
 participants AS (
     SELECT fixture_id, team_id, location
