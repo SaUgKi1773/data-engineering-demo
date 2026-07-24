@@ -33,11 +33,6 @@ jobs:
           python -m py_compile ingestion/sportmonks/db.py
           python -m py_compile ingestion/sportmonks/config.py
           python -m py_compile ingestion/sportmonks/engine.py
-          python -m py_compile ingestion/highlightly/run.py
-          python -m py_compile ingestion/highlightly/api.py
-          python -m py_compile ingestion/highlightly/db.py
-          python -m py_compile ingestion/highlightly/config.py
-          python -m py_compile ingestion/highlightly/engine.py
 
       - name: dbt deps
         working-directory: dbt

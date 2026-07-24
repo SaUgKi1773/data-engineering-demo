@@ -128,12 +128,6 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
 
-  # Highlightly (Liga MX) is deliberately NOT in the nightly chain yet — it runs
-  # from its own dispatch workflow (highlightly.yml) against explicit date
-  # windows while the backfill is seeded by hand. Once coverage is complete it
-  # joins here as a parallel bronze job on a rolling INCREMENTAL_DAYS_BACK
-  # window, the same shape as the Sportmonks ingest.
-
   # ---------------------------------------------------------------------------
   # Silver — transform bronze JSON into structured tables (dbt).
   # Waits for all bronze ingestions; a failed AI generation or prediction run
