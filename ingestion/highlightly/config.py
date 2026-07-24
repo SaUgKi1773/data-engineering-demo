@@ -19,18 +19,10 @@ LEAGUES = {
 # ~3 seasons also matches the depth ingested for Scotland.
 FIRST_SEASON = 2024
 
-# Highlightly seasons are SPLIT-YEAR, labelled by the year the season opens:
-#   Liga MX season=2025 -> 2025-07-12 .. 2026-05-25 (Apertura 2025 + Clausura 2026)
-# Same July->May shape as the Danish and Scottish seasons, so this conforms to
-# dim_date's existing per-league season handling rather than needing a new one.
-#
-# The boundary sits one month before the observed July kick-off: a season that
-# opens in late June still resolves to the right label. June has no fixtures in
-# either direction, so the extra month costs nothing.
-#
-# NOTE: applied to every league. A calendar-year league (Brazil, MLS) would need
-# this to become per-league config.
-SEASON_BOUNDARY_MONTH = 6
+# Nothing here assumes when a season starts. Which seasons a league has comes
+# from /leagues/{id}; when each one ran comes from the fixture dates already in
+# bronze. A split-year league (Liga MX: Jul->May) and a calendar-year league
+# (Brazil, MLS) both work with no configuration.
 
 # The API rejects limit > 100 ("limit must not be greater than 100"), so a
 # ~340-match season list costs 4 calls.
@@ -58,36 +50,25 @@ FINISHED_STATES = (
     "Finished after penalties",
 )
 
+LEAGUES_TABLE   = "highlightly__leagues"
 MATCHES_TABLE   = "highlightly__matches"
 DETAILS_TABLE   = "highlightly__match_details"
 STANDINGS_TABLE = "highlightly__standings"
-ALL_TABLES      = [MATCHES_TABLE, DETAILS_TABLE, STANDINGS_TABLE]
+ALL_TABLES      = [LEAGUES_TABLE, MATCHES_TABLE, DETAILS_TABLE, STANDINGS_TABLE]
 
 _PROJECT_ROOT   = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "superligaen_dev.duckdb")
 
 
-def season_of(day: date) -> int:
+def fallback_seasons(today: date = None) -> list[int]:
     """
-    The season label covering `day`. Seasons open in July, so a date in the
-    first half of a calendar year belongs to the previous season's second half
-    (March 2026 is Liga MX's Clausura 2026, which lives under season=2025).
+    Last-resort season candidates: FIRST_SEASON up to the current calendar year.
+
+    Only used when neither the API nor bronze can say which seasons a league
+    has. A season is labelled by the year it opens, so it can never exceed the
+    current year — that bound is arithmetic, not an assumption about football
+    calendars. Listing a season that turns out not to exist is harmless: the
+    API returns nothing and the run leaves existing rows alone.
     """
-    return day.year if day.month >= SEASON_BOUNDARY_MONTH else day.year - 1
-
-
-def current_season(today: date = None) -> int:
-    return season_of(today or date.today())
-
-
-def seasons_in_scope(today: date = None) -> list[int]:
-    return list(range(FIRST_SEASON, current_season(today) + 1))
-
-
-def seasons_covering(from_date: date, to_date: date) -> list[int]:
-    """
-    Seasons a date window touches, clamped to the configured scope. A window
-    spanning the July boundary covers two seasons.
-    """
-    lo, hi = season_of(from_date), season_of(to_date)
-    return [s for s in range(lo, hi + 1) if s >= FIRST_SEASON]
+    today = today or date.today()
+    return list(range(FIRST_SEASON, today.year + 1))

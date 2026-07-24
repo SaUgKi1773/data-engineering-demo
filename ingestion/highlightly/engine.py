@@ -29,18 +29,19 @@ resumes simply by being run again.
 
 import json
 import logging
+from datetime import date
 
 import api
 import db
 from api import BudgetExhausted
 from config import (
     DETAILS_TABLE,
+    FIRST_SEASON,
     LEAGUES,
+    LEAGUES_TABLE,
     MATCHES_TABLE,
     STANDINGS_TABLE,
-    current_season,
-    seasons_covering,
-    seasons_in_scope,
+    fallback_seasons,
 )
 
 log = logging.getLogger(__name__)
@@ -53,6 +54,81 @@ def _label(league_id: int) -> str:
 def _match_date(record: dict):
     raw = record.get("date")
     return str(raw)[:10] if raw else None
+
+
+def refresh_league(conn, league_id: int) -> list:
+    """
+    Store the league payload and return the seasons the provider holds. One
+    call, and it is the authoritative answer to 'which seasons exist' — far
+    better than inferring it from a calendar.
+
+    On failure (budget, network) the previously stored payload still answers,
+    so a run is never blocked by metadata it already has.
+    """
+    try:
+        payload = api.get_league(league_id)
+    except BudgetExhausted:
+        raise
+    except Exception as exc:  # noqa: BLE001 - metadata is refreshable, not critical
+        log.warning("%s: league metadata refresh failed (%s); using stored copy",
+                    _label(league_id), exc)
+        return db.known_seasons(conn, league_id)
+
+    if payload:
+        db.delete_league(conn, league_id)
+        db.insert_batch(conn, LEAGUES_TABLE,
+                        [(league_id, json.dumps(payload), None, None, league_id)])
+    return db.known_seasons(conn, league_id)
+
+
+def resolve_seasons(conn, league_id: int, explicit: list = None,
+                    from_date=None, to_date=None) -> list:
+    """
+    Which seasons this run should touch.
+
+    Season existence comes from the provider; when each season ran comes from
+    the fixture dates already in bronze. A season we have never listed has no
+    observed range, so it cannot be excluded by a window — it stays in scope
+    and the run discovers its dates by listing it.
+    """
+    candidates = [s for s in db.known_seasons(conn, league_id) if s >= FIRST_SEASON]
+    if not candidates:
+        candidates = fallback_seasons()
+        log.warning("%s: no stored season list, falling back to %s",
+                    _label(league_id), candidates)
+
+    if explicit:
+        return [s for s in explicit]
+    if not (from_date and to_date):
+        return candidates
+
+    ranges = db.observed_season_ranges(conn, league_id)
+    scoped = []
+    for season in candidates:
+        observed = ranges.get(season)
+        if observed is None:
+            scoped.append(season)  # never listed — cannot rule it out
+            continue
+        first, last = observed
+        if first <= to_date and last >= from_date:
+            scoped.append(season)
+    return scoped
+
+
+def current_seasons(conn, league_id: int, candidates: list) -> list:
+    """
+    The season(s) worth re-listing on an incremental run: whichever observed
+    range contains today. If none does — between seasons, or a season not yet
+    listed — fall back to the newest candidate, which is where new fixtures
+    would appear.
+    """
+    today = date.today()
+    ranges = db.observed_season_ranges(conn, league_id)
+    live = [s for s in candidates
+            if s in ranges and ranges[s][0] <= today <= ranges[s][1]]
+    if live:
+        return live
+    return candidates[-1:] if candidates else []
 
 
 def refresh_match_list(conn, league_id: int, season: int) -> int:
@@ -169,45 +245,44 @@ def run(conn, mode: str = "incremental", leagues: list = None, seasons: list = N
         # no display name. Worth saying out loud in case it is a typo.
         log.warning("league ids not in config.LEAGUES: %s", unknown)
 
-    if seasons:
-        scope = seasons
-    elif from_date and to_date:
-        scope = seasons_covering(from_date, to_date)
-    else:
-        scope = seasons_in_scope()
+    log.info("mode=%s leagues=%s window=%s..%s",
+             mode, league_ids, from_date or "-", to_date or "-")
 
-    if not scope:
-        log.warning("no seasons in scope — nothing to do "
-                    "(a window before FIRST_SEASON resolves to nothing)")
-        return
-
-    # Historical seasons are finished and do not change, so re-listing them on
-    # every run would waste 4 calls each. Incremental lists only what the run
-    # touches; full re-lists the whole scope.
-    if mode == "full" or seasons or (from_date and to_date):
-        to_list = scope
-    else:
-        to_list = [s for s in scope if s == current_season()]
-
-    log.info("mode=%s leagues=%s scope=%s listing=%s window=%s..%s",
-             mode, league_ids, scope, to_list, from_date or "-", to_date or "-")
-
+    league_scope = {}
     try:
         for league_id in league_ids:
+            refresh_league(conn, league_id)
+            scope = resolve_seasons(conn, league_id, explicit=seasons,
+                                    from_date=from_date, to_date=to_date)
+            if not scope:
+                log.warning("%s: no seasons in scope, skipping", _label(league_id))
+                continue
+            league_scope[league_id] = scope
+
+            # Historical seasons are finished and do not change, so re-listing
+            # them every run would waste 4 calls each. Incremental lists only
+            # what is live now; full re-lists the whole scope.
+            if mode == "full" or seasons or (from_date and to_date):
+                to_list = scope
+            else:
+                to_list = current_seasons(conn, league_id, scope)
+
+            log.info("%s: scope=%s listing=%s", _label(league_id), scope, to_list)
             for season in to_list:
                 refresh_match_list(conn, league_id, season)
                 refresh_standings(conn, league_id, season)
     except BudgetExhausted as exc:
         log.warning("budget spent during listing: %s", exc)
-        return
+        if not league_scope:
+            return
 
-    fetch_details(conn, {lid: scope for lid in league_ids},
+    fetch_details(conn, league_scope,
                   from_date=from_date, to_date=to_date, limit=details_limit)
 
     # Remaining budget is only known once the API has answered, so the verified
     # figure lands here rather than at the top of the run.
     log.info("calls used this run: %d (remaining %d)", api.calls_made(), api.remaining())
-    for league_id in league_ids:
+    for league_id in league_scope:
         for season, listed, finished, detailed in db.coverage(conn, league_id):
             pct = (detailed / finished * 100) if finished else 0.0
             log.info("  %s season %s: %d listed, %d finished, %d detailed (%.0f%%)",

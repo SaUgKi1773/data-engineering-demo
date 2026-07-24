@@ -159,3 +159,13 @@ def get_match_detail(match_id: int) -> dict | None:
 
 def get_standings(league_id: int, season: int) -> list:
     return _rows(get("/standings", {"leagueId": league_id, "season": season}))
+
+
+def get_league(league_id: int) -> dict | None:
+    """
+    League metadata, including the authoritative list of seasons the provider
+    holds. Season numbers only — no dates — so when each season ran still has
+    to come from the fixtures themselves.
+    """
+    rows = _rows(get(f"/leagues/{league_id}"))
+    return rows[0] if rows else None

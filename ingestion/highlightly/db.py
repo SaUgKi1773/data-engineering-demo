@@ -5,7 +5,11 @@ Same column shape as the Sportmonks bronze tables (id / raw_json / _season_id /
 _fixture_date / _league_id / _ingested_at) so silver can treat both providers
 identically.
 
-Three tables:
+Four tables:
+  highlightly__leagues        one row per league — the provider's metadata,
+                              including which seasons it holds. Season
+                              existence comes from here rather than from any
+                              assumption about football calendars.
   highlightly__matches        one row per match, from the season list endpoint.
                               Cheap and always complete — the schedule/results
                               backbone, refreshed per season.
@@ -19,6 +23,7 @@ table: the work left to do is exactly the finished matches present in `matches`
 and absent from `match_details`.
 """
 
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -31,6 +36,7 @@ from config import (
     DEFAULT_DB_PATH,
     DETAILS_TABLE,
     FINISHED_STATES,
+    LEAGUES_TABLE,
     MATCHES_TABLE,
 )
 
@@ -164,6 +170,49 @@ def pending_detail_matches(conn: duckdb.DuckDBPyConnection, league_id: int,
         params,
     ).fetchall()
     return [(r[0], r[1], r[2]) for r in rows]
+
+
+def delete_league(conn: duckdb.DuckDBPyConnection, league_id: int) -> None:
+    conn.execute(f"DELETE FROM bronze.{LEAGUES_TABLE} WHERE _league_id = ?", [league_id])
+
+
+def known_seasons(conn: duckdb.DuckDBPyConnection, league_id: int) -> list:
+    """
+    Seasons the provider says this league has, from the stored league payload.
+    Authoritative, and it does not require guessing at football calendars.
+    """
+    row = conn.execute(
+        f"SELECT raw_json FROM bronze.{LEAGUES_TABLE} WHERE _league_id = ? "
+        f"ORDER BY _ingested_at DESC LIMIT 1",
+        [league_id],
+    ).fetchone()
+    if not row:
+        return []
+    payload = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+    return sorted(
+        int(s["season"]) for s in (payload.get("seasons") or []) if s.get("season") is not None
+    )
+
+
+def observed_season_ranges(conn: duckdb.DuckDBPyConnection, league_id: int) -> dict:
+    """
+    When each season actually ran, measured from the fixtures already listed:
+    {season: (first_date, last_date)}.
+
+    This is what replaces any hardcoded notion of when a season starts. A
+    split-year league and a calendar-year league both describe themselves
+    correctly here, because it is observation rather than assumption.
+    """
+    rows = conn.execute(
+        f"""
+        SELECT _season_id, MIN(_fixture_date), MAX(_fixture_date)
+        FROM bronze.{MATCHES_TABLE}
+        WHERE _league_id = ? AND _fixture_date IS NOT NULL
+        GROUP BY 1
+        """,
+        [league_id],
+    ).fetchall()
+    return {r[0]: (r[1], r[2]) for r in rows}
 
 
 def coverage(conn: duckdb.DuckDBPyConnection, league_id: int) -> list:
