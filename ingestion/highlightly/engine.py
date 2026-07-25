@@ -73,7 +73,8 @@ def refresh_standings(conn, league_id: int, season: int) -> int:
     return len(groups)
 
 
-def _interleaved_pending(conn, scopes: dict, from_date, to_date) -> list:
+def _interleaved_pending(conn, scopes: dict, from_date, to_date,
+                         overwrite: bool) -> list:
     """
     Outstanding detail work across leagues as one queue: each league's pending
     matches newest-first, leagues alternating round-robin so the shared budget
@@ -82,7 +83,8 @@ def _interleaved_pending(conn, scopes: dict, from_date, to_date) -> list:
     """
     per_league = [
         [(lid, *row) for row in db.pending_detail_matches(
-            conn, lid, seasons, from_date=from_date, to_date=to_date)]
+            conn, lid, seasons, from_date=from_date, to_date=to_date,
+            overwrite=overwrite)]
         for lid, seasons in scopes.items()
     ]
     return [item
@@ -91,14 +93,15 @@ def _interleaved_pending(conn, scopes: dict, from_date, to_date) -> list:
 
 
 def fetch_details(conn, scopes: dict, from_date=None, to_date=None,
-                  limit: int = None) -> int:
+                  limit: int = None, overwrite: bool = False) -> int:
     """
-    Spend the remaining budget on missing match details.
+    Spend the remaining budget on missing match details — or, with overwrite,
+    on every finished match in scope, replacing what is already stored.
 
     Writes in batches so an exhausted budget mid-run still persists everything
     already fetched — the next run picks up exactly where this one stopped.
     """
-    pending = _interleaved_pending(conn, scopes, from_date, to_date)
+    pending = _interleaved_pending(conn, scopes, from_date, to_date, overwrite)
     if not pending:
         log.info("no match details outstanding for this scope")
         return 0
@@ -135,7 +138,8 @@ def _flush(conn, batch: list) -> int:
 
 
 def run(conn, mode: str = "incremental", leagues: list = None, seasons: list = None,
-        from_date=None, to_date=None, details_limit: int = None) -> None:
+        from_date=None, to_date=None, details_limit: int = None,
+        overwrite: bool = False) -> None:
     """
     mode      full        re-list every season in scope
               incremental re-list only the seasons the run touches
@@ -143,6 +147,8 @@ def run(conn, mode: str = "incremental", leagues: list = None, seasons: list = N
     seasons   explicit season scope; overrides what the window would imply
     from/to   date window for the detail pass (and, absent an explicit season
               scope, the seasons that get re-listed)
+    overwrite refetch details that already exist (window/season-scoped only —
+              run.py refuses it unscoped)
     """
     league_ids = leagues or list(LEAGUES)
 
@@ -180,7 +186,7 @@ def run(conn, mode: str = "incremental", leagues: list = None, seasons: list = N
         return
 
     fetch_details(conn, scopes, from_date=from_date, to_date=to_date,
-                  limit=details_limit)
+                  limit=details_limit, overwrite=overwrite)
 
     # Remaining budget is only known once the API has answered, so the verified
     # figure lands here rather than at the top of the run.

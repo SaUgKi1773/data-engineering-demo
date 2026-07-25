@@ -63,8 +63,9 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Bronze — ingest La Liga + Liga MX from Highlightly, parallel to the
-  # Sportmonks ingest. Rolling last-N-days window; the free plan's 100
-  # calls/day comfortably covers steady state (~15-45 calls). The run stops
+  # Sportmonks ingest. Rolling last-N-days window, overwriting details inside
+  # it so late-arriving stat corrections converge; the free plan's 100
+  # calls/day comfortably covers steady state (~30-50 calls). The run stops
   # cleanly if the quota runs out and resumes the next night.
   # ---------------------------------------------------------------------------
   ingest_highlightly:
@@ -86,7 +87,7 @@ jobs:
         working-directory: ingestion/highlightly
         run: |
           DB="md:${{ github.event.inputs.target_db || 'superligaen' }}"
-          python run.py --days-back $INCREMENTAL_DAYS_BACK --db $DB
+          python run.py --days-back $INCREMENTAL_DAYS_BACK --overwrite --db $DB
         env:
           HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
           MOTHERDUCK_TOKEN:    ${{ secrets.MOTHERDUCK_TOKEN }}

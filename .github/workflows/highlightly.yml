@@ -36,6 +36,11 @@ on:
         required: false
         default: ""
         type: string
+      overwrite:
+        description: "Refetch details that already exist (e.g. re-pull a whole season). Requires a date window or seasons."
+        required: false
+        default: false
+        type: boolean
       target_db:
         description: "Target MotherDuck database (e.g. superligaen). Leave empty to use default (superligaen)."
         required: false
@@ -93,6 +98,9 @@ jobs:
           fi
           if [ -n "$DETAILS_LIMIT" ]; then
             ARGS="$ARGS --details-limit $DETAILS_LIMIT"
+          fi
+          if [ "${{ github.event.inputs.overwrite }}" = "true" ]; then
+            ARGS="$ARGS --overwrite"
           fi
           DB="md:${{ github.event.inputs.target_db || 'superligaen' }}"
           echo "Running: python run.py $ARGS --db $DB"

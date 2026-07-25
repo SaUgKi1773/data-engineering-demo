@@ -25,6 +25,12 @@ match details (one call per finished match — the expensive part).
   --seasons               explicit season scope, overriding the window. Also
                           the way to reach seasons older than first_season
                           (they exist back to 2020, without xG).
+  --overwrite             refetch details that already exist, replacing the
+                          stored rows. Requires a window or --seasons: an
+                          unscoped overwrite would refetch the same newest
+                          matches every run and never progress. The nightly
+                          job passes it with its rolling window so
+                          late-arriving stat corrections always converge.
   (none of the above)     details are fetched newest-first across all seasons
                           in scope, so the freshest football lands first.
 
@@ -92,6 +98,8 @@ def main() -> None:
                         help="Shorthand for a window of the last N days ending today.")
     parser.add_argument("--details-limit", type=int, default=None, metavar="N",
                         help="Cap match-detail calls this run (default: whatever budget allows).")
+    parser.add_argument("--overwrite", action="store_true",
+                        help="Refetch details that already exist (requires a date window or --seasons).")
     args = parser.parse_args()
 
     if "HIGHLIGHTLY_API_KEY" not in os.environ:
@@ -100,6 +108,11 @@ def main() -> None:
 
     if args.days_back is not None and (args.from_date or args.to_date):
         log.error("--days-back cannot be combined with --from-date/--to-date")
+        sys.exit(2)
+
+    if args.overwrite and not (args.days_back is not None or args.from_date or args.seasons):
+        log.error("--overwrite needs a scope (--days-back, --from-date or --seasons) — "
+                  "unscoped it would refetch the same newest matches every run")
         sys.exit(2)
 
     leagues = None
@@ -136,7 +149,7 @@ def main() -> None:
     try:
         engine.run(conn, mode=args.mode, leagues=leagues, seasons=seasons,
                    from_date=from_date, to_date=to_date,
-                   details_limit=args.details_limit)
+                   details_limit=args.details_limit, overwrite=args.overwrite)
         conn.execute(
             "INSERT INTO meta.ingestion_run_log VALUES (?, ?, ?, ?, ?, ?)",
             ["highlightly", args.mode, "success", started_at,
