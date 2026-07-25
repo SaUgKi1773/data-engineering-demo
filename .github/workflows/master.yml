@@ -62,11 +62,12 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
 
   # ---------------------------------------------------------------------------
-  # Bronze — ingest La Liga + Liga MX from Highlightly, parallel to the
-  # Sportmonks ingest. Rolling last-N-days window, overwriting details inside
-  # it so late-arriving stat corrections converge; the free plan's 100
-  # calls/day comfortably covers steady state (~30-50 calls). The run stops
-  # cleanly if the quota runs out and resumes the next night.
+  # Bronze — ingest the Highlightly leagues (La Liga, Liga MX, Süper Lig),
+  # parallel to the Sportmonks ingest. Rolling last-N-days window, overwriting
+  # details inside it so late-arriving stat corrections converge; the free
+  # plan's 100 calls/day covers steady state (~40-65 calls with all three
+  # leagues in season). The run stops cleanly if the quota runs out and
+  # resumes the next night.
   # ---------------------------------------------------------------------------
   ingest_highlightly:
     name: Bronze ingestion (Highlightly)

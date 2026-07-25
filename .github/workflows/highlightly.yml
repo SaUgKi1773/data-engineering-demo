@@ -12,7 +12,7 @@ on:
           - incremental
           - full
       leagues:
-        description: 'League ids, comma-separated (119924 = La Liga, 223746 = Liga MX). Empty or "all" = every configured league.'
+        description: 'League ids, comma-separated (119924 = La Liga, 223746 = Liga MX, 173537 = Süper Lig). Empty or "all" = every configured league.'
         required: false
         default: "all"
         type: string
