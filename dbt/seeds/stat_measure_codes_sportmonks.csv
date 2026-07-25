@@ -1,0 +1,9 @@
+type_id,measure_code
+34,corners
+45,possession_pct
+52,goals
+79,assists
+83,red_cards
+84,yellow_cards
+85,yellow_red_cards
+1605,dribbles_successful_pct

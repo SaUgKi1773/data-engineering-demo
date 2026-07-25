@@ -1,8 +1,12 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key=['id', '_source']
+    unique_key=['fixture_id', '_source']
 ) }}
+
+-- unique_key is a delete SCOPE, not a row identity: Highlightly events carry
+-- no ids, and every bronze row holds a fixture's complete event list, so
+-- re-processing a fixture replaces its events wholesale for that source.
 
 -- Pre-filter to the incremental window BEFORE unnesting.
 -- Without this, DuckDB unnests all 3000+ historical fixture rows before applying
@@ -17,7 +21,7 @@ WITH src AS MATERIALIZED (
     FROM {{ source('bronze', 'sportmonks__fixtures') }}
     WHERE json_array_length(json_extract(raw_json::VARCHAR, '$.events')) > 0
     {% if is_incremental() %}
-      AND _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }})
+      AND _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'sportmonks')
     {% endif %}
 )
 
@@ -49,3 +53,61 @@ SELECT
     f._ingested_at
 FROM src AS f,
 unnest(f.events) AS t(event)
+
+UNION ALL
+
+-- Highlightly branch: events are strings mapped onto the Sportmonks type
+-- vocabulary via the event_types_highlightly seed (the three VAR variants
+-- land as type VAR with the detail in addition/info, matching the Sportmonks
+-- lower()-matched sub-type convention). Substitutions: player = coming on,
+-- substituted = going off (its id arrives in assistingPlayerId); goals:
+-- assist -> related player. sort_order is the payload array ordinal - the
+-- provider's ordering notion, like Sportmonks' family ordinal, not a global
+-- timeline position.
+SELECT
+    NULL::INTEGER                                     AS id,
+    h.fixture_id,
+    NULL::INTEGER                                     AS period_id,
+    (h.event->'team'->>'id')::INTEGER                 AS team_id,
+    et.type_id                                        AS type_id,
+    (h.event->>'playerId')::INTEGER                   AS player_id,
+    (h.event->>'assistingPlayerId')::INTEGER          AS related_player_id,
+    h.event->>'player'                                AS player_name,
+    COALESCE(h.event->>'assist', h.event->>'substituted') AS related_player_name,
+    NULL::VARCHAR                                     AS section,
+    NULL::VARCHAR                                     AS result,
+    et.info                                           AS info,
+    et.addition                                       AS addition,
+    TRY_CAST(split_part(h.event->>'time', '+', 1) AS INTEGER) AS minute,
+    TRY_CAST(NULLIF(split_part(h.event->>'time', '+', 2), '') AS INTEGER) AS extra_minute,
+    NULL::BOOLEAN                                     AS injured,
+    NULL::BOOLEAN                                     AS on_bench,
+    NULL::INTEGER                                     AS sub_type_id,
+    h.ord::INTEGER                                    AS sort_order,
+    NULL::BOOLEAN                                     AS rescinded,
+    et.type_name                                      AS type_name,
+    et.type_developer_name                            AS type_developer_name,
+    h.event->'team'->>'name'                          AS team_name,
+    'highlightly'                                     AS _source,
+    h._ingested_at
+FROM (
+    SELECT
+        d.id            AS fixture_id,
+        d._ingested_at,
+        d.events[g.ord] AS event,
+        g.ord
+    FROM (
+        SELECT
+            id,
+            _ingested_at,
+            json_transform(raw_json::VARCHAR, '{"events": ["JSON"]}').events AS events
+        FROM {{ source('bronze', 'highlightly__match_details') }}
+        WHERE json_array_length(json_extract(raw_json::VARCHAR, '$.events')) > 0
+        {% if is_incremental() %}
+          AND _ingested_at > COALESCE((SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'highlightly'), '1900-01-01'::TIMESTAMP)
+        {% endif %}
+    ) d,
+    generate_series(1, len(d.events)) AS g(ord)
+) h
+LEFT JOIN {{ ref('event_types_highlightly') }} et
+    ON et.highlightly_type = (h.event->>'type')
