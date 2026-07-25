@@ -45,9 +45,14 @@ from_fixtures AS (
       AND venue_name IS NOT NULL
 ),
 combined AS (
+    -- Drop duplicate venue ids so one physical ground gets one stadium_sk. The
+    -- canonical id survives with its own (fuller) attributes; the facts map
+    -- their venue_id through the same macro, so nothing is orphaned.
     SELECT * FROM from_venues
+    WHERE venue_id = {{ canonical_venue_id('venue_id') }}
     UNION ALL
     SELECT * FROM from_fixtures
+    WHERE venue_id = {{ canonical_venue_id('venue_id') }}
 )
 SELECT
     {% if is_incremental() %}
