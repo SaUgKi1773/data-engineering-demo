@@ -59,10 +59,14 @@ stats AS (
     SELECT
         fixture_id,
         team_id,
-        MAX(CASE WHEN type_id = 34 THEN value::INTEGER      END) AS corner_kicks,
-        MAX(CASE WHEN type_id = 45 THEN value::DECIMAL(5,2) END) AS ball_possession_pct,
-        MAX(CASE WHEN type_id = 83 THEN value::INTEGER      END) AS red_cards,
-        MAX(CASE WHEN type_id = 84 THEN value::INTEGER      END) AS yellow_cards
+        -- measure_code, not Sportmonks type_id: it is the one measure
+        -- vocabulary both providers speak (seeded per source in silver).
+        -- Highlightly stat rows carry no type_id at all, so a type_id
+        -- predicate would silently read zero rows for the new leagues.
+        MAX(CASE WHEN measure_code = 'corners'        THEN value::INTEGER      END) AS corner_kicks,
+        MAX(CASE WHEN measure_code = 'possession_pct' THEN value::DECIMAL(5,2) END) AS ball_possession_pct,
+        MAX(CASE WHEN measure_code = 'red_cards'      THEN value::INTEGER      END) AS red_cards,
+        MAX(CASE WHEN measure_code = 'yellow_cards'   THEN value::INTEGER      END) AS yellow_cards
     FROM {{ ref('fixture_statistics') }}
     GROUP BY fixture_id, team_id
 ),
