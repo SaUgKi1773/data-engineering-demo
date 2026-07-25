@@ -10,6 +10,10 @@ WITH matches AS (
             WHEN 271 THEN d.season_denmark
             WHEN 501 THEN d.season_scotland
         END                                           AS season,
+        CASE dl.league_id
+            WHEN 271 THEN d.is_current_season_denmark
+            WHEN 501 THEN d.is_current_season_scotland
+        END                                           AS season_is_live,
         d.date,
         m.match_id,
         f.team_sk,
@@ -66,7 +70,7 @@ SELECT
     dl.league_country,
     dl.league_country_flag,
     c.season,
-    MAX(c.date)::VARCHAR              AS season_end,
+    BOOL_OR(c.season_is_live)         AS season_is_live,
     COUNT(DISTINCT c.match_id)        AS total_matches,
     SUM(c.goals_scored)               AS total_goals,
     COUNT(DISTINCT c.team_name)       AS total_teams,
