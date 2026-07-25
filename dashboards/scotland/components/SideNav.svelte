@@ -79,7 +79,7 @@
 
     <!-- external links, mirrored from the About page -->
     <div class="flex-none border-t border-gray-100 px-4 py-3">
-      <div class="flex items-center gap-1">
+      <div class="flex flex-wrap items-center gap-1">
         {#each externalLinks as link}
           <a
             href={link.href}
