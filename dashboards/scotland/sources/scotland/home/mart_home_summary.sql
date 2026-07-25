@@ -6,6 +6,7 @@ WITH matches AS (
         t.team_name,
         t.team_short_name,
         r.match_result,
+        d.is_current_season_scotland AS season_is_live,
         f.goals_scored,
         f.goals_conceded,
         f.points_earned,
@@ -48,7 +49,7 @@ team_pts AS (
 )
 SELECT
     ls.season,
-    MAX(m.date)::VARCHAR                             AS season_end,
+    BOOL_OR(m.season_is_live)                        AS season_is_live,
     COUNT(DISTINCT m.match_id)                       AS total_matches,
     SUM(m.goals_scored)                              AS total_goals,
     COUNT(DISTINCT m.team_name)                      AS total_teams,

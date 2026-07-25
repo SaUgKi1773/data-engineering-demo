@@ -108,7 +108,7 @@ select * from hub.last_updated
             </div>
             <div class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 leading-none">{lg.banner_title}</div>
             <div class="text-gray-400 text-[13px] mt-1.5">
-              <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{new Date() > new Date(lg.season_end) ? '#a1a1a6' : '#30b14e'};"></span>{lg.season} · {new Date() > new Date(lg.season_end) ? 'Ended' : 'Live'}
+              <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{lg.season_is_live ? '#30b14e' : '#a1a1a6'};"></span>{lg.season} · {lg.season_is_live ? 'Live' : 'Ended'}
             </div>
           </div>
         </div>

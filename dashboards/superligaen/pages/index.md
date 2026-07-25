@@ -44,7 +44,7 @@ select * from superligaen.mart_home_summary
         </div>
         <div class="text-3xl xl:text-4xl font-bold tracking-tight text-white leading-none">Superligaen</div>
         <div class="text-white/60 text-[13px] mt-1.5">
-          <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{new Date() > new Date(summary[0].season_end) ? '#cbd5e1' : '#4ade80'};"></span>{summary[0].season} · {new Date() > new Date(summary[0].season_end) ? 'Ended' : 'Live'}
+          <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{summary[0].season_is_live ? '#4ade80' : '#cbd5e1'};"></span>{summary[0].season} · {summary[0].season_is_live ? 'Live' : 'Ended'}
         </div>
       </div>
     </div>
@@ -56,8 +56,8 @@ select * from superligaen.mart_home_summary
       </div>
 
       <div class="inline-flex items-center gap-2 text-[15px]">
-        <span class="leading-none">{new Date() > new Date(summary[0].season_end) ? '👑' : '🥇'}</span>
-        <span class="text-white/50 text-[11px] font-semibold uppercase" style="letter-spacing: 0.12em;">{new Date() > new Date(summary[0].season_end) ? 'Champion' : 'Leader'}</span>
+        <span class="leading-none">{summary[0].season_is_live ? '🥇' : '👑'}</span>
+        <span class="text-white/50 text-[11px] font-semibold uppercase" style="letter-spacing: 0.12em;">{summary[0].season_is_live ? 'Leader' : 'Champion'}</span>
         <span class="font-semibold text-white"><span class="xl:hidden">{summary[0]?.leader_short}</span><span class="hidden xl:inline">{summary[0]?.leader_name}</span></span>
       </div>
     </div>
