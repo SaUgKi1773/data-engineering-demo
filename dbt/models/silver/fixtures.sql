@@ -1,7 +1,7 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key='id'
+    unique_key=['id', '_source']
 ) }}
 
 -- Full-refresh memory workaround: DuckDB processes UNION ALL branches sequentially,
@@ -51,6 +51,7 @@ SELECT
     (raw_json->'round'->>'finished')::BOOLEAN           AS round_finished,
     (raw_json->'round'->>'is_current')::BOOLEAN         AS round_is_current,
     _fixture_date,
+    'sportmonks'                                        AS _source,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__fixtures') }}
 WHERE (raw_json->>'season_id')::INTEGER = {{ season_id }}

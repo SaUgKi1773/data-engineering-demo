@@ -1,7 +1,7 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key='id'
+    unique_key=['id', '_source']
 ) }}
 
 SELECT
@@ -42,6 +42,7 @@ SELECT
     MAX(CASE WHEN (d->>'type_id')::INTEGER = 146 THEN (d->>'value')::INTEGER END) AS away_goals_against,
     MAX(CASE WHEN (d->>'type_id')::INTEGER = 186 THEN (d->>'value')::INTEGER END) AS away_points,
     MAX(CASE WHEN (d->>'type_id')::INTEGER = 176 THEN d->>'value' END)            AS streak,
+    'sportmonks'                                                                   AS _source,
     MAX(s._ingested_at)                                                            AS _ingested_at
 FROM {{ source('bronze', 'sportmonks__standings') }} AS s,
 unnest(json_transform(s.raw_json::VARCHAR, '{"details": ["JSON"]}').details) AS t(d)

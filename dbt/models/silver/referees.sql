@@ -1,7 +1,7 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key='id'
+    unique_key=['id', '_source']
 ) }}
 
 SELECT
@@ -22,6 +22,7 @@ SELECT
     raw_json->>'image_path'             AS image_path,
     raw_json->'nationality'->>'name'    AS nationality_name,
     raw_json->'city'->>'name'           AS city_name,
+    'sportmonks'                        AS _source,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__referees') }}
 WHERE id NOT IN (SELECT referee_id FROM {{ ref('referee_id_overrides') }})

@@ -1,7 +1,7 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key='id'
+    unique_key=['id', '_source']
 ) }}
 
 WITH src AS MATERIALIZED (
@@ -23,6 +23,7 @@ SELECT
     ref->'referee'->>'name'                                                     AS referee_name,
     ref->'referee'->>'display_name'                                             AS referee_display_name,
     ref->'referee'->>'image_path'                                               AS referee_image_path,
+    'sportmonks'                                                                AS _source,
     f._ingested_at
 FROM src AS f,
 unnest(json_transform(f.raw_json::VARCHAR, '{"referees": ["JSON"]}').referees) AS t(ref)

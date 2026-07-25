@@ -1,7 +1,7 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key=['fixture_id', 'team_id']
+    unique_key=['fixture_id', 'team_id', '_source']
 ) }}
 
 WITH src AS MATERIALIZED (
@@ -21,6 +21,7 @@ SELECT
     participant->'meta'->>'location'           AS location,
     (participant->'meta'->>'winner')::BOOLEAN  AS winner,
     (participant->'meta'->>'position')::INTEGER AS position,
+    'sportmonks'                               AS _source,
     f._ingested_at
 FROM src AS f,
 unnest(json_transform(f.raw_json::VARCHAR, '{"participants": ["JSON"]}').participants) AS t(participant)

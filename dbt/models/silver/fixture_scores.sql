@@ -1,7 +1,7 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key='id'
+    unique_key=['id', '_source']
 ) }}
 
 WITH src AS MATERIALIZED (
@@ -20,6 +20,7 @@ SELECT
     (score->'score'->>'goals')::INTEGER AS goals,
     score->'score'->>'participant'      AS side,
     score->>'description'               AS description,
+    'sportmonks'                        AS _source,
     f._ingested_at
 FROM src AS f,
 unnest(json_transform(f.raw_json::VARCHAR, '{"scores": ["JSON"]}').scores) AS t(score)
