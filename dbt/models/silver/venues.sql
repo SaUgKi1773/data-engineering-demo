@@ -1,7 +1,7 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key='id'
+    unique_key=['id', '_source']
 ) }}
 
 SELECT
@@ -19,6 +19,7 @@ SELECT
     (raw_json->>'national_team')::BOOLEAN AS national_team,
     raw_json->>'image_path'               AS image_path,
     raw_json->'country'->>'name'          AS country_name,
+    'sportmonks'                          AS _source,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__venues') }}
 {% if is_incremental() %}

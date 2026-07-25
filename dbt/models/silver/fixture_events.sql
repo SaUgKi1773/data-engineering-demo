@@ -1,17 +1,23 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key='id'
+    unique_key=['id', '_source']
 ) }}
 
 -- Pre-filter to the incremental window BEFORE unnesting.
 -- Without this, DuckDB unnests all 3000+ historical fixture rows before applying
 -- the _ingested_at filter, blowing past MotherDuck Pulse's 953 MB memory cap.
+-- Project only the events array here: carrying full raw_json through the unnest
+-- multiplies it per event row and OOMs a full refresh.
 WITH src AS MATERIALIZED (
-    SELECT *
+    SELECT
+        id,
+        _ingested_at,
+        json_transform(raw_json::VARCHAR, '{"events": ["JSON"]}').events AS events
     FROM {{ source('bronze', 'sportmonks__fixtures') }}
+    WHERE json_array_length(json_extract(raw_json::VARCHAR, '$.events')) > 0
     {% if is_incremental() %}
-    WHERE _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }})
+      AND _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }})
     {% endif %}
 )
 
@@ -39,7 +45,7 @@ SELECT
     event->'type'->>'name'               AS type_name,
     event->'type'->>'developer_name'     AS type_developer_name,
     event->'participant'->>'name'        AS team_name,
+    'sportmonks'                         AS _source,
     f._ingested_at
 FROM src AS f,
-unnest(json_transform(f.raw_json::VARCHAR, '{"events": ["JSON"]}').events) AS t(event)
-WHERE json_array_length(json_extract(f.raw_json::VARCHAR, '$.events')) > 0
+unnest(f.events) AS t(event)

@@ -1,7 +1,7 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key='id'
+    unique_key=['id', '_source']
 ) }}
 
 SELECT
@@ -21,6 +21,7 @@ SELECT
     raw_json->'venue'->>'city_name'          AS venue_city,
     (raw_json->'venue'->>'capacity')::INTEGER AS venue_capacity,
     _season_id,
+    'sportmonks'                             AS _source,
     _ingested_at
 FROM {{ source('bronze', 'sportmonks__teams') }}
 {% if is_incremental() %}
