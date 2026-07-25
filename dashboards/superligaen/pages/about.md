@@ -35,6 +35,16 @@ Everything — the ingestion scripts, dbt models, and this Evidence dashboard �
 </a>
 </div>
 
+## Get the Data
+
+Prefer SQL over dashboards? The full gold layer behind this site — all leagues, refreshed nightly — is available as a free read-only [MotherDuck](https://motherduck.com/) share you can query straight from DuckDB. You'll need a free MotherDuck account; request access below and I'll grant it to your account.
+
+<div class="-mt-3">
+<a href="https://forms.gle/2wDZcfwm8jk6aWGS9" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-amber-600 text-white font-semibold hover:bg-amber-700 transition-colors no-underline">
+  🗄️ Request Data Access
+</a>
+</div>
+
 ## The Full Journey
 
 The complete story — every decision, every mistake, every fix — is documented in the blog:
