@@ -33,10 +33,16 @@ WHERE json_array_length(json_extract(f.raw_json::VARCHAR, '$.scores')) > 0
 UNION ALL
 
 -- Highlightly branch: the provider exposes only a fulltime score string
--- ("2 - 2") plus a penalties string when a shootout happened, so each played
--- match yields a CURRENT row per team and, for shootouts, a PENALTY_SHOOTOUT
--- row per team (matching the Sportmonks description vocabulary). Unplayed and
--- Cancelled matches produce no score rows.
+-- ("2 - 2") plus a penalties string when a shootout happened, so each match
+-- with a result yields a CURRENT row per team and, for shootouts, a
+-- PENALTY_SHOOTOUT row per team (matching the Sportmonks description
+-- vocabulary).
+--
+-- A score row exists iff the provider recorded a score - deliberately NOT
+-- keyed on state. Awarded results (a walkover recorded as Cancelled but
+-- carrying "0 - 3") are real results that put points on the table, so they
+-- belong in the fact; unplayed fixtures carry no score object at all and
+-- produce nothing. Keying on state would silently drop the awarded ones.
 SELECT
     NULL::INTEGER   AS id,
     s.fixture_id,
@@ -56,7 +62,7 @@ FROM (
         'CURRENT'                                                                 AS description,
         _ingested_at
     FROM {{ source('bronze', 'highlightly__matches') }}
-    WHERE json_extract_string(raw_json, '$.state.description') LIKE 'Finished%'
+    WHERE json_extract_string(raw_json, '$.state.score.current') IS NOT NULL
     UNION ALL
     SELECT
         id,
@@ -66,7 +72,7 @@ FROM (
         'CURRENT',
         _ingested_at
     FROM {{ source('bronze', 'highlightly__matches') }}
-    WHERE json_extract_string(raw_json, '$.state.description') LIKE 'Finished%'
+    WHERE json_extract_string(raw_json, '$.state.score.current') IS NOT NULL
     UNION ALL
     SELECT
         id,
