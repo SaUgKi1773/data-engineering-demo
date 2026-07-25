@@ -66,7 +66,54 @@ stats AS (
         MAX(CASE WHEN measure_code = 'corners'        THEN value::INTEGER      END) AS corner_kicks,
         MAX(CASE WHEN measure_code = 'possession_pct' THEN value::DECIMAL(5,2) END) AS ball_possession_pct,
         MAX(CASE WHEN measure_code = 'red_cards'      THEN value::INTEGER      END) AS red_cards,
-        MAX(CASE WHEN measure_code = 'yellow_cards'   THEN value::INTEGER      END) AS yellow_cards
+        MAX(CASE WHEN measure_code = 'yellow_cards'   THEN value::INTEGER      END) AS yellow_cards,
+        -- Measures below exist only in the Highlightly feed. They are NULL for
+        -- Denmark and Scotland permanently, and NULL for the Highlightly
+        -- leagues before 2024 (the provider recorded 14-16 measures then, and
+        -- no xG at all). NULL means "not recorded" and must never be read as
+        -- zero: a mart that sums these across eras would report real absence
+        -- as real nothing.
+        -- Shooting
+        MAX(CASE WHEN measure_code = 'shots_on_target'        THEN value::INTEGER      END) AS shots_on_target,
+        MAX(CASE WHEN measure_code = 'shots_off_target'       THEN value::INTEGER      END) AS shots_off_target,
+        MAX(CASE WHEN measure_code = 'shots_blocked'          THEN value::INTEGER      END) AS shots_blocked,
+        MAX(CASE WHEN measure_code = 'shots_inside_box'       THEN value::INTEGER      END) AS shots_inside_box,
+        MAX(CASE WHEN measure_code = 'shots_outside_box'      THEN value::INTEGER      END) AS shots_outside_box,
+        MAX(CASE WHEN measure_code = 'shot_accuracy_pct'      THEN value::DECIMAL(5,2) END) AS shot_accuracy_pct,
+        -- Expected values (2024 onwards only)
+        MAX(CASE WHEN measure_code = 'expected_goals'         THEN value::DECIMAL(5,2) END) AS expected_goals,
+        MAX(CASE WHEN measure_code = 'expected_assists'       THEN value::DECIMAL(5,2) END) AS expected_assists,
+        MAX(CASE WHEN measure_code = 'big_chances_created'    THEN value::INTEGER      END) AS big_chances_created,
+        MAX(CASE WHEN measure_code = 'key_passes'             THEN value::INTEGER      END) AS key_passes,
+        -- Passing
+        MAX(CASE WHEN measure_code = 'passes_total'           THEN value::INTEGER      END) AS passes_total,
+        MAX(CASE WHEN measure_code = 'passes_successful'      THEN value::INTEGER      END) AS passes_successful,
+        MAX(CASE WHEN measure_code = 'passes_failed'          THEN value::INTEGER      END) AS passes_failed,
+        MAX(CASE WHEN measure_code = 'passes_final_third'     THEN value::INTEGER      END) AS passes_final_third,
+        MAX(CASE WHEN measure_code = 'passes_opposition_half' THEN value::INTEGER      END) AS passes_opposition_half,
+        MAX(CASE WHEN measure_code = 'passes_own_half'        THEN value::INTEGER      END) AS passes_own_half,
+        MAX(CASE WHEN measure_code = 'passes_backward'        THEN value::INTEGER      END) AS passes_backward,
+        MAX(CASE WHEN measure_code = 'long_passes'            THEN value::INTEGER      END) AS long_passes,
+        MAX(CASE WHEN measure_code = 'long_passes_successful' THEN value::INTEGER      END) AS long_passes_successful,
+        MAX(CASE WHEN measure_code = 'crosses'                THEN value::INTEGER      END) AS crosses,
+        MAX(CASE WHEN measure_code = 'crosses_successful'     THEN value::INTEGER      END) AS crosses_successful,
+        -- Duels and defending
+        MAX(CASE WHEN measure_code = 'dribbles'               THEN value::INTEGER      END) AS dribbles,
+        MAX(CASE WHEN measure_code = 'dribbles_successful'    THEN value::INTEGER      END) AS dribbles_successful,
+        MAX(CASE WHEN measure_code = 'tackles'                THEN value::INTEGER      END) AS tackles,
+        MAX(CASE WHEN measure_code = 'tackles_successful'     THEN value::INTEGER      END) AS tackles_successful,
+        MAX(CASE WHEN measure_code = 'interceptions'          THEN value::INTEGER      END) AS interceptions,
+        MAX(CASE WHEN measure_code = 'clearances'             THEN value::INTEGER      END) AS clearances,
+        MAX(CASE WHEN measure_code = 'aerial_duels'           THEN value::INTEGER      END) AS aerial_duels,
+        MAX(CASE WHEN measure_code = 'aerial_duels_successful' THEN value::INTEGER     END) AS aerial_duels_successful,
+        MAX(CASE WHEN measure_code = 'goalkeeper_saves'       THEN value::INTEGER      END) AS goalkeeper_saves,
+        -- Match flow and set pieces
+        MAX(CASE WHEN measure_code = 'fouls'                  THEN value::INTEGER      END) AS fouls,
+        MAX(CASE WHEN measure_code = 'offsides'               THEN value::INTEGER      END) AS offsides,
+        MAX(CASE WHEN measure_code = 'attacks'                THEN value::INTEGER      END) AS attacks,
+        MAX(CASE WHEN measure_code = 'free_kicks'             THEN value::INTEGER      END) AS free_kicks,
+        MAX(CASE WHEN measure_code = 'goal_kicks'             THEN value::INTEGER      END) AS goal_kicks,
+        MAX(CASE WHEN measure_code = 'throw_ins'              THEN value::INTEGER      END) AS throw_ins
     FROM {{ ref('fixture_statistics') }}
     GROUP BY fixture_id, team_id
 ),
@@ -96,7 +143,46 @@ src AS (
         CASE WHEN f.is_finished THEN COALESCE(st.corner_kicks,     0) END AS corner_kicks,
         CASE WHEN f.is_finished THEN st.ball_possession_pct          END AS ball_possession_pct,
         CASE WHEN f.is_finished THEN COALESCE(st.yellow_cards,     0) END AS yellow_cards,
-        CASE WHEN f.is_finished THEN COALESCE(st.red_cards,        0) END AS red_cards
+        CASE WHEN f.is_finished THEN COALESCE(st.red_cards,        0) END AS red_cards,
+        -- Deliberately no COALESCE to 0, unlike the four measures above: for
+        -- these an absent stat row means the provider never recorded the
+        -- measure, not that the value was zero.
+        CASE WHEN f.is_finished THEN st.shots_on_target         END AS shots_on_target,
+        CASE WHEN f.is_finished THEN st.shots_off_target        END AS shots_off_target,
+        CASE WHEN f.is_finished THEN st.shots_blocked           END AS shots_blocked,
+        CASE WHEN f.is_finished THEN st.shots_inside_box        END AS shots_inside_box,
+        CASE WHEN f.is_finished THEN st.shots_outside_box       END AS shots_outside_box,
+        CASE WHEN f.is_finished THEN st.shot_accuracy_pct       END AS shot_accuracy_pct,
+        CASE WHEN f.is_finished THEN st.expected_goals          END AS expected_goals,
+        CASE WHEN f.is_finished THEN st.expected_assists        END AS expected_assists,
+        CASE WHEN f.is_finished THEN st.big_chances_created     END AS big_chances_created,
+        CASE WHEN f.is_finished THEN st.key_passes              END AS key_passes,
+        CASE WHEN f.is_finished THEN st.passes_total            END AS passes_total,
+        CASE WHEN f.is_finished THEN st.passes_successful       END AS passes_successful,
+        CASE WHEN f.is_finished THEN st.passes_failed           END AS passes_failed,
+        CASE WHEN f.is_finished THEN st.passes_final_third      END AS passes_final_third,
+        CASE WHEN f.is_finished THEN st.passes_opposition_half  END AS passes_opposition_half,
+        CASE WHEN f.is_finished THEN st.passes_own_half         END AS passes_own_half,
+        CASE WHEN f.is_finished THEN st.passes_backward         END AS passes_backward,
+        CASE WHEN f.is_finished THEN st.long_passes             END AS long_passes,
+        CASE WHEN f.is_finished THEN st.long_passes_successful  END AS long_passes_successful,
+        CASE WHEN f.is_finished THEN st.crosses                 END AS crosses,
+        CASE WHEN f.is_finished THEN st.crosses_successful      END AS crosses_successful,
+        CASE WHEN f.is_finished THEN st.dribbles                END AS dribbles,
+        CASE WHEN f.is_finished THEN st.dribbles_successful     END AS dribbles_successful,
+        CASE WHEN f.is_finished THEN st.tackles                 END AS tackles,
+        CASE WHEN f.is_finished THEN st.tackles_successful      END AS tackles_successful,
+        CASE WHEN f.is_finished THEN st.interceptions           END AS interceptions,
+        CASE WHEN f.is_finished THEN st.clearances              END AS clearances,
+        CASE WHEN f.is_finished THEN st.aerial_duels            END AS aerial_duels,
+        CASE WHEN f.is_finished THEN st.aerial_duels_successful END AS aerial_duels_successful,
+        CASE WHEN f.is_finished THEN st.goalkeeper_saves        END AS goalkeeper_saves,
+        CASE WHEN f.is_finished THEN st.fouls                   END AS fouls,
+        CASE WHEN f.is_finished THEN st.offsides                END AS offsides,
+        CASE WHEN f.is_finished THEN st.attacks                 END AS attacks,
+        CASE WHEN f.is_finished THEN st.free_kicks              END AS free_kicks,
+        CASE WHEN f.is_finished THEN st.goal_kicks              END AS goal_kicks,
+        CASE WHEN f.is_finished THEN st.throw_ins               END AS throw_ins
     FROM all_fixtures f
     JOIN  match_teams       mt   ON mt.fixture_id  = f.fixture_id
     LEFT JOIN scores              sc   ON sc.fixture_id  = f.fixture_id AND sc.team_id  = mt.team_id
@@ -147,7 +233,43 @@ SELECT
     src.corner_kicks,
     src.ball_possession_pct,
     src.yellow_cards,
-    src.red_cards
+    src.red_cards,
+    src.shots_on_target,
+    src.shots_off_target,
+    src.shots_blocked,
+    src.shots_inside_box,
+    src.shots_outside_box,
+    src.shot_accuracy_pct,
+    src.expected_goals,
+    src.expected_assists,
+    src.big_chances_created,
+    src.key_passes,
+    src.passes_total,
+    src.passes_successful,
+    src.passes_failed,
+    src.passes_final_third,
+    src.passes_opposition_half,
+    src.passes_own_half,
+    src.passes_backward,
+    src.long_passes,
+    src.long_passes_successful,
+    src.crosses,
+    src.crosses_successful,
+    src.dribbles,
+    src.dribbles_successful,
+    src.tackles,
+    src.tackles_successful,
+    src.interceptions,
+    src.clearances,
+    src.aerial_duels,
+    src.aerial_duels_successful,
+    src.goalkeeper_saves,
+    src.fouls,
+    src.offsides,
+    src.attacks,
+    src.free_kicks,
+    src.goal_kicks,
+    src.throw_ins
 FROM src
 LEFT JOIN {{ ref('dim_date') }}          dd      ON dd.date              = src.starting_at::DATE
 LEFT JOIN {{ ref('dim_time') }}          dt_time ON dt_time.time_sk      = EXTRACT(hour FROM (src.starting_at::TIMESTAMP AT TIME ZONE 'UTC') AT TIME ZONE {{ league_local_tz('src.league_id') }})::INTEGER
