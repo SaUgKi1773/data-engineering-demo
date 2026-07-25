@@ -1,5 +1,5 @@
 """
-Highlightly bronze ingestion entry point (La Liga + Liga MX).
+Highlightly bronze ingestion entry point (see config.LEAGUES for the roster).
 
 Usage
 -----
@@ -22,9 +22,9 @@ match details (one call per finished match — the expensive part).
                           seasons get re-listed. A window spanning June covers
                           two Highlightly seasons and both are handled.
   --days-back N           shorthand for a window ending today.
-  --seasons               explicit season scope, overriding the window. Also
-                          the way to reach seasons older than first_season
-                          (they exist back to 2020, without xG).
+  --seasons               explicit season scope, overriding the window.
+                          first_season is 2020 (all usable history; xG only
+                          from 2024 — see config.py for the depth cliff).
   --overwrite             refetch details that already exist, replacing the
                           stored rows. Requires a window or --seasons: an
                           unscoped overwrite would refetch the same newest

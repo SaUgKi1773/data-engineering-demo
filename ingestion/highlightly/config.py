@@ -7,15 +7,19 @@ API_BASE = "https://soccer.highlightly.net"
 # Sportmonks; nothing here touches them. Adding a league is one entry here —
 # every other module is league-agnostic and reads this mapping.
 #
-# first_season is per league: 2024 is the earliest season carrying Expected
-# Goals for both current leagues (probes 2026-07-24 Liga MX, 2026-07-25
-# La Liga). Earlier seasons exist back to 2020 but drop to 14-16 team measures
-# with no xG (and, for La Liga <= 2023, NULL venue/referee); they can still be
-# backfilled deliberately via --seasons, which overrides this scope.
-# season=2019 is a stub on both leagues (partial/COVID-cancelled fixtures).
+# first_season 2020 = all usable history (a one-time paid key backfills it in
+# one go; the season count is not a free-tier budget concern). season=2019 is
+# a stub where checked (partial/COVID-cancelled fixtures) and stays out.
+#
+# Know the depth cliff when modelling downstream: 2020-2023 carry only 14-16
+# team measures with NO Expected Goals (and La Liga <= 2023 has NULL
+# venue/referee). xG starts at season 2024 — full 40-measure set from 2024 on
+# Süper Lig (La Liga 19, Liga MX 23 that season), 39-40 everywhere from 2025.
+# Probes: 2026-07-24 Liga MX, 2026-07-25 La Liga + Süper Lig.
 LEAGUES = {
-    119924: {"name": "La Liga", "country": "Spain",  "first_season": 2024},
-    223746: {"name": "Liga MX", "country": "Mexico", "first_season": 2024},
+    119924: {"name": "La Liga",   "country": "Spain",  "first_season": 2020},
+    223746: {"name": "Liga MX",   "country": "Mexico", "first_season": 2020},
+    173537: {"name": "Süper Lig", "country": "Turkey", "first_season": 2020},
 }
 
 # Highlightly seasons are SPLIT-YEAR, labelled by the opening year:

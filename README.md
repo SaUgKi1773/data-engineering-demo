@@ -42,7 +42,7 @@ The nightly GitHub Actions pipeline runs the three bronze producers in parallel 
 
 | Layer | Tool |
 |---|---|
-| Data sources | Sportmonks REST API (Denmark, Scotland) · Highlightly REST API (Spain, Mexico) |
+| Data sources | Sportmonks REST API (Denmark, Scotland) · Highlightly REST API (Spain, Mexico, Türkiye) |
 | Data warehouse | MotherDuck (DuckDB cloud) |
 | Ingestion | Python (`ingestion/sportmonks/`, `ingestion/highlightly/`, `ingestion/groq/`, `ingestion/datascience/`) |
 | Match predictions | In-house Poisson goals model (`ingestion/datascience/predict_match_outcomes.py`) |
@@ -490,7 +490,7 @@ Both league sites ship the same page set (15 pages each), with a shared footer s
 │   │   ├── api.py              # Sportmonks API client
 │   │   ├── db.py               # MotherDuck connection
 │   │   └── config.py           # Endpoint manifest + env vars
-│   ├── highlightly/            # Bronze: pull La Liga + Liga MX from Highlightly API
+│   ├── highlightly/            # Bronze: pull La Liga / Liga MX / Süper Lig from Highlightly API
 │   │   ├── run.py              # Ingestion runner (rolling window / backfill)
 │   │   ├── engine.py           # List + detail passes, budget-aware
 │   │   ├── api.py              # Highlightly API client (daily-quota steering)
