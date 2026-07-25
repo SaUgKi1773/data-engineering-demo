@@ -79,7 +79,7 @@
 
     <!-- external links, mirrored from the About page -->
     <div class="flex-none border-t border-gray-100 px-4 py-3">
-      <div class="flex flex-wrap items-center gap-1">
+      <div class="flex items-center justify-between">
         {#each externalLinks as link}
           <a
             href={link.href}
@@ -87,9 +87,9 @@
             rel="noopener noreferrer"
             title={link.label}
             aria-label={link.label}
-            class="flex h-9 w-9 flex-none items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+            class="flex h-8 w-8 flex-none items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d={link.path} />
             </svg>
           </a>
