@@ -62,6 +62,36 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
 
   # ---------------------------------------------------------------------------
+  # Bronze — ingest La Liga + Liga MX from Highlightly, parallel to the
+  # Sportmonks ingest. Rolling last-N-days window; the free plan's 100
+  # calls/day comfortably covers steady state (~15-45 calls). The run stops
+  # cleanly if the quota runs out and resumes the next night.
+  # ---------------------------------------------------------------------------
+  ingest_highlightly:
+    name: Bronze ingestion (Highlightly)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ingestion
+        working-directory: ingestion/highlightly
+        run: |
+          DB="md:${{ github.event.inputs.target_db || 'superligaen' }}"
+          python run.py --days-back $INCREMENTAL_DAYS_BACK --db $DB
+        env:
+          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
+          MOTHERDUCK_TOKEN:    ${{ secrets.MOTHERDUCK_TOKEN }}
+
+  # ---------------------------------------------------------------------------
   # AI discussions — generate fan forum posts into bronze, parallel to ingest.
   # Reads the previous night's gold, so discussions for a round land the night
   # after the round completes.
@@ -130,14 +160,15 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Silver — transform bronze JSON into structured tables (dbt).
-  # Waits for all bronze ingestions; a failed AI generation or prediction run
-  # shows red but does not block the pipeline (that data just stays stale).
+  # Waits for all bronze ingestions; a failed AI generation, prediction or
+  # Highlightly run shows red but does not block the pipeline (that data just
+  # stays stale).
   # ---------------------------------------------------------------------------
   transform:
     name: Silver transformation
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    needs: [ingest, ai_discussions, match_predictions]
+    needs: [ingest, ingest_highlightly, ai_discussions, match_predictions]
     if: ${{ !cancelled() && needs.ingest.result == 'success' }}
 
     steps:

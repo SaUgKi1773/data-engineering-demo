@@ -42,9 +42,9 @@ The nightly GitHub Actions pipeline runs the three bronze producers in parallel 
 
 | Layer | Tool |
 |---|---|
-| Data source | Sportmonks REST API |
+| Data sources | Sportmonks REST API (Denmark, Scotland) · Highlightly REST API (Spain, Mexico) |
 | Data warehouse | MotherDuck (DuckDB cloud) |
-| Ingestion | Python (`ingestion/sportmonks/`, `ingestion/groq/`, `ingestion/datascience/`) |
+| Ingestion | Python (`ingestion/sportmonks/`, `ingestion/highlightly/`, `ingestion/groq/`, `ingestion/datascience/`) |
 | Match predictions | In-house Poisson goals model (`ingestion/datascience/predict_match_outcomes.py`) |
 | Transformations | dbt-duckdb (`dbt/`) |
 | Orchestration | GitHub Actions (nightly + manual triggers) |
@@ -490,6 +490,12 @@ Both league sites ship the same page set (15 pages each), with a shared footer s
 │   │   ├── api.py              # Sportmonks API client
 │   │   ├── db.py               # MotherDuck connection
 │   │   └── config.py           # Endpoint manifest + env vars
+│   ├── highlightly/            # Bronze: pull La Liga + Liga MX from Highlightly API
+│   │   ├── run.py              # Ingestion runner (rolling window / backfill)
+│   │   ├── engine.py           # List + detail passes, budget-aware
+│   │   ├── api.py              # Highlightly API client (daily-quota steering)
+│   │   ├── db.py               # Bronze tables + resumable-work queries
+│   │   └── config.py           # Leagues, seasons, budget constants
 │   ├── groq/                   # Bronze: LLM match discussion generation
 │   │   └── generate_round_discussions.py  # Groq API → fct_match_discussions
 │   └── datascience/            # Bronze: pre-kickoff match predictions
