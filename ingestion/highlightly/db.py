@@ -33,7 +33,6 @@ from dotenv import load_dotenv
 from config import (
     ALL_TABLES,
     DEFAULT_DB_PATH,
-    DETAIL_SETTLE_DAYS,
     DETAILS_TABLE,
     FINISHED_STATES,
     MATCHES_TABLE,
@@ -125,14 +124,14 @@ def insert_batch(conn: duckdb.DuckDBPyConnection, table: str, rows: list) -> Non
 
 
 def pending_detail_matches(conn: duckdb.DuckDBPyConnection, league_id: int,
-                           seasons: list, from_date=None, to_date=None) -> list:
+                           seasons: list, from_date=None, to_date=None,
+                           overwrite: bool = False) -> list:
     """
-    Finished matches whose detail is missing or still provisional, newest first.
-
-    Provisional = the detail row was captured less than DETAIL_SETTLE_DAYS
-    after the match day. Statistics trickle in after full-time, so an early
-    capture may hold a fraction of the final measure set; refetching until the
-    capture is comfortably past the match makes the stored payload converge.
+    Finished matches whose detail is missing, newest first. With overwrite,
+    every finished match in scope qualifies — existing detail rows get
+    replaced. The nightly run overwrites its rolling window so late-arriving
+    corrections (statistics trickle in after full-time) always converge;
+    a scoped manual run with overwrite re-pulls whole seasons deliberately.
 
     Newest first is deliberate: without a date window the run should catch up
     on the most recent football before chipping into history, so an interrupted
@@ -163,8 +162,7 @@ def pending_detail_matches(conn: duckdb.DuckDBPyConnection, league_id: int,
         LEFT JOIN bronze.{DETAILS_TABLE} d ON d.id = m.id
         WHERE m._league_id = ?
           AND m._season_id IN ({placeholders})
-          AND (d.id IS NULL
-               OR d._ingested_at < m._fixture_date + INTERVAL {int(DETAIL_SETTLE_DAYS)} DAY)
+          {"" if overwrite else "AND d.id IS NULL"}
           -- json_extract_string, not the chained ->/->> form: under prepared
           -- statement binding DuckDB resolves -> to the array-index overload
           -- and fails casting the object to a number.

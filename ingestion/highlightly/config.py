@@ -46,13 +46,6 @@ MAX_RETRIES     = 5
 REQUEST_TIMEOUT = 60
 API_CALL_DELAY  = 0.2  # polite spacing; the constraint is the daily cap, not rate
 
-# Statistics trickle in after full-time (a match observed 2026-07-25 still had
-# 15 of 40 measures six days after kickoff). A detail row captured less than
-# this many days after the match day is treated as provisional and refetched;
-# one captured later is final. Historical backfills are always final, so this
-# only costs a couple of extra calls per match in the nightly window.
-DETAIL_SETTLE_DAYS = 3
-
 # Match states that carry events and statistics worth a detail call. Everything
 # else (Not started, Cancelled, Postponed) has nothing extra to fetch, so
 # spending budget on it would be waste.
