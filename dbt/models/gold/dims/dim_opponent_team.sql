@@ -10,5 +10,6 @@ SELECT
     team_short_name   AS opponent_team_short_name,
     team_country      AS opponent_team_country,
     team_founded_year AS opponent_team_founded_year,
-    team_logo         AS opponent_team_logo
+    team_logo         AS opponent_team_logo,
+    _source           AS _source
 FROM {{ ref('dim_team') }}

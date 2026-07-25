@@ -9,5 +9,6 @@ SELECT
     team_id      AS transfer_partner_team_id,
     team_name    AS transfer_partner_team_name,
     team_country AS transfer_partner_team_country,
-    team_logo    AS transfer_partner_team_logo
+    team_logo    AS transfer_partner_team_logo,
+    _source      AS _source
 FROM {{ ref('dim_team') }}
