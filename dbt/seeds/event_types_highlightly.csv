@@ -1,0 +1,11 @@
+highlightly_type,type_id,type_developer_name,type_name,addition,info
+Goal,14,GOAL,Goal,,
+Own Goal,15,OWNGOAL,Own Goal,,
+Penalty,16,PENALTY,Penalty,,
+Missed Penalty,17,MISSED_PENALTY,Missed Penalty,,
+Substitution,18,SUBSTITUTION,Substitution,,
+Yellow Card,19,YELLOWCARD,Yellowcard,,
+Red Card,20,REDCARD,Redcard,,
+VAR Goal Cancelled,10,VAR,VAR,Goal Cancelled,
+VAR Goal Cancelled - Offside,10,VAR,VAR,Goal Cancelled,Offside
+VAR Penalty,10,VAR,VAR,Penalty,

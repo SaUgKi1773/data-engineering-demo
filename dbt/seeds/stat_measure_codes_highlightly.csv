@@ -1,0 +1,41 @@
+display_name,measure_code,value_scale
+Possession,possession_pct,100
+Blocked shots,shots_blocked,1
+Shots on target,shots_on_target,1
+Fouls,fouls,1
+Corners,corners,1
+Shots off target,shots_off_target,1
+Successful passes,passes_successful,1
+Failed passes,passes_failed,1
+Total passes,passes_total,1
+Shots outside penalty area,shots_outside_box,1
+Shots within penalty area,shots_inside_box,1
+Goalkeeper saves,goalkeeper_saves,1
+Yellow cards,yellow_cards,1
+Offsides,offsides,1
+Shots accuracy,shot_accuracy_pct,100
+Red cards,red_cards,1
+Free Kicks,free_kicks,1
+Goal Kicks,goal_kicks,1
+Throw-Ins,throw_ins,1
+Big Chances Created,big_chances_created,1
+Expected Goals,expected_goals,1
+Tackles,tackles,1
+Crosses,crosses,1
+Expected Assists,expected_assists,1
+Passes Into Final Third,passes_final_third,1
+Backward Passes,passes_backward,1
+Successful Long Passes,long_passes_successful,1
+Dribbles,dribbles,1
+Successful Tackles,tackles_successful,1
+Successful Dribbles,dribbles_successful,1
+Successful Crosses,crosses_successful,1
+Passes Opposition Half,passes_opposition_half,1
+Passes Own Half,passes_own_half,1
+Long Passes,long_passes,1
+Key Passes,key_passes,1
+Interceptions,interceptions,1
+Clearances,clearances,1
+Successful Aerial Duels,aerial_duels_successful,1
+Aerial Duels,aerial_duels,1
+Attacks,attacks,1
