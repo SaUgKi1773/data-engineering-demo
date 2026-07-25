@@ -154,7 +154,7 @@ resolved AS (
     LEFT JOIN {{ ref('dim_player') }}        dp      ON dp.player_id          = src.player_id
     LEFT JOIN main_referee                   mr      ON mr.fixture_id         = src.fixture_id
     LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id         = mr.referee_id
-    LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id         = src.venue_id
+    LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id         = {{ canonical_venue_id('src.venue_id') }}
     LEFT JOIN {{ ref('dim_match_event_type') }} det
         ON  det.event_type_code     = src.type_developer_name
         AND det.event_sub_type_code = COALESCE(src.sub_type_developer_name, 'UNSPECIFIED')
