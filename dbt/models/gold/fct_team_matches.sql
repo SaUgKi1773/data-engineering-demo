@@ -79,7 +79,9 @@ stats AS (
         MAX(CASE WHEN measure_code = 'shots_blocked'          THEN value::INTEGER      END) AS shots_blocked,
         MAX(CASE WHEN measure_code = 'shots_inside_box'       THEN value::INTEGER      END) AS shots_inside_box,
         MAX(CASE WHEN measure_code = 'shots_outside_box'      THEN value::INTEGER      END) AS shots_outside_box,
-        MAX(CASE WHEN measure_code = 'shot_accuracy_pct'      THEN value::DECIMAL(5,2) END) AS shot_accuracy_pct,
+        -- shot accuracy is deliberately NOT stored: it is a non-additive ratio
+        -- derivable from the shot counts above, so reports compute it and no
+        -- one can mistakenly SUM() it. It remains available in silver.
         -- Expected values (2024 onwards only)
         MAX(CASE WHEN measure_code = 'expected_goals'         THEN value::DECIMAL(5,2) END) AS expected_goals,
         MAX(CASE WHEN measure_code = 'expected_assists'       THEN value::DECIMAL(5,2) END) AS expected_assists,
@@ -152,7 +154,6 @@ src AS (
         CASE WHEN f.is_finished THEN st.shots_blocked           END AS shots_blocked,
         CASE WHEN f.is_finished THEN st.shots_inside_box        END AS shots_inside_box,
         CASE WHEN f.is_finished THEN st.shots_outside_box       END AS shots_outside_box,
-        CASE WHEN f.is_finished THEN st.shot_accuracy_pct       END AS shot_accuracy_pct,
         CASE WHEN f.is_finished THEN st.expected_goals          END AS expected_goals,
         CASE WHEN f.is_finished THEN st.expected_assists        END AS expected_assists,
         CASE WHEN f.is_finished THEN st.big_chances_created     END AS big_chances_created,
@@ -239,7 +240,6 @@ SELECT
     src.shots_blocked,
     src.shots_inside_box,
     src.shots_outside_box,
-    src.shot_accuracy_pct,
     src.expected_goals,
     src.expected_assists,
     src.big_chances_created,
