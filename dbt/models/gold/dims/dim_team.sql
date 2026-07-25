@@ -17,6 +17,10 @@ WITH latest AS (
         id, name, short_code, country_name, founded, image_path,
         venue_name, venue_city, venue_capacity
     FROM {{ ref('teams') }}
+    -- Highlightly teams stay out of gold until the #438 gold conformance PR
+    -- admits their leagues; without this, dim_team gains memberless teams
+    -- ahead of any fact rows.
+    WHERE _source = 'sportmonks'
     ORDER BY id, last_played_at DESC NULLS LAST
 ),
 name_map AS (

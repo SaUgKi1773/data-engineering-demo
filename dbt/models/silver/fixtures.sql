@@ -56,7 +56,54 @@ SELECT
 FROM {{ source('bronze', 'sportmonks__fixtures') }}
 WHERE (raw_json->>'season_id')::INTEGER = {{ season_id }}
 {% if is_incremental() %}
-  AND _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }})
+  AND _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'sportmonks')
 {% endif %}
 {% if not loop.last %} UNION ALL {% endif %}
 {% endfor %}
+
+UNION ALL
+
+-- Highlightly branch (La Liga / Liga MX / Süper Lig). Kept OUTSIDE the
+-- per-season loop above, which exists only as a Sportmonks memory workaround
+-- and would otherwise duplicate this branch once per Sportmonks season.
+-- Highlightly has no stage/round/group/venue entities: those ids stay NULL,
+-- state_name and round_name carry the provider's raw text ("Finished",
+-- "Apertura - 17"), and conformance happens in gold per league.
+SELECT
+    m.id,
+    m._league_id                                        AS league_id,
+    m._season_id                                        AS season_id,
+    NULL::INTEGER                                       AS stage_id,
+    NULL::INTEGER                                       AS round_id,
+    NULL::INTEGER                                       AS group_id,
+    NULL::VARCHAR                                       AS group_name,
+    NULL::INTEGER                                       AS aggregate_id,
+    NULL::INTEGER                                       AS venue_id,
+    NULL::INTEGER                                       AS state_id,
+    (m.raw_json->'homeTeam'->>'name') || ' vs ' || (m.raw_json->'awayTeam'->>'name') AS name,
+    (m.raw_json->>'date')::TIMESTAMP                    AS starting_at,
+    CAST(epoch((m.raw_json->>'date')::TIMESTAMP) AS BIGINT) AS starting_at_timestamp,
+    NULL::VARCHAR                                       AS result_info,
+    NULL::VARCHAR                                       AS leg,
+    NULL::INTEGER                                       AS length,
+    NULL::BOOLEAN                                       AS placeholder,
+    NULL::BOOLEAN                                       AS has_odds,
+    d.raw_json->'venue'->>'name'                        AS venue_name,
+    d.raw_json->'venue'->>'city'                        AS venue_city,
+    NULL::VARCHAR                                       AS venue_surface,
+    TRY_CAST(d.raw_json->'venue'->>'capacity' AS INTEGER) AS venue_capacity,
+    m.raw_json->'state'->>'description'                 AS state_name,
+    NULL::VARCHAR                                       AS state_short_name,
+    NULL::VARCHAR                                       AS state_developer_name,
+    m.raw_json->>'round'                                AS round_name,
+    NULL::BOOLEAN                                       AS round_finished,
+    NULL::BOOLEAN                                       AS round_is_current,
+    m._fixture_date,
+    'highlightly'                                       AS _source,
+    GREATEST(m._ingested_at, COALESCE(d._ingested_at, m._ingested_at)) AS _ingested_at
+FROM {{ source('bronze', 'highlightly__matches') }} m
+LEFT JOIN {{ source('bronze', 'highlightly__match_details') }} d ON d.id = m.id
+{% if is_incremental() %}
+WHERE GREATEST(m._ingested_at, COALESCE(d._ingested_at, m._ingested_at)) >
+      COALESCE((SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'highlightly'), '1900-01-01'::TIMESTAMP)
+{% endif %}

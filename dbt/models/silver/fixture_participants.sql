@@ -8,7 +8,7 @@ WITH src AS MATERIALIZED (
     SELECT *
     FROM {{ source('bronze', 'sportmonks__fixtures') }}
     {% if is_incremental() %}
-    WHERE _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }})
+    WHERE _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'sportmonks')
     {% endif %}
 )
 
@@ -26,3 +26,42 @@ SELECT
 FROM src AS f,
 unnest(json_transform(f.raw_json::VARCHAR, '{"participants": ["JSON"]}').participants) AS t(participant)
 WHERE json_array_length(json_extract(f.raw_json::VARCHAR, '$.participants')) > 0
+
+UNION ALL
+
+-- Highlightly branch: exactly two participants per match, straight off the
+-- homeTeam/awayTeam objects. winner stays NULL — gold derives results from
+-- fixture_scores, where penalty shootouts are represented properly.
+SELECT
+    id                                         AS fixture_id,
+    (raw_json->'homeTeam'->>'id')::INTEGER     AS team_id,
+    raw_json->'homeTeam'->>'name'              AS team_name,
+    NULL::VARCHAR                              AS team_short_code,
+    raw_json->'homeTeam'->>'logo'              AS team_image_path,
+    'home'                                     AS location,
+    NULL::BOOLEAN                              AS winner,
+    NULL::INTEGER                              AS position,
+    'highlightly'                              AS _source,
+    _ingested_at
+FROM {{ source('bronze', 'highlightly__matches') }}
+{% if is_incremental() %}
+WHERE _ingested_at > COALESCE((SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'highlightly'), '1900-01-01'::TIMESTAMP)
+{% endif %}
+
+UNION ALL
+
+SELECT
+    id                                         AS fixture_id,
+    (raw_json->'awayTeam'->>'id')::INTEGER     AS team_id,
+    raw_json->'awayTeam'->>'name'              AS team_name,
+    NULL::VARCHAR                              AS team_short_code,
+    raw_json->'awayTeam'->>'logo'              AS team_image_path,
+    'away'                                     AS location,
+    NULL::BOOLEAN                              AS winner,
+    NULL::INTEGER                              AS position,
+    'highlightly'                              AS _source,
+    _ingested_at
+FROM {{ source('bronze', 'highlightly__matches') }}
+{% if is_incremental() %}
+WHERE _ingested_at > COALESCE((SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'highlightly'), '1900-01-01'::TIMESTAMP)
+{% endif %}
