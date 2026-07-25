@@ -1,6 +1,10 @@
--- Every statistics displayName Highlightly emits must exist in the
--- stat_measure_codes_highlightly seed; an unmapped name would land in silver
--- with NULL measure_code and be unreachable by gold.
+{{ config(severity='warn') }}
+-- Every statistics displayName Highlightly emits should exist in the
+-- stat_measure_codes_highlightly seed; an unmapped name lands in silver with
+-- NULL measure_code and is unreachable by gold until mapped.
+-- Severity warn: the measure set has grown every era (14 -> 23 -> 40), so new
+-- names are expected - patch the seed within the 7-day re-pull window and the
+-- rows heal on the next overwrite; older stragglers need a (safe) full refresh.
 WITH stats AS (
     SELECT unnest(json_transform(raw_json::VARCHAR, '{"statistics": [{"team": "JSON", "statistics": [{"value": "DOUBLE", "displayName": "VARCHAR"}]}]}').statistics) AS team_stats
     FROM {{ source('bronze', 'highlightly__match_details') }}
