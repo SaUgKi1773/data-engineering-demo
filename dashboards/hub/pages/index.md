@@ -158,10 +158,11 @@ select * from hub.last_updated
 <div class="border-t border-gray-200 pt-8 pb-12 text-center">
   <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-4">
     <a href="https://github.com/SaUgKi1773/data-engineering-demo" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">GitHub</a>
+    <a href="https://forms.gle/2wDZcfwm8jk6aWGS9" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Request Data Access</a>
     <a href="https://saugki1773.github.io/data-engineering-blog/" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Data Engineer's Diary</a>
-    <a href="https://www.linkedin.com/in/salih-ugur-kimilli-since1773/" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">LinkedIn</a>
     <a href="https://revolut.me/salihugurkimilli" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Support via Revolut</a>
-    <a href="https://github.com/SaUgKi1773/data-engineering-demo/issues/new/choose" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Share a Suggestion</a>
+    <a href="https://github.com/SaUgKi1773/data-engineering-demo/issues/new?template=suggestion.md" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Share a Suggestion</a>
+    <a href="https://www.linkedin.com/in/salih-ugur-kimilli-since1773/" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">LinkedIn</a>
   </div>
   <p class="text-gray-500 text-sm mb-2">Built in beautiful Farum, Denmark — free for the whole world, forever.</p>
   <p class="text-gray-400 text-xs mb-0">© 2026 Krogvad Analytics Hub · Data updated {last_updated[0].last_updated?.slice(0, 16).replace('T', ' ')} UTC</p>
