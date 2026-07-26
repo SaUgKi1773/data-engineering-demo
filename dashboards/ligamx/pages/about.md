@@ -10,17 +10,22 @@ title: About This Project
 
 ## The Idea
 
-I am **Salih Ugur Kimilli**, a data engineer who loves turning raw data into insights. I wanted to build a real end-to-end data engineering project using only free, open-source tools — no vendor lock-in, no cloud bills. Around the same time, I had recently moved to Mexico and realised I knew very little about Mexican football.
+I am **Salih Ugur Kimilli**, a data engineer who loves turning raw data into insights. This site started life as [Superliga Analytics](https://saugki1773.github.io/data-engineering-blog/) — an end-to-end data engineering project for Danish football, built entirely on free, open-source tools: no vendor lock-in, no cloud bills. A stranger's feature request then added the Scottish Premiership.
 
-The two things clicked together: why not build an analytics product for **Liga MX**, the Mexican Premier Football League? Something I could actually use myself, and that anyone curious about Mexican football could benefit from too.
+Liga MX arrived over dinner, from a friend: *you should do Liga MX — the structure is completely different from anything you've got.* That turned out to be an accurate description, and it was exactly the appeal. Two tournaments inside a single season, each with its own table and its own champion. A knockout — the **liguilla** — that decides the title, so topping the table wins you nothing but a seeding. A play-in round that has changed format twice in five years. Almost everything the pipeline quietly assumed about "a league season" turned out to be a European assumption rather than a football one.
 
-That's how this project was born.
+There was a bigger reason too. The plan for this platform has always been worldwide, not European — and a project covering Denmark and Scotland isn't worldwide, it's Northern European with ambitions. Mexico was a genuinely good candidate: a big league, a distinctive shape, an audience that isn't mine.
+
+That's how this site was born.
 
 ## What Was Built
 
+Liga MX isn't on the free plan of the provider the first two leagues run on, so this site is also where the pipeline learned to read from **two data providers at once** — which is a much harder problem than adding a league. Two providers disagree about identifiers, about what a round is called, about what counts as finished. Almost none of those disagreements produce an error; they produce plausible, confidently wrong data. Reconciling them is most of the work behind this site.
+
 A fully automated data pipeline that:
 
-- Ingests live match data from [Sportmonks](https://www.sportmonks.com/) into a **MotherDuck** cloud data warehouse
+- Ingests live match data from [Sportmonks](https://www.sportmonks.com/) and [Highlightly](https://soccer.highlightly.net/) into a **MotherDuck** cloud data warehouse
+- Conforms both providers onto shared keys, so a club is one club no matter who reported it
 - Transforms raw JSON through **Bronze → Silver → Gold** layers using **dbt**
 - Serves analytics via this **Evidence.dev** dashboard, deployed on **Vercel**
 - Runs nightly via **GitHub Actions**
