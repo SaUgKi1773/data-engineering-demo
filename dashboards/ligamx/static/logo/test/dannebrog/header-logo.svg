@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40">
+  <defs>
+    <clipPath id="ball"><circle cx="256" cy="230" r="110"/></clipPath>
+  </defs>
+  <!-- App icon, Danish red treatment -->
+  <svg x="0" y="0" width="40" height="40" viewBox="0 0 512 512">
+    <circle cx="256" cy="256" r="256" fill="#C8102E"/>
+    <circle cx="256" cy="256" r="234" fill="#B00C28"/>
+    <circle cx="256" cy="230" r="110" fill="white"/>
+    <g clip-path="url(#ball)">
+      <polygon points="256,145 290,170 278,208 234,208 222,170" fill="#C8102E"/>
+      <polygon points="366,185 380,220 350,244 322,228 326,192" fill="#C8102E"/>
+      <polygon points="328,295 344,330 316,352 286,336 284,300" fill="#C8102E"/>
+      <polygon points="184,295 168,330 196,352 226,336 228,300" fill="#C8102E"/>
+      <polygon points="146,185 186,192 190,228 162,244 132,220" fill="#C8102E"/>
+    </g>
+    <circle cx="256" cy="230" r="110" fill="none" stroke="#C8102E" stroke-width="6"/>
+    <rect x="148" y="380" width="30" height="64" rx="6" fill="white"/>
+    <rect x="196" y="360" width="30" height="84" rx="6" fill="white"/>
+    <rect x="244" y="340" width="30" height="104" rx="6" fill="white"/>
+    <rect x="292" y="355" width="30" height="89" rx="6" fill="white"/>
+    <rect x="340" y="370" width="30" height="74" rx="6" fill="white"/>
+  </svg>
+  <line x1="48" y1="5" x2="48" y2="35" stroke="#C8102E" stroke-width="1.5"/>
+  <text x="56" y="16" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="12" fill="#C8102E" letter-spacing="-0.3">Superliga</text>
+  <text x="57" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="#9A0A22" letter-spacing="3">ANALYTICS</text>
+</svg>

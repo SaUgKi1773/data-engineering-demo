@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="rainbowDiag" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E40303"/>
+      <stop offset="20%" stop-color="#FF8C00"/>
+      <stop offset="40%" stop-color="#FFED00"/>
+      <stop offset="60%" stop-color="#008026"/>
+      <stop offset="80%" stop-color="#004DFF"/>
+      <stop offset="100%" stop-color="#750787"/>
+    </linearGradient>
+    <clipPath id="ball"><circle cx="256" cy="230" r="110"/></clipPath>
+  </defs>
+  <!-- Rainbow border -->
+  <rect width="512" height="512" rx="96" fill="url(#rainbowDiag)"/>
+  <!-- Blue inner background -->
+  <rect x="18" y="18" width="476" height="476" rx="82" fill="#1D4ED8"/>
+  <!-- Football -->
+  <circle cx="256" cy="230" r="110" fill="white"/>
+  <g clip-path="url(#ball)">
+    <polygon points="256,145 290,170 278,208 234,208 222,170" fill="#1D4ED8"/>
+    <polygon points="366,185 380,220 350,244 322,228 326,192" fill="#1D4ED8"/>
+    <polygon points="328,295 344,330 316,352 286,336 284,300" fill="#1D4ED8"/>
+    <polygon points="184,295 168,330 196,352 226,336 228,300" fill="#1D4ED8"/>
+    <polygon points="146,185 186,192 190,228 162,244 132,220" fill="#1D4ED8"/>
+  </g>
+  <circle cx="256" cy="230" r="110" fill="none" stroke="#1D4ED8" stroke-width="6"/>
+  <!-- Rainbow bars -->
+  <rect x="148" y="380" width="30" height="64" rx="6" fill="#E40303"/>
+  <rect x="196" y="360" width="30" height="84" rx="6" fill="#FF8C00"/>
+  <rect x="244" y="340" width="30" height="104" rx="6" fill="#FFED00"/>
+  <rect x="292" y="355" width="30" height="89" rx="6" fill="#008026"/>
+  <rect x="340" y="370" width="30" height="74" rx="6" fill="#750787"/>
+</svg>
