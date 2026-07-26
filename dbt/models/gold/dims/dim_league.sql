@@ -31,10 +31,6 @@ WITH src AS (
     FROM {{ ref('league') }} l
     LEFT JOIN {{ ref('core_countries') }} c ON c.id = l.country_id
     WHERE l.id IS NOT NULL
-      -- Highlightly leagues stay out of gold until the dimension-membership
-      -- work admits them; silver now carries them, so without this they would
-      -- appear here immediately and ahead of any fact rows.
-      AND l._source = 'sportmonks'
 )
 SELECT
     {% if is_incremental() %}
