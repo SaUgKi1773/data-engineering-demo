@@ -2,6 +2,17 @@ version: 2
 
 models:
   - name: fct_team_matches
+    description: >
+      One row per (match, team side): both clubs in every league match, so a
+      match contributes two rows. Every measure below is labelled with its
+      ADDITIVITY, because the fact now carries 44 of them and most are counts
+      that look interchangeable but are not.
+
+      NULL never means zero. A measure is NULL when the source did not record
+      it - permanently for Denmark and Scotland on the Highlightly-only
+      measures, and before the deep-stat era for the new leagues themselves.
+      AVG and SUM ignore NULLs, which is correct; COUNT(*) as a denominator is
+      not - use COUNT(<measure>) so eras without the measure do not dilute it.
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -26,17 +37,103 @@ models:
               arguments:
                 values: [1, 2, 3, 4, -1, -2]
       - name: goals_scored
+        description: "ADDITIVE. Goals scored by this team, including awarded walkover results."
         tests:
           - not_null:
               config:
                 where: "match_result_sk IN (1, 2, 3)"
       - name: goals_conceded
+        description: "ADDITIVE."
         tests:
           - not_null:
               config:
                 where: "match_result_sk IN (1, 2, 3)"
       - name: league_sk
         tests: [not_null]
+      - name: points_earned
+        description: "ADDITIVE, but NULL-bearing by design. NULL where the fixture puts nothing on the table - an unfinished match, or a Liga MX liguilla tie. Summing gives points won on the pitch; it deliberately excludes administrative deductions, so it can differ from an official table."
+      - name: goals_ht_scored
+        description: "ADDITIVE. Half-time goals."
+      - name: goals_ht_conceded
+        description: "ADDITIVE."
+      - name: corner_kicks
+        description: "ADDITIVE."
+      - name: ball_possession_pct
+        description: "NON-ADDITIVE. A percentage: AVERAGE it, never SUM it. Summing possession across matches is meaningless and will silently produce numbers in the thousands."
+      - name: yellow_cards
+        description: "ADDITIVE."
+      - name: red_cards
+        description: "ADDITIVE."
+      - name: expected_goals
+        description: "ADDITIVE - xG sums across matches, which is the point of it. Highlightly leagues only, and effectively 2025 onwards: 2024 coverage is 6-17% of played matches, so a 2024 xG chart reads as near-empty rather than wrong."
+      - name: expected_assists
+        description: "ADDITIVE. Same coverage caveat as expected_goals."
+      - name: shots_on_target
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: shots_off_target
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: shots_blocked
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: shots_inside_box
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: shots_outside_box
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: big_chances_created
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: key_passes
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: passes_total
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: passes_successful
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: passes_failed
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: passes_final_third
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: passes_opposition_half
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: passes_own_half
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: passes_backward
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: long_passes
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: long_passes_successful
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: crosses
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: crosses_successful
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: dribbles
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: dribbles_successful
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: tackles
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: tackles_successful
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: interceptions
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: clearances
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: aerial_duels
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: aerial_duels_successful
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: goalkeeper_saves
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: fouls
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: offsides
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: attacks
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: free_kicks
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: goal_kicks
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
+      - name: throw_ins
+        description: "ADDITIVE. Highlightly leagues only - NULL for Denmark and Scotland permanently, and NULL before the deep-stat era."
 
   - name: fct_match_predictions
     tests:

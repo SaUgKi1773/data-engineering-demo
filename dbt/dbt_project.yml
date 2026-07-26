@@ -27,3 +27,9 @@ models:
     gold:
       +materialized: table
       +schema: gold
+      # Column descriptions land as comments on the warehouse tables, so the
+      # additivity rules are visible to anyone querying gold directly rather
+      # than only to people reading this repo.
+      +persist_docs:
+        relation: true
+        columns: true
