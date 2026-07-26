@@ -111,3 +111,23 @@ FROM (
 ) h
 LEFT JOIN {{ ref('event_types_highlightly') }} et
     ON et.highlightly_type = (h.event->>'type')
+-- The provider occasionally publishes a fixture's events twice (52 fixtures,
+-- 66 surplus rows). Identical rows differ only by their position in the array,
+-- so the first occurrence is kept. A real match cannot contain two identical
+-- events - the same player cannot score twice in the same minute - so this
+-- removes duplication without risking a genuine event.
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY h.fixture_id,
+                 (h.event->>'type'),
+                 (h.event->>'playerId'),
+                 (h.event->'team'->>'id'),
+                 (h.event->>'time'),
+                 (h.event->>'substituted'),
+                 (h.event->>'assist')
+    -- assist and substituted MUST stay in the key. A looser key merged two
+    -- genuine goals: Fofana scored twice around minute 90 for Fatih
+    -- Karagümrük and the provider stamps both as minute 90, so dropping the
+    -- assist made them indistinguishable and cost the match a goal. Only rows
+    -- identical in every published field are treated as duplicates.
+    ORDER BY h.ord
+) = 1
