@@ -91,7 +91,8 @@ select * from hub.last_updated
 </div>
 
 <!-- ══ OUR PLATFORMS — gray product tiles ════════════════════════════════ -->
-<div id="platforms" class="mb-14 text-center">
+<!-- scroll-margin clears the fixed 3rem header so the heading isn't hidden on #platforms -->
+<div id="platforms" class="mb-14 text-center" style="scroll-margin-top: 4.5rem;">
   <div class="text-gray-400 text-xs font-semibold uppercase mb-1" style="letter-spacing: 0.14em;">Our platforms</div>
   <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-6" style="margin-top:0.25rem;">Purpose-built for each league.</h2>
 
