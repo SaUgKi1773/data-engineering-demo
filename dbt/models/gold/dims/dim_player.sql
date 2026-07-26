@@ -109,18 +109,63 @@ from_transfers AS (
       AND player_id NOT IN (SELECT player_id FROM from_lineups)
     ORDER BY player_id, transfer_date DESC NULLS LAST
 ),
-combined AS (
-    SELECT * FROM from_players
-    UNION ALL
-    SELECT * FROM from_lineups
-    UNION ALL
-    SELECT * FROM from_transfers
+-- Highlightly has no player endpoint and no usable lineups, so its players are
+-- distilled from the people who appear in match events.
+--
+-- The id is trustworthy - one id traces one coherent career across clubs - but
+-- the NAME is not: 68% of ids carry several spellings, and the provider both
+-- abbreviates ("J. Márquez") and corrects itself ("Ángel" -> "Jeremy"). The
+-- canonical form is therefore the most recent NON-abbreviated spelling, which
+-- prefers a real name over an initial and a correction over what it replaced.
+from_highlightly_events AS (
+    SELECT
+        player_id,
+        FIRST(player_name ORDER BY is_abbreviated ASC, starting_at DESC) AS player_name
+    FROM (
+        SELECT
+            e.player_id,
+            e.player_name,
+            f.starting_at,
+            regexp_matches(e.player_name, '^[A-Za-zÀ-ÿ]\.') AS is_abbreviated
+        FROM {{ ref('fixture_events') }} e
+        JOIN {{ ref('fixtures') }} f ON f.id = e.fixture_id AND f._source = e._source
+        WHERE e._source = 'highlightly'
+          AND e.player_id  IS NOT NULL
+          AND e.player_name IS NOT NULL
+    )
+    GROUP BY player_id
 ),
--- All three branches read Sportmonks-only feeds: Highlightly has no player
--- entity, no usable lineups and no transfer data. Tagged once here so
--- _source is a real column the surrogate-key ordering can use.
+from_highlightly AS (
+    SELECT
+        player_id,
+        player_name,
+        NULL::VARCHAR  AS player_firstname,
+        NULL::VARCHAR  AS player_lastname,
+        NULL::VARCHAR  AS player_nationality,
+        NULL::DATE     AS player_birth_date,
+        NULL::VARCHAR  AS player_birth_place,
+        NULL::VARCHAR  AS player_birth_country,
+        NULL::INTEGER  AS player_height,
+        NULL::INTEGER  AS player_weight,
+        NULL::VARCHAR  AS player_photo,
+        -- the feed carries no position for these players, and an event does
+        -- not imply one
+        'Unknown Player Position' AS player_position,
+        'Unknown Player Position' AS player_detailed_position,
+        'Unknown Main Position'   AS player_main_position
+    FROM from_highlightly_events
+),
+combined AS (
+    SELECT *, 'sportmonks'  AS _source FROM from_players
+    UNION ALL
+    SELECT *, 'sportmonks'  AS _source FROM from_lineups
+    UNION ALL
+    SELECT *, 'sportmonks'  AS _source FROM from_transfers
+    UNION ALL
+    SELECT *, 'highlightly' AS _source FROM from_highlightly
+),
 sourced AS (
-    SELECT *, 'sportmonks' AS _source FROM combined
+    SELECT * FROM combined
 )
 SELECT
     {% if is_incremental() %}

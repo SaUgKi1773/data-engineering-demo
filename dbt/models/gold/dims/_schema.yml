@@ -53,14 +53,21 @@ models:
                 values: ['Regular League', 'Knockout', 'Unknown Match Type', 'Not Applicable Match Type']
 
   - name: dim_player
+    tests:
+      # A player id is unique only WITHIN the provider that minted it. The two
+      # feeds genuinely collide: id 83391 is Henrik Toft to Sportmonks and
+      # James Rodríguez to Highlightly, and there are nine such pairs. Without
+      # the source in the key they would merge into one player.
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [player_id, _source]
+          config: {where: "player_sk > 0"}
     columns:
       - name: player_sk
         tests: [not_null, unique]
       - name: player_id
         tests:
           - not_null:
-              config: {where: "player_sk > 0"}
-          - unique:
               config: {where: "player_sk > 0"}
       - name: player_main_position
         tests:
