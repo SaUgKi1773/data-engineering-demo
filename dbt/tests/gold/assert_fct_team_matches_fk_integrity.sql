@@ -10,5 +10,15 @@ UNION ALL
 SELECT 'match_sk',         match_sk FROM {{ ref('fct_team_matches') }}
 WHERE match_result_sk IN (1, 2, 3) AND match_sk = -1
 UNION ALL
-SELECT 'stadium_sk',       match_sk FROM {{ ref('fct_team_matches') }}
-WHERE match_result_sk IN (1, 2, 3) AND stadium_sk = -1
+-- stadium_sk resolving to Unknown is only a defect when the source actually
+-- recorded a venue. Highlightly publishes a ground for roughly a third of its
+-- fixtures, so asserting a stadium on every finished match would be asserting
+-- one provider's data completeness, not referential integrity. This checks the
+-- join instead: a venue was named, yet no dimension member was found.
+SELECT 'stadium_sk',       f.match_sk
+FROM {{ ref('fct_team_matches') }} f
+JOIN {{ ref('dim_match') }} dm ON dm.match_sk = f.match_sk
+JOIN {{ ref('fixtures') }} fx ON fx.id = dm.match_id AND fx._source = dm._source
+WHERE f.match_result_sk IN (1, 2, 3)
+  AND f.stadium_sk = -1
+  AND fx.venue_name IS NOT NULL

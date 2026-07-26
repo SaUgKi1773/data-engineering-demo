@@ -55,13 +55,13 @@ src AS (
         -- Group') and names its pre-split stage inconsistently across seasons
         -- ('Regular Season' in 2025/26, '1st Phase' in 2026/27); map both onto
         -- the round types the Danish stage names already carry.
+        {{ conformed_round_type('f.league_id', 'sg.name', 'f.group_name', 'f.round_name') }}
+                                                                                 AS match_round_type,
         CASE
-            WHEN f.league_id = 501 AND f.group_name = 'Championship Group' THEN 'Championship Round'
-            WHEN f.league_id = 501 AND f.group_name = 'Relegation Group'   THEN 'Relegation Round'
-            WHEN f.league_id = 501 AND sg.name      = '1st Phase'          THEN 'Regular Season'
-            ELSE sg.name
-        END                                                                      AS match_round_type,
-        CASE
+            -- Highlightly carries the number inside the label ("Apertura - 14");
+            -- knockout rounds have none and stay NULL.
+            WHEN f._source = 'highlightly'
+                THEN TRY_CAST(regexp_extract(f.round_name, ' - ([0-9]+)$', 1) AS INTEGER)
             WHEN sg.name != 'Regular Season'
                  AND TRY_CAST(f.round_name AS INTEGER) IS NOT NULL
                  AND TRY_CAST(f.round_name AS INTEGER) <= rsm.max_round
@@ -74,7 +74,8 @@ src AS (
         -- hold, but do not infer format from the label — a league running its
         -- title play-off as a round-robin would still be 'Knockout' here.
         CASE
-            WHEN {{ awards_league_points('f.league_id', 'sg.type_developer_name') }}
+            WHEN {{ awards_league_points('f.league_id', 'sg.type_developer_name', 'sg.name',
+                                        'f.group_name', 'f.round_name') }}
             THEN 'Regular League'
             ELSE 'Knockout'
         END                                                                      AS match_type,
@@ -115,7 +116,13 @@ SELECT
     match_id,
     match_round_type,
     match_round_number,
-    match_round_type || ' - ' || match_round_number::VARCHAR AS match_round_name,
+    -- A round without a number is named by its round alone. Concatenating
+    -- unconditionally collapsed the whole label to NULL for every knockout
+    -- fixture, which is every Liga MX liguilla match.
+    CASE
+        WHEN match_round_number IS NULL THEN match_round_type
+        ELSE match_round_type || ' - ' || match_round_number::VARCHAR
+    END                                                     AS match_round_name,
     match_type,
     match_name,
     match_short_name,
