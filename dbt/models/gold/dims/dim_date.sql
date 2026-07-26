@@ -39,20 +39,38 @@ SELECT
     LEFT(dk.season, 4) || '/' || RIGHT(dk.season, 2)      AS season_denmark,
     COALESCE(dk.is_current, false)                        AS is_current_season_denmark,
     LEFT(sco.season, 4) || '/' || RIGHT(sco.season, 2)    AS season_scotland,
-    COALESCE(sco.is_current, false)                       AS is_current_season_scotland
+    COALESCE(sco.is_current, false)                       AS is_current_season_scotland,
+    -- The Highlightly leagues' season names arrive display-ready from silver
+    -- (derived from match dates), so unlike the Sportmonks '2025/2026' they
+    -- need no reformatting here. Mexico's carry the tournament, because
+    -- Apertura and Clausura are separate competitions with their own tables
+    -- and champions: '2025/26 - Apertura', '2025/26 - Clausura'.
+    esp.season                                            AS season_spain,
+    COALESCE(esp.is_current, false)                       AS is_current_season_spain,
+    mex.season                                            AS season_mexico,
+    COALESCE(mex.is_current, false)                       AS is_current_season_mexico,
+    tur.season                                            AS season_turkey,
+    COALESCE(tur.is_current, false)                       AS is_current_season_turkey
 FROM generate_series(DATE '2010-01-01', DATE '2030-12-31', INTERVAL '1 day') t(d)
 LEFT JOIN season_ranges dk  ON d::DATE BETWEEN dk.season_start  AND dk.season_end  AND dk.league_id  = 271
 LEFT JOIN season_ranges sco ON d::DATE BETWEEN sco.season_start AND sco.season_end AND sco.league_id = 501
+LEFT JOIN season_ranges esp ON d::DATE BETWEEN esp.season_start AND esp.season_end AND esp.league_id = 119924
+LEFT JOIN season_ranges mex ON d::DATE BETWEEN mex.season_start AND mex.season_end AND mex.league_id = 223746
+LEFT JOIN season_ranges tur ON d::DATE BETWEEN tur.season_start AND tur.season_end AND tur.league_id = 173537
 )
 SELECT * FROM calendar
 UNION ALL
 SELECT * FROM (VALUES
     (-1, NULL::DATE, NULL::INTEGER, 'Unknown Quarter', NULL::INTEGER, 'Unknown Month',
      NULL::INTEGER, NULL::INTEGER, 'Unknown Day', 'Unknown Day Type',
+     'Unknown Season', false, 'Unknown Season', false, 'Unknown Season', false,
      'Unknown Season', false, 'Unknown Season', false, 'Unknown Season', false),
     (-2, NULL::DATE, NULL::INTEGER, 'Not Applicable Quarter', NULL::INTEGER, 'Not Applicable Month',
      NULL::INTEGER, NULL::INTEGER, 'Not Applicable Day', 'Not Applicable Day Type',
+     'Not Applicable Season', false, 'Not Applicable Season', false, 'Not Applicable Season', false,
      'Not Applicable Season', false, 'Not Applicable Season', false, 'Not Applicable Season', false)
 ) s(date_sk, date, year, quarter, month, month_name, week_number, day_of_week, day_name,
     is_weekend, season, is_current_season, season_denmark, is_current_season_denmark,
-    season_scotland, is_current_season_scotland)
+    season_scotland, is_current_season_scotland,
+    season_spain, is_current_season_spain, season_mexico, is_current_season_mexico,
+    season_turkey, is_current_season_turkey)
