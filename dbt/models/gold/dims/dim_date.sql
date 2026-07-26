@@ -7,6 +7,12 @@
 -- names: the Superliga marts and the discussion generator query them, and
 -- they predate multi-league support. New (Scottish) marts must use the
 -- country-suffixed columns.
+--
+-- Like every other FK-referenced dimension, this one carries the -1 (Unknown)
+-- and -2 (Not Applicable) sentinels. Without them a fact row with an unknown
+-- date points at nothing and is silently dropped by any inner join to this
+-- table: 725 transfers with no recorded date were invisible across every site
+-- until these rows existed.
 WITH season_ranges AS (
     SELECT
         league_id,
@@ -15,7 +21,8 @@ WITH season_ranges AS (
         ending_at::DATE   AS season_end,
         is_current
     FROM {{ ref('seasons') }}
-)
+),
+calendar AS (
 SELECT
     (year(d) * 10000 + month(d) * 100 + day(d))::INTEGER AS date_sk,
     d::DATE                                               AS date,
@@ -36,3 +43,16 @@ SELECT
 FROM generate_series(DATE '2010-01-01', DATE '2030-12-31', INTERVAL '1 day') t(d)
 LEFT JOIN season_ranges dk  ON d::DATE BETWEEN dk.season_start  AND dk.season_end  AND dk.league_id  = 271
 LEFT JOIN season_ranges sco ON d::DATE BETWEEN sco.season_start AND sco.season_end AND sco.league_id = 501
+)
+SELECT * FROM calendar
+UNION ALL
+SELECT * FROM (VALUES
+    (-1, NULL::DATE, NULL::INTEGER, 'Unknown Quarter', NULL::INTEGER, 'Unknown Month',
+     NULL::INTEGER, NULL::INTEGER, 'Unknown Day', 'Unknown Day Type',
+     'Unknown Season', false, 'Unknown Season', false, 'Unknown Season', false),
+    (-2, NULL::DATE, NULL::INTEGER, 'Not Applicable Quarter', NULL::INTEGER, 'Not Applicable Month',
+     NULL::INTEGER, NULL::INTEGER, 'Not Applicable Day', 'Not Applicable Day Type',
+     'Not Applicable Season', false, 'Not Applicable Season', false, 'Not Applicable Season', false)
+) s(date_sk, date, year, quarter, month, month_name, week_number, day_of_week, day_name,
+    is_weekend, season, is_current_season, season_denmark, is_current_season_denmark,
+    season_scotland, is_current_season_scotland)

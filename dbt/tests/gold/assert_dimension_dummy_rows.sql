@@ -45,3 +45,6 @@ WHERE expected_sk NOT IN (SELECT match_event_type_sk FROM {{ ref('dim_match_even
 UNION ALL
 SELECT 'dim_match_minute', expected_sk FROM (VALUES (-1), (-2)) t(expected_sk)
 WHERE expected_sk NOT IN (SELECT match_minute_sk FROM {{ ref('dim_match_minute') }})
+UNION ALL
+SELECT 'dim_date', expected_sk FROM (VALUES (-1), (-2)) t(expected_sk)
+WHERE expected_sk NOT IN (SELECT date_sk FROM {{ ref('dim_date') }})
