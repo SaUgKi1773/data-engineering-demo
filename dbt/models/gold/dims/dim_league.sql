@@ -27,12 +27,14 @@ WITH src AS (
         l.short_code      AS league_short_code,
         l.sub_type        AS league_sub_type,
         l.active          AS league_is_active,
-        -- silver.league is the Sportmonks feed; the Highlightly leagues
-        -- arrive with the dimension-membership work
-        'sportmonks'      AS _source
+        l._source
     FROM {{ ref('league') }} l
     LEFT JOIN {{ ref('core_countries') }} c ON c.id = l.country_id
     WHERE l.id IS NOT NULL
+      -- Highlightly leagues stay out of gold until the dimension-membership
+      -- work admits them; silver now carries them, so without this they would
+      -- appear here immediately and ahead of any fact rows.
+      AND l._source = 'sportmonks'
 )
 SELECT
     {% if is_incremental() %}
