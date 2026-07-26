@@ -22,6 +22,9 @@ all_fixtures AS (
         f.starting_at,
         f._source,
         sg.type_developer_name AS stage_type,
+        sg.name                AS stage_name,
+        f.group_name,
+        f.round_name,
         {{ is_match_finished('f._source', 'f.state_developer_name', 'f.state_name',
                              'fr.fixture_id IS NOT NULL') }} AS is_finished
     FROM {{ ref('fixtures') }} f
@@ -158,6 +161,9 @@ src AS (
         f.venue_id,
         f.venue_name,
         f.stage_type,
+        f.stage_name,
+        f.group_name,
+        f.round_name,
         -- carried only to resolve the dimension joins below; the surrogate
         -- keys already encode provenance, so it never reaches the fact
         f._source,
@@ -252,7 +258,8 @@ SELECT
         WHEN NOT src.is_finished                   THEN NULL
         -- Knockout phases inside a league (e.g. a title play-off) are league
         -- matches but put nothing on the table -> NULL, not 0.
-        WHEN NOT {{ awards_league_points('src.league_id', 'src.stage_type') }}
+        WHEN NOT {{ awards_league_points('src.league_id', 'src.stage_type', 'src.stage_name',
+                                        'src.group_name', 'src.round_name') }}
                                                    THEN NULL
         WHEN src.goals_scored > src.goals_conceded THEN 3
         WHEN src.goals_scored = src.goals_conceded THEN 1

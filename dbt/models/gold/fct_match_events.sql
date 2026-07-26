@@ -67,6 +67,17 @@ events AS (
     LEFT JOIN {{ ref('types') }} st ON st.id = fe.sub_type_id
     WHERE fe.type_developer_name NOT IN
           ('CORNER', 'PENALTY_SHOOTOUT_GOAL', 'PENALTY_SHOOTOUT_MISS')
+      -- Sportmonks types its shootout events, so the list above removes them.
+      -- Highlightly does not: a shootout penalty arrives as an ordinary
+      -- PENALTY and would be counted as a goal, reading Toluca 11-9 Tigres for
+      -- a match that finished 2-1. They are identifiable by the clock -
+      -- minute 120 with an incrementing stoppage offset - and that marker is
+      -- exact here: 83 such events exist and every one is in a match that
+      -- finished on penalties, with none in any other match.
+      -- The shootout result is not lost; it lives in fixture_scores as
+      -- PENALTY_SHOOTOUT rows.
+      AND NOT (fe._source = 'highlightly'
+               AND fe.minute >= 120 AND COALESCE(fe.extra_minute, 0) > 0)
 ),
 periods AS (
     SELECT
@@ -162,6 +173,7 @@ resolved AS (
         src.extra_minute,
         src.sort_order,
         src.event_id,
+        src._source,
         src.is_scoring,
         src.result_home_score,
         src.result_away_score
@@ -194,8 +206,22 @@ sequenced AS (
         -- before this row, 0-0 before the first goal. Non-scoring events
         -- sharing a goal's exact timestamp take the post-goal score by
         -- convention (scoring events order first within a timestamp).
-        COALESCE(LAST_VALUE(result_home_score IGNORE NULLS) OVER score_window, 0) AS home_score_after_event,
-        COALESCE(LAST_VALUE(result_away_score IGNORE NULLS) OVER score_window, 0) AS away_score_after_event,
+        -- Sportmonks stamps a running score on each scoring event; Highlightly
+        -- has no such field, so its score is COUNTED from the event stream
+        -- instead. Reading the absent field would have shown 0-0 down every
+        -- new-league timeline - present, plausible and wrong.
+        --
+        -- Counting is sound for own goals too: the provider attributes an
+        -- OWNGOAL to the team AWARDED the goal (validated in #425), so the
+        -- scoring side is always the event's own team.
+        CASE WHEN _source = 'highlightly'
+             THEN SUM(CASE WHEN is_scoring AND location = 'home' THEN 1 ELSE 0 END) OVER score_window
+             ELSE COALESCE(LAST_VALUE(result_home_score IGNORE NULLS) OVER score_window, 0)
+        END AS home_score_after_event,
+        CASE WHEN _source = 'highlightly'
+             THEN SUM(CASE WHEN is_scoring AND location = 'away' THEN 1 ELSE 0 END) OVER score_window
+             ELSE COALESCE(LAST_VALUE(result_away_score IGNORE NULLS) OVER score_window, 0)
+        END AS away_score_after_event,
         -- The match's Nth event of this event group ("3rd goal", "5th yellow").
         -- sort_order is the provider's per-family ordinal: valid as a final
         -- tiebreaker inside a group, meaningless across groups, never stored.
