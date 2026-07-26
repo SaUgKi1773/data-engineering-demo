@@ -15,7 +15,8 @@ WITH finished_fixtures AS (
         f.id        AS fixture_id,
         f.league_id,
         f.venue_id,
-        f.starting_at
+        f.starting_at,
+        f._source
     FROM {{ ref('fixtures') }} f
     JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
     WHERE f.state_developer_name IN ('FT', 'FT_PEN', 'AET')
@@ -75,6 +76,7 @@ enriched AS (
         ff.league_id,
         ff.venue_id,
         ff.starting_at,
+        ff._source,
         pt.location,
         opp.team_id AS opponent_team_id,
         -- Source period when present, else derived from the minute (8 rows league-wide)
@@ -147,14 +149,14 @@ resolved AS (
     FROM src
     LEFT JOIN {{ ref('dim_date') }}          dd      ON dd.date               = src.starting_at::DATE
     LEFT JOIN {{ ref('dim_time') }}          dt_time ON dt_time.time_sk       = EXTRACT(hour FROM (src.starting_at::TIMESTAMP AT TIME ZONE 'UTC') AT TIME ZONE {{ league_local_tz('src.league_id') }})::INTEGER
-    LEFT JOIN {{ ref('dim_match') }}         dm      ON dm.match_id           = src.fixture_id
-    LEFT JOIN {{ ref('dim_league') }}        dl      ON dl.league_id          = src.league_id
-    LEFT JOIN {{ ref('dim_team') }}          dteam   ON dteam.team_id         = src.team_id
-    LEFT JOIN {{ ref('dim_opponent_team') }} dopp    ON dopp.opponent_team_id = src.opponent_team_id
-    LEFT JOIN {{ ref('dim_player') }}        dp      ON dp.player_id          = src.player_id
+    LEFT JOIN {{ ref('dim_match') }}         dm      ON dm.match_id           = src.fixture_id       AND dm._source    = src._source
+    LEFT JOIN {{ ref('dim_league') }}        dl      ON dl.league_id          = src.league_id        AND dl._source    = src._source
+    LEFT JOIN {{ ref('dim_team') }}          dteam   ON dteam.team_id         = src.team_id          AND dteam._source = src._source
+    LEFT JOIN {{ ref('dim_opponent_team') }} dopp    ON dopp.opponent_team_id = src.opponent_team_id AND dopp._source  = src._source
+    LEFT JOIN {{ ref('dim_player') }}        dp      ON dp.player_id          = src.player_id        AND dp._source    = src._source
     LEFT JOIN main_referee                   mr      ON mr.fixture_id         = src.fixture_id
-    LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id         = mr.referee_id
-    LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id         = {{ canonical_venue_id('src.venue_id') }}
+    LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id         = mr.referee_id        AND dr._source    = src._source
+    LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id         = {{ canonical_venue_id('src.venue_id') }} AND ds._source = src._source
     LEFT JOIN {{ ref('dim_match_event_type') }} det
         ON  det.event_type_code     = src.type_developer_name
         AND det.event_sub_type_code = COALESCE(src.sub_type_developer_name, 'UNSPECIFIED')

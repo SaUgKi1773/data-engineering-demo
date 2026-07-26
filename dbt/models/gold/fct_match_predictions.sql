@@ -63,10 +63,12 @@ SELECT
     src.predicted_at
 FROM src
 LEFT JOIN {{ ref('dim_date') }}          dd    ON dd.date               = src.kickoff_at::DATE
-LEFT JOIN {{ ref('dim_team') }}          dteam ON dteam.team_id         = src.team_id
-LEFT JOIN {{ ref('dim_opponent_team') }} dopp  ON dopp.opponent_team_id = src.opponent_team_id
-LEFT JOIN {{ ref('dim_league') }}        dl    ON dl.league_id          = src.league_id
-LEFT JOIN {{ ref('dim_match') }}         dm    ON dm.match_id           = src.match_id
+-- Predictions are produced only for Sportmonks fixtures, so the dimension
+-- lookups resolve against that source explicitly rather than by id alone.
+LEFT JOIN {{ ref('dim_team') }}          dteam ON dteam.team_id         = src.team_id          AND dteam._source = 'sportmonks'
+LEFT JOIN {{ ref('dim_opponent_team') }} dopp  ON dopp.opponent_team_id = src.opponent_team_id AND dopp._source  = 'sportmonks'
+LEFT JOIN {{ ref('dim_league') }}        dl    ON dl.league_id          = src.league_id        AND dl._source    = 'sportmonks'
+LEFT JOIN {{ ref('dim_match') }}         dm    ON dm.match_id           = src.match_id         AND dm._source    = 'sportmonks'
 {% if is_incremental() %}
 WHERE {{ gold_incremental_filter() }}
 {% endif %}

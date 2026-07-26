@@ -86,6 +86,8 @@ SELECT
     src.transfer_fee_eur
 FROM src
 LEFT JOIN {{ ref('dim_date') }}                  dd  ON dd.date = src.transfer_date
-LEFT JOIN {{ ref('dim_team') }}                  dt  ON dt.team_id = src.team_id
-LEFT JOIN {{ ref('dim_transfer_partner_team') }} dp  ON dp.transfer_partner_team_id = src.partner_team_id
-LEFT JOIN {{ ref('dim_player') }}                dpl ON dpl.player_id = src.player_id
+-- silver.transfers is a Sportmonks-only feed, so the dimension lookups
+-- resolve against that source explicitly rather than by id alone.
+LEFT JOIN {{ ref('dim_team') }}                  dt  ON dt.team_id = src.team_id                          AND dt._source  = 'sportmonks'
+LEFT JOIN {{ ref('dim_transfer_partner_team') }} dp  ON dp.transfer_partner_team_id = src.partner_team_id AND dp._source  = 'sportmonks'
+LEFT JOIN {{ ref('dim_player') }}                dpl ON dpl.player_id = src.player_id                     AND dpl._source = 'sportmonks'

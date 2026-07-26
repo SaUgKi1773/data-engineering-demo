@@ -2,11 +2,11 @@
     config(
         materialized='incremental',
         incremental_strategy='merge',
-        unique_key='match_id',
+        unique_key=['match_id', '_source'],
         merge_update_columns=['match_round_type', 'match_round_number', 'match_round_name', 'match_type', 'match_name', 'match_short_name', 'match_result', 'kick_off_time', 'match_status'],
         post_hook=[
             "DELETE FROM {{ this }} WHERE match_sk IN (-1, -2)",
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Match Round Type', NULL::INTEGER, 'Unknown Match Round Name', 'Unknown Match Type', 'Unknown Match', 'Unknown Match', 'Unknown Match Result', 'Unknown', 'Unknown Match Status'), (-2, NULL::INTEGER, 'Not Applicable Match Round Type', NULL::INTEGER, 'Not Applicable Match Round Name', 'Not Applicable Match Type', 'Not Applicable Match', 'Not Applicable Match', 'Not Applicable Match Result', 'Not Applicable', 'Not Applicable Match Status')) t(match_sk, match_id, match_round_type, match_round_number, match_round_name, match_type, match_name, match_short_name, match_result, kick_off_time, match_status)"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Match Round Type', NULL::INTEGER, 'Unknown Match Round Name', 'Unknown Match Type', 'Unknown Match', 'Unknown Match', 'Unknown Match Result', 'Unknown', 'Unknown Match Status', NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Match Round Type', NULL::INTEGER, 'Not Applicable Match Round Name', 'Not Applicable Match Type', 'Not Applicable Match', 'Not Applicable Match', 'Not Applicable Match Result', 'Not Applicable', 'Not Applicable Match Status', NULL::VARCHAR)) t(match_sk, match_id, match_round_type, match_round_number, match_round_name, match_type, match_name, match_short_name, match_result, kick_off_time, match_status, _source)"
         ]
     )
 }}
@@ -48,6 +48,7 @@ scores_pivot AS (
 src AS (
     SELECT
         f.id                                                                     AS match_id,
+        f._source                                                                AS _source,
         -- Conformed round type: one vocabulary across leagues.
         -- Scottish Premiership (501) models its post-split phase as fixture
         -- GROUPS (stage '2nd Phase' + groups 'Championship Group'/'Relegation
@@ -104,9 +105,9 @@ src AS (
 SELECT
     {% if is_incremental() %}
     (SELECT COALESCE(MAX(match_sk), 0) FROM {{ this }} WHERE match_sk > 0)
-        + ROW_NUMBER() OVER (ORDER BY match_id) AS match_sk,
+        + ROW_NUMBER() OVER (ORDER BY match_id, _source) AS match_sk,
     {% else %}
-    ROW_NUMBER() OVER (ORDER BY match_id) AS match_sk,
+    ROW_NUMBER() OVER (ORDER BY match_id, _source) AS match_sk,
     {% endif %}
     match_id,
     match_round_type,
@@ -117,5 +118,6 @@ SELECT
     match_short_name,
     match_result,
     kick_off_time,
-    match_status
+    match_status,
+    _source
 FROM src

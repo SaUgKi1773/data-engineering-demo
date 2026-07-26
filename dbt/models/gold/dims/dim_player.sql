@@ -2,11 +2,11 @@
     config(
         materialized='incremental',
         incremental_strategy='merge',
-        unique_key='player_id',
+        unique_key=['player_id', '_source'],
         merge_update_columns=['player_name', 'player_firstname', 'player_lastname', 'player_nationality', 'player_birth_date', 'player_birth_place', 'player_birth_country', 'player_height', 'player_weight', 'player_photo', 'player_position', 'player_detailed_position', 'player_main_position'],
         post_hook=[
             "DELETE FROM {{ this }} WHERE player_sk IN (-1, -2)",
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Player', 'Unknown', 'Unknown', 'Unknown Player Nationality', NULL::DATE, 'Unknown Player Birth Place', 'Unknown Player Birth Country', NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Unknown Player Position', 'Unknown Player Position', 'Unknown Main Position'), (-2, NULL::INTEGER, 'Not Applicable Player', 'Not Applicable', 'Not Applicable', 'Not Applicable Player Nationality', NULL::DATE, 'Not Applicable Player Birth Place', 'Not Applicable Player Birth Country', NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Player Position', 'Not Applicable Player Position', 'Not Applicable Main Position')) t(player_sk, player_id, player_name, player_firstname, player_lastname, player_nationality, player_birth_date, player_birth_place, player_birth_country, player_height, player_weight, player_photo, player_position, player_detailed_position, player_main_position)"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Player', 'Unknown', 'Unknown', 'Unknown Player Nationality', NULL::DATE, 'Unknown Player Birth Place', 'Unknown Player Birth Country', NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Unknown Player Position', 'Unknown Player Position', 'Unknown Main Position', NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Player', 'Not Applicable', 'Not Applicable', 'Not Applicable Player Nationality', NULL::DATE, 'Not Applicable Player Birth Place', 'Not Applicable Player Birth Country', NULL::INTEGER, NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Player Position', 'Not Applicable Player Position', 'Not Applicable Main Position', NULL::VARCHAR)) t(player_sk, player_id, player_name, player_firstname, player_lastname, player_nationality, player_birth_date, player_birth_place, player_birth_country, player_height, player_weight, player_photo, player_position, player_detailed_position, player_main_position, _source)"
         ]
     )
 }}
@@ -115,13 +115,19 @@ combined AS (
     SELECT * FROM from_lineups
     UNION ALL
     SELECT * FROM from_transfers
+),
+-- All three branches read Sportmonks-only feeds: Highlightly has no player
+-- entity, no usable lineups and no transfer data. Tagged once here so
+-- _source is a real column the surrogate-key ordering can use.
+sourced AS (
+    SELECT *, 'sportmonks' AS _source FROM combined
 )
 SELECT
     {% if is_incremental() %}
     (SELECT COALESCE(MAX(player_sk), 0) FROM {{ this }} WHERE player_sk > 0)
-        + ROW_NUMBER() OVER (ORDER BY player_id) AS player_sk,
+        + ROW_NUMBER() OVER (ORDER BY player_id, _source) AS player_sk,
     {% else %}
-    ROW_NUMBER() OVER (ORDER BY player_id) AS player_sk,
+    ROW_NUMBER() OVER (ORDER BY player_id, _source) AS player_sk,
     {% endif %}
     player_id,
     player_name,
@@ -136,5 +142,6 @@ SELECT
     player_photo,
     player_position,
     player_detailed_position,
-    player_main_position
-FROM combined
+    player_main_position,
+    _source
+FROM sourced

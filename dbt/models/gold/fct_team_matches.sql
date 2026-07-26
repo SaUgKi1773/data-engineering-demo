@@ -12,6 +12,7 @@ WITH all_fixtures AS (
         f.league_id,
         f.venue_id,
         f.starting_at,
+        f._source,
         sg.type_developer_name AS stage_type,
         f.state_developer_name IN ('FT', 'FT_PEN', 'AET') AS is_finished
     FROM {{ ref('fixtures') }} f
@@ -131,6 +132,9 @@ src AS (
         f.starting_at,
         f.venue_id,
         f.stage_type,
+        -- carried only to resolve the dimension joins below; the surrogate
+        -- keys already encode provenance, so it never reaches the fact
+        f._source,
         mt.team_id,
         mt.location,
         mt.opponent_team_id,
@@ -273,13 +277,15 @@ SELECT
 FROM src
 LEFT JOIN {{ ref('dim_date') }}          dd      ON dd.date              = src.starting_at::DATE
 LEFT JOIN {{ ref('dim_time') }}          dt_time ON dt_time.time_sk      = EXTRACT(hour FROM (src.starting_at::TIMESTAMP AT TIME ZONE 'UTC') AT TIME ZONE {{ league_local_tz('src.league_id') }})::INTEGER
-LEFT JOIN {{ ref('dim_team') }}          dteam   ON dteam.team_id        = src.team_id
-LEFT JOIN {{ ref('dim_opponent_team') }} dopp    ON dopp.opponent_team_id = src.opponent_team_id
-LEFT JOIN {{ ref('dim_league') }}        dl      ON dl.league_id         = src.league_id
-LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id        = {{ canonical_venue_id('src.venue_id') }}
-LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id        = src.referee_id
-LEFT JOIN {{ ref('dim_match') }}          dm      ON dm.match_id          = src.fixture_id
-LEFT JOIN {{ ref('dim_coach') }}          dc      ON dc.coach_id          = src.coach_id
+-- Provider-keyed dims match on (natural key, _source): an id identifies an
+-- entity only within the feed that minted it.
+LEFT JOIN {{ ref('dim_team') }}          dteam   ON dteam.team_id        = src.team_id             AND dteam._source = src._source
+LEFT JOIN {{ ref('dim_opponent_team') }} dopp    ON dopp.opponent_team_id = src.opponent_team_id   AND dopp._source  = src._source
+LEFT JOIN {{ ref('dim_league') }}        dl      ON dl.league_id         = src.league_id           AND dl._source    = src._source
+LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id        = {{ canonical_venue_id('src.venue_id') }} AND ds._source = src._source
+LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id        = src.referee_id          AND dr._source    = src._source
+LEFT JOIN {{ ref('dim_match') }}          dm      ON dm.match_id          = src.fixture_id         AND dm._source    = src._source
+LEFT JOIN {{ ref('dim_coach') }}          dc      ON dc.coach_id          = src.coach_id           AND dc._source    = src._source
 LEFT JOIN {{ ref('dim_formation') }}      df      ON df.formation         = src.formation
 {% if is_incremental() %}
 WHERE {{ gold_incremental_filter() }}

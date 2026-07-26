@@ -2,11 +2,11 @@
     config(
         materialized='incremental',
         incremental_strategy='merge',
-        unique_key='stadium_id',
+        unique_key=['stadium_id', '_source'],
         merge_update_columns=['stadium_name', 'stadium_address', 'stadium_city', 'stadium_country', 'stadium_capacity', 'stadium_surface', 'stadium_latitude', 'stadium_longitude', 'stadium_image'],
         post_hook=[
             "DELETE FROM {{ this }} WHERE stadium_sk IN (-1, -2)",
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Stadium', 'Unknown Stadium Address', 'Unknown Stadium City', 'Unknown Stadium Country', NULL::INTEGER, 'Unknown Stadium Surface', NULL::DOUBLE, NULL::DOUBLE, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Stadium', 'Not Applicable Stadium Address', 'Not Applicable Stadium City', 'Not Applicable Stadium Country', NULL::INTEGER, 'Not Applicable Stadium Surface', NULL::DOUBLE, NULL::DOUBLE, NULL::VARCHAR)) t(stadium_sk, stadium_id, stadium_name, stadium_address, stadium_city, stadium_country, stadium_capacity, stadium_surface, stadium_latitude, stadium_longitude, stadium_image)"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Stadium', 'Unknown Stadium Address', 'Unknown Stadium City', 'Unknown Stadium Country', NULL::INTEGER, 'Unknown Stadium Surface', NULL::DOUBLE, NULL::DOUBLE, NULL::VARCHAR, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Stadium', 'Not Applicable Stadium Address', 'Not Applicable Stadium City', 'Not Applicable Stadium Country', NULL::INTEGER, 'Not Applicable Stadium Surface', NULL::DOUBLE, NULL::DOUBLE, NULL::VARCHAR, NULL::VARCHAR)) t(stadium_sk, stadium_id, stadium_name, stadium_address, stadium_city, stadium_country, stadium_capacity, stadium_surface, stadium_latitude, stadium_longitude, stadium_image, _source)"
         ]
     )
 }}
@@ -22,7 +22,8 @@ WITH from_venues AS (
         capacity,
         latitude,
         longitude,
-        image_path
+        image_path,
+        _source
     FROM {{ ref('venues') }}
     WHERE id IS NOT NULL
     ORDER BY id, _ingested_at DESC
@@ -38,7 +39,8 @@ from_fixtures AS (
         venue_capacity AS capacity,
         NULL::DOUBLE  AS latitude,
         NULL::DOUBLE  AS longitude,
-        NULL::VARCHAR AS image_path
+        NULL::VARCHAR AS image_path,
+        _source
     FROM {{ ref('fixtures') }}
     WHERE venue_id IS NOT NULL
       AND venue_id NOT IN (SELECT venue_id FROM from_venues)
@@ -57,9 +59,9 @@ combined AS (
 SELECT
     {% if is_incremental() %}
     (SELECT COALESCE(MAX(stadium_sk), 0) FROM {{ this }} WHERE stadium_sk > 0)
-        + ROW_NUMBER() OVER (ORDER BY venue_id) AS stadium_sk,
+        + ROW_NUMBER() OVER (ORDER BY venue_id, _source) AS stadium_sk,
     {% else %}
-    ROW_NUMBER() OVER (ORDER BY venue_id) AS stadium_sk,
+    ROW_NUMBER() OVER (ORDER BY venue_id, _source) AS stadium_sk,
     {% endif %}
     venue_id   AS stadium_id,
     name       AS stadium_name,
@@ -70,5 +72,6 @@ SELECT
     surface    AS stadium_surface,
     latitude   AS stadium_latitude,
     longitude  AS stadium_longitude,
-    image_path AS stadium_image
+    image_path AS stadium_image,
+    _source
 FROM combined

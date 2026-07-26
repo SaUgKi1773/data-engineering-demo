@@ -2,26 +2,31 @@
     config(
         materialized='incremental',
         incremental_strategy='merge',
-        unique_key='team_id',
+        unique_key=['team_id', '_source'],
         merge_update_columns=['team_name', 'team_code', 'team_short_name', 'team_country', 'team_founded_year', 'team_logo', 'team_venue_name', 'team_venue_city', 'team_venue_capacity'],
         post_hook=[
             "DELETE FROM {{ this }} WHERE team_sk IN (-1, -2)",
-            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Team', 'Unknown', 'Unknown Team', 'Unknown Team Country', NULL::INTEGER, NULL::VARCHAR, 'Unknown Team Venue', 'Unknown Team City', NULL::INTEGER), (-2, NULL::INTEGER, 'Not Applicable Team', 'N/A', 'Not Applicable', 'Not Applicable Team Country', NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Team Venue', 'Not Applicable Team City', NULL::INTEGER)) t(team_sk, team_id, team_name, team_code, team_short_name, team_country, team_founded_year, team_logo, team_venue_name, team_venue_city, team_venue_capacity)"
+            "INSERT INTO {{ this }} SELECT * FROM (VALUES (-1, NULL::INTEGER, 'Unknown Team', 'Unknown', 'Unknown Team', 'Unknown Team Country', NULL::INTEGER, NULL::VARCHAR, 'Unknown Team Venue', 'Unknown Team City', NULL::INTEGER, NULL::VARCHAR), (-2, NULL::INTEGER, 'Not Applicable Team', 'N/A', 'Not Applicable', 'Not Applicable Team Country', NULL::INTEGER, NULL::VARCHAR, 'Not Applicable Team Venue', 'Not Applicable Team City', NULL::INTEGER, NULL::VARCHAR)) t(team_sk, team_id, team_name, team_code, team_short_name, team_country, team_founded_year, team_logo, team_venue_name, team_venue_city, team_venue_capacity, _source)"
         ]
     )
 }}
 
+-- Composite natural key (team_id, _source): a provider-minted id identifies an
+-- entity only within the provider that minted it. Two feeds happening not to
+-- share a number today is a coincidence, not a guarantee, so the key and every
+-- fact join into this dim carry the source alongside the id.
+
 -- Clubs we ingest in detail (the league teams).
 WITH latest AS (
-    SELECT DISTINCT ON (id)
-        id, name, short_code, country_name, founded, image_path,
+    SELECT DISTINCT ON (id, _source)
+        id, _source, name, short_code, country_name, founded, image_path,
         venue_name, venue_city, venue_capacity
     FROM {{ ref('teams') }}
     -- Highlightly teams stay out of gold until the #438 gold conformance PR
     -- admits their leagues; without this, dim_team gains memberless teams
     -- ahead of any fact rows.
     WHERE _source = 'sportmonks'
-    ORDER BY id, last_played_at DESC NULLS LAST
+    ORDER BY id, _source, last_played_at DESC NULLS LAST
 ),
 name_map AS (
     SELECT team_id, display_name, team_code, team_short_name
@@ -41,7 +46,8 @@ detailed AS (
         l.image_path                        AS team_logo,
         l.venue_name                        AS team_venue_name,
         l.venue_city                        AS team_venue_city,
-        l.venue_capacity                    AS team_venue_capacity
+        l.venue_capacity                    AS team_venue_capacity,
+        l._source                           AS _source
     FROM latest l
     LEFT JOIN name_map nm ON nm.team_id = l.id
     WHERE l.id IS NOT NULL
@@ -71,7 +77,10 @@ external AS (
         tc.image_path                               AS team_logo,
         'Not Applicable Team Venue'                 AS team_venue_name,
         'Not Applicable Team City'                  AS team_venue_city,
-        NULL::INTEGER                               AS team_venue_capacity
+        NULL::INTEGER                               AS team_venue_capacity,
+        -- transfers is a Sportmonks-only feed; these counterparty clubs can
+        -- only have come from there
+        'sportmonks'                                AS _source
     FROM transfer_clubs tc
     LEFT JOIN {{ ref('core_countries') }} c ON c.id = tc.country_id
     WHERE NOT tc.placeholder
@@ -86,9 +95,9 @@ combined AS (
 SELECT
     {% if is_incremental() %}
     (SELECT COALESCE(MAX(team_sk), 0) FROM {{ this }} WHERE team_sk > 0)
-        + ROW_NUMBER() OVER (ORDER BY team_id) AS team_sk,
+        + ROW_NUMBER() OVER (ORDER BY team_id, _source) AS team_sk,
     {% else %}
-    ROW_NUMBER() OVER (ORDER BY team_id) AS team_sk,
+    ROW_NUMBER() OVER (ORDER BY team_id, _source) AS team_sk,
     {% endif %}
     team_id,
     team_name,
@@ -99,5 +108,6 @@ SELECT
     team_logo,
     team_venue_name,
     team_venue_city,
-    team_venue_capacity
+    team_venue_capacity,
+    _source
 FROM combined
