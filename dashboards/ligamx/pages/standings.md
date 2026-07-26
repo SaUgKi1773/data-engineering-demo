@@ -50,12 +50,6 @@ where tournament = '${inputs.season.value}'
 <Dropdown data={seasons} name=season value=tournament label=tournament order="tournament desc" defaultValue={seasons[0]?.tournament} />
 {/key}
 
-{#key `${inputs.season.value}:${rounds[0]?.max_round}`}
-<div style="padding:0 1.5rem 0 0;">
-<Slider name=round data={rounds} minColumn=min_round maxColumn=max_round defaultValue=max_round title="Show standings as of round" size=full showInput=true fmt=num0 />
-</div>
-{/key}
-
 ```sql regular
 select
     row_number() over (order by pts desc, gd desc, gf desc) as rank,
@@ -128,11 +122,26 @@ order by pts desc
 
 {/if}
 
-{#if regular.length > 0}
-
 ### 📋 Regular Season
 
-<p style="font-size:0.8rem;color:#6b7280;margin:-0.5rem 0 1rem 0;">Showing the table <strong>as of round {inputs.round}</strong> of 17. Drag the slider above to step back through the tournament.</p>
+<!-- The slider sits here rather than at the top of the page because it only
+     scopes the table below it. Above the bracket it read as a page-wide
+     control, which it is not — the liguilla is played after the table is
+     final and nothing about it changes with the round.
+
+     Note there is no {#if regular.length} guard around this section. There
+     must not be: the slider lives inside it and the query reads the slider,
+     so a guard deadlocks — the input never mounts, the query never returns
+     rows, and the section never renders. The guard was dead weight anyway,
+     since the tournament dropdown is built from this very table and so can
+     only offer tournaments that have rows. -->
+{#key `${inputs.season.value}:${rounds[0]?.max_round}`}
+<div style="padding:0 1.5rem 0 0;">
+<Slider name=round data={rounds} minColumn=min_round maxColumn=max_round defaultValue=max_round title="Show standings as of round" size=full showInput=true fmt=num0 />
+</div>
+{/key}
+
+<p style="font-size:0.8rem;color:#6b7280;margin:0.75rem 0 1rem 0;">Showing the table <strong>as of round {inputs.round}</strong> of 17. Drag the slider to step back through the tournament.</p>
 
 <div class="standings-table block md:hidden">
 <DataTable data={regular} rows=20>
@@ -160,8 +169,6 @@ order by pts desc
     <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
 </DataTable>
 </div>
-
-{/if}
 
 ---
 
