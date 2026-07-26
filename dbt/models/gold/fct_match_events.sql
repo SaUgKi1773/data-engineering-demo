@@ -89,6 +89,7 @@ enriched AS (
         e.minute,
         e.extra_minute,
         e.sort_order,
+        e.event_id,
         ff.league_id,
         ff.venue_id,
         ff.venue_name,
@@ -160,6 +161,7 @@ resolved AS (
         src.minute,
         src.extra_minute,
         src.sort_order,
+        src.event_id,
         src.is_scoring,
         src.result_home_score,
         src.result_away_score
@@ -197,15 +199,24 @@ sequenced AS (
         -- The match's Nth event of this event group ("3rd goal", "5th yellow").
         -- sort_order is the provider's per-family ordinal: valid as a final
         -- tiebreaker inside a group, meaningless across groups, never stored.
+        --
+        -- event_id makes the order TOTAL, and therefore the model
+        -- reproducible. Without it, events tying on every preceding key
+        -- ordered arbitrarily and two consecutive rebuilds of identical code
+        -- differed by ~130 rows - which also meant no change to this model
+        -- could ever be proven safe. The two feeds supply complementary
+        -- identifiers: Sportmonks a unique event id, Highlightly a unique
+        -- per-fixture sort_order (its id is always NULL), so together they
+        -- give a total order for both.
         ROW_NUMBER() OVER (
             PARTITION BY fixture_id, event_group
-            ORDER BY period_sort, minute, extra_minute, sort_order
+            ORDER BY period_sort, minute, extra_minute, sort_order, event_id
         ) AS event_group_sequence
     FROM resolved
     WINDOW score_window AS (
         PARTITION BY fixture_id
         ORDER BY period_sort, minute, extra_minute,
-                 CASE WHEN is_scoring THEN 0 ELSE 1 END, sort_order
+                 CASE WHEN is_scoring THEN 0 ELSE 1 END, sort_order, event_id
         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
     )
 )
