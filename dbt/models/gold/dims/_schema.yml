@@ -70,15 +70,31 @@ models:
                 values: ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker', 'Unknown Main Position', 'Not Applicable Main Position']
 
   - name: dim_referee
+    tests:
+      # The durable identity must be unique per source. It is a model-level
+      # test because it spans two columns.
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [referee_key, _source]
+          config: {where: "referee_sk > 0"}
     columns:
       - name: referee_sk
         tests: [not_null, unique]
-      - name: referee_id
+      - name: referee_key
+        # The durable identity: a provider id where one exists, the official's
+        # canonical name where the provider mints none. This is what must
+        # always be present and unique per source, not referee_id.
         tests:
           - not_null:
               config: {where: "referee_sk > 0"}
+      - name: referee_id
+        # Highlightly mints no referee id, so this is only guaranteed within
+        # the source that does.
+        tests:
+          - not_null:
+              config: {where: "referee_sk > 0 AND _source = 'sportmonks'"}
           - unique:
-              config: {where: "referee_sk > 0"}
+              config: {where: "referee_sk > 0 AND _source = 'sportmonks'"}
 
   - name: dim_coach
     columns:
@@ -92,15 +108,30 @@ models:
               config: {where: "coach_sk > 0"}
 
   - name: dim_stadium
+    tests:
+      # The durable identity must be unique per source. It is a model-level
+      # test because it spans two columns.
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [stadium_key, _source]
+          config: {where: "stadium_sk > 0"}
     columns:
       - name: stadium_sk
         tests: [not_null, unique]
-      - name: stadium_id
+      - name: stadium_key
+        # The durable identity: a provider id where one exists, the ground's
+        # name where the provider mints none.
         tests:
           - not_null:
               config: {where: "stadium_sk > 0"}
+      - name: stadium_id
+        # Highlightly mints no venue id, so this is only guaranteed within the
+        # source that does.
+        tests:
+          - not_null:
+              config: {where: "stadium_sk > 0 AND _source = 'sportmonks'"}
           - unique:
-              config: {where: "stadium_sk > 0"}
+              config: {where: "stadium_sk > 0 AND _source = 'sportmonks'"}
 
   - name: dim_league
     columns:
