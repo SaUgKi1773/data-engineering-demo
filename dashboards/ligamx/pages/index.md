@@ -55,10 +55,20 @@ select * from ligamx.mart_home_summary
         <span class="font-semibold text-white">{summary[0].total_goals}</span> goals · <span class="font-semibold text-white">{summary[0].total_matches}</span> matches · <span class="font-semibold text-white">{summary[0].total_teams}</span> teams
       </div>
 
+      <!-- Three states, because a Liga MX tournament has three phases. The
+           knockout one names the ROUND, not a club: once the table is final
+           there is no leader, and the club that topped it is often already
+           out. -->
       <div class="inline-flex items-center gap-2 text-[15px]">
-        <span class="leading-none">{summary[0].season_is_live ? '🥇' : '👑'}</span>
-        <span class="text-white/50 text-[11px] font-semibold uppercase" style="letter-spacing: 0.12em;">{summary[0].season_is_live ? 'Leader' : 'Champion'}</span>
-        <span class="font-semibold text-white"><span class="xl:hidden">{summary[0]?.leader_short}</span><span class="hidden xl:inline">{summary[0]?.leader_name}</span></span>
+        <span class="leading-none">{summary[0].state === 'Champion' ? '👑' : summary[0].state === 'Liguilla' ? '🏆' : '🥇'}</span>
+        <span class="text-white/50 text-[11px] font-semibold uppercase" style="letter-spacing: 0.12em;">{summary[0].state}</span>
+        <span class="font-semibold text-white">
+          {#if summary[0].state === 'Liguilla'}
+            {summary[0].liguilla_round}
+          {:else}
+            <span class="xl:hidden">{summary[0]?.leader_short}</span><span class="hidden xl:inline">{summary[0]?.leader_name}</span>
+          {/if}
+        </span>
       </div>
     </div>
   </div>
