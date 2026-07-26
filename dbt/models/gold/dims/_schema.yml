@@ -157,7 +157,13 @@ models:
       - name: date_sk
         tests: [not_null, unique]
       - name: date
-        tests: [not_null, unique]
+        # Scoped past the -1/-2 sentinels, which carry no calendar date -
+        # the same convention dim_team uses for team_id.
+        tests:
+          - not_null:
+              config: {where: "date_sk > 0"}
+          - unique:
+              config: {where: "date_sk > 0"}
 
   - name: dim_time
     columns:
