@@ -11,12 +11,14 @@ description: Free, open football analytics platforms from Farum, Denmark. A dedi
 select
   *,
   case league_id
-    when 271 then 'https://superligaanalytics.vercel.app/'
-    when 501 then 'https://scottishpremiershipanalytics.vercel.app/'
+    when 271    then 'https://superligaanalytics.vercel.app/'
+    when 501    then 'https://scottishpremiershipanalytics.vercel.app/'
+    when 223746 then 'https://mexicanligamxanalytics.vercel.app/'
   end as site_url,
   case league_id
-    when 271 then 'Superligaen'
-    when 501 then 'Premiership'
+    when 271    then 'Superligaen'
+    when 501    then 'Premiership'
+    when 223746 then 'Liga MX'
   end as banner_title
 from hub.league_summary
 order by league_id

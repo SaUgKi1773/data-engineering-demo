@@ -7,12 +7,14 @@ WITH matches AS (
     SELECT
         dl.league_id,
         CASE dl.league_id
-            WHEN 271 THEN d.season_denmark
-            WHEN 501 THEN d.season_scotland
+            WHEN 271    THEN d.season_denmark
+            WHEN 501    THEN d.season_scotland
+            WHEN 223746 THEN d.season_mexico
         END                                           AS season,
         CASE dl.league_id
-            WHEN 271 THEN d.is_current_season_denmark
-            WHEN 501 THEN d.is_current_season_scotland
+            WHEN 271    THEN d.is_current_season_denmark
+            WHEN 501    THEN d.is_current_season_scotland
+            WHEN 223746 THEN d.is_current_season_mexico
         END                                           AS season_is_live,
         d.date,
         m.match_id,
@@ -25,18 +27,23 @@ WITH matches AS (
         CASE
             WHEN MAX(CASE WHEN m.match_round_type = 'Championship Round' THEN 1 ELSE 0 END)
                  OVER (PARTITION BY dl.league_id, f.team_sk,
-                       CASE dl.league_id WHEN 271 THEN d.season_denmark WHEN 501 THEN d.season_scotland END) = 1
+                       CASE dl.league_id WHEN 271 THEN d.season_denmark WHEN 501 THEN d.season_scotland WHEN 223746 THEN d.season_mexico END) = 1
             THEN 1 ELSE 2
-        END                                           AS group_rank
+        END                                           AS group_rank,
+        f.points_earned IS NOT NULL                   AS counts_towards_table
     FROM superligaen.gold.fct_team_matches  f
     JOIN superligaen.gold.dim_league        dl ON dl.league_sk       = f.league_sk
     JOIN superligaen.gold.dim_date          d  ON d.date_sk          = f.date_sk
     JOIN superligaen.gold.dim_match         m  ON m.match_sk         = f.match_sk
     JOIN superligaen.gold.dim_team          t  ON t.team_sk          = f.team_sk
     JOIN superligaen.gold.dim_match_result  r  ON r.match_result_sk  = f.match_result_sk
-    WHERE dl.league_id IN (271, 501)
+    WHERE dl.league_id IN (271, 501, 223746)
       AND r.match_result IN ('Win', 'Draw', 'Loss')
 ),
+-- MAX(season) picks the latest one lexically, which is also the latest one
+-- chronologically for every league here. Worth stating for Mexico, where a
+-- season year holds two tournaments: 'Apertura' sorts before 'Clausura' and
+-- also runs before it, so the ordering is right by luck of the alphabet.
 latest AS (
     SELECT league_id, MAX(season) AS season
     FROM matches
@@ -61,6 +68,11 @@ leader AS (
                      SUM(goals_scored)                     DESC
         ) AS rn
     FROM cur
+    -- Only matches that put points on a table. Denmark's and Scotland's
+    -- playoff rounds do; Mexico's liguilla does not, and its rows carry NULL
+    -- points rather than zero. Without this the knockout goals would skew the
+    -- goal-difference tiebreak in a table those matches never touched.
+    WHERE counts_towards_table
     GROUP BY league_id, team_name, team_short_name
 )
 SELECT
