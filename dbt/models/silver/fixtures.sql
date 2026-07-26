@@ -95,7 +95,11 @@ SELECT
     m.raw_json->'state'->>'description'                 AS state_name,
     NULL::VARCHAR                                       AS state_short_name,
     NULL::VARCHAR                                       AS state_developer_name,
-    m.raw_json->>'round'                                AS round_name,
+    -- Corrected where the provider published a demonstrably wrong round; the
+    -- seed carries the evidence per fixture. Explicit rows rather than a rule:
+    -- Liga MX changes its post-season format often enough that any rule would
+    -- eventually misfire on data we have not seen.
+    COALESCE(ro.corrected_round_name, m.raw_json->>'round') AS round_name,
     NULL::BOOLEAN                                       AS round_finished,
     NULL::BOOLEAN                                       AS round_is_current,
     m._fixture_date,
@@ -103,6 +107,7 @@ SELECT
     GREATEST(m._ingested_at, COALESCE(d._ingested_at, m._ingested_at)) AS _ingested_at
 FROM {{ source('bronze', 'highlightly__matches') }} m
 LEFT JOIN {{ source('bronze', 'highlightly__match_details') }} d ON d.id = m.id
+LEFT JOIN {{ ref('highlightly_round_overrides') }} ro ON ro.fixture_id = m.id
 {% if is_incremental() %}
 WHERE GREATEST(m._ingested_at, COALESCE(d._ingested_at, m._ingested_at)) >
       COALESCE((SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'highlightly'), '1900-01-01'::TIMESTAMP)
