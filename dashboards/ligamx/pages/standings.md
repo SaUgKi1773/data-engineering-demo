@@ -41,7 +41,7 @@ where tournament = '${inputs.season.value}'
       <li>🟡 <strong>7th–10th</strong> → the <strong>play-in</strong>, competing for the last two places</li>
       <li>⚪ <strong>11th–18th</strong> → season over</li>
     </ul>
-    <p>Every liguilla tie is played over two legs, and the club finishing higher in the table gets the advantage of hosting the second one. Across the twelve completed tournaments held here, the club that topped the table went on to lift the trophy just <strong>six</strong> times. The table is a seeding, not a verdict — the bracket below is where the tournament is settled.</p>
+    <p>Every liguilla tie is played over two legs, and the club finishing higher in the table gets the advantage of hosting the second one. If the aggregate is level after both legs of a quarter- or semi-final, there is no shootout — the better-seeded club goes through. The final is the exception: level there means extra time, then penalties.</p>
     <p><strong>No relegation.</strong> Unlike the other leagues on this platform, nobody goes down — relegation is currently suspended in Liga MX, so the bottom of the table carries no jeopardy.</p>
   </div>
 </details>
