@@ -15,11 +15,19 @@ WITH finished_fixtures AS (
         f.id        AS fixture_id,
         f.league_id,
         f.venue_id,
+        f.venue_name,
         f.starting_at,
         f._source
     FROM {{ ref('fixtures') }} f
-    JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
-    WHERE f.state_developer_name IN ('FT', 'FT_PEN', 'AET')
+    -- LEFT, not INNER: Highlightly has no stage entity, so an inner join would
+    -- drop its fixtures before the scope macro ever judged them.
+    LEFT JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
+    LEFT JOIN (
+        SELECT DISTINCT fixture_id, _source FROM {{ ref('fixture_scores') }}
+        WHERE description = 'CURRENT'
+    ) fr ON fr.fixture_id = f.id AND fr._source = f._source
+    WHERE {{ is_match_finished('f._source', 'f.state_developer_name', 'f.state_name',
+                               'fr.fixture_id IS NOT NULL') }}
       -- League matches only; what counts varies by league (see the macro)
       AND {{ is_league_match('f.league_id', 'sg.type_developer_name') }}
 ),
@@ -28,9 +36,17 @@ participants AS (
     FROM {{ ref('fixture_participants') }}
 ),
 main_referee AS (
-    SELECT fixture_id, referee_id
-    FROM {{ ref('fixture_referees') }}
-    WHERE type_id = 6
+    -- type_id 6 is the Sportmonks code for the match referee; Highlightly
+    -- reports one official and no type at all.
+    SELECT
+        fr.fixture_id,
+        fr._source,
+        fr.referee_id,
+        COALESCE(a.canonical_name, fr.referee_name) AS referee_name
+    FROM {{ ref('fixture_referees') }} fr
+    LEFT JOIN {{ ref('referee_name_aliases') }} a ON a.alias_name = fr.referee_name
+    WHERE (fr._source = 'sportmonks' AND fr.type_id = 6)
+       OR (fr._source = 'highlightly' AND fr.referee_name IS NOT NULL)
 ),
 events AS (
     -- Corners are excluded on coverage grounds (only two partially covered
@@ -73,8 +89,10 @@ enriched AS (
         e.minute,
         e.extra_minute,
         e.sort_order,
+        e.event_id,
         ff.league_id,
         ff.venue_id,
+        ff.venue_name,
         ff.starting_at,
         ff._source,
         pt.location,
@@ -143,6 +161,7 @@ resolved AS (
         src.minute,
         src.extra_minute,
         src.sort_order,
+        src.event_id,
         src.is_scoring,
         src.result_home_score,
         src.result_away_score
@@ -154,9 +173,9 @@ resolved AS (
     LEFT JOIN {{ ref('dim_team') }}          dteam   ON dteam.team_id         = src.team_id          AND dteam._source = src._source
     LEFT JOIN {{ ref('dim_opponent_team') }} dopp    ON dopp.opponent_team_id = src.opponent_team_id AND dopp._source  = src._source
     LEFT JOIN {{ ref('dim_player') }}        dp      ON dp.player_id          = src.player_id        AND dp._source    = src._source
-    LEFT JOIN main_referee                   mr      ON mr.fixture_id         = src.fixture_id
-    LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id         = mr.referee_id        AND dr._source    = src._source
-    LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id         = {{ canonical_venue_id('src.venue_id') }} AND ds._source = src._source
+    LEFT JOIN main_referee                   mr      ON mr.fixture_id         = src.fixture_id AND mr._source = src._source
+    LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_key        = COALESCE(mr.referee_id::VARCHAR, mr.referee_name) AND dr._source = src._source
+    LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_key        = COALESCE({{ canonical_venue_id('src.venue_id') }}::VARCHAR, src.venue_name) AND ds._source = src._source
     LEFT JOIN {{ ref('dim_match_event_type') }} det
         ON  det.event_type_code     = src.type_developer_name
         AND det.event_sub_type_code = COALESCE(src.sub_type_developer_name, 'UNSPECIFIED')
@@ -180,15 +199,24 @@ sequenced AS (
         -- The match's Nth event of this event group ("3rd goal", "5th yellow").
         -- sort_order is the provider's per-family ordinal: valid as a final
         -- tiebreaker inside a group, meaningless across groups, never stored.
+        --
+        -- event_id makes the order TOTAL, and therefore the model
+        -- reproducible. Without it, events tying on every preceding key
+        -- ordered arbitrarily and two consecutive rebuilds of identical code
+        -- differed by ~130 rows - which also meant no change to this model
+        -- could ever be proven safe. The two feeds supply complementary
+        -- identifiers: Sportmonks a unique event id, Highlightly a unique
+        -- per-fixture sort_order (its id is always NULL), so together they
+        -- give a total order for both.
         ROW_NUMBER() OVER (
             PARTITION BY fixture_id, event_group
-            ORDER BY period_sort, minute, extra_minute, sort_order
+            ORDER BY period_sort, minute, extra_minute, sort_order, event_id
         ) AS event_group_sequence
     FROM resolved
     WINDOW score_window AS (
         PARTITION BY fixture_id
         ORDER BY period_sort, minute, extra_minute,
-                 CASE WHEN is_scoring THEN 0 ELSE 1 END, sort_order
+                 CASE WHEN is_scoring THEN 0 ELSE 1 END, sort_order, event_id
         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
     )
 )

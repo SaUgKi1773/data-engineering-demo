@@ -81,7 +81,8 @@ src AS (
         COALESCE(nm_h.display_name, pp.home_team_name, '') || ' - ' || COALESCE(nm_a.display_name, pp.away_team_name, '') AS match_name,
         COALESCE(nm_h.short_name, pp.home_team_code, pp.home_team_name, '')
             || ' - ' || COALESCE(nm_a.short_name, pp.away_team_code, pp.away_team_name, '')      AS match_short_name,
-        CASE WHEN f.state_developer_name IN ('FT', 'FT_PEN', 'AET')
+        CASE WHEN {{ is_match_finished('f._source', 'f.state_developer_name', 'f.state_name',
+                                       'sp.goals_home IS NOT NULL') }}
              THEN sp.goals_home::VARCHAR || ' - ' || sp.goals_away::VARCHAR
         END                                                                      AS match_result,
         -- Kick-off in the league's local time
@@ -93,7 +94,9 @@ src AS (
                                                                                  AS kick_off_time,
         f.state_name                                                             AS match_status
     FROM {{ ref('fixtures') }} f
-    JOIN {{ ref('stages') }}           sg  ON sg.id          = f.stage_id
+    -- LEFT, not INNER: Highlightly has no stage entity, so an inner join would
+    -- drop its fixtures before the scope macro ever judged them.
+    LEFT JOIN {{ ref('stages') }}      sg  ON sg.id          = f.stage_id
     LEFT JOIN regular_season_max       rsm ON rsm.season_id  = f.season_id
     LEFT JOIN participants_pivot       pp  ON pp.fixture_id  = f.id
     LEFT JOIN scores_pivot             sp  ON sp.fixture_id  = f.id
