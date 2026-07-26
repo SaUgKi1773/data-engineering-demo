@@ -12,15 +12,13 @@ title: About This Project
 
 I am **Salih Ugur Kimilli**, a data engineer who loves turning raw data into insights. This site started life as [Superliga Analytics](https://saugki1773.github.io/data-engineering-blog/) — an end-to-end data engineering project for Danish football, built entirely on free, open-source tools: no vendor lock-in, no cloud bills. A stranger's feature request then added the Scottish Premiership.
 
-Liga MX arrived over dinner, from a friend: *you should do Liga MX — the structure is completely different from anything you've got.* That turned out to be an accurate description, and it was exactly the appeal. Two tournaments inside a single season, each with its own table and its own champion. A knockout — the **liguilla** — that decides the title, so topping the table wins you nothing but a seeding. A play-in round that has changed format twice in five years. Almost everything the pipeline quietly assumed about "a league season" turned out to be a European assumption rather than a football one.
+Liga MX arrived over dinner, from a friend: *you should do Liga MX — the structure is completely different from anything you've got.* He was right, and that was exactly the appeal. Two tournaments inside a single season, each with its own table and its own champion. A knockout — the **liguilla** — that decides the title, so topping the table wins you nothing but a seeding. A play-in round that has changed format twice in five years. Almost everything the pipeline quietly assumed about "a league season" turned out to be a European assumption rather than a football one.
 
-There was a bigger reason too. The plan for this platform has always been worldwide, not European — and a project covering Denmark and Scotland isn't worldwide, it's Northern European with ambitions. Mexico was a genuinely good candidate: a big league, a distinctive shape, an audience that isn't mine.
+There was a bigger reason too. These sites are not standalone projects — each one is a data product under [**Krogvad Analytics Hub**](https://krogvadanalyticshub.vercel.app/), sharing a single warehouse and a single nightly pipeline. The plan for the Hub has always been worldwide, not European, and a group covering Denmark and Scotland isn't worldwide — it's Northern European with ambitions. Mexico was a genuinely good candidate: a big league, a distinctive shape, an audience that isn't mine.
 
 That's how this site was born.
 
 ## What Was Built
-
-Liga MX isn't on the free plan of the provider the first two leagues run on, so this site is also where the pipeline learned to read from **two data providers at once** — which is a much harder problem than adding a league. Two providers disagree about identifiers, about what a round is called, about what counts as finished. Almost none of those disagreements produce an error; they produce plausible, confidently wrong data. Reconciling them is most of the work behind this site.
 
 A fully automated data pipeline that:
 
