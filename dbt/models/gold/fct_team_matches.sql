@@ -73,6 +73,34 @@ score_corrections AS (
     SELECT fixture_id, team_id, goals_scored_corrected
     FROM {{ ref('fixture_score_corrections') }}
 ),
+shootout_scores AS (
+    -- Kicks converted in a penalty shootout. Distinct from a penalty scored in
+    -- open play, which is an ordinary goal and already inside goals_scored.
+    SELECT fixture_id, team_id, _source, goals AS shootout_goals
+    FROM {{ ref('fixture_scores') }}
+    WHERE description = 'PENALTY_SHOOTOUT'
+),
+extra_time_goals AS (
+    -- Goals scored in extra time (minutes 91-120), counted from the event
+    -- stream because only Sportmonks publishes an ET score line and only for
+    -- three fixtures - the clock is the one signal both feeds carry.
+    --
+    -- Shootout kicks are excluded: Highlightly reports them as ordinary
+    -- penalties at minute 120 with a stoppage offset.
+    --
+    -- Counting by the event's own team is right for own goals too: the
+    -- provider attributes an OWNGOAL to the team AWARDED the goal (#425).
+    SELECT
+        fixture_id,
+        team_id,
+        _source,
+        COUNT(*) AS et_goals
+    FROM {{ ref('fixture_events') }}
+    WHERE type_developer_name IN ('GOAL', 'OWNGOAL', 'PENALTY')
+      AND minute BETWEEN 91 AND 120
+      AND NOT (minute >= 120 AND COALESCE(extra_minute, 0) > 0)
+    GROUP BY fixture_id, team_id, _source
+),
 stats AS (
     SELECT
         fixture_id,
@@ -178,6 +206,13 @@ src AS (
         CASE WHEN f.is_finished THEN COALESCE(scf.goals_scored_corrected, sc.goals_scored,  0) END AS goals_scored,
         CASE WHEN f.is_finished THEN COALESCE(oscf.goals_scored_corrected, osc.goals_scored, 0) END AS goals_conceded,
         CASE WHEN f.is_finished THEN COALESCE(sc.goals_ht_scored,  0) END AS goals_ht_scored,
+        -- "of which" measures: both are already inside goals_scored, so they
+        -- must never be added to it.
+        CASE WHEN f.is_finished THEN COALESCE(etg.et_goals,  0) END AS goals_scored_extra_time,
+        CASE WHEN f.is_finished THEN COALESCE(oetg.et_goals, 0) END AS goals_conceded_extra_time,
+        -- A shootout is not part of the score: NULL when there wasn't one.
+        ss.shootout_goals  AS goals_scored_penalty_shootout,
+        oss.shootout_goals AS goals_conceded_penalty_shootout,
         CASE WHEN f.is_finished THEN COALESCE(osc.goals_ht_scored, 0) END AS goals_ht_conceded,
         CASE WHEN f.is_finished THEN COALESCE(st.corner_kicks,     0) END AS corner_kicks,
         CASE WHEN f.is_finished THEN st.ball_possession_pct          END AS ball_possession_pct,
@@ -228,6 +263,10 @@ src AS (
     LEFT JOIN score_corrections   scf  ON scf.fixture_id = f.fixture_id AND scf.team_id = mt.team_id
     LEFT JOIN score_corrections   oscf ON oscf.fixture_id = f.fixture_id AND oscf.team_id = mt.opponent_team_id
     LEFT JOIN stats         st   ON st.fixture_id  = f.fixture_id AND st.team_id  = mt.team_id
+    LEFT JOIN shootout_scores   ss   ON ss.fixture_id  = f.fixture_id AND ss.team_id  = mt.team_id          AND ss._source  = f._source
+    LEFT JOIN shootout_scores   oss  ON oss.fixture_id = f.fixture_id AND oss.team_id = mt.opponent_team_id AND oss._source = f._source
+    LEFT JOIN extra_time_goals  etg  ON etg.fixture_id = f.fixture_id AND etg.team_id = mt.team_id          AND etg._source = f._source
+    LEFT JOIN extra_time_goals  oetg ON oetg.fixture_id = f.fixture_id AND oetg.team_id = mt.opponent_team_id AND oetg._source = f._source
     LEFT JOIN main_referee  mr   ON mr.fixture_id  = f.fixture_id AND mr._source = f._source
     LEFT JOIN coaches       co   ON co.fixture_id  = f.fixture_id AND co.team_id = mt.team_id
     LEFT JOIN formations    fo   ON fo.fixture_id  = f.fixture_id AND fo.team_id = mt.team_id
@@ -269,6 +308,10 @@ SELECT
     src.goals_conceded,
     src.goals_ht_scored,
     src.goals_ht_conceded,
+    src.goals_scored_extra_time,
+    src.goals_conceded_extra_time,
+    src.goals_scored_penalty_shootout,
+    src.goals_conceded_penalty_shootout,
     src.corner_kicks,
     src.ball_possession_pct,
     src.yellow_cards,

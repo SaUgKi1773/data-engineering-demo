@@ -34,8 +34,8 @@ UNION ALL
 -- fixture_scores, where penalty shootouts are represented properly.
 SELECT
     id                                         AS fixture_id,
-    (raw_json->'homeTeam'->>'id')::INTEGER     AS team_id,
-    raw_json->'homeTeam'->>'name'              AS team_name,
+    COALESCE(o.canonical_team_id, (raw_json->'homeTeam'->>'id')::INTEGER)     AS team_id,
+    COALESCE(o.canonical_team_name, raw_json->'homeTeam'->>'name')            AS team_name,
     NULL::VARCHAR                              AS team_short_code,
     raw_json->'homeTeam'->>'logo'              AS team_image_path,
     'home'                                     AS location,
@@ -44,6 +44,10 @@ SELECT
     'highlightly'                              AS _source,
     _ingested_at
 FROM {{ source('bronze', 'highlightly__matches') }}
+-- A placeholder participant the provider never resolved; repaired from the
+-- other leg of the same tie. See the seed for the evidence.
+LEFT JOIN {{ ref('highlightly_team_overrides') }} o
+    ON o.placeholder_team_id = (raw_json->'homeTeam'->>'id')::INTEGER
 {% if is_incremental() %}
 WHERE _ingested_at > COALESCE((SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'highlightly'), '1900-01-01'::TIMESTAMP)
 {% endif %}
@@ -52,8 +56,8 @@ UNION ALL
 
 SELECT
     id                                         AS fixture_id,
-    (raw_json->'awayTeam'->>'id')::INTEGER     AS team_id,
-    raw_json->'awayTeam'->>'name'              AS team_name,
+    COALESCE(o.canonical_team_id, (raw_json->'awayTeam'->>'id')::INTEGER)     AS team_id,
+    COALESCE(o.canonical_team_name, raw_json->'awayTeam'->>'name')            AS team_name,
     NULL::VARCHAR                              AS team_short_code,
     raw_json->'awayTeam'->>'logo'              AS team_image_path,
     'away'                                     AS location,
@@ -62,6 +66,8 @@ SELECT
     'highlightly'                              AS _source,
     _ingested_at
 FROM {{ source('bronze', 'highlightly__matches') }}
+LEFT JOIN {{ ref('highlightly_team_overrides') }} o
+    ON o.placeholder_team_id = (raw_json->'awayTeam'->>'id')::INTEGER
 {% if is_incremental() %}
 WHERE _ingested_at > COALESCE((SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'highlightly'), '1900-01-01'::TIMESTAMP)
 {% endif %}

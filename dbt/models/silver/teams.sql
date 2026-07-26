@@ -74,7 +74,11 @@ FROM (
         _ingested_at
     FROM {{ source('bronze', 'highlightly__matches') }}
 ) t
+WHERE 1=1
 {% if is_incremental() %}
-WHERE t._ingested_at > COALESCE((SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'highlightly'), '1900-01-01'::TIMESTAMP)
+  AND t._ingested_at > COALESCE((SELECT MAX(_ingested_at) FROM {{ this }} WHERE _source = 'highlightly'), '1900-01-01'::TIMESTAMP)
 {% endif %}
+  -- placeholder participants are not clubs; their fixtures are repaired to the
+  -- real opponent in fixture_participants
+  AND t.id NOT IN (SELECT placeholder_team_id FROM {{ ref('highlightly_team_overrides') }})
 QUALIFY ROW_NUMBER() OVER (PARTITION BY t.id ORDER BY t._fixture_date DESC, t._ingested_at DESC) = 1

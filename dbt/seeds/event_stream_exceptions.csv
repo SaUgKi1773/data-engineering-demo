@@ -1,3 +1,0 @@
-fixture_id,source,reason
-973770299,highlightly,"Incomplete event stream: reported 2-2 but only the away side's two goals were published. The home team is a 'TBC KO' placeholder, so the fixture was never fully resolved upstream."
-1186917716,highlightly,"Provider published every event twice: 3 real goals arrive as 6 scoring events. Verified as a source defect - bronze holds 31 events and silver holds 31, and across all 6,477 fixtures the counts match exactly, so nothing is duplicated by our pipeline."

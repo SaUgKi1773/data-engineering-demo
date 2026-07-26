@@ -56,6 +56,26 @@ models:
         description: "ADDITIVE. Half-time goals."
       - name: goals_ht_conceded
         description: "ADDITIVE."
+      - name: goals_scored_extra_time
+        description: >
+          ADDITIVE, and an "OF WHICH" measure: these goals are already counted
+          inside goals_scored, so the two must never be added together.
+          Counted from the event stream (minutes 91-120), because only
+          Sportmonks publishes an extra-time score line and only for three
+          fixtures - the match clock is the one signal both feeds carry.
+      - name: goals_conceded_extra_time
+        description: "ADDITIVE. Of which, as goals_scored_extra_time."
+      - name: goals_scored_penalty_shootout
+        description: >
+          ADDITIVE, and NOT part of the score: a shootout decides who
+          progresses, not the result, so these are excluded from goals_scored
+          and the match is recorded as it finished - a Draw when a single-leg
+          tie went to penalties. NULL when there was no shootout.
+
+          Named for the shootout explicitly because a penalty converted in open
+          play is an ordinary goal and is already inside goals_scored.
+      - name: goals_conceded_penalty_shootout
+        description: "ADDITIVE. As goals_scored_penalty_shootout, from the other side."
       - name: corner_kicks
         description: "ADDITIVE."
       - name: ball_possession_pct
