@@ -51,11 +51,7 @@
   ];
 </script>
 
-{#if rounds.length === 0}
-  <!-- The section always renders. A tournament still in its regular rounds
-       has no bracket yet, and saying so is more use than an absent panel. -->
-  <div class="empty">The liguilla has not been played yet for this tournament.</div>
-{:else}
+{#if rounds.length > 0}
   <div class="bracket-scroll">
     <div class="bracket">
       {#each rounds as round}
@@ -97,15 +93,6 @@
 {/if}
 
 <style>
-  .empty {
-    border: 1px dashed #e5e7eb;
-    border-radius: 0.6rem;
-    padding: 1.25rem;
-    text-align: center;
-    font-size: 0.8125rem;
-    color: #9ca3af;
-    margin-bottom: 1.5rem;
-  }
   .bracket-scroll {
     overflow-x: auto;
     padding-bottom: 0.5rem;

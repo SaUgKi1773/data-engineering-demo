@@ -78,11 +78,5 @@
     :global(.standings-table table td:nth-child(1)) { width: 2.2rem; }
     :global(.standings-table table th:nth-child(n+3)),
     :global(.standings-table table td:nth-child(n+3)) { width: 3.5rem; }
-    /* The rule above pins every column past the second to a numeric width.
-       The Mexican table ends in a Zone label ("🟢 Liguilla"), which needs
-       room — only the desktop table carries that column, and the mobile one
-       is display:none at this breakpoint, so scoping it here is safe. */
-    :global(.standings-table table th:last-child),
-    :global(.standings-table table td:last-child) { width: 6.5rem; }
   }
 </style>

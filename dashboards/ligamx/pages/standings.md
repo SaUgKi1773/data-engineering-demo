@@ -62,14 +62,7 @@ select
     team as team, team_short as team_short,
     '<div style="display:flex;align-items:center;gap:6px;"><img src="' || team_logo || '" style="height:20px;width:20px;object-fit:contain;" onerror="this.style.display=''none''"><span>' || team || '</span></div>'       as team_col,
     '<div style="display:flex;align-items:center;gap:6px;"><img src="' || team_logo || '" style="height:20px;width:20px;object-fit:contain;" onerror="this.style.display=''none''"><span>' || team_short || '</span></div>' as team_col_mobile,
-    gp, w, d, l, gf, ga, gd, pts,
-    -- where the club would sit if the table finished here: the top six are
-    -- seeded straight into the liguilla, 7th-10th enter the play-in
-    case
-        when row_number() over (order by pts desc, gd desc, gf desc) <= 6  then '🟢 Liguilla'
-        when row_number() over (order by pts desc, gd desc, gf desc) <= 10 then '🟡 Play-in'
-        else '⚪ Out'
-    end as zone
+    gp, w, d, l, gf, ga, gd, pts
 from (
     select
         s.team_sk,
@@ -93,9 +86,16 @@ from (
 ```
 
 ```sql bracket
+-- Quarter-finals onward only. The play-in rounds are excluded deliberately:
+-- their format has changed twice since 2020 (a four-match repechaje, then a
+-- two-stage play-in) and they are missing entirely from some tournaments, so
+-- including them would make the bracket's left edge mean something different
+-- from one tournament to the next. From the quarter-finals the shape has been
+-- constant throughout.
 select *
 from ligamx.mart_liguilla_bracket
 where tournament = '${inputs.season.value}'
+  and round_order >= 3
 order by round_order, team_a_seed
 ```
 
@@ -116,17 +116,23 @@ order by pts desc
 
 ## {inputs.season.label} Standings
 
+<!-- A tournament still in its regular rounds has no knockout to draw, so the
+     whole section stays out of the page rather than showing an empty frame. -->
+{#if bracket.length > 0}
+
 ### 🏆 Liguilla
 
-<p style="font-size:0.8rem;color:#6b7280;margin:-0.5rem 0 1rem 0;">Where the title is actually decided. Every tie is played over two legs except the play-in — and if the aggregate finishes level in the quarter- or semi-finals there is no shootout: the better-seeded club goes through.</p>
+<p style="font-size:0.8rem;color:#6b7280;margin:-0.5rem 0 1rem 0;">Where the title is actually decided, once the table below is final. Every tie is played over two legs — and if the aggregate finishes level in the quarter- or semi-finals there is no shootout: the better-seeded club goes through.</p>
 
 <LiguillaBracket data={bracket} />
+
+{/if}
 
 {#if regular.length > 0}
 
 ### 📋 Regular Season
 
-<p style="font-size:0.8rem;color:#6b7280;margin:-0.5rem 0 1rem 0;">Showing the table <strong>as of round {inputs.round}</strong> of 17. Drag the slider above to step back through the tournament. The bracket above is unaffected — it is played after the table is final.</p>
+<p style="font-size:0.8rem;color:#6b7280;margin:-0.5rem 0 1rem 0;">Showing the table <strong>as of round {inputs.round}</strong> of 17. Drag the slider above to step back through the tournament.</p>
 
 <div class="standings-table block md:hidden">
 <DataTable data={regular} rows=20>
@@ -152,9 +158,6 @@ order by pts desc
     <Column id=ga   title="GA"  align=center />
     <Column id=gd   title="GD"  align=center />
     <Column id=pts  title="Pts" align=center contentType=colorscale colorPalette={['white','#6366f1']} />
-    <!-- explicit width: without it the table hands the slack to the Team
-         column and clips the zone labels -->
-    <Column id=zone title="Zone" width="110px" />
 </DataTable>
 </div>
 
