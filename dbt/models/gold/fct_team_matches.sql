@@ -6,17 +6,31 @@
     )
 }}
 
-WITH all_fixtures AS (
+WITH fixtures_with_result AS (
+    -- Whether the provider recorded a scoreline at all; only the awarded-result
+    -- branch of is_match_finished consults it.
+    SELECT DISTINCT fixture_id, _source
+    FROM {{ ref('fixture_scores') }}
+    WHERE description = 'CURRENT'
+),
+all_fixtures AS (
     SELECT
         f.id       AS fixture_id,
         f.league_id,
         f.venue_id,
+        f.venue_name,
         f.starting_at,
         f._source,
         sg.type_developer_name AS stage_type,
-        f.state_developer_name IN ('FT', 'FT_PEN', 'AET') AS is_finished
+        {{ is_match_finished('f._source', 'f.state_developer_name', 'f.state_name',
+                             'fr.fixture_id IS NOT NULL') }} AS is_finished
     FROM {{ ref('fixtures') }} f
-    JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
+    -- LEFT, not INNER: Highlightly has no stage entity, so an inner join would
+    -- drop its fixtures before the scope macro below ever got to judge them.
+    -- Scope is the macro's job, not a join's side effect.
+    LEFT JOIN {{ ref('stages') }} sg ON sg.id = f.stage_id
+    LEFT JOIN fixtures_with_result fr
+        ON fr.fixture_id = f.id AND fr._source = f._source
     -- League matches only; what counts varies by league (see the macro)
     WHERE {{ is_league_match('f.league_id', 'sg.type_developer_name') }}
 ),
@@ -121,9 +135,20 @@ stats AS (
     GROUP BY fixture_id, team_id
 ),
 main_referee AS (
-    SELECT fixture_id, referee_id
-    FROM {{ ref('fixture_referees') }}
-    WHERE type_id = 6
+    -- type_id 6 is the Sportmonks code for the match referee. Highlightly
+    -- reports exactly one official per match and no type at all, so gating on
+    -- the code alone would silently leave every new-league match refereeless.
+    SELECT
+        fr.fixture_id,
+        fr._source,
+        fr.referee_id,
+        -- folded through the same alias seed dim_referee uses, or a drifted
+        -- spelling would fail to find its own dimension member
+        COALESCE(a.canonical_name, fr.referee_name) AS referee_name
+    FROM {{ ref('fixture_referees') }} fr
+    LEFT JOIN {{ ref('referee_name_aliases') }} a ON a.alias_name = fr.referee_name
+    WHERE (fr._source = 'sportmonks' AND fr.type_id = 6)
+       OR (fr._source = 'highlightly' AND fr.referee_name IS NOT NULL)
 ),
 src AS (
     SELECT
@@ -131,6 +156,7 @@ src AS (
         f.league_id,
         f.starting_at,
         f.venue_id,
+        f.venue_name,
         f.stage_type,
         -- carried only to resolve the dimension joins below; the surrogate
         -- keys already encode provenance, so it never reaches the fact
@@ -139,6 +165,7 @@ src AS (
         mt.location,
         mt.opponent_team_id,
         mr.referee_id,
+        mr.referee_name,
         f.is_finished,
         co.coach_id,
         fo.formation,
@@ -195,7 +222,7 @@ src AS (
     LEFT JOIN score_corrections   scf  ON scf.fixture_id = f.fixture_id AND scf.team_id = mt.team_id
     LEFT JOIN score_corrections   oscf ON oscf.fixture_id = f.fixture_id AND oscf.team_id = mt.opponent_team_id
     LEFT JOIN stats         st   ON st.fixture_id  = f.fixture_id AND st.team_id  = mt.team_id
-    LEFT JOIN main_referee  mr   ON mr.fixture_id  = f.fixture_id
+    LEFT JOIN main_referee  mr   ON mr.fixture_id  = f.fixture_id AND mr._source = f._source
     LEFT JOIN coaches       co   ON co.fixture_id  = f.fixture_id AND co.team_id = mt.team_id
     LEFT JOIN formations    fo   ON fo.fixture_id  = f.fixture_id AND fo.team_id = mt.team_id
 )
@@ -282,8 +309,12 @@ LEFT JOIN {{ ref('dim_time') }}          dt_time ON dt_time.time_sk      = EXTRA
 LEFT JOIN {{ ref('dim_team') }}          dteam   ON dteam.team_id        = src.team_id             AND dteam._source = src._source
 LEFT JOIN {{ ref('dim_opponent_team') }} dopp    ON dopp.opponent_team_id = src.opponent_team_id   AND dopp._source  = src._source
 LEFT JOIN {{ ref('dim_league') }}        dl      ON dl.league_id         = src.league_id           AND dl._source    = src._source
-LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_id        = {{ canonical_venue_id('src.venue_id') }} AND ds._source = src._source
-LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_id        = src.referee_id          AND dr._source    = src._source
+-- likewise on the durable key: Highlightly names its grounds but mints no
+-- venue id, so the fixture's venue_name is the identity
+LEFT JOIN {{ ref('dim_stadium') }}       ds      ON ds.stadium_key       = COALESCE({{ canonical_venue_id('src.venue_id') }}::VARCHAR, src.venue_name) AND ds._source = src._source
+-- resolved on the durable key: Highlightly mints no referee id, so its
+-- officials are identified by name
+LEFT JOIN {{ ref('dim_referee') }}       dr      ON dr.referee_key       = COALESCE(src.referee_id::VARCHAR, src.referee_name) AND dr._source = src._source
 LEFT JOIN {{ ref('dim_match') }}          dm      ON dm.match_id          = src.fixture_id         AND dm._source    = src._source
 LEFT JOIN {{ ref('dim_coach') }}          dc      ON dc.coach_id          = src.coach_id           AND dc._source    = src._source
 LEFT JOIN {{ ref('dim_formation') }}      df      ON df.formation         = src.formation
