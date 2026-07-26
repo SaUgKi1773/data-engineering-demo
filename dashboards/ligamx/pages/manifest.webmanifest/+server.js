@@ -1,9 +1,9 @@
 export const prerender = true;
 
 const webmanifest = {
-	name: 'Superliga Analytics',
-	short_name: 'Superligaen',
-	description: 'Danish Premier Football League — standings, match results, player & team intelligence.',
+	name: 'Liga MX Analytics',
+	short_name: 'Liga MX',
+	description: 'Mexican Liga MX — Apertura and Clausura standings, liguilla bracket, match & team intelligence.',
 	start_url: '/',
 	display: 'standalone',
 	orientation: 'portrait',

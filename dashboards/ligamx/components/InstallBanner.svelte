@@ -59,7 +59,7 @@
   <div class="install-banner" role="dialog" aria-label="Install app">
     <img src="/apple-touch-icon.png" alt="" class="banner-icon" />
     <div class="banner-body">
-      <p class="banner-title">Superligaen</p>
+      <p class="banner-title">Liga MX</p>
       {#if isIOS}
         <p class="banner-text">
           To install, tap

@@ -1,10 +1,10 @@
 <svelte:head>
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Superligaen" />
+  <meta name="apple-mobile-web-app-title" content="Liga MX" />
   <meta name="theme-color" content="#1D4ED8" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <meta property="og:site_name" content="Superliga Analytics" />
+  <meta property="og:site_name" content="Liga MX Analytics" />
   <meta property="og:type" content="website" />
 </svelte:head>
 
@@ -78,5 +78,11 @@
     :global(.standings-table table td:nth-child(1)) { width: 2.2rem; }
     :global(.standings-table table th:nth-child(n+3)),
     :global(.standings-table table td:nth-child(n+3)) { width: 3.5rem; }
+    /* The rule above pins every column past the second to a numeric width.
+       The Mexican table ends in a Zone label ("🟢 Liguilla"), which needs
+       room — only the desktop table carries that column, and the mobile one
+       is display:none at this breakpoint, so scoping it here is safe. */
+    :global(.standings-table table th:last-child),
+    :global(.standings-table table td:last-child) { width: 6.5rem; }
   }
 </style>
