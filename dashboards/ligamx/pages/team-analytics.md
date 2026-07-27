@@ -134,7 +134,7 @@ where tournament = '${inputs.season.value}'
 -- Performance metrics are recomputed from match-grain data so they respond to the
 -- additional filters, benchmarked against the previous season sliced the same way.
 -- Ranking is season-only (it needs the whole league table) and stays unaffected by
--- the additional filters, as does Avg Squad Age.
+-- the additional filters.
 with cur as (
     select
         count(distinct match_id)                                            as matches,
@@ -143,6 +143,7 @@ with cur as (
         round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)       as pass_accuracy,
         round(avg(possession_pct), 1)                                       as avg_possession,
         round(100.0 * sum(case when result='Win' then 1 else 0 end) / nullif(count(distinct match_id), 0), 1) as win_rate,
+        round(100.0 * sum(case when goals_conceded = 0 then 1 else 0 end) / nullif(count(distinct match_id), 0), 1) as clean_sheet_pct,
         sum(red_cards)::int                                                 as total_red_cards
     from ligamx.mart_team_match
     where tournament = '${inputs.season.value}'
@@ -165,6 +166,7 @@ prev as (
         round(100.0 * sum(passes_accurate) / nullif(sum(total_passes), 0), 1)       as pass_accuracy,
         round(avg(possession_pct), 1)                                       as avg_possession,
         round(100.0 * sum(case when result='Win' then 1 else 0 end) / nullif(count(distinct match_id), 0), 1) as win_rate,
+        round(100.0 * sum(case when goals_conceded = 0 then 1 else 0 end) / nullif(count(distinct match_id), 0), 1) as clean_sheet_pct,
         sum(red_cards)::int                                                 as total_red_cards
     from ligamx.mart_team_match
     where tournament = (select tournament from prev_season)
@@ -191,6 +193,7 @@ select
     cur.pass_accuracy,
     cur.avg_possession,
     cur.win_rate,
+    cur.clean_sheet_pct,
     cur.total_red_cards,
     rank_cur.current_rank,
     rank_prev.prev_rank,
@@ -199,34 +202,69 @@ select
     prev.pass_accuracy                                                          as prev_pass_accuracy,
     prev.avg_possession                                                         as prev_avg_possession,
     prev.win_rate                                                               as prev_win_rate,
+    prev.clean_sheet_pct                                                        as prev_clean_sheet_pct,
     prev.total_red_cards                                                        as prev_total_red_cards,
     round(cur.goals_per_match    / nullif(prev.goals_per_match,    0), 2)       as goals_ratio,
     round(cur.conceded_per_match / nullif(prev.conceded_per_match, 0), 2)       as conceded_ratio,
     round(cur.pass_accuracy      / nullif(prev.pass_accuracy,      0), 2)       as pass_ratio,
     round(cur.win_rate           / nullif(prev.win_rate,           0), 2)       as win_rate_ratio,
-    round(cur.avg_possession     / nullif(prev.avg_possession,     0), 2)       as possession_ratio
+    round(cur.avg_possession     / nullif(prev.avg_possession,     0), 2)       as possession_ratio,
+    round(cur.clean_sheet_pct    / nullif(prev.clean_sheet_pct,    0), 2)       as clean_sheet_ratio
 from cur
 left join prev on true
 left join rank_cur on true
 left join rank_prev on true
 ```
 
-```sql goals_per_round
+```sql goals_per_match
+-- One point per match played, in date order. It cannot key off round_order:
+-- that column is a sort key where the liguilla phases sit at 18-22, so the
+-- axis would invent a "round 20", and both legs of a two-legged tie would
+-- land on the same x. Hence a per-match label, with the legs numbered.
+with played as (
+    select
+        match_date,
+        match_round_type,
+        round_display,
+        goals_scored,
+        goals_conceded,
+        opponent_team_name  as opponent,
+        result,
+        case match_round_type
+            when 'Regular Season'  then 'R' || round_order::int::varchar
+            when 'Reclasificación' then 'Recla'
+            when 'Play-offs'       then 'Play-in'
+            when 'Quarter-finals'  then 'QF'
+            when 'Semi-finals'     then 'SF'
+            when 'Final'           then 'F'
+        end                                                                     as phase_code,
+        count(*)     over (partition by match_round_type)                       as phase_matches,
+        row_number() over (partition by match_round_type order by match_date)   as leg
+    from ligamx.mart_team_match
+    where tournament = '${inputs.season.value}'
+      and team_name = '${inputs.team.value}'
+      and result in ${inputs.result.value}
+      and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
+      and match_round_type in ${inputs.phase.value}
+      and team_side in ${inputs.venue.value}
+      and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
+)
 select
-    round_order          as round,
+    case when match_round_type <> 'Regular Season' and phase_matches > 1
+         then phase_code || ' L' || leg::varchar
+         else phase_code
+    end                             as round,
+    case when match_round_type <> 'Regular Season' and phase_matches > 1
+         then round_display || ' · leg ' || leg::varchar
+         else round_display
+    end                             as round_full,
+    match_date,
     goals_scored,
     goals_conceded,
-    opponent_team_name  as opponent,
+    opponent,
     result
-from ligamx.mart_team_match
-where tournament = '${inputs.season.value}'
-  and team_name = '${inputs.team.value}'
-  and result in ${inputs.result.value}
-  and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
-  and match_round_type in ${inputs.phase.value}
-  and team_side in ${inputs.venue.value}
-  and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
-order by round_order
+from played
+order by match_date
 ```
 
 ```sql goals_vs_opponent
@@ -488,6 +526,17 @@ end
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
+    <div class="text-xs text-gray-500 text-center mb-2">Clean Sheet %</div>
+    <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.clean_sheet_pct}%</div>
+    <div class="flex justify-between items-center mt-3">
+      <span class="text-xs text-gray-400">Prev season: {k.prev_clean_sheet_pct != null ? k.prev_clean_sheet_pct + '%' : '—'}</span>
+      {#if k.clean_sheet_ratio != null}
+      <span class="text-sm font-bold {k.clean_sheet_ratio >= 1 ? 'text-green-600' : 'text-red-500'}">{k.clean_sheet_ratio >= 1 ? '▲' : '▼'}</span>
+      {/if}
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
     <div class="text-xs text-gray-500 text-center mb-2">Red Cards</div>
     <div class="text-3xl font-black text-center text-gray-900 flex-1 flex items-center justify-center">{k.total_red_cards}</div>
     <div class="flex justify-between items-center mt-3">
@@ -503,20 +552,21 @@ end
 
 ---
 
-## Goals per Round
+## Goals per Match
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Goals scored and conceded per match across the season. Hover a round to see the opponent.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Goals scored and conceded in every match of the season, in the order they were played — regular-season rounds first, then each liguilla leg. Hover a match to see the opponent.</p>
 
 <LineChart
-    data={goals_per_round}
+    data={goals_per_match}
     x=round
     y={['goals_scored','goals_conceded']}
-    xAxisTitle="Round"
+    xAxisTitle="Match"
     yAxisTitle="Goals"
+    sort=false
     colorPalette={['#3b82f6','#f97316']}
     markers=true
     chartAreaHeight=280
-    echartsOptions={{tooltip: {formatter: (function() { const lu = {}; for (const r of goals_per_round) { lu[r.round] = {opponent: r.opponent, result: r.result}; } return function(params) { const round = params[0].value[0]; const info = lu[round] || {}; let out = '<span style="font-weight:600;">Round ' + round + '</span>'; if (info.opponent) out += '<br><span style="font-size:11px;color:#9ca3af;">vs ' + info.opponent + ' · ' + info.result + '</span>'; for (const p of params) { out += '<br>' + p.marker + ' ' + p.seriesName + ': <b>' + p.value[1] + '</b>'; } return out; }; })()}, series: [{markLine: {silent: true, symbol: ['none','none'], label: {show: false}, data: goals_per_round.map(r => ([{coord: [r.round, r.goals_scored]}, {coord: [r.round, r.goals_conceded], lineStyle: {color: r.goals_scored >= r.goals_conceded ? '#3b82f6' : '#f97316', width: 2, opacity: 0.5}}]))}}]}}
+    echartsOptions={{tooltip: {formatter: (function() { const lu = {}; for (const r of goals_per_match) { lu[r.round] = r; } return function(params) { const key = params[0].axisValue ?? params[0].value[0]; const info = lu[key] || {}; let out = '<span style="font-weight:600;">' + (info.round_full ?? key) + '</span>'; const bits = []; if (info.match_date) bits.push(new Date(info.match_date).toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric'})); if (info.opponent) bits.push('vs ' + info.opponent); if (info.result) bits.push(info.result); if (bits.length) out += '<br><span style="font-size:11px;color:#9ca3af;">' + bits.join(' · ') + '</span>'; for (const p of params) { out += '<br>' + p.marker + ' ' + p.seriesName + ': <b>' + p.value[1] + '</b>'; } return out; }; })()}, series: [{markLine: {silent: true, symbol: ['none','none'], label: {show: false}, data: goals_per_match.map(r => ([{coord: [r.round, r.goals_scored]}, {coord: [r.round, r.goals_conceded], lineStyle: {color: r.goals_scored >= r.goals_conceded ? '#3b82f6' : '#f97316', width: 2, opacity: 0.5}}]))}}]}}
 />
 
 ## Goals against Opponent
