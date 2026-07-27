@@ -29,7 +29,7 @@ where season = '${inputs.season.value}'
 order by 1 desc
 ```
 
-{#key `${inputs.season.value}|${rounds[0]?.round_number}`}
+{#key `${inputs.season.value}|${rounds.length > 0}`}
 <Dropdown data={rounds} name=round value=round_number label=round_number defaultValue={rounds[0]?.round_number} order="round_number desc" />
 {/key}
 
