@@ -34,31 +34,25 @@ select * from hub.last_updated
 
 <div class="max-w-5xl mx-auto px-1" style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
 
-<!-- ══ HERO — headline across the top, copy left / spinning globe right ═══ -->
+<!-- ══ HERO — copy stacked over the spinning globe ═══════════════════════ -->
 <div class="pt-12 pb-14 md:pt-20 md:pb-20">
-  <!-- Headline spans the full width, above both the copy and the globe -->
-  <div class="text-center md:text-left mb-8 md:mb-10">
+  <!-- Centred at every width, like the Our Story and Group in Numbers bands
+       below and like the hero already was on mobile. -->
+  <div class="text-center">
     <div class="text-gray-400 text-xs font-semibold uppercase" style="letter-spacing: 0.14em;">Krogvad Analytics Hub</div>
     <h1 class="text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 leading-[1.08] mb-0" style="margin-top:0.9rem;">Football intelligence, for the whole world.</h1>
+    <!-- Capped: the copy no longer shares a row with the globe, and a paragraph
+         running the full width of the page would read as a wall. -->
+    <p class="text-gray-500 text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-8" style="margin-top:1.75rem;">From beautiful Farum, Denmark, we build a dedicated analytics home for every league — each with its own identity, all powered by one shared data warehouse, refreshed every night. Free for everyone, forever.</p>
+    <div class="flex flex-wrap items-center justify-center gap-x-7 gap-y-4">
+      <a href="#platforms" class="inline-block rounded-full px-6 py-2.5 text-[15px] font-medium text-white no-underline transition-opacity hover:opacity-90" style="background:#c8102e;">Explore our platforms</a>
+      <a href="https://saugki1773.github.io/data-engineering-blog/" target="_blank" class="inline-flex items-center gap-1.5 text-[15px] font-medium text-gray-900 no-underline hover:underline">Behind the build <span style="color:#c8102e;">›</span></a>
+    </div>
   </div>
-  <div class="grid md:grid-cols-2 items-center gap-10 md:gap-6">
-    <div class="text-center md:text-left">
-      <!-- Fills the whole column on desktop: capping it narrower than the
-           column opened a dead gap between the copy and the globe. -->
-      <p class="text-gray-500 text-base md:text-lg max-w-xl md:max-w-none mx-auto md:mx-0 leading-relaxed mb-8">From beautiful Farum, Denmark, we build a dedicated analytics home for every league — each with its own identity, all powered by one shared data warehouse, refreshed every night. Free for everyone, forever.</p>
-      <div class="flex flex-wrap items-center justify-center md:justify-start gap-x-7 gap-y-4">
-        <a href="#platforms" class="inline-block rounded-full px-6 py-2.5 text-[15px] font-medium text-white no-underline transition-opacity hover:opacity-90" style="background:#c8102e;">Explore our platforms</a>
-        <a href="https://saugki1773.github.io/data-engineering-blog/" target="_blank" class="inline-flex items-center gap-1.5 text-[15px] font-medium text-gray-900 no-underline hover:underline">Behind the build <span style="color:#c8102e;">›</span></a>
-      </div>
-    </div>
-    <!-- Order last on mobile so the copy still follows the headline directly.
-         Centred on mobile, but pinned to the left of its column on desktop so
-         it sits next to the copy instead of drifting to the page edge. Kept
-         smaller than the copy column too — the headline moved out of this row,
-         so a full-width globe would tower over the paragraph beside it. -->
-    <div class="order-last mx-auto md:mx-0 w-full" style="max-width: 20rem;">
-      <Globe />
-    </div>
+  <!-- Below the copy on every width now, which is the order mobile already
+       had. Centred, since nothing sits beside it to anchor it left. -->
+  <div class="mx-auto w-full mt-12 md:mt-14" style="max-width: 22rem;">
+    <Globe />
   </div>
 </div>
 
