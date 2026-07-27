@@ -250,7 +250,7 @@ where match_id is not null
 order by match_date desc
 ```
 
-<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1.5rem 0;">Before every fixture, the match model publishes win, draw and loss probabilities. Predictions are locked three hours before kickoff and never revised; once a match is completed, the prediction is evaluated against the actual result. This page shows the current projection, upcoming predictions, and the model's accuracy to date.</p>
+<p style="font-size:0.8125rem;color:#6b7280;margin:0 0 1.5rem 0;">Before every fixture, the match model publishes win, draw and loss probabilities. Predictions are locked two days before the match and never revised; once a match is completed, the prediction is evaluated against the actual result. This page shows the current projection, upcoming predictions, and the model's accuracy to date.</p>
 
 <div class="flex flex-wrap gap-3 items-end mb-6">
   {#key seasons[0]?.season}
@@ -389,7 +389,7 @@ order by match_date desc
     <Column id="Correct"         contentType=html align=center />
 </DataTable>
 
-<p style="font-size:0.6875rem;color:#9ca3af;margin:2rem 0 0 0;">Methodology: probabilities are produced by a Poisson goals model fitted on the previous two seasons of results. Predictions refresh nightly and are locked three hours before kickoff; nothing is predicted or revised after a match has started. The predicted result is the highest-probability outcome, and a prediction counts as correct when that outcome occurs. Expected points are 3 × win probability + 1 × draw probability. For reference, always predicting a home win has historically yielded around 45% accuracy. The model estimates draw probabilities but rarely selects a draw as the most likely outcome — a draw is seldom more probable than the stronger side winning.</p>
+<p style="font-size:0.6875rem;color:#9ca3af;margin:2rem 0 0 0;">Methodology: probabilities are produced by a Poisson goals model fitted on the previous two seasons of results. Predictions refresh nightly and are locked two days before the match; nothing is predicted or revised inside that window. The predicted result is the highest-probability outcome, and a prediction counts as correct when that outcome occurs. Expected points are 3 × win probability + 1 × draw probability. For reference, always predicting a home win has historically yielded around 45% accuracy. The model estimates draw probabilities but rarely selects a draw as the most likely outcome — a draw is seldom more probable than the stronger side winning.</p>
 
 ```sql last_updated
 select * from scotland.last_updated

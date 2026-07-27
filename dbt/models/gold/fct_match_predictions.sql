@@ -8,26 +8,29 @@
 
 -- Pre-match win/draw/loss probabilities at team-side grain: two rows per
 -- fixture, each from that team's perspective, mirroring fct_team_matches.
--- Predictions freeze at kickoff in bronze, so past rows never change here.
+-- Predictions freeze two days out in bronze, so past rows never change here.
 WITH participants AS (
-    SELECT fixture_id, team_id, location
+    SELECT fixture_id, team_id, location, _source
     FROM {{ ref('fixture_participants') }}
 ),
 match_teams AS (
     SELECT
         p.fixture_id,
+        p._source,
         p.team_id,
         p.location,
         opp.team_id AS opponent_team_id
     FROM participants p
     JOIN participants opp
         ON opp.fixture_id = p.fixture_id
+       AND opp._source    = p._source
        AND opp.location  != p.location
 ),
 src AS (
     SELECT
         s.match_id,
         s.league_id,
+        s._source,
         s.kickoff_at,
         mt.team_id,
         mt.opponent_team_id,
@@ -40,7 +43,9 @@ src AS (
         s.model_version,
         s.predicted_at
     FROM {{ ref('match_predictions') }} s
-    JOIN match_teams mt ON mt.fixture_id = s.match_id
+    JOIN match_teams mt
+        ON mt.fixture_id = s.match_id
+       AND mt._source    = s._source
 )
 SELECT
     COALESCE(dd.date_sk,            -1) AS date_sk,
@@ -63,12 +68,12 @@ SELECT
     src.predicted_at
 FROM src
 LEFT JOIN {{ ref('dim_date') }}          dd    ON dd.date               = src.kickoff_at::DATE
--- Predictions are produced only for Sportmonks fixtures, so the dimension
--- lookups resolve against that source explicitly rather than by id alone.
-LEFT JOIN {{ ref('dim_team') }}          dteam ON dteam.team_id         = src.team_id          AND dteam._source = 'sportmonks'
-LEFT JOIN {{ ref('dim_opponent_team') }} dopp  ON dopp.opponent_team_id = src.opponent_team_id AND dopp._source  = 'sportmonks'
-LEFT JOIN {{ ref('dim_league') }}        dl    ON dl.league_id          = src.league_id        AND dl._source    = 'sportmonks'
-LEFT JOIN {{ ref('dim_match') }}         dm    ON dm.match_id           = src.match_id         AND dm._source    = 'sportmonks'
+-- Provider-keyed dims match on (natural key, _source): an id identifies an
+-- entity only within the feed that minted it.
+LEFT JOIN {{ ref('dim_team') }}          dteam ON dteam.team_id         = src.team_id          AND dteam._source = src._source
+LEFT JOIN {{ ref('dim_opponent_team') }} dopp  ON dopp.opponent_team_id = src.opponent_team_id AND dopp._source  = src._source
+LEFT JOIN {{ ref('dim_league') }}        dl    ON dl.league_id          = src.league_id        AND dl._source    = src._source
+LEFT JOIN {{ ref('dim_match') }}         dm    ON dm.match_id           = src.match_id         AND dm._source    = src._source
 {% if is_incremental() %}
 WHERE {{ gold_incremental_filter() }}
 {% endif %}
