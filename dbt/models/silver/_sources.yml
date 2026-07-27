@@ -49,6 +49,7 @@ sources:
         description: >
           Win/draw/loss probabilities for upcoming fixtures, handed over by the
           data science producer (ingestion/datascience). One row per fixture,
-          refreshed until 3h before kickoff, frozen after.
+          keyed on (match_id, _source), refreshed until 3h before kickoff,
+          frozen after.
         loaded_at_field: predicted_at
         freshness: null

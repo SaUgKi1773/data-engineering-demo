@@ -4,13 +4,13 @@ Predict match outcomes for upcoming fixtures (the "data science team").
 
 Fits a Poisson attack/defense goals model per league from completed matches
 in the gold layer, and writes win/draw/loss probabilities for every upcoming
-fixture in a predictable league (see PREDICTED_SOURCE) to
-bronze.datascience__match_predictions. dbt then models the bronze data into
-silver + gold.
+fixture in every league to bronze.datascience__match_predictions. dbt then
+models the bronze data into silver + gold.
 
-Predictions are refreshed on every run for fixtures that have not kicked off
-yet (delete + insert, one row per fixture). Rows for fixtures at or past
-kickoff are never touched, so the final pre-match prediction is frozen.
+Predictions are refreshed on every run for fixtures at least FREEZE_LEAD_DAYS
+days out (delete + insert, one row per fixture). Rows for fixtures closer than
+that are never touched, so the final pre-match prediction is frozen well
+before kickoff.
 
 Usage:
   python ingestion/datascience/predict_match_outcomes.py
@@ -35,12 +35,11 @@ log = logging.getLogger(__name__)
 DB_DEFAULT = "superligaen"
 MODEL_VERSION = "poisson-v1"
 
-# Predictions are handed to bronze keyed on match_id alone, with no _source
-# column, so gold.fct_match_predictions can only resolve them against one
-# source's dimension rows. Until that key carries _source end to end, predict
-# only the leagues that source can serve — otherwise every foreign key on the
-# extra leagues lands on -1 and the DQ gate fails.
-PREDICTED_SOURCE = "sportmonks"
+# A fixture is identified by its provider id *and* the provider that issued it:
+# the id spaces overlap in principle, and gold resolves its dimension joins on
+# the pair. Rows written before the contract carried _source were all
+# Sportmonks, which is what the one-off backfill in migrate_bronze() assumes.
+LEGACY_SOURCE = "sportmonks"
 
 # Model parameters
 TRAINING_WINDOW_DAYS = 730   # fit on the last two years of completed matches
@@ -48,15 +47,22 @@ PRIOR_MATCHES = 6            # pseudo-matches of league-average form (shrinks sm
 MAX_GOALS = 10               # score grid is 0..MAX_GOALS per team
 LAMBDA_MIN, LAMBDA_MAX = 0.1, 6.0
 
-# A fixture only qualifies for (re-)prediction while its kickoff is safely in
-# the future. Kick-off times in gold are league-local and the runner is UTC;
-# the margin absorbs any timezone offset so a match in progress is never touched.
-KICKOFF_SAFETY_MARGIN = timedelta(hours=3)
+# A fixture only qualifies for (re-)prediction while its match date is at least
+# this many days ahead. The rule is deliberately whole-day rather than
+# hour-based: kick-off times in gold are league-local, the runner is UTC, and
+# the leagues span UTC-7 to UTC+3, so any hour-level margin has to reason about
+# offsets that shift twice a year. Two clear days is wider than any offset can
+# be, which makes "never predicted after kickoff" true by construction instead
+# of by arithmetic.
+FREEZE_LEAD_DAYS = 2
 
+# Provider ids are BIGINT: Highlightly fixture ids are ten digits and overflow
+# INTEGER. _source sits last so a fresh table matches a migrated one column for
+# column (ALTER TABLE ADD COLUMN appends).
 BRONZE_CREATE_SQL = """
 CREATE TABLE IF NOT EXISTS {db}.bronze.datascience__match_predictions (
-    match_id       INTEGER,
-    league_id      INTEGER,
+    match_id       BIGINT,
+    league_id      BIGINT,
     season         VARCHAR,
     round_number   INTEGER,
     match_name     VARCHAR,
@@ -67,7 +73,8 @@ CREATE TABLE IF NOT EXISTS {db}.bronze.datascience__match_predictions (
     home_goals_exp DOUBLE,
     away_goals_exp DOUBLE,
     model_version  VARCHAR,
-    predicted_at   TIMESTAMP
+    predicted_at   TIMESTAMP,
+    _source        VARCHAR
 )
 """
 
@@ -102,13 +109,13 @@ GROUP BY m.match_sk
 HAVING home_goals IS NOT NULL AND away_goals IS NOT NULL
 """
 
-# All upcoming fixtures, one row per match, for every predictable league in gold
-# (see PREDICTED_SOURCE).
+# All upcoming fixtures, one row per match, for every league in gold.
 UPCOMING_QUERY = """
 SELECT
     f.league_sk,
     MAX(l.league_id)                                              AS league_id,
     MAX(l.league_name)                                            AS league_name,
+    MAX(l._source)                                                AS source,
     m.match_id,
     MAX(m.match_name)                                             AS match_name,
     MAX(d.season)                                                 AS season,
@@ -124,7 +131,6 @@ JOIN {db}.gold.dim_date             d  ON d.date_sk          = f.date_sk
 JOIN {db}.gold.dim_team_side        ts ON ts.team_side_sk    = f.team_side_sk
 JOIN {db}.gold.dim_match_result     mr ON mr.match_result_sk = f.match_result_sk
 WHERE mr.match_result = 'Pending'
-  AND l._source = '{source}'
 GROUP BY f.league_sk, m.match_id
 ORDER BY f.league_sk, match_date, kick_off_time
 """
@@ -219,22 +225,47 @@ def parse_kickoff(match_date, kick_off_time: str | None) -> datetime:
         hour, minute = map(int, (kick_off_time or "").split(":"))
         return base.replace(hour=hour, minute=minute)
     except ValueError:
-        return base  # unknown kick-off time: midnight, i.e. the most conservative cutoff
+        return base  # unknown kick-off time: midnight on the match date
+
+
+def migrate_bronze(con, db: str) -> None:
+    """Bring a pre-existing bronze table up to the current contract, in place.
+
+    Predictions used to be Sportmonks-only and keyed on a bare provider id, so
+    a table created before that widening lacks _source and types the ids as
+    INTEGER. Both are fixed here rather than by a full refresh, because rows
+    for kicked-off fixtures are frozen history the model can never reproduce.
+    """
+    table = f"{db}.bronze.datascience__match_predictions"
+    types = {name: dtype for name, dtype, *_ in con.execute(f"DESCRIBE {table}").fetchall()}
+
+    if "_source" not in types:
+        con.execute(f"ALTER TABLE {table} ADD COLUMN _source VARCHAR")
+        con.execute(f"UPDATE {table} SET _source = ? WHERE _source IS NULL", [LEGACY_SOURCE])
+        log.info(f"Migrated bronze: added _source, backfilled existing rows to '{LEGACY_SOURCE}'")
+
+    for column in ("match_id", "league_id"):
+        if types.get(column) == "INTEGER":
+            con.execute(f"ALTER TABLE {table} ALTER COLUMN {column} TYPE BIGINT")
+            log.info(f"Migrated bronze: widened {column} to BIGINT")
 
 
 def run(con, db: str, dry_run: bool) -> None:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    cutoff = now + KICKOFF_SAFETY_MARGIN
+    cutoff_date = now.date() + timedelta(days=FREEZE_LEAD_DAYS)
 
-    rows = con.execute(UPCOMING_QUERY.format(db=db, source=PREDICTED_SOURCE)).fetchall()
+    rows = con.execute(UPCOMING_QUERY.format(db=db)).fetchall()
     cols = [d[0] for d in con.description]
     fixtures = [dict(zip(cols, r)) for r in rows]
-    log.info(f"Found {len(fixtures)} pending {PREDICTED_SOURCE} fixtures in gold")
+    log.info(
+        f"Found {len(fixtures)} pending fixtures in gold "
+        f"across {len({f['league_sk'] for f in fixtures})} leagues"
+    )
 
-    predictable = [f for f in fixtures if parse_kickoff(f["match_date"], f["kick_off_time"]) > cutoff]
+    predictable = [f for f in fixtures if f["match_date"] >= cutoff_date]
     skipped = len(fixtures) - len(predictable)
     if skipped:
-        log.info(f"Skipping {skipped} fixtures at or near kickoff (frozen)")
+        log.info(f"Skipping {skipped} fixtures kicking off before {cutoff_date} (frozen)")
     if not predictable:
         log.info("Nothing to predict")
         return
@@ -255,7 +286,7 @@ def run(con, db: str, dry_run: bool) -> None:
 
         model = fit_league_model(matches)
         log.info(
-            f"{league_name}: fitted on {len(matches)} matches "
+            f"{league_name} ({league_fixtures[0]['source']}): fitted on {len(matches)} matches "
             f"(league avg {model['mu_home']:.2f}-{model['mu_away']:.2f}), "
             f"predicting {len(league_fixtures)} fixtures"
         )
@@ -272,7 +303,7 @@ def run(con, db: str, dry_run: bool) -> None:
                 f["match_name"], parse_kickoff(f["match_date"], f["kick_off_time"]),
                 p["home_win_prob"], p["draw_prob"], p["away_win_prob"],
                 p["home_goals_exp"], p["away_goals_exp"],
-                MODEL_VERSION, now,
+                MODEL_VERSION, now, f["source"],
             ))
 
     if dry_run:
@@ -282,22 +313,28 @@ def run(con, db: str, dry_run: bool) -> None:
         log.info("No predictions produced")
         return
 
-    # Refresh exactly the fixtures predicted this run; every other row —
-    # in particular anything at or past kickoff — is left untouched.
-    match_ids = [r[0] for r in to_insert]
+    # Refresh exactly the fixtures predicted this run; every other row — in
+    # particular anything inside the freeze window — is left untouched. The
+    # delete is per source: a match_id only identifies a fixture alongside the
+    # provider that issued it.
+    match_ids_by_source: dict[str, list[int]] = {}
+    for row in to_insert:
+        match_ids_by_source.setdefault(row[-1], []).append(row[0])
+
     con.execute("BEGIN TRANSACTION")
-    con.execute(
-        f"DELETE FROM {db}.bronze.datascience__match_predictions WHERE match_id IN "
-        f"({','.join('?' * len(match_ids))})",
-        match_ids,
-    )
+    for source, match_ids in match_ids_by_source.items():
+        con.execute(
+            f"DELETE FROM {db}.bronze.datascience__match_predictions "
+            f"WHERE _source = ? AND match_id IN ({','.join('?' * len(match_ids))})",
+            [source, *match_ids],
+        )
     con.executemany(
         f"""
         INSERT INTO {db}.bronze.datascience__match_predictions
             (match_id, league_id, season, round_number, match_name, kickoff_at,
              home_win_prob, draw_prob, away_win_prob, home_goals_exp, away_goals_exp,
-             model_version, predicted_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             model_version, predicted_at, _source)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         to_insert,
     )
@@ -315,6 +352,7 @@ def main() -> None:
     con = duckdb.connect(f"md:{args.db}?motherduck_token={token}")
 
     con.execute(BRONZE_CREATE_SQL.format(db=args.db))
+    migrate_bronze(con, args.db)
     for stmt in META_CREATE_SQL.format(db=args.db).strip().split(";"):
         if stmt.strip():
             con.execute(stmt)

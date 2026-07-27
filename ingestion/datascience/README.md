@@ -3,7 +3,7 @@
 `predict_match_outcomes.py` plays the role of the group's data science team:
 it fits a Poisson goals model per league from completed matches in the gold
 layer and hands over win/draw/loss probabilities for every upcoming fixture in
-a Sportmonks league. The handover lands in
+every league. The handover lands in
 `bronze.datascience__match_predictions`, which is the contract downstream
 layers (dbt silver/gold, #399) rely on.
 
@@ -13,8 +13,9 @@ One row per upcoming fixture, refreshed nightly until kickoff, frozen after.
 
 | Column           | Type      | Meaning                                                        |
 |------------------|-----------|----------------------------------------------------------------|
-| `match_id`       | INTEGER   | Sportmonks fixture id — joins to `gold.dim_match.match_id`     |
-| `league_id`      | INTEGER   | Sportmonks league id — joins to `gold.dim_league.league_id`    |
+| `match_id`       | BIGINT    | Provider fixture id — joins to `gold.dim_match.match_id`       |
+| `league_id`      | BIGINT    | Provider league id — joins to `gold.dim_league.league_id`      |
+| `_source`        | VARCHAR   | Provider that minted those ids: `sportmonks` or `highlightly`  |
 | `season`         | VARCHAR   | Season label, e.g. `2026/27`                                   |
 | `round_number`   | INTEGER   | Round the fixture belongs to                                   |
 | `match_name`     | VARCHAR   | `Home Team - Away Team` (debugging aid, not a join key)        |
@@ -29,25 +30,37 @@ One row per upcoming fixture, refreshed nightly until kickoff, frozen after.
 
 Guarantees downstream can rely on:
 
-- **At most one row per `match_id`.** Refreshes are delete + insert of the
-  same fixture, never appends.
+- **At most one row per `(match_id, _source)`.** That pair is the natural key:
+  `match_id` is a provider id, so it identifies a fixture only alongside the
+  provider that issued it. Refreshes are delete + insert of the same fixture,
+  never appends.
 - **`home_win_prob + draw_prob + away_win_prob` ≈ 1** (±0.0002 rounding).
 - **Rows are never created or changed after kickoff.** A fixture is only
-  (re-)predicted while its kickoff is at least 3 hours in the future, so the
-  last pre-match prediction is what history keeps. This is what makes the
-  accuracy tracking in #400 honest.
-- **Sportmonks leagues are covered** — fixtures are discovered from
-  `gold.fct_team_matches` rows with `match_result = 'Pending'` whose league
-  came from Sportmonks. A league with no completed matches to train on is
-  skipped.
+  (re-)predicted while its match date is at least two days ahead, so the last
+  pre-match prediction is what history keeps. This is what makes the accuracy
+  tracking in #400 honest.
 
-  The restriction exists because `match_id` above is a bare provider id with
-  no `_source` alongside it, so `gold.fct_match_predictions` has to pick one
-  source to resolve its dimension joins against. Highlightly leagues (La Liga,
-  Liga MX, Süper Lig) entered gold on 2026-07-26 and were predicted that
-  night; every foreign key on them resolved to `-1` and the DQ gate failed.
-  Widening coverage means carrying `_source` through this contract into silver
-  and gold first.
+  The cutoff is whole-day on purpose. Kick-off times in gold are league-local
+  and the runner is UTC, and the leagues now span UTC-7 to UTC+3 with daylight
+  saving on top; two clear days is wider than any offset can be, so no
+  arithmetic about timezones stands between a prediction and its guarantee.
+- **Every league in gold is covered** — fixtures are discovered from
+  `gold.fct_team_matches` rows with `match_result = 'Pending'`, whatever the
+  source. A league with no completed matches to train on is skipped, so a
+  league joins the coverage on its own as soon as it has history.
+
+  Coverage was Sportmonks-only until 2026-07-27. The Highlightly leagues (La
+  Liga, Liga MX, Süper Lig) entered gold on 2026-07-26 and were predicted that
+  night against a contract that carried no `_source`; `fct_match_predictions`
+  resolved its dimension joins as Sportmonks, every foreign key landed on `-1`
+  and the DQ gate failed. `_source` now travels with the ids through silver
+  into gold, which is what makes the join resolvable per provider.
+
+  A table created before that change is migrated in place on the next run —
+  `_source` is added and backfilled to `sportmonks`, and the two id columns are
+  widened to BIGINT (Highlightly's ten-digit fixture ids overflow INTEGER).
+  Frozen rows for kicked-off fixtures are preserved: the model cannot
+  reproduce a pre-match prediction after the fact.
 
 ## Model: `poisson-v1`
 
