@@ -22,6 +22,11 @@ SELECT
         WHEN 'Play-offs'      THEN 'Play-in'
         ELSE m.match_round_type
     END                                     AS round_label,
+    CASE m.match_round_type
+        WHEN 'Regular Season' THEN 'Round ' || m.match_round_number::VARCHAR
+        WHEN 'Play-offs'      THEN 'Play-in'
+        ELSE m.match_round_type
+    END                                     AS round_display,
     m.match_short_name,
     m.match_result                          AS score,
     t.team_name,
@@ -38,6 +43,15 @@ SELECT
     f.yellow_cards,
     f.red_cards,
     f.shots_on_target                       AS shots_on_goal,
+    -- Shots are published split three ways; the total only exists when at
+    -- least one part does, so an unrecorded match stays NULL rather than 0.
+    CASE WHEN f.shots_on_target IS NULL
+          AND f.shots_off_target IS NULL
+          AND f.shots_blocked IS NULL THEN NULL
+         ELSE COALESCE(f.shots_on_target,  0)
+            + COALESCE(f.shots_off_target, 0)
+            + COALESCE(f.shots_blocked,    0)
+    END                                     AS total_shots,
     f.passes_total                          AS total_passes,
     f.passes_successful                     AS passes_accurate
 FROM superligaen.gold.fct_team_matches    f

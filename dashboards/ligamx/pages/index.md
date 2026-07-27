@@ -119,6 +119,25 @@ select * from ligamx.mart_home_summary
 
 <div class="mb-5">
   <div class="mb-2 flex items-center gap-3">
+    <span class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">Intelligence</span>
+    <div class="h-px flex-1 bg-gray-200"></div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+    <a href="/league-analytics" class="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm no-underline transition-all duration-200 hover:border-emerald-300 hover:shadow-md">
+      <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-lg">📈</span>
+      <span class="text-sm font-semibold text-gray-800 transition-colors group-hover:text-emerald-600">League Intelligence</span>
+      <span class="ml-auto text-gray-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-emerald-400">→</span>
+    </a>
+    <a href="/team-analytics" class="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm no-underline transition-all duration-200 hover:border-sky-300 hover:shadow-md">
+      <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-sky-50 text-lg">👥</span>
+      <span class="text-sm font-semibold text-gray-800 transition-colors group-hover:text-sky-600">Team Intelligence</span>
+      <span class="ml-auto text-gray-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-sky-400">→</span>
+    </a>
+  </div>
+</div>
+
+<div class="mb-5">
+  <div class="mb-2 flex items-center gap-3">
     <span class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">More</span>
     <div class="h-px flex-1 bg-gray-200"></div>
   </div>

@@ -24,6 +24,13 @@ export const navGroups = [
     ]
   },
   {
+    label: 'Intelligence',
+    items: [
+      { href: '/league-analytics', label: 'League Intelligence', emoji: '📈', tint: '#ecfdf5' },
+      { href: '/team-analytics', label: 'Team Intelligence', emoji: '👥', tint: '#f0f9ff' }
+    ]
+  },
+  {
     label: 'More',
     items: [
       { href: '/about', label: 'About This Project', emoji: '👤', tint: '#f3f4f6' }
