@@ -27,7 +27,11 @@ SELECT
     CASE WHEN ts.team_side = 'Home'
          THEN COALESCE(me.max_away_deficit, 0)
          ELSE COALESCE(me.max_home_deficit, 0) END > 0   AS led,
+    -- NULL, not 'Behind', where the interval score was never recorded: a fixture
+    -- whose provider published neither a half-time score nor a timeline. None in
+    -- this league today, but letting the ELSE swallow it is how #482 happened.
     CASE
+        WHEN f.goals_ht_scored IS NULL               THEN NULL
         WHEN f.goals_ht_scored > f.goals_ht_conceded THEN 'Ahead'
         WHEN f.goals_ht_scored = f.goals_ht_conceded THEN 'Level'
         ELSE 'Behind'
