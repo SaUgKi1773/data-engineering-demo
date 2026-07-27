@@ -174,7 +174,7 @@ select * from hub.last_updated
     <a href="https://www.linkedin.com/in/salih-ugur-kimilli-since1773/" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">LinkedIn</a>
   </div>
   <p class="text-gray-500 text-sm mb-2">Built in beautiful Farum, Denmark — free for the whole world, forever.</p>
-  <p class="text-gray-400 text-xs mb-0">© 2026 Krogvad Analytics Hub · Data updated {last_updated[0].last_updated?.slice(0, 16).replace('T', ' ')} UTC</p>
+  <p class="text-gray-400 text-xs mb-0">© 2026 Krogvad Analytics Hub · Data updated {last_updated[0]?.last_updated?.slice(0, 16).replace('T', ' ') ?? '–'} UTC</p>
 </div>
 
 </div>

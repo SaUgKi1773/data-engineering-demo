@@ -57,6 +57,13 @@ title: Match Analysis
     return `background:${c.bg};color:${c.text};`;
   }
 
+  // The discussion row can arrive a beat before its persona name is populated.
+  // Indexing [0] straight on the undefined value throws mid-render, and a throw
+  // inside the Svelte update takes the whole update cycle down with it — the
+  // timeline comes up empty, the lineup never leaves "Loading lineup…" and the
+  // forum counts comments it does not draw.
+  const initial = (name) => (name ? String(name)[0] : '–');
+
   function daysAgo(dateVal) {
     if (!dateVal) return '';
     const then = new Date(dateVal);
@@ -364,7 +371,7 @@ order by team_side desc, position_group, position_name
   {#each discussions as post}
   <div style="display:flex;gap:12px;padding:16px 20px;background:white;border-bottom:1px solid #f3f4f6;">
     <div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8125rem;font-weight:700;{avatarStyle(post.persona_name)}">
-      {post.persona_name[0]}
+      {initial(post.persona_name)}
     </div>
     <div style="flex:1;min-width:0;">
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
