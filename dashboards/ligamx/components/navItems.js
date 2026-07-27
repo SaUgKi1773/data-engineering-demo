@@ -16,6 +16,14 @@ export const navGroups = [
     ]
   },
   {
+    label: 'Matches',
+    items: [
+      { href: '/upcoming-matches', label: 'Upcoming Fixtures', emoji: '📅', tint: '#f5f3ff' },
+      { href: '/match-results', label: 'Match Results', emoji: '⚽', tint: '#eff6ff' },
+      { href: '/predictions', label: 'Prediction Module', emoji: '🔮', tint: '#fdf4ff' }
+    ]
+  },
+  {
     label: 'More',
     items: [
       { href: '/about', label: 'About This Project', emoji: '👤', tint: '#f3f4f6' }
@@ -68,5 +76,8 @@ export const externalLinks = [
 // the header toggle, so the bar is pure quick-nav — no menu button here.
 export const bottomItems = [
   { href: '/standings', label: 'Standings', emoji: '🏆' },
-  { href: '/', label: 'Home', logo: '/logo-circle.svg' }
+  { href: '/upcoming-matches', label: 'Fixtures', emoji: '📅' },
+  { href: '/', label: 'Home', logo: '/logo-circle.svg' },
+  { href: '/match-results', label: 'Results', emoji: '⚽' },
+  { href: '/predictions', label: 'Predictions', emoji: '🔮' }
 ];

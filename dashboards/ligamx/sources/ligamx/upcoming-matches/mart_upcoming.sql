@@ -1,0 +1,70 @@
+-- Fixtures still to be played, one row per match, feeding the Upcoming
+-- Fixtures list and the Match Preview page.
+--
+-- Two Liga MX shapes differ from the European leagues on this platform:
+--   * `tournament` (Apertura / Clausura) is the unit, not the season year.
+--     Two separate competitions run inside one season year.
+--   * Rounds are not all numbers. The regular season runs 1-17; the liguilla
+--     phases that follow carry no round number at all, so `round_order` puts
+--     them after 17 in the order they are played and `round_label` names them.
+--
+-- Stadium and referee are published by the feed only once a match has been
+-- played, so every pending fixture reads TBD here. That is the data, not a
+-- gap in this model - the values arrive on the Match Results side.
+WITH base AS (
+    SELECT
+        m.match_id,
+        d.date                                                                                  AS match_date,
+        d.season_mexico                                                                         AS tournament,
+        CASE m.match_round_type
+            WHEN 'Regular Season'  THEN m.match_round_number
+            WHEN 'Reclasificación' THEN 18
+            WHEN 'Play-offs'       THEN 19
+            WHEN 'Quarter-finals'  THEN 20
+            WHEN 'Semi-finals'     THEN 21
+            WHEN 'Final'           THEN 22
+        END                                                                                     AS round_order,
+        CASE m.match_round_type
+            WHEN 'Regular Season' THEN m.match_round_number::VARCHAR
+            WHEN 'Play-offs'      THEN 'Play-in'
+            ELSE m.match_round_type
+        END                                                                                     AS round_label,
+        CASE m.match_round_type
+            WHEN 'Regular Season' THEN 'Round ' || m.match_round_number::VARCHAR
+            WHEN 'Play-offs'      THEN 'Play-in'
+            ELSE m.match_round_type
+        END                                                                                     AS round_display,
+        m.kick_off_time,
+        MAX(CASE WHEN ts.team_side = 'Home' THEN t.team_name       END)                         AS home_team,
+        MAX(CASE WHEN ts.team_side = 'Away' THEN t.team_name       END)                         AS away_team,
+        MAX(CASE WHEN ts.team_side = 'Home' THEN t.team_short_name END)                         AS home_team_short,
+        MAX(CASE WHEN ts.team_side = 'Away' THEN t.team_short_name END)                         AS away_team_short,
+        MAX(CASE WHEN ts.team_side = 'Home' THEN t.team_short_name END) || ' - ' ||
+        MAX(CASE WHEN ts.team_side = 'Away' THEN t.team_short_name END)                         AS match_short_name,
+        CASE WHEN st.stadium_name LIKE '%Unknown%' OR st.stadium_name LIKE '%Applicable%'
+             THEN 'TBD' ELSE st.stadium_name END                                                AS stadium,
+        CASE WHEN ref.referee_common_name LIKE '%Unknown%' OR ref.referee_common_name LIKE '%Applicable%'
+             THEN 'TBD' ELSE ref.referee_common_name END                                        AS referee,
+        MAX(CASE WHEN ts.team_side = 'Home' THEN t.team_logo END)                               AS home_team_logo,
+        MAX(CASE WHEN ts.team_side = 'Away' THEN t.team_logo END)                               AS away_team_logo
+    FROM superligaen.gold.fct_team_matches  f
+    JOIN superligaen.gold.dim_date          d   ON d.date_sk          = f.date_sk
+    JOIN superligaen.gold.dim_match         m   ON m.match_sk         = f.match_sk
+    JOIN superligaen.gold.dim_team          t   ON t.team_sk          = f.team_sk
+    JOIN superligaen.gold.dim_team_side     ts  ON ts.team_side_sk    = f.team_side_sk
+    JOIN superligaen.gold.dim_match_result  r   ON r.match_result_sk  = f.match_result_sk
+    JOIN superligaen.gold.dim_stadium       st  ON st.stadium_sk      = f.stadium_sk
+    JOIN superligaen.gold.dim_referee       ref ON ref.referee_sk     = f.referee_sk
+    WHERE r.match_result = 'Pending'
+      AND f.league_sk = (SELECT league_sk FROM superligaen.gold.dim_league WHERE league_id = 223746)  -- Liga MX only
+      AND d.season_mexico IS NOT NULL
+    GROUP BY m.match_id, d.date, d.season_mexico, m.match_round_type, m.match_round_number,
+             m.kick_off_time, st.stadium_name, ref.referee_common_name
+)
+SELECT * FROM base
+UNION ALL
+-- sentinel row so parquet is never empty (filtered out in page queries via home_team IS NOT NULL)
+SELECT -1, date '1900-01-01', '0000/00 - Apertura', 0, '----', '----', '00:00',
+       NULL, NULL, NULL, NULL, NULL, 'TBD', 'TBD', NULL, NULL
+WHERE NOT EXISTS (SELECT 1 FROM base)
+ORDER BY match_date ASC, kick_off_time ASC
