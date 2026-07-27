@@ -1140,7 +1140,7 @@ order by minute_bucket_sort
 
 ## Match Log
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every team appearance for the selected season — one row per team per match. Search by anything: team, opponent, result, referee, stadium, time slot, day, round, etc.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Every team appearance for the selected season — one row per team per match. Search by anything: team, opponent, result, referee, stadium, time slot, day, round, etc. Kick-off times are local Mexico City time (CST).</p>
 
 <DataTable data={match_log} search=true rows=6>
     <Column id=tournament          title="Season"           />
