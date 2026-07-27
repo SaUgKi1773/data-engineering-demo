@@ -34,14 +34,22 @@ select * from hub.last_updated
 
 <div class="max-w-5xl mx-auto px-1" style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
 
-<!-- ══ HERO — centered on white ══════════════════════════════════════════ -->
-<div class="text-center pt-16 pb-16 md:pt-24 md:pb-20">
-  <div class="text-gray-400 text-xs font-semibold uppercase" style="letter-spacing: 0.14em;">Krogvad Analytics Hub</div>
-  <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 leading-[1.06] mb-5" style="margin-top:0.9rem;">Football intelligence,<br/>for the whole world.</h1>
-  <p class="text-gray-500 text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-8">From beautiful Farum, Denmark, we build a dedicated analytics home for every league — each with its own identity, all powered by one shared data warehouse, refreshed every night. Free for everyone, forever.</p>
-  <div class="flex flex-wrap items-center justify-center gap-x-7 gap-y-4">
-    <a href="#platforms" class="inline-block rounded-full px-6 py-2.5 text-[15px] font-medium text-white no-underline transition-opacity hover:opacity-90" style="background:#c8102e;">Explore our platforms</a>
-    <a href="https://saugki1773.github.io/data-engineering-blog/" target="_blank" class="inline-flex items-center gap-1.5 text-[15px] font-medium text-gray-900 no-underline hover:underline">Behind the build <span style="color:#c8102e;">›</span></a>
+<!-- ══ HERO — copy left, spinning globe right (stacked on mobile) ════════ -->
+<div class="pt-12 pb-14 md:pt-20 md:pb-20 grid md:grid-cols-2 items-center gap-10 md:gap-12">
+  <div class="text-center md:text-left">
+    <div class="text-gray-400 text-xs font-semibold uppercase" style="letter-spacing: 0.14em;">Krogvad Analytics Hub</div>
+    <!-- No forced break: the headline shares the row with the globe now, so it
+         has to wrap on its own at every column width. -->
+    <h1 class="text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 leading-[1.08] mb-5" style="margin-top:0.9rem;">Football intelligence, for the whole world.</h1>
+    <p class="text-gray-500 text-base md:text-lg max-w-xl mx-auto md:mx-0 leading-relaxed mb-8">From beautiful Farum, Denmark, we build a dedicated analytics home for every league — each with its own identity, all powered by one shared data warehouse, refreshed every night. Free for everyone, forever.</p>
+    <div class="flex flex-wrap items-center justify-center md:justify-start gap-x-7 gap-y-4">
+      <a href="#platforms" class="inline-block rounded-full px-6 py-2.5 text-[15px] font-medium text-white no-underline transition-opacity hover:opacity-90" style="background:#c8102e;">Explore our platforms</a>
+      <a href="https://saugki1773.github.io/data-engineering-blog/" target="_blank" class="inline-flex items-center gap-1.5 text-[15px] font-medium text-gray-900 no-underline hover:underline">Behind the build <span style="color:#c8102e;">›</span></a>
+    </div>
+  </div>
+  <!-- Order last on mobile so the headline still opens the page -->
+  <div class="order-last mx-auto w-full" style="max-width: 25rem;">
+    <Globe />
   </div>
 </div>
 
