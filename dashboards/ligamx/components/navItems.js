@@ -33,6 +33,7 @@ export const navGroups = [
   {
     label: 'More',
     items: [
+      { href: '/glossary', label: 'Data Glossary', emoji: '📖', tint: '#f1f5f9' },
       { href: '/about', label: 'About This Project', emoji: '👤', tint: '#f3f4f6' }
     ]
   }
