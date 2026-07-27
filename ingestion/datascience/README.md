@@ -2,9 +2,10 @@
 
 `predict_match_outcomes.py` plays the role of the group's data science team:
 it fits a Poisson goals model per league from completed matches in the gold
-layer and hands over win/draw/loss probabilities for every upcoming fixture.
-The handover lands in `bronze.datascience__match_predictions`, which is the
-contract downstream layers (dbt silver/gold, #399) rely on.
+layer and hands over win/draw/loss probabilities for every upcoming fixture in
+a Sportmonks league. The handover lands in
+`bronze.datascience__match_predictions`, which is the contract downstream
+layers (dbt silver/gold, #399) rely on.
 
 ## Contract: `bronze.datascience__match_predictions`
 
@@ -35,9 +36,18 @@ Guarantees downstream can rely on:
   (re-)predicted while its kickoff is at least 3 hours in the future, so the
   last pre-match prediction is what history keeps. This is what makes the
   accuracy tracking in #400 honest.
-- **All leagues in gold are covered** — fixtures are discovered from
-  `gold.fct_team_matches` rows with `match_result = 'Pending'`, whatever the
-  league. A league with no completed matches to train on is skipped.
+- **Sportmonks leagues are covered** — fixtures are discovered from
+  `gold.fct_team_matches` rows with `match_result = 'Pending'` whose league
+  came from Sportmonks. A league with no completed matches to train on is
+  skipped.
+
+  The restriction exists because `match_id` above is a bare provider id with
+  no `_source` alongside it, so `gold.fct_match_predictions` has to pick one
+  source to resolve its dimension joins against. Highlightly leagues (La Liga,
+  Liga MX, Süper Lig) entered gold on 2026-07-26 and were predicted that
+  night; every foreign key on them resolved to `-1` and the DQ gate failed.
+  Widening coverage means carrying `_source` through this contract into silver
+  and gold first.
 
 ## Model: `poisson-v1`
 

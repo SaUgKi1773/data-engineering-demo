@@ -4,8 +4,9 @@ Predict match outcomes for upcoming fixtures (the "data science team").
 
 Fits a Poisson attack/defense goals model per league from completed matches
 in the gold layer, and writes win/draw/loss probabilities for every upcoming
-fixture to bronze.datascience__match_predictions. dbt then models the bronze
-data into silver + gold.
+fixture in a predictable league (see PREDICTED_SOURCE) to
+bronze.datascience__match_predictions. dbt then models the bronze data into
+silver + gold.
 
 Predictions are refreshed on every run for fixtures that have not kicked off
 yet (delete + insert, one row per fixture). Rows for fixtures at or past
@@ -33,6 +34,13 @@ log = logging.getLogger(__name__)
 
 DB_DEFAULT = "superligaen"
 MODEL_VERSION = "poisson-v1"
+
+# Predictions are handed to bronze keyed on match_id alone, with no _source
+# column, so gold.fct_match_predictions can only resolve them against one
+# source's dimension rows. Until that key carries _source end to end, predict
+# only the leagues that source can serve — otherwise every foreign key on the
+# extra leagues lands on -1 and the DQ gate fails.
+PREDICTED_SOURCE = "sportmonks"
 
 # Model parameters
 TRAINING_WINDOW_DAYS = 730   # fit on the last two years of completed matches
@@ -94,7 +102,8 @@ GROUP BY m.match_sk
 HAVING home_goals IS NOT NULL AND away_goals IS NOT NULL
 """
 
-# All upcoming fixtures, one row per match, across every league in gold.
+# All upcoming fixtures, one row per match, for every predictable league in gold
+# (see PREDICTED_SOURCE).
 UPCOMING_QUERY = """
 SELECT
     f.league_sk,
@@ -115,6 +124,7 @@ JOIN {db}.gold.dim_date             d  ON d.date_sk          = f.date_sk
 JOIN {db}.gold.dim_team_side        ts ON ts.team_side_sk    = f.team_side_sk
 JOIN {db}.gold.dim_match_result     mr ON mr.match_result_sk = f.match_result_sk
 WHERE mr.match_result = 'Pending'
+  AND l._source = '{source}'
 GROUP BY f.league_sk, m.match_id
 ORDER BY f.league_sk, match_date, kick_off_time
 """
@@ -216,10 +226,10 @@ def run(con, db: str, dry_run: bool) -> None:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     cutoff = now + KICKOFF_SAFETY_MARGIN
 
-    rows = con.execute(UPCOMING_QUERY.format(db=db)).fetchall()
+    rows = con.execute(UPCOMING_QUERY.format(db=db, source=PREDICTED_SOURCE)).fetchall()
     cols = [d[0] for d in con.description]
     fixtures = [dict(zip(cols, r)) for r in rows]
-    log.info(f"Found {len(fixtures)} pending fixtures in gold")
+    log.info(f"Found {len(fixtures)} pending {PREDICTED_SOURCE} fixtures in gold")
 
     predictable = [f for f in fixtures if parse_kickoff(f["match_date"], f["kick_off_time"]) > cutoff]
     skipped = len(fixtures) - len(predictable)
