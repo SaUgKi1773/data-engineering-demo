@@ -155,7 +155,7 @@ limit 5
       <div class="text-xs text-red-400 font-semibold uppercase tracking-widest mt-1">Away</div>
     </div>
   </div>
-  <div class="text-xs text-gray-400 uppercase tracking-widest mt-3">{match_info[0].stadium} &middot; {match_info[0].kick_off_time}</div>
+  <div class="text-xs text-gray-400 uppercase tracking-widest mt-3">{match_info[0].stadium} &middot; {match_info[0].kick_off_time} CST</div>
 </div>
 
 {#if prediction.length > 0 && prediction[0].home_pct !== null}
