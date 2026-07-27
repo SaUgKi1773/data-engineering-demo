@@ -53,9 +53,18 @@ models:
       - name: points_earned
         description: "ADDITIVE, but NULL-bearing by design. NULL where the fixture puts nothing on the table - an unfinished match, or a Liga MX liguilla tie. Summing gives points won on the pitch; it deliberately excludes administrative deductions, so it can differ from an official table."
       - name: goals_ht_scored
-        description: "ADDITIVE. Half-time goals."
+        description: >
+          ADDITIVE. Goals scored by the interval. Read from the provider's own
+          1ST_HALF score line where there is one, and counted off the event
+          stream (minute <= 45) where there is not - only Sportmonks publishes
+          the score line, and reading it alone put a fabricated 0 on every
+          Highlightly row until #482.
+
+          NULL, per the contract above, for a fixture whose provider published
+          neither a half-time score nor a timeline: 29 Süper Lig matches and 2
+          Sportmonks fixtures. 0 means 0-0 at the break and nothing else.
       - name: goals_ht_conceded
-        description: "ADDITIVE."
+        description: "ADDITIVE. As goals_ht_scored, from the opponent's side."
       - name: goals_scored_extra_time
         description: >
           ADDITIVE, and an "OF WHICH" measure: these goals are already counted
