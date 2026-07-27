@@ -101,6 +101,8 @@ order by minute_of_match, stoppage_offset, event_group_sequence
     <div class="text-right font-bold text-lg text-orange-500">{mc[0]?.away_team_short}<div class="text-xs font-normal text-gray-400">Away</div></div>
   </div>
 
+  <div class="pt-1 pb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Attacking</div>
+
   <div class="py-2 border-b border-gray-100">
     <div class="grid grid-cols-3 items-center text-center mb-1.5">
       <div class="font-semibold text-lg text-blue-600">{val(mc[0]?.home_goals)}</div>
@@ -155,6 +157,8 @@ order by minute_of_match, stoppage_offset, event_group_sequence
       <div class="bg-blue-500" style="width:{(mc[0]?.home_big_chances ?? 0) + (mc[0]?.away_big_chances ?? 0) > 0 ? (mc[0]?.home_big_chances ?? 0) / ((mc[0]?.home_big_chances ?? 0) + (mc[0]?.away_big_chances ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
+
+  <div class="pt-5 pb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Possession</div>
 
   <div class="py-2 border-b border-gray-100">
     <div class="grid grid-cols-3 items-center text-center mb-1.5">
@@ -211,6 +215,8 @@ order by minute_of_match, stoppage_offset, event_group_sequence
     </div>
   </div>
 
+  <div class="pt-5 pb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Defending</div>
+
   <div class="py-2 border-b border-gray-100">
     <div class="grid grid-cols-3 items-center text-center mb-1.5">
       <div class="font-semibold text-lg text-blue-600">{val(mc[0]?.home_tackles)}</div>
@@ -254,6 +260,8 @@ order by minute_of_match, stoppage_offset, event_group_sequence
       <div class="bg-blue-500" style="width:{(mc[0]?.home_saves ?? 0) + (mc[0]?.away_saves ?? 0) > 0 ? (mc[0]?.home_saves ?? 0) / ((mc[0]?.home_saves ?? 0) + (mc[0]?.away_saves ?? 0)) * 100 : 50}%"></div>
     </div>
   </div>
+
+  <div class="pt-5 pb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Discipline</div>
 
   <div class="py-2 border-b border-gray-100">
     <div class="grid grid-cols-3 items-center text-center mb-1.5">
