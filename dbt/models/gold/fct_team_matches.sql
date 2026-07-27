@@ -80,6 +80,40 @@ shootout_scores AS (
     FROM {{ ref('fixture_scores') }}
     WHERE description = 'PENALTY_SHOOTOUT'
 ),
+fixtures_with_events AS (
+    -- Whether the provider published a timeline for the fixture at all. The
+    -- half-time count below needs it: "scored no first-half goal" and "has no
+    -- events at all" both add up to zero, and only the first of those really
+    -- means 0-0 at the break.
+    SELECT DISTINCT fixture_id, _source
+    FROM {{ ref('fixture_events') }}
+),
+first_half_goals AS (
+    -- Goals scored before the interval, counted from the event stream because
+    -- only Sportmonks publishes a 1ST_HALF score line. For Highlightly the
+    -- clock is the one signal, and it stamps a first-half stoppage-time goal as
+    -- minute 45 with an offset, so minute <= 45 is the whole first half.
+    --
+    -- Counted, not read: the missing score line used to land as a hard 0 on all
+    -- 13k Highlightly rows, reading as "level at the break" for 100% of matches
+    -- - present, plausible and wrong (#482). Counting instead agrees with the
+    -- Sportmonks score line on 7,532 of 7,558 rows, and the 26 it misses are
+    -- fixtures where the events themselves are misattributed, which is why the
+    -- published line still wins wherever there is one.
+    --
+    -- Counting by the event's own team is right for own goals too: the provider
+    -- attributes an OWNGOAL to the team AWARDED the goal (#425). Shootout kicks
+    -- sit at minute 120 and cannot reach this window.
+    SELECT
+        fixture_id,
+        team_id,
+        _source,
+        COUNT(*) AS fh_goals
+    FROM {{ ref('fixture_events') }}
+    WHERE type_developer_name IN ('GOAL', 'OWNGOAL', 'PENALTY')
+      AND minute <= 45
+    GROUP BY fixture_id, team_id, _source
+),
 extra_time_goals AS (
     -- Goals scored in extra time (minutes 91-120), counted from the event
     -- stream because only Sportmonks publishes an ET score line and only for
@@ -205,7 +239,13 @@ src AS (
         fo.formation,
         CASE WHEN f.is_finished THEN COALESCE(scf.goals_scored_corrected, sc.goals_scored,  0) END AS goals_scored,
         CASE WHEN f.is_finished THEN COALESCE(oscf.goals_scored_corrected, osc.goals_scored, 0) END AS goals_conceded,
-        CASE WHEN f.is_finished THEN COALESCE(sc.goals_ht_scored,  0) END AS goals_ht_scored,
+        -- Half-time goals: the provider's own score line where it publishes
+        -- one, else counted off the event stream, else NULL. Deliberately not a
+        -- bare COALESCE to 0 - see first_half_goals.
+        CASE WHEN f.is_finished AND (sc.goals_ht_scored IS NOT NULL OR fwe.fixture_id IS NOT NULL)
+             THEN COALESCE(sc.goals_ht_scored,  fhg.fh_goals,  0) END AS goals_ht_scored,
+        CASE WHEN f.is_finished AND (osc.goals_ht_scored IS NOT NULL OR fwe.fixture_id IS NOT NULL)
+             THEN COALESCE(osc.goals_ht_scored, ofhg.fh_goals, 0) END AS goals_ht_conceded,
         -- "of which" measures: both are already inside goals_scored, so they
         -- must never be added to it.
         CASE WHEN f.is_finished THEN COALESCE(etg.et_goals,  0) END AS goals_scored_extra_time,
@@ -213,7 +253,6 @@ src AS (
         -- A shootout is not part of the score: NULL when there wasn't one.
         ss.shootout_goals  AS goals_scored_penalty_shootout,
         oss.shootout_goals AS goals_conceded_penalty_shootout,
-        CASE WHEN f.is_finished THEN COALESCE(osc.goals_ht_scored, 0) END AS goals_ht_conceded,
         CASE WHEN f.is_finished THEN COALESCE(st.corner_kicks,     0) END AS corner_kicks,
         CASE WHEN f.is_finished THEN st.ball_possession_pct          END AS ball_possession_pct,
         CASE WHEN f.is_finished THEN COALESCE(st.yellow_cards,     0) END AS yellow_cards,
@@ -265,6 +304,9 @@ src AS (
     LEFT JOIN stats         st   ON st.fixture_id  = f.fixture_id AND st.team_id  = mt.team_id
     LEFT JOIN shootout_scores   ss   ON ss.fixture_id  = f.fixture_id AND ss.team_id  = mt.team_id          AND ss._source  = f._source
     LEFT JOIN shootout_scores   oss  ON oss.fixture_id = f.fixture_id AND oss.team_id = mt.opponent_team_id AND oss._source = f._source
+    LEFT JOIN first_half_goals  fhg  ON fhg.fixture_id = f.fixture_id AND fhg.team_id = mt.team_id          AND fhg._source = f._source
+    LEFT JOIN first_half_goals  ofhg ON ofhg.fixture_id = f.fixture_id AND ofhg.team_id = mt.opponent_team_id AND ofhg._source = f._source
+    LEFT JOIN fixtures_with_events fwe ON fwe.fixture_id = f.fixture_id AND fwe._source = f._source
     LEFT JOIN extra_time_goals  etg  ON etg.fixture_id = f.fixture_id AND etg.team_id = mt.team_id          AND etg._source = f._source
     LEFT JOIN extra_time_goals  oetg ON oetg.fixture_id = f.fixture_id AND oetg.team_id = mt.opponent_team_id AND oetg._source = f._source
     LEFT JOIN main_referee  mr   ON mr.fixture_id  = f.fixture_id AND mr._source = f._source

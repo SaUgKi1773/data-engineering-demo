@@ -97,8 +97,9 @@ SELECT
     f.points_earned,
     f.goals_scored,
     f.goals_conceded,
-    f.goals_ht_scored,
-    f.goals_ht_conceded,
+    -- goals_ht_scored / goals_ht_conceded are deliberately absent: no page
+    -- reads the interval score off this mart, and mart_team_game_state already
+    -- serves the one section that needs it.
     f.ball_possession_pct                                                    AS possession_pct,
     f.corner_kicks,
     f.yellow_cards,

@@ -90,10 +90,9 @@ SELECT
     f.points_earned,
     f.goals_scored,
     f.goals_conceded,
-    -- goals_ht_scored / goals_ht_conceded are deliberately absent: they are a
-    -- hard 0 on every Liga MX row because the feed publishes no half-time
-    -- score. Anything needing the interval must reconstruct it from the event
-    -- stream, as mart_team_game_state does.
+    -- goals_ht_scored / goals_ht_conceded are deliberately absent: no page
+    -- reads the interval score off this mart, and mart_team_game_state already
+    -- serves the one section that needs it.
     -- complete from 2020/21 Apertura
     f.ball_possession_pct                           AS possession_pct,
     f.corner_kicks,
