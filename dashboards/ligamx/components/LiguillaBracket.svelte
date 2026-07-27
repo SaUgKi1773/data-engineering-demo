@@ -33,7 +33,6 @@
   const pens = (t) => t.decided_by === 'Penalties';
   const sides = (t) => [
     {
-      seed: t.team_a_seed,
       name: t.team_a_short ?? t.team_a_name,
       logo: t.team_a_logo,
       goals: t.team_a_goals,
@@ -41,7 +40,6 @@
       won: t.winner_side === 'A'
     },
     {
-      seed: t.team_b_seed,
       name: t.team_b_short ?? t.team_b_name,
       logo: t.team_b_logo,
       goals: t.team_b_goals,
@@ -62,7 +60,6 @@
               <div class="tie" class:is-final={round.order === 5}>
                 {#each sides(tie) as side}
                   <div class="side" class:won={side.won} class:lost={!side.won}>
-                    <span class="seed">{side.seed <= 18 ? side.seed : '–'}</span>
                     {#if side.logo}
                       <img src={side.logo} alt="" onerror="this.style.display='none'" />
                     {/if}
@@ -171,12 +168,6 @@
   }
   .side.won .score {
     color: #047857;
-  }
-  .seed {
-    flex: 0 0 1rem;
-    font-size: 0.625rem;
-    color: #9ca3af;
-    text-align: center;
   }
   .side img {
     height: 16px;
