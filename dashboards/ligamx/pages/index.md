@@ -142,6 +142,11 @@ select * from ligamx.mart_home_summary
     <div class="h-px flex-1 bg-gray-200"></div>
   </div>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+    <a href="/glossary" class="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm no-underline transition-all duration-200 hover:border-slate-400 hover:shadow-md">
+      <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-lg">📖</span>
+      <span class="text-sm font-semibold text-gray-800 transition-colors group-hover:text-slate-600">Data Glossary</span>
+      <span class="ml-auto text-gray-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-slate-500">→</span>
+    </a>
     <a href="/about" class="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm no-underline transition-all duration-200 hover:border-gray-400 hover:shadow-md">
       <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-lg">👤</span>
       <span class="text-sm font-semibold text-gray-800 transition-colors group-hover:text-gray-600">About This Project</span>
