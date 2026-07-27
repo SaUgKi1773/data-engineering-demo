@@ -43,10 +43,13 @@ select team_name from (
 ```
 
 ```sql rounds
-select distinct round_order as round, round_label
-from ligamx.mart_match_facts
-where tournament = '${inputs.season.value}'
-order by round
+select round, round_label from (
+  select 'All Rounds' as round, 'All Rounds' as round_label, -1 as ord
+  union all
+  select distinct round_order::varchar as round, round_label, round_order as ord
+  from ligamx.mart_match_facts
+  where tournament = '${inputs.season.value}'
+) order by ord
 ```
 
 ```sql phases
@@ -102,7 +105,7 @@ select opponent_team_name from (
   </summary>
   <div class="flex flex-wrap gap-3 items-end mt-3">
     {#key inputs.season.value}
-    <Dropdown data={rounds} name=round value=round label=round_label multiple=true selectAllByDefault=true title="Round" />
+    <Dropdown data={rounds} name=round value=round label=round_label multiple=true defaultValue={['All Rounds']} order="try_cast(value as double) nulls first" title="Round" />
     {/key}
     <Dropdown data={phases} name=phase value=match_round_type multiple=true selectAllByDefault=true title="Phase" />
     <Dropdown data={venues} name=venue value=team_side multiple=true selectAllByDefault=true title="Home / Away" />
@@ -133,7 +136,7 @@ with curr as (
     where tournament = '${inputs.season.value}'
       and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
       and result in ${inputs.result.value}
-      and round_order in ${inputs.round.value}
+      and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
       and match_round_type in ${inputs.phase.value}
       and team_side in ${inputs.venue.value}
       and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
@@ -158,7 +161,7 @@ prev as (
     )
       and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
       and result in ${inputs.result.value}
-      and round_order in ${inputs.round.value}
+      and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
       and match_round_type in ${inputs.phase.value}
       and team_side in ${inputs.venue.value}
       and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
@@ -190,7 +193,7 @@ with ranked as (
     where tournament = '${inputs.season.value}'
       and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
       and result in ${inputs.result.value}
-      and round_order in ${inputs.round.value}
+      and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
       and match_round_type in ${inputs.phase.value}
       and team_side in ${inputs.venue.value}
       and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
@@ -235,7 +238,7 @@ from ligamx.mart_match_facts
 where tournament = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and result in ${inputs.result.value}
-  and round_order in ${inputs.round.value}
+  and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
   and match_round_type in ${inputs.phase.value}
   and team_side in ${inputs.venue.value}
   and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
@@ -256,7 +259,7 @@ from (
     from ligamx.mart_match_facts
     where tournament = '${inputs.season.value}'
       and result in ${inputs.result.value}
-      and round_order in ${inputs.round.value}
+      and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
       and match_round_type in ${inputs.phase.value}
       and team_side in ${inputs.venue.value}
       and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
@@ -319,7 +322,7 @@ from ligamx.mart_match_facts
 where tournament = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and result in ${inputs.result.value}
-  and round_order in ${inputs.round.value}
+  and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
   and match_round_type in ${inputs.phase.value}
   and team_side in ${inputs.venue.value}
   and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
@@ -370,7 +373,7 @@ with all_teams as (
     from ligamx.mart_match_facts
     where tournament = '${inputs.season.value}'
       and result in ${inputs.result.value}
-      and round_order in ${inputs.round.value}
+      and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
       and match_round_type in ${inputs.phase.value}
       and team_side in ${inputs.venue.value}
       and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
@@ -481,7 +484,7 @@ from ligamx.mart_match_facts
 where tournament = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and result in ${inputs.result.value}
-  and round_order in ${inputs.round.value}
+  and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
   and match_round_type in ${inputs.phase.value}
   and team_side in ${inputs.venue.value}
   and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
@@ -497,7 +500,7 @@ from ligamx.mart_match_facts
 where tournament = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and result in ${inputs.result.value}
-  and round_order in ${inputs.round.value}
+  and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
   and match_round_type in ${inputs.phase.value}
   and team_side in ${inputs.venue.value}
   and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
@@ -519,7 +522,7 @@ from ligamx.mart_match_facts
 where tournament = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and result in ${inputs.result.value}
-  and round_order in ${inputs.round.value}
+  and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
   and match_round_type in ${inputs.phase.value}
   and team_side in ${inputs.venue.value}
   and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})
@@ -1050,7 +1053,7 @@ from ligamx.mart_league_event_timing
 where tournament = '${inputs.season.value}'
   and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
   and result in ${inputs.result.value}
-  and round_order in ${inputs.round.value}
+  and ('All Rounds' in ${inputs.round.value} OR round_order::varchar in ${inputs.round.value})
   and match_round_type in ${inputs.phase.value}
   and team_side in ${inputs.venue.value}
   and ('All Opponents' in ${inputs.opponent.value} OR opponent_team_name in ${inputs.opponent.value})

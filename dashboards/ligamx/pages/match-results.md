@@ -23,14 +23,17 @@ select tournament from (
 {/key}
 
 ```sql rounds
-select distinct cast(round_order as integer) as round_order, round_label
+select distinct
+    tournament || '|' || cast(round_order as integer) as round_key,
+    cast(round_order as integer)                      as round_order,
+    round_label
 from ligamx.mart_match_results
 where tournament = '${inputs.season.value}'
-order by 1 desc
+order by round_order desc
 ```
 
-{#key `${inputs.season.value}|${rounds[0]?.round_order}`}
-<Dropdown data={rounds} name=round value=round_order label=round_label defaultValue={rounds[0]?.round_order} order="round_order desc" />
+{#key `${inputs.season.value}|${rounds.length > 0}`}
+<Dropdown data={rounds} name=round value=round_key label=round_label defaultValue={rounds[0]?.round_key} order="round_order desc" />
 {/key}
 
 ```sql results
@@ -42,7 +45,7 @@ select *,
     '<a href="/match-analysis?match=' || cast(match_id as varchar) || '&tournament=' || tournament || '&round=' || cast(cast(round_order as integer) as varchar) || '" style="color:#2563eb;font-weight:600;text-decoration:none;">' || match_short_name || '</a>' as match_short_link
 from ligamx.mart_match_results
 where tournament = '${inputs.season.value}'
-  and cast(round_order as integer) = ${inputs.round.value ?? -1}
+  and cast(round_order as integer) = try_cast(split_part('${inputs.round.value ?? -1}', '|', 2) as integer)
 order by match_date desc
 ```
 
@@ -50,7 +53,7 @@ order by match_date desc
 select any_value(round_display) as label
 from ligamx.mart_match_results
 where tournament = '${inputs.season.value}'
-  and cast(round_order as integer) = ${inputs.round.value ?? -1}
+  and cast(round_order as integer) = try_cast(split_part('${inputs.round.value ?? -1}', '|', 2) as integer)
 ```
 
 ```sql round_kpis
@@ -70,7 +73,7 @@ prev as (
         round(sum(total_goals)::double / nullif(sum(total_big_chances), 0), 2)               as prev_goals_per_big_chance
     from ligamx.mart_match_results
     where tournament = '${inputs.season.value}'
-      and cast(round_order as integer) = ${(inputs.round.value ?? 1) - 1}
+      and cast(round_order as integer) = try_cast(split_part('${inputs.round.value ?? -1}', '|', 2) as integer) - 1
 )
 select curr.*, prev.*
 from curr cross join prev
@@ -150,7 +153,7 @@ select category, icon, team_name, team_short_name, team_logo,
        opponent_team_short_name, stat_value, stat_label, sort_order
 from ligamx.mart_round_totr
 where tournament = '${inputs.season.value}'
-  and cast(round_order as integer) = ${inputs.round.value ?? -1}
+  and cast(round_order as integer) = try_cast(split_part('${inputs.round.value ?? -1}', '|', 2) as integer)
 order by sort_order
 ```
 

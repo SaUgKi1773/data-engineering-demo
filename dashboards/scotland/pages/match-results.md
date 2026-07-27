@@ -23,14 +23,16 @@ select season from (
 {/key}
 
 ```sql rounds
-select distinct cast(match_round_number as integer) as round_number
+select distinct
+    season || '|' || cast(match_round_number as integer) as round_key,
+    cast(match_round_number as integer)                  as round_number
 from scotland.mart_match_results
 where season = '${inputs.season.value}'
-order by 1 desc
+order by round_number desc
 ```
 
-{#key `${inputs.season.value}|${rounds[0]?.round_number}`}
-<Dropdown data={rounds} name=round value=round_number label=round_number defaultValue={rounds[0]?.round_number} order="round_number desc" />
+{#key `${inputs.season.value}|${rounds.length > 0}`}
+<Dropdown data={rounds} name=round value=round_key label=round_number defaultValue={rounds[0]?.round_key} order="round_number desc" />
 {/key}
 
 ```sql results
@@ -42,7 +44,7 @@ select *,
     '<a href="/match-analysis?match=' || cast(match_id as varchar) || '&season=' || season || '&round=' || cast(cast(match_round_number as integer) as varchar) || '" style="color:#2563eb;font-weight:600;text-decoration:none;">' || match_short_name || '</a>' as match_short_link
 from scotland.mart_match_results
 where season = '${inputs.season.value}'
-  and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
+  and cast(match_round_number as integer) = try_cast(split_part('${inputs.round.value ?? -1}', '|', 2) as integer)
 order by match_date desc
 ```
 
@@ -63,13 +65,13 @@ prev as (
         round(sum(total_goals)::double / nullif(sum(total_big_chances), 0), 2)               as prev_goals_per_big_chance
     from scotland.mart_match_results
     where season = '${inputs.season.value}'
-      and cast(match_round_number as integer) = ${(inputs.round.value ?? 1) - 1}
+      and cast(match_round_number as integer) = try_cast(split_part('${inputs.round.value ?? -1}', '|', 2) as integer) - 1
 )
 select curr.*, prev.*
 from curr cross join prev
 ```
 
-## Match Results — {inputs.season.value} — Round {inputs.round.value}
+## Match Results — {inputs.season.value} — Round {inputs.round.label}
 
 {#each round_kpis as k}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -143,7 +145,7 @@ select category, icon, player_name, player_photo, team_name, team_logo,
        stat_value, stat_label, sort_order
 from scotland.mart_round_potw
 where season = '${inputs.season.value}'
-  and cast(match_round_number as integer) = ${inputs.round.value ?? -1}
+  and cast(match_round_number as integer) = try_cast(split_part('${inputs.round.value ?? -1}', '|', 2) as integer)
 order by sort_order
 ```
 
