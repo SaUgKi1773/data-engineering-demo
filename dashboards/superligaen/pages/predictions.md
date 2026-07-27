@@ -63,20 +63,43 @@ from rows
 ```sql leader_card
 -- League-wide by design: a "leader" only exists at league level, so this card
 -- ignores the team filter, like the official table would.
-with totals as (
+--
+-- Points already won come from the standings mart, not from the prediction
+-- fact. The prediction fact only holds matches the model produced a row for, so
+-- a played match it never predicted — a postponed fixture replayed outside the
+-- prediction window, a failed nightly run, a league onboarded mid-season —
+-- contributes nothing rather than its actual points, and every total below it
+-- is silently understated.
+with actual as (
     select
         team_short_name,
-        coalesce(sum(points_earned), 0)
-            + coalesce(sum(predicted_points) filter (not is_scored), 0)          as expected_total,
-        coalesce(sum(goals_scored - goals_conceded) filter (is_scored), 0)
-            + coalesce(sum(predicted_goals_scored - predicted_goals_conceded)
-                       filter (not is_scored), 0)                                as expected_gd,
-        coalesce(sum(goals_scored) filter (is_scored), 0)
-            + coalesce(sum(predicted_goals_scored) filter (not is_scored), 0)    as expected_gf
+        coalesce(sum(points_earned), 0)                 as pts,
+        coalesce(sum(goals_scored - goals_conceded), 0) as gd,
+        coalesce(sum(goals_scored), 0)                  as gf
+    from superligaen.mart_standings
+    where season = '${inputs.season.value}'
+      and result in ('Win', 'Draw', 'Loss')
+    group by team_short_name
+),
+projected as (
+    select
+        team_short_name,
+        coalesce(sum(predicted_points), 0)                                  as pts,
+        coalesce(sum(predicted_goals_scored - predicted_goals_conceded), 0) as gd,
+        coalesce(sum(predicted_goals_scored), 0)                            as gf
     from superligaen.mart_prediction_facts
     where match_id is not null
+      and not is_scored
       and season = '${inputs.season.value}'
     group by team_short_name
+),
+totals as (
+    select
+        team_short_name,
+        coalesce(a.pts, 0) + coalesce(p.pts, 0) as expected_total,
+        coalesce(a.gd,  0) + coalesce(p.gd,  0) as expected_gd,
+        coalesce(a.gf,  0) + coalesce(p.gf,  0) as expected_gf
+    from actual a full outer join projected p using (team_short_name)
 ),
 ranked as (
     -- standings-style tiebreak: points, goal difference, goals for
@@ -85,8 +108,13 @@ ranked as (
     from totals
 )
 select
-    (select max(round_number) from superligaen.mart_prediction_facts
-     where match_id is not null and season = '${inputs.season.value}')        as as_of_round,
+    (select max(r) from (
+        select max(match_round_number) as r from superligaen.mart_standings
+        where season = '${inputs.season.value}' and result in ('Win', 'Draw', 'Loss')
+        union all
+        select max(round_number) from superligaen.mart_prediction_facts
+        where match_id is not null and season = '${inputs.season.value}'
+    ))                                                                        as as_of_round,
     team_short_name                                                           as leader,
     round(expected_total, 1)                                                  as leader_pts
 from ranked
@@ -98,26 +126,54 @@ where rk = 1
 -- (0, 0) so every team starts the race at the origin. Pending fixtures
 -- (postponed ones included) never contribute here — they live in the dashed
 -- forecast series.
+--
+-- Read from the standings mart rather than the prediction fact: a played match
+-- with no prediction row is absent from the fact, not zero, so sourcing the
+-- solid line there would start the race at whichever round the model happened
+-- to switch on, with the points already won missing.
+with team_group as (
+    -- The team list has to span both marts. Rounds can be played that the model
+    -- never predicted (missing from the fact), and before a ball is kicked a
+    -- season has predictions but no results at all (missing from standings).
+    -- The championship/relegation split follows the same precedence the marts
+    -- use, so a team is placed in its group as soon as either mart knows it.
+    select
+        team_name,
+        case
+            when bool_or(standings_type = 'Championship Group') then 'Championship Group'
+            when bool_or(standings_type = 'Relegation Group')   then 'Relegation Group'
+            else 'Regular Season'
+        end as round_group
+    from (
+        select team_name, standings_type
+        from superligaen.mart_standings
+        where season = '${inputs.season.value}'
+        union all
+        select team_name, standings_type
+        from superligaen.mart_prediction_facts
+        where match_id is not null
+          and season = '${inputs.season.value}'
+    )
+    where 'All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value}
+    group by team_name
+)
 select round, team_name, round_group, cumulative_points, cumulative_gd
 from (
     select
-        round_number as round,
-        team_name,
-        standings_type as round_group,
-        sum(points_earned) over (partition by team_name order by round_number)::int as cumulative_points,
-        sum(goals_scored - goals_conceded)
-            over (partition by team_name order by round_number)::int                as cumulative_gd
-    from superligaen.mart_prediction_facts
-    where match_id is not null
-      and is_scored
-      and season = '${inputs.season.value}'
-      and ('All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value})
+        s.match_round_number as round,
+        s.team_name,
+        g.round_group,
+        sum(s.points_earned)
+            over (partition by s.team_name order by s.match_round_number)::int as cumulative_points,
+        sum(s.goals_scored - s.goals_conceded)
+            over (partition by s.team_name order by s.match_round_number)::int as cumulative_gd
+    from superligaen.mart_standings s
+    join team_group g using (team_name)
+    where s.season = '${inputs.season.value}'
+      and s.result in ('Win', 'Draw', 'Loss')
     union all
-    select distinct 0, team_name, standings_type, 0, 0
-    from superligaen.mart_prediction_facts
-    where match_id is not null
-      and season = '${inputs.season.value}'
-      and ('All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value})
+    select 0, team_name, round_group, 0, 0
+    from team_group
 )
 order by max(cumulative_points) over (partition by team_name) desc, team_name, round
 ```
@@ -127,23 +183,61 @@ order by max(cumulative_points) over (partition by team_name) desc, team_name, r
 -- total, then adds predicted points for every pending fixture in round order.
 -- A postponed fixture from an earlier round blends into the first forecast
 -- segment (never plotted at or before the anchor, which would draw a step).
-with rows as (
-    select round_number, team_name, standings_type, is_scored, points_earned, predicted_points,
-           goals_scored, goals_conceded, predicted_goals_scored, predicted_goals_conceded
-    from superligaen.mart_prediction_facts
-    where match_id is not null
-      and season = '${inputs.season.value}'
-      and ('All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value})
-),
-base as (
+--
+-- The anchor comes from the standings mart for the same reason the solid line
+-- does: it has to include points won in rounds the model never predicted, or
+-- the forecast starts from a total that is too low.
+with team_group as (
     select
         team_name,
-        max(standings_type)                                    as round_group,
-        coalesce(sum(points_earned), 0)                        as actual_total,
-        coalesce(sum(goals_scored - goals_conceded), 0)        as actual_gd,
-        coalesce(max(case when is_scored then round_number end), 0) as last_played_round
-    from rows
+        case
+            when bool_or(standings_type = 'Championship Group') then 'Championship Group'
+            when bool_or(standings_type = 'Relegation Group')   then 'Relegation Group'
+            else 'Regular Season'
+        end as round_group
+    from (
+        select team_name, standings_type
+        from superligaen.mart_standings
+        where season = '${inputs.season.value}'
+        union all
+        select team_name, standings_type
+        from superligaen.mart_prediction_facts
+        where match_id is not null
+          and season = '${inputs.season.value}'
+    )
+    where 'All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value}
     group by team_name
+),
+actual as (
+    select
+        team_name,
+        coalesce(sum(points_earned), 0)                 as actual_total,
+        coalesce(sum(goals_scored - goals_conceded), 0) as actual_gd,
+        coalesce(max(match_round_number), 0)            as last_played_round
+    from superligaen.mart_standings
+    where season = '${inputs.season.value}'
+      and result in ('Win', 'Draw', 'Loss')
+    group by team_name
+),
+base as (
+    -- left join, not inner: a team the season has not started for still needs
+    -- its anchor at round 0 so its forecast line is drawn.
+    select
+        g.team_name,
+        g.round_group,
+        coalesce(a.actual_total, 0)      as actual_total,
+        coalesce(a.actual_gd, 0)         as actual_gd,
+        coalesce(a.last_played_round, 0) as last_played_round
+    from team_group g
+    left join actual a using (team_name)
+),
+rows as (
+    select round_number, team_name, predicted_points,
+           predicted_goals_scored, predicted_goals_conceded
+    from superligaen.mart_prediction_facts
+    where match_id is not null
+      and not is_scored
+      and season = '${inputs.season.value}'
 ),
 pending as (
     select
@@ -158,7 +252,6 @@ pending as (
                   over (partition by r.team_name order by r.round_number)                     as cum_gd
     from rows r
     join base b using (team_name)
-    where not r.is_scored
 )
 select team_name, round_group, round,
        round(max_by(cum,    orig_round), 1) as cumulative_points,

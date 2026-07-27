@@ -19,6 +19,13 @@ title: Match Preview
       match: { value: m, label: m, rawValues: [{ value: m, label: m, selected: true }] }
     }));
   });
+
+  // The prediction row can arrive with its probabilities populated a beat
+  // before its predicted goals. Calling .toFixed() straight on the value
+  // throws mid-render when that happens, and a throw inside the Svelte update
+  // takes the rest of the page down with it — the head-to-head filter comes up
+  // empty and the form guide never fills in.
+  const goals = (v) => (v == null ? '–' : Number(v).toFixed(1));
 </script>
 
 ```sql match_info
@@ -178,12 +185,12 @@ limit 5
   <div class="text-xs text-gray-400 text-center font-semibold uppercase tracking-widest mb-2">Predicted Goals</div>
   <div class="flex items-center justify-center gap-6">
     <div class="text-center w-24">
-      <div class="text-3xl font-black text-blue-600">{prediction[0].predicted_home_goals.toFixed(1)}</div>
+      <div class="text-3xl font-black text-blue-600">{goals(prediction[0].predicted_home_goals)}</div>
       <div class="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].home_team_short}</div>
     </div>
     <div class="text-2xl font-black text-gray-300 shrink-0">&ndash;</div>
     <div class="text-center w-24">
-      <div class="text-3xl font-black text-red-500">{prediction[0].predicted_away_goals.toFixed(1)}</div>
+      <div class="text-3xl font-black text-red-500">{goals(prediction[0].predicted_away_goals)}</div>
       <div class="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-wide">{match_info[0].away_team_short}</div>
     </div>
   </div>
