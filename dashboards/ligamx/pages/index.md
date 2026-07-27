@@ -92,6 +92,33 @@ select * from ligamx.mart_home_summary
 
 <div class="mb-5">
   <div class="mb-2 flex items-center gap-3">
+    <span class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">Matches</span>
+    <div class="h-px flex-1 bg-gray-200"></div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+    <a href="/upcoming-matches" class="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm no-underline transition-all duration-200 hover:border-violet-300 hover:shadow-md">
+      <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-violet-50 text-lg">📅</span>
+      <span class="text-sm font-semibold text-gray-800 transition-colors group-hover:text-violet-600">Upcoming Fixtures</span>
+      <span class="ml-auto text-gray-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-violet-400">→</span>
+    </a>
+    <a href="/match-results" class="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm no-underline transition-all duration-200 hover:border-blue-300 hover:shadow-md">
+      <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50 text-lg">⚽</span>
+      <span class="text-sm font-semibold text-gray-800 transition-colors group-hover:text-blue-600">Match Results</span>
+      <span class="ml-auto text-gray-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-blue-400">→</span>
+    </a>
+    <a href="/predictions" class="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm no-underline transition-all duration-200 hover:border-fuchsia-300 hover:shadow-md">
+      <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-fuchsia-50 text-lg">🔮</span>
+      <span class="flex items-center gap-2">
+        <span class="text-sm font-semibold text-gray-800 transition-colors group-hover:text-fuchsia-600">Prediction Module</span>
+        <span class="rounded-full bg-red-500 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-white">New</span>
+      </span>
+      <span class="ml-auto text-gray-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-fuchsia-400">→</span>
+    </a>
+  </div>
+</div>
+
+<div class="mb-5">
+  <div class="mb-2 flex items-center gap-3">
     <span class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">More</span>
     <div class="h-px flex-1 bg-gray-200"></div>
   </div>
