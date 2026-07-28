@@ -13,9 +13,18 @@
   import '../app.css';
   import { EvidenceDefaultLayout } from '@evidence-dev/core-components';
   import { onMount } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import { inject } from '@vercel/analytics';
+  import HeaderMenuButton from '../components/HeaderMenuButton.svelte';
+  import SideNav from '../components/SideNav.svelte';
 
   export let data;
+
+  let menuOpen = false;
+
+  afterNavigate(() => {
+    menuOpen = false;
+  });
 
   onMount(() => {
     inject();
@@ -26,11 +35,14 @@
   <slot slot="content" />
 </EvidenceDefaultLayout>
 
+<HeaderMenuButton on:open={() => (menuOpen = true)} />
+<SideNav open={menuOpen} on:close={() => (menuOpen = false)} />
+
 <style>
   :global(header img[alt="Home"]) {
     height: 2.5rem;
   }
-  /* Hide Evidence's built-in kebab menu — the hub has no pages to navigate */
+  /* Hide Evidence's built-in kebab; navigation is the custom side pane. */
   :global(header button[aria-label="Menu"]) {
     display: none;
   }
