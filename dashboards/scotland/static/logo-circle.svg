@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="neon" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#3B82F6"/>
-      <stop offset="100%" stop-color="#34D399"/>
+      <stop offset="0%" stop-color="#0065BF"/>
+      <stop offset="100%" stop-color="#3E9BE0"/>
     </linearGradient>
     <clipPath id="ball"><circle cx="256" cy="230" r="110"/></clipPath>
   </defs>
   <circle cx="256" cy="256" r="256" fill="url(#neon)"/>
   <circle cx="256" cy="256" r="236" fill="#0B1220"/>
-  <circle cx="256" cy="230" r="110" fill="url(#neon)"/>
+  <circle cx="256" cy="230" r="110" fill="#FFFFFF"/>
   <g clip-path="url(#ball)">
     <polygon points="256,145 290,170 278,208 234,208 222,170" fill="#0B1220"/>
     <polygon points="366,185 380,220 350,244 322,228 326,192" fill="#0B1220"/>

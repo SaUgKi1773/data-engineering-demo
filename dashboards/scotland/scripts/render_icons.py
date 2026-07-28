@@ -1,4 +1,4 @@
-"""Render the Liga MX raster icons from the same geometry as static/icon.svg.
+"""Render the Premiership raster icons from the same geometry as static/icon.svg.
 
 No SVG rasteriser is installed, so the mark is drawn directly with Pillow at
 4x and downsampled. Coordinates are lifted verbatim from icon.svg's 512x512
@@ -8,51 +8,19 @@ import os
 
 from PIL import Image, ImageDraw
 
-S = 4                      # supersample factor
-N = 512 * S                # working canvas
-DARK = (15, 23, 42, 255)   # #0F172A
+S = 4                        # supersample factor
+N = 512 * S                  # working canvas
+DARK = (11, 18, 32, 255)     # #0B1220
 WHITE = (255, 255, 255, 255)
 
-# linearGradient id="mx": x1 0% y1 100% -> x2 100% y2 0% (bottom-left to top-right)
-STOPS = [(0.00, (0x00, 0x68, 0x47)),
-         (0.50, (0xFF, 0xFF, 0xFF)),
-         (1.00, (0xCE, 0x11, 0x26))]
-
-# linearGradient id="bars": userSpaceOnUse, x1 148 -> x2 370, i.e. horizontal
-# across the five bars - flag green on the left, flag red on the right, white
-# where it meets the centre bar so the bars echo the ball.
-BAR_STOPS = [(0.00, (0x00, 0x68, 0x47)),
-             (0.50, (0xFF, 0xFF, 0xFF)),
-             (1.00, (0xCE, 0x11, 0x26))]
-BAR_X0, BAR_X1 = 148, 370
-
-
-def ramp(stops, t):
-    for i in range(len(stops) - 1):
-        t0, c0 = stops[i]
-        t1, c1 = stops[i + 1]
-        if t <= t1 or i == len(stops) - 2:
-            f = 0.0 if t1 == t0 else max(0.0, min(1.0, (t - t0) / (t1 - t0)))
-            return (round(c0[0] + (c1[0] - c0[0]) * f),
-                    round(c0[1] + (c1[1] - c0[1]) * f),
-                    round(c0[2] + (c1[2] - c0[2]) * f), 255)
-
-
-def bar_gradient(n):
-    """The bars gradient: horizontal across BAR_X0..BAR_X1 in 512 space."""
-    img = Image.new("RGBA", (n, n))
-    px = img.load()
-    span = float(BAR_X1 - BAR_X0)
-    for x in range(n):
-        t = max(0.0, min(1.0, ((x / n) * 512 - BAR_X0) / span))
-        col = ramp(BAR_STOPS, t)
-        for y in range(n):
-            px[x, y] = col
-    return img
+# linearGradient id="neon": x1 0% y1 100% -> x2 100% y2 0% (bottom-left to top-right)
+# Saltire blue ramped to a lighter azure so the mark still reads on the dark tile.
+STOPS = [(0.00, (0x00, 0x65, 0xBF)),
+         (1.00, (0x3E, 0x9B, 0xE0))]
 
 
 def gradient(n):
-    """The mx gradient painted across an n x n square."""
+    """The neon gradient painted across an n x n square."""
     img = Image.new("RGBA", (n, n))
     px = img.load()
     for y in range(n):
@@ -115,12 +83,14 @@ d.ellipse([s(146), s(120), s(366), s(340)], outline=DARK, width=s(6))
 # analytics bars
 BARS = [(148, 380, 30, 64), (196, 360, 30, 84), (244, 340, 30, 104),
         (292, 355, 30, 89), (340, 370, 30, 74)]
+
+
 def draw_bars(dr):
     for x, y, w, h in BARS:
         dr.rounded_rectangle([s(x), s(y), s(x + w) - 1, s(y + h) - 1], radius=s(6), fill=255)
 
 
-canvas.paste(bar_gradient(N), (0, 0), mask(draw_bars))
+canvas.paste(GRAD, (0, 0), mask(draw_bars))
 
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static") + "/"
 for name, size in [("icon-512.png", 512), ("icon-192.png", 192), ("apple-touch-icon.png", 180)]:
