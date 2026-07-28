@@ -9,16 +9,18 @@ An end-to-end data engineering project powering **Krogvad Analytics Hub** — fo
 ## Architecture
 
 ```
-Sportmonks API        Groq LLM        Poisson prediction model
-       │                   │                    │
-       └─────────┬─────────┴────────────────────┘
-                 ▼
-  Bronze layer        Raw JSON stored in MotherDuck (one table per endpoint)
+Sportmonks API   Highlightly API      Groq LLM      Poisson prediction model
+       │                │                 │                    │
+       └────────┬───────┴─────────────────┴────────────────────┘
+                ▼
+  Bronze layer        Raw JSON stored in MotherDuck (one table per endpoint,
+                      per provider)
                        + LLM-generated match discussion rows
                        + pre-kickoff match predictions (frozen, never revised)
        │
        ▼
-  Silver layer        Cleaned, typed, structured relational tables  (dbt)
+  Silver layer        Cleaned, typed, structured relational tables, each one
+                      unioning every provider that carries the entity   (dbt)
        │
        ▼
   Gold layer          Kimball star schema  ─────────────────────────────┐
@@ -28,13 +30,14 @@ Sportmonks API        Groq LLM        Poisson prediction model
                            + fct_match_predictions                      │
                            + fct_match_discussions                      │
                            + fct_team_transfers)  (dbt)                 │
-                                                                        ▼
-                                                          Evidence.dev dashboards
-                                                          (Superliga + Premiership)
-                                                          deployed on Vercel
+                            │                                           ▼
+                            │                             Evidence.dev dashboards
+                            ▼                             (one app per league, plus the hub)
+                  Public MotherDuck share                  deployed on Vercel
+                  (read-only copy of gold)
 ```
 
-The nightly GitHub Actions pipeline runs the three bronze producers in parallel (API ingestion, LLM discussions, match predictions), then silver and gold sequentially with data-quality tests, and finally triggers a Vercel rebuild so both dashboards always reflect last night's data.
+The nightly GitHub Actions pipeline runs the four bronze producers in parallel (two API ingestions, LLM discussions, match predictions), then silver and gold sequentially with data-quality tests, then refreshes the public share and triggers a Vercel rebuild — so every site reflects last night's data.
 
 ---
 
@@ -42,13 +45,13 @@ The nightly GitHub Actions pipeline runs the three bronze producers in parallel 
 
 | Layer | Tool |
 |---|---|
-| Data sources | Sportmonks REST API (Denmark, Scotland) · Highlightly REST API (Spain, Mexico, Türkiye) |
+| Data sources | Sportmonks REST API · Highlightly REST API |
 | Data warehouse | MotherDuck (DuckDB cloud) |
 | Ingestion | Python (`ingestion/sportmonks/`, `ingestion/highlightly/`, `ingestion/groq/`, `ingestion/datascience/`) |
 | Match predictions | In-house Poisson goals model (`ingestion/datascience/predict_match_outcomes.py`) |
 | Transformations | dbt-duckdb (`dbt/`) |
 | Orchestration | GitHub Actions (nightly + manual triggers) |
-| BI / Dashboard | Evidence.dev |
+| BI / Dashboard | Evidence.dev (one app per league site, plus the hub) |
 | Hosting | Vercel |
 
 ---
@@ -57,8 +60,8 @@ The nightly GitHub Actions pipeline runs the three bronze producers in parallel 
 
 The gold layer follows **Kimball dimensional modelling**. Six fact tables cover six business processes:
 
-- **`fct_team_matches`** — one row per team per match (each fixture produces two rows, one per side); team-level stats, results, and tactical data
-- **`fct_player_appearances`** — one row per player per match; individual performance stats and ratings
+- **`fct_team_matches`** — one row per team per match (each fixture produces two rows, one per side); team-level stats, results, tactical data, extra-time and shootout goals, and expected goals where the provider carries them
+- **`fct_player_appearances`** — one row per player per match; individual performance stats and ratings (~65 measures)
 - **`fct_match_events`** — one row per in-match event (goal, card, substitution, VAR decision); event type/sub-type, minute on the match clock, running scoreline after the event, and per-group sequence — powering the Match Analysis timeline, league/team event-timing charts, team game-state (time leading/level/trailing) analysis, and referee VAR intelligence. Reloaded per fixture, since the provider rewrites a match's whole event list when VAR overturns a decision
 - **`fct_match_predictions`** — one row per team per predicted fixture (mirroring `fct_team_matches` grain); pre-kickoff win/draw/loss probabilities, expected goals and expected points from the Poisson model, frozen three hours before kickoff and never revised — powering the Prediction Module page
 - **`fct_match_discussions`** — one row per match per persona; LLM-generated fan discussion comments (via Groq) powering the Fan Forum on the Match Analysis page
@@ -83,6 +86,9 @@ erDiagram
         int goals_conceded
         int goals_ht_scored
         int goals_ht_conceded
+        int goals_scored_extra_time
+        int goals_scored_penalty_shootout
+        decimal expected_goals
         decimal ball_possession_pct
         int corner_kicks
         int yellow_cards
@@ -164,7 +170,6 @@ erDiagram
     dim_time {
         int time_sk PK
         int hour
-        int minute
         varchar period_of_day
     }
 
@@ -180,6 +185,7 @@ erDiagram
         varchar match_status
         varchar match_result
         varchar kick_off_time
+        varchar _source
     }
 
     dim_match_event_type {
@@ -214,6 +220,7 @@ erDiagram
         varchar team_venue_name
         varchar team_venue_city
         int team_venue_capacity
+        varchar _source
     }
 
     dim_opponent_team {
@@ -224,6 +231,7 @@ erDiagram
         varchar opponent_team_short_name
         varchar opponent_team_country
         varchar opponent_team_logo
+        varchar _source
     }
 
     dim_league {
@@ -235,6 +243,9 @@ erDiagram
         varchar league_country_code
         varchar league_logo
         varchar league_country_flag
+        varchar league_short_code
+        boolean league_is_active
+        varchar _source
     }
 
     dim_stadium {
@@ -245,6 +256,10 @@ erDiagram
         varchar stadium_country
         varchar stadium_surface
         int stadium_capacity
+        decimal stadium_latitude
+        decimal stadium_longitude
+        varchar stadium_key
+        varchar _source
     }
 
     dim_referee {
@@ -254,6 +269,8 @@ erDiagram
         varchar referee_firstname
         varchar referee_lastname
         varchar referee_nationality
+        varchar referee_key
+        varchar _source
     }
 
     dim_coach {
@@ -261,6 +278,7 @@ erDiagram
         int coach_id
         varchar coach_display_name
         varchar coach_nationality
+        varchar _source
     }
 
     dim_formation {
@@ -279,6 +297,7 @@ erDiagram
         int player_height
         int player_weight
         varchar player_photo
+        varchar _source
     }
 
     dim_position {
@@ -315,6 +334,7 @@ erDiagram
         int match_sk FK
         int persona_sk FK
         int date_sk FK
+        int league_sk FK
         varchar message
     }
 
@@ -335,6 +355,7 @@ erDiagram
         varchar transfer_partner_team_name
         varchar transfer_partner_team_country
         varchar transfer_partner_team_logo
+        varchar _source
     }
 
     fct_team_transfers {
@@ -408,6 +429,7 @@ erDiagram
     fct_match_discussions }o--|| dim_match : "match_sk"
     fct_match_discussions }o--|| dim_persona : "persona_sk"
     fct_match_discussions }o--|| dim_date : "date_sk"
+    fct_match_discussions }o--|| dim_league : "league_sk"
     fct_team_transfers }o--|| dim_date : "date_sk"
     fct_team_transfers }o--|| dim_team : "team_sk"
     fct_team_transfers }o--|| dim_transfer_partner_team : "transfer_partner_team_sk"
@@ -422,6 +444,8 @@ erDiagram
     fct_match_predictions }o--|| dim_team_side : "team_side_sk"
 ```
 
+Measures are abridged above: `fct_team_matches` carries ~50 team measures and `fct_player_appearances` ~65 player measures in full.
+
 ### Dimensional model bus matrix
 
 The bus matrix shows which dimensions are conformed (shared) across business processes — the foundation of Kimball integration.
@@ -434,7 +458,7 @@ The bus matrix shows which dimensions are conformed (shared) across business pro
 | Match | X | X | X | X | X | |
 | Team | X | X | X | X | | X |
 | Opponent Team | X | X | X | X | | |
-| League | X | X | X | X | | |
+| League | X | X | X | X | X | |
 | Stadium / Venue | X | X | X | | | |
 | Referee | X | X | X | | | |
 | Coach | X | X | | | | |
@@ -451,31 +475,44 @@ The bus matrix shows which dimensions are conformed (shared) across business pro
 | Transfer Status | | | | | | X |
 | Transfer Partner | | | | | | X |
 
-All dimension surrogate keys are **stable across runs** — new records get new SKs, existing records keep theirs. Sentinel rows (`-1 Unknown`, `-2 Not Applicable`) handle missing lookups, with all VARCHAR attributes filled with descriptive defaults (e.g. `'Unknown Stadium Country'`).
+All dimension surrogate keys are **stable across runs** — new records get new SKs, existing records keep theirs. Sentinel rows (`-1 Unknown`, `-2 Not Applicable`) handle missing lookups, with all VARCHAR attributes filled with descriptive defaults (e.g. `'Unknown Stadium Country'`). Every `dim_*` table therefore has two more rows than it has real entities.
+
+Because gold is the product — every mart reads it, and surrogate keys live in incremental dimensions that must never be rebuilt — gold changes ship with evidence from `scripts/gold_verify.py`: snapshot prod gold, run the change locally, diff row counts, key stability and column values before it reaches a PR.
 
 ---
 
-## Dashboard pages
+## Dashboards
 
-Both league sites ship the same page set (15 pages each), with a shared footer showing data freshness.
+Every site is its own Evidence.dev app. They share the warehouse, the component library and the design language, but each league site has its own identity (country-coloured logo, hero and accent palette).
+
+**Hub** — the group front door: a spinning globe highlighting covered countries, the story of the group, live group-wide counters sourced from the dimensions, and a shelf linking every league site.
+
+**League sites** — each ships the same core page set, plus a persistent side pane (hideable) and a mobile bottom bar for navigation, an installable PWA manifest, and a shared footer showing data freshness.
 
 | Page | Description |
 |---|---|
 | **Home** | Season KPIs, current leader, and navigation |
-| **Standings** | Championship, Relegation & Regular Season tables |
+| **Standings** | Full table plus whatever split, group or playoff structure the league uses |
 | **Match Results** | Results by round with scorelines and Players of the Week |
-| **Match Analysis** | Per-match deep dive: formation-true lineup pitch with player ratings and stats, match timeline, team stats, and the LLM-generated Fan Forum |
-| **Upcoming Fixtures** | Next fixtures with head-to-head history and last-5 form guide |
+| **Match Analysis** | Per-match deep dive: formation-true lineup pitch with player ratings and stats, match timeline, team stats, head-to-head, and the LLM-generated Fan Forum |
+| **Upcoming Fixtures** | Next fixtures with head-to-head history, last-5 form guide, and local kick-off times |
 | **Upcoming Match Analysis** | Pre-match preview: head-to-head record, form, and the model's view with expected goals |
-| **Prediction Module** | The match model's track record: cumulative points race (actual & projected), upcoming predictions with probabilities and expected goals, accuracy by round, and the full prediction history — every prediction frozen before kickoff |
+| **Prediction Module** | The match model's track record: cumulative points race (actual & projected, drawn even before a season starts), upcoming predictions with probabilities and expected goals, accuracy by round, and the full prediction history — every prediction frozen before kickoff |
 | **League Intelligence** | Season awards podium, standings race, cross-team landscape and radar benchmarks, per-domain team rankings, and "The Rhythm of a Match" — when goals and cards land across the match clock league-wide |
 | **Team Intelligence** | Per-team KPIs, form, performance vs previous season, shooting and possession breakdowns, event-timing profile (when this team plays best / concedes), and game-state analysis (time spent leading, level and trailing, plus comebacks) |
+| **About** | Project background, stack overview, and the build journey |
+| **Data Glossary** | Definitions of all metrics and KPIs used across the dashboard |
+
+Sites whose provider history runs deep enough additionally ship these pages:
+
+| Page | Description |
+|---|---|
 | **Referee Intelligence** | Cards and fouls by referee, strictness rankings, VAR decisions (who VAR ruled against), and per-match discipline logs |
 | **Stadium Intelligence** | Interactive stadium map, fortress rankings, and home-advantage stats |
 | **Player Intelligence** | League top-player podium by any measure, individual player deep dive with profile, characteristics radar, performance timeline, and match log |
-| **Transfer Intelligence** | Club transfer market: spend KPIs, record signing & sale, transfer volume and transfer count by team, market trend over time, and a searchable transfer ledger — filterable by year, window, team, direction, type, status and fee disclosure |
-| **About** | Project background, stack overview, and the full build journey |
-| **Data Glossary** | Definitions of all metrics and KPIs used across the dashboard |
+| **Transfer Intelligence** | Club transfer market: spend KPIs, record signing & sale, transfer volume and count by team, market trend over time, and a searchable transfer ledger — filterable by year, window, team, direction, type, status and fee disclosure |
+
+Marts are many small, purpose-built SQL sources rather than a few shared ones: each is pre-aggregated at build time into a parquet cache, so the browser does no aggregation work.
 
 ---
 
@@ -504,7 +541,8 @@ Both league sites ship the same page set (15 pages each), with a shared footer s
 │
 ├── dbt/                        # Silver + Gold transformations (dbt-duckdb)
 │   ├── models/
-│   │   ├── silver/             # 39 models: bronze JSON → structured tables
+│   │   ├── silver/             # 39 models: bronze JSON → structured tables,
+│   │   │                       #   unioned across providers, keyed on (id, _source)
 │   │   └── gold/
 │   │       ├── dims/           # 21 dim_* models (Kimball dims)
 │   │       ├── fct_team_matches.sql
@@ -513,36 +551,74 @@ Both league sites ship the same page set (15 pages each), with a shared footer s
 │   │       ├── fct_match_predictions.sql
 │   │       ├── fct_match_discussions.sql
 │   │       └── fct_team_transfers.sql
-│   ├── seeds/                  # team_names.csv (display names + codes)
-│   ├── tests/                  # Custom SQL DQ assertions
-│   ├── macros/
+│   ├── seeds/                  # Display names, provider stat-code maps,
+│   │                           #   and curated data-correction overrides
+│   ├── tests/                  # Custom SQL DQ assertions (silver + gold)
+│   ├── macros/                 # League-agnostic helpers (timezone, match scope,
+│   │                           #   round-type conformance, incremental filters)
 │   └── dbt_project.yml
 │
-├── dashboards/                 # Evidence.dev BI apps (one per league)
-│   ├── superligaen/            # Danish Superliga site
+├── dashboards/                 # Evidence.dev BI apps (one per site)
+│   ├── hub/                    # Krogvad Analytics Hub — group front door
+│   │   ├── components/         #   Globe.svelte + generated globe-data.js, side nav
+│   │   ├── scripts/            #   sync_league_logos.py
+│   │   └── sources/hub/        #   League summary, group counters, freshness
+│   ├── superligaen/            # Danish Superliga site (full page set)
 │   │   ├── pages/              #   One .md file per dashboard page
 │   │   ├── sources/            #   SQL marts queried at build time (parquet cache)
-│   │   └── components/         #   Shared Svelte components (lineup pitch, footer, …)
-│   └── scotland/               # Scottish Premiership site (same structure)
+│   │   └── components/         #   Shared Svelte components (lineup pitch, timeline,
+│   │                           #     radar, side nav, bottom nav, footer …)
+│   ├── scotland/               # Scottish Premiership site (full page set)
+│   ├── ligamx/                 # Liga MX site (core page set)
+│   ├── turkey/                 # Süper Lig site (core page set)
+│   └── spain/                  # La Liga site (core page set)
 │
 ├── scripts/
 │   ├── push_to_prod.py         # Push local DuckDB → MotherDuck (schema-selective)
-│   └── pull_from_prod.py       # Pull MotherDuck → local DuckDB
+│   ├── pull_from_prod.py       # Pull MotherDuck → local DuckDB
+│   ├── gold_verify.py          # Snapshot/diff gold to prove a change did what it should
+│   ├── refresh_share.py        # Mirror prod gold → the public share database
+│   └── generate_globe_data.py  # Regenerate the hub globe geometry (run on roster change)
 │
 ├── .github/workflows/
-│   ├── master.yml              # Nightly: bronze (API + discussions + predictions in
-│   │                           #   parallel) → silver → gold → DQ → deploy
+│   ├── master.yml              # Nightly: bronze (2 APIs + discussions + predictions
+│   │                           #   in parallel) → silver → gold → DQ → share → deploy
 │   ├── ci.yml                  # PR validation: Python syntax + dbt compile
-│   ├── bronze.yml              # Manual bronze-only run
+│   ├── bronze.yml              # Manual bronze-only run (Sportmonks)
+│   ├── highlightly.yml         # Manual bronze-only run (Highlightly, budget-aware)
 │   ├── silver.yml              # Manual silver-only run (dbt)
 │   ├── gold.yml                # Manual gold-only run (dbt)
 │   ├── discussions.yml         # Manual LLM discussion generation
 │   ├── predictions.yml         # Manual match prediction run
 │   ├── dq.yml                  # Manual DQ test run
+│   ├── share.yml               # Manual public-share refresh
 │   └── vercel.yml              # Manual Vercel deploy trigger
 │
 └── requirements.txt
 ```
+
+---
+
+## Nightly pipeline
+
+`master.yml` runs at 23:00 UTC, after the evening's matches finish, and is also dispatchable with a full-load flag.
+
+| Stage | Jobs | Notes |
+|---|---|---|
+| Bronze | 4 jobs in parallel | Two API ingestions plus LLM discussions and match predictions. The second API runs on a free 100-calls/day plan: it steers by the quota header, stops cleanly when the budget runs out and resumes the next night |
+| Silver | 1 job | Blocks only on the primary ingest — a failed discussion, prediction or secondary-provider run shows red but doesn't stop the pipeline; that data just stays stale |
+| Gold | 1 job | Incremental by default (`INCREMENTAL_DAYS_BACK=7`), full-refresh on demand |
+| DQ | 1 job | `dbt test` + `dbt source freshness`; a failure blocks publish |
+| Share | 1 job | Rebuilds the public share from prod gold |
+| Publish | 1 job | Force-pushes `publish_dashboard/vercel`, which is the only branch Vercel builds from |
+
+Each manual workflow mirrors exactly one nightly job, so any stage can be re-run in isolation against either database.
+
+---
+
+## Public data share
+
+Gold is mirrored nightly into a separate MotherDuck database (`superligaen_share`) and handed out read-only. MotherDuck shares are database-wide, so gold gets its own database rather than exposing bronze and silver alongside it; views are materialised as tables, since a view carries a reference to the database it was built in that a recipient cannot resolve. Objects are discovered from the catalog, so a new gold model joins the share — and therefore becomes public — the night after it ships.
 
 ---
 
@@ -552,6 +628,7 @@ Both league sites ship the same page set (15 pages each), with a shared footer s
 |---|---|---|---|
 | Dev | `superligaen_dev` (local DuckDB) | `dev` | Local / feature branches |
 | Prod | `superligaen` | `prod` | GitHub Actions (`main`) |
+| Public share | `superligaen_share` (gold only) | — | Nightly, after DQ passes |
 
 Dev runs against a local `superligaen_dev.duckdb` file. Use `scripts/push_to_prod.py` to push local data to MotherDuck dev for dashboard testing.
 
@@ -571,10 +648,12 @@ pip install -r requirements.txt
 
 # 3. Configure environment
 cp .env.example .env
-# Fill in MOTHERDUCK_TOKEN, SPORTMONKS_API_KEY, and GROQ_API_KEY
+# Fill in MOTHERDUCK_TOKEN, SPORTMONKS_API_KEY, HIGHLIGHTLY_API_KEY, GROQ_API_KEY
+# and TARGET_DB (superligaen or superligaen_dev)
 
 # 4. Run layers against local dev
 python ingestion/sportmonks/run.py
+python ingestion/highlightly/run.py --days-back 7
 cd dbt
 dbt seed --target dev
 dbt run --select silver.* --target dev
@@ -584,13 +663,15 @@ dbt run --select gold.* --target dev
 cd ..
 python scripts/push_to_prod.py --db superligaen_dev --schema silver gold
 
-# 6. Run the dashboard locally
-cd dashboards/superligaen   # or dashboards/scotland
+# 6. Run a dashboard locally (any folder under dashboards/)
+cd dashboards/superligaen
 npm install
 npm run sources   # regenerates parquet cache from MotherDuck
 npm run dev
 # → http://localhost:3000
 ```
+
+Note: dropdowns and other option lists are populated from the built parquet cache, so verify them with `npm run build && npm run preview` — dev mode can show stale options.
 
 ---
 
@@ -601,4 +682,5 @@ npm run dev
 | `MOTHERDUCK_TOKEN` | MotherDuck service token (read-write) |
 | `MOTHERDUCK_TOKEN_READONLY` | MotherDuck read-only token (dashboard build) |
 | `SPORTMONKS_API_KEY` | Sportmonks API key |
+| `HIGHLIGHTLY_API_KEY` | Highlightly API key |
 | `GROQ_API_KEY` | Groq API key (LLM match discussion generation) |
