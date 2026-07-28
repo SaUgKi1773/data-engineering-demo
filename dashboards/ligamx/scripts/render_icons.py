@@ -11,11 +11,44 @@ from PIL import Image, ImageDraw
 S = 4                      # supersample factor
 N = 512 * S                # working canvas
 DARK = (15, 23, 42, 255)   # #0F172A
+WHITE = (255, 255, 255, 255)
 
 # linearGradient id="mx": x1 0% y1 100% -> x2 100% y2 0% (bottom-left to top-right)
-STOPS = [(0.00, (0x12, 0xB7, 0x6A)),
-         (0.55, (0x0A, 0x8F, 0x55)),
-         (1.00, (0x00, 0x68, 0x47))]
+STOPS = [(0.00, (0x00, 0x68, 0x47)),
+         (0.50, (0xFF, 0xFF, 0xFF)),
+         (1.00, (0xCE, 0x11, 0x26))]
+
+# linearGradient id="bars": userSpaceOnUse, x1 148 -> x2 370, i.e. horizontal
+# across the five bars - flag green on the left, flag red on the right, white
+# where it meets the centre bar so the bars echo the ball.
+BAR_STOPS = [(0.00, (0x00, 0x68, 0x47)),
+             (0.50, (0xFF, 0xFF, 0xFF)),
+             (1.00, (0xCE, 0x11, 0x26))]
+BAR_X0, BAR_X1 = 148, 370
+
+
+def ramp(stops, t):
+    for i in range(len(stops) - 1):
+        t0, c0 = stops[i]
+        t1, c1 = stops[i + 1]
+        if t <= t1 or i == len(stops) - 2:
+            f = 0.0 if t1 == t0 else max(0.0, min(1.0, (t - t0) / (t1 - t0)))
+            return (round(c0[0] + (c1[0] - c0[0]) * f),
+                    round(c0[1] + (c1[1] - c0[1]) * f),
+                    round(c0[2] + (c1[2] - c0[2]) * f), 255)
+
+
+def bar_gradient(n):
+    """The bars gradient: horizontal across BAR_X0..BAR_X1 in 512 space."""
+    img = Image.new("RGBA", (n, n))
+    px = img.load()
+    span = float(BAR_X1 - BAR_X0)
+    for x in range(n):
+        t = max(0.0, min(1.0, ((x / n) * 512 - BAR_X0) / span))
+        col = ramp(BAR_STOPS, t)
+        for y in range(n):
+            px[x, y] = col
+    return img
 
 
 def gradient(n):
@@ -60,9 +93,9 @@ canvas.paste(GRAD, (0, 0),
 d = ImageDraw.Draw(canvas)
 d.rounded_rectangle([s(16), s(16), s(496) - 1, s(496) - 1], radius=s(84), fill=DARK)
 
-# football: gradient disc, dark pentagons clipped to it, dark rim
+# football: white disc, dark pentagons clipped to it, dark rim
 ball = mask(lambda dr: dr.ellipse([s(146), s(120), s(366), s(340)], fill=255))
-canvas.paste(GRAD, (0, 0), ball)
+d.ellipse([s(146), s(120), s(366), s(340)], fill=WHITE)
 
 PENTAGONS = [
     [(256, 145), (290, 170), (278, 208), (234, 208), (222, 170)],
@@ -87,7 +120,7 @@ def draw_bars(dr):
         dr.rounded_rectangle([s(x), s(y), s(x + w) - 1, s(y + h) - 1], radius=s(6), fill=255)
 
 
-canvas.paste(GRAD, (0, 0), mask(draw_bars))
+canvas.paste(bar_gradient(N), (0, 0), mask(draw_bars))
 
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static") + "/"
 for name, size in [("icon-512.png", 512), ("icon-192.png", 192), ("apple-touch-icon.png", 180)]:

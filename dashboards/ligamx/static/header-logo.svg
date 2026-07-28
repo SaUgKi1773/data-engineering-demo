@@ -1,16 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40">
   <defs>
     <linearGradient id="mx" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#12B76A"/>
-      <stop offset="55%" stop-color="#0A8F55"/>
-      <stop offset="100%" stop-color="#006847"/>
+      <stop offset="0%" stop-color="#006847"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#CE1126"/>
+    </linearGradient>
+    <!-- bars: flag green on the left, flag red on the right, meeting
+         white at the centre bar so they echo the ball -->
+    <linearGradient id="bars" gradientUnits="userSpaceOnUse" x1="148" y1="0" x2="370" y2="0">
+      <stop offset="0%" stop-color="#006847"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#CE1126"/>
     </linearGradient>
     <clipPath id="ball"><circle cx="256" cy="230" r="110"/></clipPath>
   </defs>
   <svg x="0" y="0" width="40" height="40" viewBox="0 0 512 512">
     <circle cx="256" cy="256" r="256" fill="url(#mx)"/>
     <circle cx="256" cy="256" r="236" fill="#0F172A"/>
-    <circle cx="256" cy="230" r="110" fill="url(#mx)"/>
+    <circle cx="256" cy="230" r="110" fill="#FFFFFF"/>
     <g clip-path="url(#ball)">
       <polygon points="256,145 290,170 278,208 234,208 222,170" fill="#0F172A"/>
       <polygon points="366,185 380,220 350,244 322,228 326,192" fill="#0F172A"/>
@@ -19,13 +26,13 @@
       <polygon points="146,185 186,192 190,228 162,244 132,220" fill="#0F172A"/>
     </g>
     <circle cx="256" cy="230" r="110" fill="none" stroke="#0F172A" stroke-width="6"/>
-    <rect x="148" y="380" width="30" height="64" rx="6" fill="url(#mx)"/>
-    <rect x="196" y="360" width="30" height="84" rx="6" fill="url(#mx)"/>
-    <rect x="244" y="340" width="30" height="104" rx="6" fill="url(#mx)"/>
-    <rect x="292" y="355" width="30" height="89" rx="6" fill="url(#mx)"/>
-    <rect x="340" y="370" width="30" height="74" rx="6" fill="url(#mx)"/>
+    <rect x="148" y="380" width="30" height="64" rx="6" fill="url(#bars)"/>
+    <rect x="196" y="360" width="30" height="84" rx="6" fill="url(#bars)"/>
+    <rect x="244" y="340" width="30" height="104" rx="6" fill="url(#bars)"/>
+    <rect x="292" y="355" width="30" height="89" rx="6" fill="url(#bars)"/>
+    <rect x="340" y="370" width="30" height="74" rx="6" fill="url(#bars)"/>
   </svg>
   <line x1="48" y1="5" x2="48" y2="35" stroke="#006847" stroke-width="1.5"/>
-  <text x="56" y="16" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="12" fill="#006847" letter-spacing="-0.3">Liga MX</text>
-  <text x="57" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="#006847" letter-spacing="3">ANALYTICS</text>
+  <text x="56" y="16" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="12" fill="#0A8F55" letter-spacing="-0.3">Liga MX</text>
+  <text x="57" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="#64748B" letter-spacing="3">ANALYTICS</text>
 </svg>
