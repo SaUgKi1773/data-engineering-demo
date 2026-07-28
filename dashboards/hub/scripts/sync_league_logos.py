@@ -17,6 +17,7 @@ SITES = {
     "scotland": "scotland",
     "ligamx": "ligamx",
     "turkey": "turkey",
+    "spain": "spain",
 }
 
 hub = pathlib.Path(__file__).resolve().parent.parent
