@@ -39,8 +39,8 @@ select * from turkey.mart_home_summary
       <img src="{league[0].league_logo}" alt="Süper Lig" class="h-12 xl:h-14 w-auto flex-shrink-0" onerror="this.style.display='none'" />
       <div>
         <div class="flex items-center justify-center xl:justify-start gap-2 mb-1">
-          <img src="{league[0].league_country_flag}" alt="Türkiye" class="h-3.5 rounded opacity-90" onerror="this.style.display='none'" />
-          <span class="text-white/50 text-[11px] uppercase" style="letter-spacing: 0.14em;">Türkiye</span>
+          <img src="{league[0].league_country_flag}" alt="Turkey" class="h-3.5 rounded opacity-90" onerror="this.style.display='none'" />
+          <span class="text-white/50 text-[11px] uppercase" style="letter-spacing: 0.14em;">Turkey</span>
         </div>
         <div class="text-3xl xl:text-4xl font-bold tracking-tight text-white leading-none">Süper Lig</div>
         <div class="text-white/60 text-[13px] mt-1.5">
