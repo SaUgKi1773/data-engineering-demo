@@ -38,6 +38,12 @@ export const leagues = [
     label: 'Süper Lig',
     country: 'Turkey',
     logo: '/logos/turkey.svg'
+  },
+  {
+    href: 'https://spanishlaligaanalytics.vercel.app/',
+    label: 'La Liga',
+    country: 'Spain',
+    logo: '/logos/spain.svg'
   }
 ];
 

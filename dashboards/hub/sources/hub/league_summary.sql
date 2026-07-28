@@ -11,12 +11,14 @@ WITH matches AS (
             WHEN 501    THEN d.season_scotland
             WHEN 223746 THEN d.season_mexico
             WHEN 173537 THEN d.season_turkey
+            WHEN 119924 THEN d.season_spain
         END                                           AS season,
         CASE dl.league_id
             WHEN 271    THEN d.is_current_season_denmark
             WHEN 501    THEN d.is_current_season_scotland
             WHEN 223746 THEN d.is_current_season_mexico
             WHEN 173537 THEN d.is_current_season_turkey
+            WHEN 119924 THEN d.is_current_season_spain
         END                                           AS season_is_live,
         d.date,
         m.match_id,
@@ -29,7 +31,7 @@ WITH matches AS (
         CASE
             WHEN MAX(CASE WHEN m.match_round_type = 'Championship Round' THEN 1 ELSE 0 END)
                  OVER (PARTITION BY dl.league_id, f.team_sk,
-                       CASE dl.league_id WHEN 271 THEN d.season_denmark WHEN 501 THEN d.season_scotland WHEN 223746 THEN d.season_mexico WHEN 173537 THEN d.season_turkey END) = 1
+                       CASE dl.league_id WHEN 271 THEN d.season_denmark WHEN 501 THEN d.season_scotland WHEN 223746 THEN d.season_mexico WHEN 173537 THEN d.season_turkey WHEN 119924 THEN d.season_spain END) = 1
             THEN 1 ELSE 2
         END                                           AS group_rank,
         f.points_earned IS NOT NULL                   AS counts_towards_table
@@ -39,7 +41,10 @@ WITH matches AS (
     JOIN superligaen.gold.dim_match         m  ON m.match_sk         = f.match_sk
     JOIN superligaen.gold.dim_team          t  ON t.team_sk          = f.team_sk
     JOIN superligaen.gold.dim_match_result  r  ON r.match_result_sk  = f.match_result_sk
-    WHERE dl.league_id IN (271, 501, 223746, 173537)
+    -- Roster comes from the dimension, minus its two NULL-id sentinel rows.
+    -- A league with no CASE arm above gets a NULL season and drops out at the
+    -- `latest` join below, so it cannot reach the shelf as a broken card.
+    WHERE dl.league_id IS NOT NULL
       AND r.match_result IN ('Win', 'Draw', 'Loss')
 ),
 -- MAX(season) picks the latest one lexically, which is also the latest one
