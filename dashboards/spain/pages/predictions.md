@@ -126,6 +126,23 @@ where rk = 1
 -- were played without a prediction row ever existing for them — sourcing the
 -- solid line from the prediction fact would start the race at whichever round
 -- the model happened to switch on, with the points already won missing.
+with team_list as (
+    -- Teams come from the standings mart *and* the prediction fact. Before a
+    -- ball is kicked the mart is empty for the season, so anchoring on it
+    -- alone draws nothing at all - no origin point, and no forecast to hang
+    -- off it. The fact carries every fixture the model has locked, which is
+    -- exactly the roster the race needs.
+    select distinct team_name
+    from (
+        select team_name from spain.mart_standings
+        where season = '${inputs.season.value}'
+        union all
+        select team_name from spain.mart_prediction_facts
+        where match_id is not null
+          and season = '${inputs.season.value}'
+    )
+    where 'All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value}
+)
 select round, team_name, round_group, cumulative_points, cumulative_gd
 from (
     select
@@ -140,10 +157,8 @@ from (
       and result in ('Win', 'Draw', 'Loss')
       and ('All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value})
     union all
-    select distinct 0, team_name, 'Regular Season', 0, 0
-    from spain.mart_standings
-    where season = '${inputs.season.value}'
-      and ('All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value})
+    select 0, team_name, 'Regular Season', 0, 0
+    from team_list
 )
 order by max(cumulative_points) over (partition by team_name) desc, team_name, round
 ```
@@ -157,7 +172,25 @@ order by max(cumulative_points) over (partition by team_name) desc, team_name, r
 -- The anchor comes from the standings mart for the same reason the solid line
 -- does: it has to include points won in rounds the model never predicted, or
 -- the forecast starts from a total that is too low.
-with actual as (
+with team_list as (
+    -- Teams come from the standings mart *and* the prediction fact. Before a
+    -- ball is kicked the mart is empty for the season, so anchoring on it
+    -- alone draws nothing at all - no origin point, and no forecast to hang
+    -- off it. The fact carries every fixture the model has locked, which is
+    -- exactly the roster the race needs.
+    select distinct team_name
+    from (
+        select team_name from spain.mart_standings
+        where season = '${inputs.season.value}'
+        union all
+        select team_name from spain.mart_prediction_facts
+        where match_id is not null
+          and season = '${inputs.season.value}'
+    )
+    where 'All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value}
+)
+,
+actual as (
     select
         team_name,
         coalesce(sum(points_earned), 0)                 as actual_total,
@@ -168,6 +201,19 @@ with actual as (
       and result in ('Win', 'Draw', 'Loss')
       and ('All Teams' in ${inputs.team.value} or team_name in ${inputs.team.value})
     group by team_name
+),
+base as (
+    -- left join, not inner: a team the season has not started for has no row
+    -- in `actual` at all, and an inner join drops it - which is why the whole
+    -- chart went blank before the first round rather than showing a pure
+    -- projection from the origin.
+    select
+        t.team_name,
+        coalesce(a.actual_total, 0)      as actual_total,
+        coalesce(a.actual_gd, 0)         as actual_gd,
+        coalesce(a.last_played_round, 0) as last_played_round
+    from team_list t
+    left join actual a using (team_name)
 ),
 rows as (
     select round_order, team_name, predicted_points,
@@ -183,14 +229,14 @@ pending as (
         r.team_name,
         'Regular Season' as round_group,
         r.round_order as orig_round,
-        greatest(r.round_order, a.last_played_round + 1) as round,
-        a.actual_total
+        greatest(r.round_order, b.last_played_round + 1) as round,
+        b.actual_total
             + sum(r.predicted_points) over (partition by r.team_name order by r.round_order) as cum,
-        a.actual_gd
+        b.actual_gd
             + sum(r.predicted_goals_scored - r.predicted_goals_conceded)
                   over (partition by r.team_name order by r.round_order)                     as cum_gd
     from rows r
-    join actual a using (team_name)
+    join base b using (team_name)
 )
 select team_name, round_group, round,
        round(max_by(cum,    orig_round), 1) as cumulative_points,
@@ -201,7 +247,7 @@ union all
 select team_name, 'Regular Season' as round_group, last_played_round as round,
        actual_total::decimal(10,1) as cumulative_points,
        actual_gd::decimal(10,1)    as cumulative_gd
-from actual
+from base
 order by team_name, round
 ```
 
