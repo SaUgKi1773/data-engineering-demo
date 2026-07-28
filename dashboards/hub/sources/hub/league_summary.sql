@@ -41,7 +41,10 @@ WITH matches AS (
     JOIN superligaen.gold.dim_match         m  ON m.match_sk         = f.match_sk
     JOIN superligaen.gold.dim_team          t  ON t.team_sk          = f.team_sk
     JOIN superligaen.gold.dim_match_result  r  ON r.match_result_sk  = f.match_result_sk
-    WHERE dl.league_id IN (271, 501, 223746, 173537, 119924)
+    -- Roster comes from the dimension, minus its two NULL-id sentinel rows.
+    -- A league with no CASE arm above gets a NULL season and drops out at the
+    -- `latest` join below, so it cannot reach the shelf as a broken card.
+    WHERE dl.league_id IS NOT NULL
       AND r.match_result IN ('Win', 'Draw', 'Loss')
 ),
 -- MAX(season) picks the latest one lexically, which is also the latest one
