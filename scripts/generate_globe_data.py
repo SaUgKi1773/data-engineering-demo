@@ -57,6 +57,7 @@ COVERED = {
     "Denmark": {"label": "Denmark", "anchor": (9.5, 56.0)},
     "Scotland": {"label": "Scotland", "anchor": (-4.2, 56.8)},
     "Mexico": {"label": "Mexico", "anchor": (-102.0, 23.5)},
+    "Turkey": {"label": "Turkey", "anchor": (35.0, 39.0)},
 }
 
 OUT_PATH = Path(__file__).resolve().parents[1] / "dashboards/hub/components/globe-data.js"
