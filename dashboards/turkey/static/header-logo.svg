@@ -22,5 +22,5 @@
   </svg>
   <line x1="48" y1="5" x2="48" y2="35" stroke="#A2060F" stroke-width="1.5"/>
   <text x="56" y="16" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="12" fill="#A2060F" letter-spacing="-0.3">Süper Lig</text>
-  <text x="57" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="#A2060F" letter-spacing="3">ANALYTICS</text>
+  <text x="57" y="28" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="#64748B" letter-spacing="3">ANALYTICS</text>
 </svg>
