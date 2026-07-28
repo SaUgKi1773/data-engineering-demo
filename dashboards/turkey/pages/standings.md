@@ -33,10 +33,9 @@ where season = '${inputs.season.value}'
   </summary>
   <div class="px-4 pb-4 pt-2 text-sm text-gray-700 space-y-3">
     <p><strong>One table, start to finish.</strong> Every club plays every other club twice, home and away, and the club top of the table at the end is champion. There is no split, no play-off and no second phase — the season is decided by the table you see below.</p>
-    <p><strong>The league keeps changing size.</strong> It has shrunk from 21 clubs in 2020/21 to 18 in 2025/26, so a season is not always the same length: 42 rounds in 2020/21, 38 through the middle seasons, 34 in 2025/26. The round slider adapts to whichever season you pick.</p>
-    <p><strong>Level on points is settled between the clubs, not by goal difference.</strong> Where two or more clubs finish on the same points, the Süper Lig ranks them on their record against each other — a mini-table of just those clubs — and only falls back to overall goal difference if that is level too. It genuinely changes the table: in 2023/24 Kasımpaşa finished 5th, above Beşiktaş, on the same 56 points and a goal difference eight worse, because they beat them twice.</p>
+    <p><strong>The league does not always run the same length.</strong> The number of clubs has changed several times, and the number of rounds moves with it, so the round slider adapts to whichever season you pick.</p>
+    <p><strong>Level on points is settled between the clubs, not by goal difference.</strong> Where two or more clubs finish on the same points, the Süper Lig ranks them on their record against each other — a mini-table of just those clubs, points first and then goal difference within it — and only falls back to overall goal difference if that is level too.</p>
     <p><strong>At stake:</strong> the champion enters the Champions League qualifying rounds, the clubs below take the Europa and Conference League places, and the bottom of the table is relegated to the 1. Lig.</p>
-    <p class="text-gray-500"><em>Points here are points won on the pitch. Administrative deductions are not applied, so a club that was docked points — Kayserispor in 2022/23 and 2023/24, İstanbulspor in 2023/24 — sits higher here than in the official table.</em></p>
   </div>
 </details>
 
