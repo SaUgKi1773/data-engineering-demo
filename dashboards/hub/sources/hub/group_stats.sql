@@ -6,6 +6,7 @@ WITH played AS (
             WHEN 271    THEN d.season_denmark
             WHEN 501    THEN d.season_scotland
             WHEN 223746 THEN d.season_mexico
+            WHEN 173537 THEN d.season_turkey
         END                    AS season,
         f.match_sk,
         f.goals_scored
@@ -13,7 +14,7 @@ WITH played AS (
     JOIN superligaen.gold.dim_league        dl ON dl.league_sk      = f.league_sk
     JOIN superligaen.gold.dim_date          d  ON d.date_sk         = f.date_sk
     JOIN superligaen.gold.dim_match_result  r  ON r.match_result_sk = f.match_result_sk
-    WHERE dl.league_id IN (271, 501, 223746)
+    WHERE dl.league_id IN (271, 501, 223746, 173537)
       AND r.match_result IN ('Win', 'Draw', 'Loss')
 )
 SELECT

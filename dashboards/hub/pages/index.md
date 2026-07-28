@@ -14,14 +14,25 @@ select
     when 271    then 'https://superligaanalytics.vercel.app/'
     when 501    then 'https://scottishpremiershipanalytics.vercel.app/'
     when 223746 then 'https://mexicanligamxanalytics.vercel.app/'
+    when 173537 then 'https://turkishsuperliganalytics.vercel.app/'
   end as site_url,
   case league_id
     when 271    then 'Superligaen'
     when 501    then 'Premiership'
     when 223746 then 'Liga MX'
-  end as banner_title
+    when 173537 then 'Süper Lig'
+  end as banner_title,
+  -- The order the platforms launched in. league_id is the provider's id, and
+  -- sorting on it would slot each new league wherever its id happens to fall
+  -- rather than at the end of the shelf.
+  case league_id
+    when 271    then 1
+    when 501    then 2
+    when 223746 then 3
+    when 173537 then 4
+  end as launch_order
 from hub.league_summary
-order by league_id
+order by launch_order
 ```
 
 ```sql group_stats
