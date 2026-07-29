@@ -58,6 +58,11 @@ export const externalLinks = [
     path: 'M12 2C7.03 2 3 3.34 3 5s4.03 3 9 3 9-1.34 9-3-4.03-3-9-3ZM3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3'
   },
   {
+    label: 'Build with us',
+    href: 'https://forms.gle/vPCoCNZvehu5yyze8',
+    path: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M22 11h-6'
+  },
+  {
     label: "Data Engineer's Diary",
     href: 'https://saugki1773.github.io/data-engineering-blog/',
     path: 'M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z'

@@ -180,15 +180,53 @@ select * from hub.last_updated
   </div>
 </div>
 
+<!-- ══ BUILD WITH US — bordered cards, so it does not read as a second gray band ══ -->
+<div class="mb-14 text-center">
+  <div class="text-gray-400 text-xs font-semibold uppercase mb-1" style="letter-spacing: 0.14em;">Build with us</div>
+  <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-4" style="margin-top:0.25rem;">There is room for you here.</h2>
+  <p class="text-gray-500 text-base max-w-2xl mx-auto leading-relaxed mb-9">Every platform in the group is free to use and built in the open, and we are looking for people who want to build the next one with us. This is volunteer work — there is no salary. What there is: real production data, a live product with real users, and public work you can put your name on.</p>
+
+  <div class="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto text-left mb-9">
+    <div class="rounded-2xl border border-gray-200 px-6 py-5">
+      <svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19V11M10 19V5M15 19v-6M20 19v-9"/></svg>
+      <div class="font-semibold text-gray-900 mt-4 mb-1.5">BI Developer</div>
+      <div class="text-gray-500 text-sm leading-relaxed">New analytics pages — SQL against the gold layer, charts and components in Evidence.</div>
+    </div>
+    <div class="rounded-2xl border border-gray-200 px-6 py-5">
+      <svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 9.5-9.5a2.1 2.1 0 0 0-3-3L5 16l-1 4z"/><path d="M13.5 6.5l4 4"/></svg>
+      <div class="font-semibold text-gray-900 mt-4 mb-1.5">UI / UX Designer</div>
+      <div class="text-gray-500 text-sm leading-relaxed">How the platforms look, read and feel — on a phone every bit as much as on a laptop.</div>
+    </div>
+    <div class="rounded-2xl border border-gray-200 px-6 py-5">
+      <svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h13"/><circle cx="18" cy="12" r="2"/></svg>
+      <div class="font-semibold text-gray-900 mt-4 mb-1.5">Product Manager</div>
+      <div class="text-gray-500 text-sm leading-relaxed">What gets built next, and why — turning what users ask for into a roadmap.</div>
+    </div>
+    <div class="rounded-2xl border border-gray-200 px-6 py-5">
+      <svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
+      <div class="font-semibold text-gray-900 mt-4 mb-1.5">Data Engineer</div>
+      <div class="text-gray-500 text-sm leading-relaxed">New leagues and new sources, from ingestion all the way through bronze, silver and gold.</div>
+    </div>
+  </div>
+
+  <a href="https://forms.gle/vPCoCNZvehu5yyze8" target="_blank" rel="noreferrer" class="inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white no-underline transition-colors hover:bg-gray-700">Tell us what you'd want to build</a>
+  <p class="text-gray-400 text-xs mt-3 mb-0">Not on the list? Say so on the form — if you can move the platform forward, we want to hear it.</p>
+</div>
+
 <!-- ══ FOOTER ════════════════════════════════════════════════════════════ -->
 <div class="border-t border-gray-200 pt-8 pb-12 text-center">
-  <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-4">
-    <a href="https://github.com/SaUgKi1773/data-engineering-demo" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">GitHub</a>
+  <!-- Two tiers: the three things we want clicked, then the about-and-support
+       set in a lighter weight. Seven links at one size read as a wall. -->
+  <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-2.5">
+    <a href="https://forms.gle/vPCoCNZvehu5yyze8" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Build with us</a>
     <a href="https://forms.gle/2wDZcfwm8jk6aWGS9" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Request Data Access</a>
-    <a href="https://saugki1773.github.io/data-engineering-blog/" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Data Engineer's Diary</a>
-    <a href="https://revolut.me/salihugurkimilli" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Support via Revolut</a>
     <a href="https://github.com/SaUgKi1773/data-engineering-demo/issues/new?template=suggestion.md" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Share a Suggestion</a>
-    <a href="https://www.linkedin.com/in/salih-ugur-kimilli-since1773/" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">LinkedIn</a>
+  </div>
+  <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mb-4">
+    <a href="https://github.com/SaUgKi1773/data-engineering-demo" target="_blank" class="text-xs text-gray-400 hover:text-gray-600 no-underline">GitHub</a>
+    <a href="https://saugki1773.github.io/data-engineering-blog/" target="_blank" class="text-xs text-gray-400 hover:text-gray-600 no-underline">Blog</a>
+    <a href="https://revolut.me/salihugurkimilli" target="_blank" class="text-xs text-gray-400 hover:text-gray-600 no-underline">Revolut</a>
+    <a href="https://www.linkedin.com/in/salih-ugur-kimilli-since1773/" target="_blank" class="text-xs text-gray-400 hover:text-gray-600 no-underline">LinkedIn</a>
   </div>
   <p class="text-gray-500 text-sm mb-2">Built in beautiful Farum, Denmark — free for the whole world, forever.</p>
   <p class="text-gray-400 text-xs mb-0">© 2026 Krogvad Analytics Hub · Data updated {last_updated[0]?.last_updated?.slice(0, 16).replace('T', ' ') ?? '–'} UTC</p>
