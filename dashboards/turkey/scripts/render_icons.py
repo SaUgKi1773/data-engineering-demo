@@ -4,34 +4,76 @@ No SVG rasteriser is installed, so the mark is drawn directly with Pillow at
 4x and downsampled. Coordinates are lifted verbatim from icon.svg's 512x512
 viewBox so the PNGs and the SVG stay the same drawing.
 
-The mark is the Turkish flag: a flag-red field carrying a white football and
-white bars, edged in a deeper red so the tile still reads against a white page.
-The pentagon patches and the ball rim are painted in the field colour - they
-are cut-outs in the ball, not marks on it.
+The mark follows the house pattern: a deep navy tile inside a ring that sweeps
+flag red through white and back, carrying a white football. The pentagon patches and the ball rim are painted in
+the tile colour - they are cut-outs in the ball, not marks on it. The bars
+alternate the two flag colours, red on the outside.
 """
 import os
 
 from PIL import Image, ImageDraw
 
-S = 4                        # supersample factor
-N = 512 * S                  # working canvas
-RED = (227, 10, 23, 255)     # #E30A17 flag red, the field
-DEEP = (162, 6, 15, 255)     # #A2060F deeper red, the outer edge
+S = 4                      # supersample factor
+N = 512 * S                # working canvas
+DARK = (15, 23, 42, 255)   # #0F172A, the tile
 WHITE = (255, 255, 255, 255)
+
+# linearGradient id="tr": x1 0% y1 100% -> x2 100% y2 0% (bottom-left to top-right)
+STOPS = [(0.00, (0xE3, 0x0A, 0x17)),
+         (0.50, (0xFF, 0xFF, 0xFF)),
+         (1.00, (0xE3, 0x0A, 0x17))]
+
+RED = (227, 10, 23, 255)   # #E30A17 flag red
+# the bars alternate the two flag colours, red on the outside
+BAR_FILLS = [RED, WHITE, RED, WHITE, RED]
+
+
+def ramp(stops, t):
+    for i in range(len(stops) - 1):
+        t0, c0 = stops[i]
+        t1, c1 = stops[i + 1]
+        if t <= t1 or i == len(stops) - 2:
+            f = 0.0 if t1 == t0 else max(0.0, min(1.0, (t - t0) / (t1 - t0)))
+            return (round(c0[0] + (c1[0] - c0[0]) * f),
+                    round(c0[1] + (c1[1] - c0[1]) * f),
+                    round(c0[2] + (c1[2] - c0[2]) * f), 255)
+
+
+def gradient(n):
+    """The tr gradient painted across an n x n square."""
+    img = Image.new("RGBA", (n, n))
+    px = img.load()
+    for y in range(n):
+        # projection onto the bottom-left -> top-right diagonal
+        ky = 1.0 - y / (n - 1)
+        for x in range(n):
+            px[x, y] = ramp(STOPS, (x / (n - 1) + ky) / 2.0)
+    return img
+
+
+def mask(draw_fn):
+    m = Image.new("L", (N, N), 0)
+    draw_fn(ImageDraw.Draw(m))
+    return m
 
 
 def s(v):
     return v * S
 
 
+GRAD = gradient(N)
 canvas = Image.new("RGBA", (N, N), (0, 0, 0, 0))
+
+# outer rounded square, gradient filled
+canvas.paste(GRAD, (0, 0),
+             mask(lambda d: d.rounded_rectangle([0, 0, N - 1, N - 1], radius=s(96), fill=255)))
+
+# dark inner tile
 d = ImageDraw.Draw(canvas)
+d.rounded_rectangle([s(16), s(16), s(496) - 1, s(496) - 1], radius=s(84), fill=DARK)
 
-# outer rounded square in deep red, then the flag-red field inside it
-d.rounded_rectangle([0, 0, N - 1, N - 1], radius=s(96), fill=DEEP)
-d.rounded_rectangle([s(16), s(16), s(496) - 1, s(496) - 1], radius=s(84), fill=RED)
-
-# football: white disc, field-coloured pentagons clipped to it, field-coloured rim
+# football: white disc, dark pentagons clipped to it, dark rim
+ball = mask(lambda dr: dr.ellipse([s(146), s(120), s(366), s(340)], fill=255))
 d.ellipse([s(146), s(120), s(366), s(340)], fill=WHITE)
 
 PENTAGONS = [
@@ -41,21 +83,21 @@ PENTAGONS = [
     [(184, 295), (168, 330), (196, 352), (226, 336), (228, 300)],
     [(146, 185), (186, 192), (190, 228), (162, 244), (132, 220)],
 ]
-ball = Image.new("L", (N, N), 0)
-ImageDraw.Draw(ball).ellipse([s(146), s(120), s(366), s(340)], fill=255)
 patches = Image.new("RGBA", (N, N), (0, 0, 0, 0))
 pd = ImageDraw.Draw(patches)
 for poly in PENTAGONS:
-    pd.polygon([(s(x), s(y)) for x, y in poly], fill=RED)
+    pd.polygon([(s(x), s(y)) for x, y in poly], fill=DARK)
 canvas.paste(patches, (0, 0), Image.composite(patches.split()[3], Image.new("L", (N, N), 0), ball))
 
-d.ellipse([s(146), s(120), s(366), s(340)], outline=RED, width=s(6))
+d.ellipse([s(146), s(120), s(366), s(340)], outline=DARK, width=s(6))
 
 # analytics bars
 BARS = [(148, 380, 30, 64), (196, 360, 30, 84), (244, 340, 30, 104),
         (292, 355, 30, 89), (340, 370, 30, 74)]
-for x, y, w, h in BARS:
-    d.rounded_rectangle([s(x), s(y), s(x + w) - 1, s(y + h) - 1], radius=s(6), fill=WHITE)
+
+
+for (x, y, w, h), fill in zip(BARS, BAR_FILLS):
+    d.rounded_rectangle([s(x), s(y), s(x + w) - 1, s(y + h) - 1], radius=s(6), fill=fill)
 
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static") + "/"
 for name, size in [("icon-512.png", 512), ("icon-192.png", 192), ("apple-touch-icon.png", 180)]:
