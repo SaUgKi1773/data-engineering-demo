@@ -147,6 +147,15 @@ select * from spain.mart_home_summary
   </div>
 </div>
 
+<a href="https://krogvadanalyticshub.vercel.app/" target="_blank" rel="noreferrer" class="group mb-5 flex items-center gap-4 rounded-2xl px-5 py-4 no-underline transition-all duration-200 hover:shadow-md" style="background:#f5f5f7;">
+  <div>
+    <div class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">Part of</div>
+    <div class="text-base font-bold tracking-tight text-gray-900">Krogvad Analytics Hub</div>
+    <div class="mt-0.5 text-sm text-gray-500">Every platform in the group — all powered by one shared data warehouse, refreshed every night.</div>
+  </div>
+  <span class="ml-auto text-gray-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-gray-500">→</span>
+</a>
+
 </div>
 
 <SiteFooter lastUpdated={last_updated[0]?.last_updated} />
