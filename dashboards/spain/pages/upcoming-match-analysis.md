@@ -273,7 +273,7 @@ limit 5
         </div>
       </div>
     {:else}
-      <div class="text-sm text-gray-400 py-2">Form guide not available</div>
+      <div class="text-sm text-gray-400 py-2">No matches played yet</div>
     {/each}
   </div>
 </div>
@@ -297,7 +297,7 @@ limit 5
         </div>
       </div>
     {:else}
-      <div class="text-sm text-gray-400 py-2">Form guide not available</div>
+      <div class="text-sm text-gray-400 py-2">No matches played yet</div>
     {/each}
   </div>
 </div>
