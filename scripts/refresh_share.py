@@ -14,7 +14,7 @@ model joins the share automatically — and therefore becomes public — the nex
 night after it ships.
 
 Usage:
-  python scripts/refresh_share.py                      # superligaen.gold → superligaen_share.gold
+  python scripts/refresh_share.py                      # superligaen.gold → superligaen_public.gold
   python scripts/refresh_share.py --dry-run            # print the plan, change nothing
   python scripts/refresh_share.py --target my_sandbox
 """
@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", default="superligaen", help="Source MotherDuck database (default: superligaen)")
-    parser.add_argument("--target", default="superligaen_share", help="Share MotherDuck database (default: superligaen_share)")
+    parser.add_argument("--target", default="superligaen_public", help="Share MotherDuck database (default: superligaen_public)")
     parser.add_argument("--schema", default="gold", help="Schema to publish (default: gold)")
     parser.add_argument("--dry-run", action="store_true", help="Log what would change without writing")
     args = parser.parse_args()

@@ -618,7 +618,7 @@ Each manual workflow mirrors exactly one nightly job, so any stage can be re-run
 
 ## Public data share
 
-Gold is mirrored nightly into a separate MotherDuck database (`superligaen_share`) and handed out read-only. MotherDuck shares are database-wide, so gold gets its own database rather than exposing bronze and silver alongside it; views are materialised as tables, since a view carries a reference to the database it was built in that a recipient cannot resolve. Objects are discovered from the catalog, so a new gold model joins the share — and therefore becomes public — the night after it ships.
+Gold is mirrored nightly into a separate MotherDuck database (`superligaen_public`) and handed out read-only. MotherDuck shares are database-wide, so gold gets its own database rather than exposing bronze and silver alongside it; views are materialised as tables, since a view carries a reference to the database it was built in that a recipient cannot resolve. Objects are discovered from the catalog, so a new gold model joins the share — and therefore becomes public — the night after it ships.
 
 ---
 
@@ -628,7 +628,7 @@ Gold is mirrored nightly into a separate MotherDuck database (`superligaen_share
 |---|---|---|---|
 | Dev | `superligaen_dev` (local DuckDB) | `dev` | Local / feature branches |
 | Prod | `superligaen` | `prod` | GitHub Actions (`main`) |
-| Public share | `superligaen_share` (gold only) | — | Nightly, after DQ passes |
+| Public share | `superligaen_public` (gold only) | — | Nightly, after DQ passes |
 
 Dev runs against a local `superligaen_dev.duckdb` file. Use `scripts/push_to_prod.py` to push local data to MotherDuck dev for dashboard testing.
 
