@@ -8,7 +8,7 @@ on:
         required: false
         default: ""
       target_db:
-        description: "Share MotherDuck database to rebuild. Default: superligaen_share."
+        description: "Share MotherDuck database to rebuild. Default: superligaen_public."
         required: false
         default: ""
       dry_run:
@@ -43,7 +43,7 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           SOURCE="${{ github.event.inputs.source_db || 'superligaen' }}"
-          TARGET="${{ github.event.inputs.target_db || 'superligaen_share' }}"
+          TARGET="${{ github.event.inputs.target_db || 'superligaen_public' }}"
           EXTRA_ARGS=""
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             EXTRA_ARGS="--dry-run"

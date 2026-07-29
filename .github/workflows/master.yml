@@ -303,7 +303,7 @@ jobs:
           dbt source freshness --target $TARGET
 
   # ---------------------------------------------------------------------------
-  # Public share — mirror gold into superligaen_share, the database handed out
+  # Public share — mirror gold into superligaen_public, the database handed out
   # via MotherDuck sharing. Shares are database-wide, so gold gets its own
   # database rather than exposing bronze and silver alongside it. Runs after DQ
   # so a failed test never reaches external consumers.
@@ -333,7 +333,7 @@ jobs:
             echo "Nightly ran against $DB — skipping the public share refresh."
             exit 0
           fi
-          python scripts/refresh_share.py --source superligaen --target superligaen_share
+          python scripts/refresh_share.py --source superligaen --target superligaen_public
 
   # ---------------------------------------------------------------------------
   # Dashboard — push to publish_dashboard/vercel to trigger Vercel rebuild
