@@ -616,7 +616,7 @@ order by case period_of_day
 
 ## Season Awards
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top scorer for the selected season, with the runners-up stacked below. The feed publishes no assists or player ratings, so the goalscorer is the one award the data supports — it is read off the match event stream, which names the scorer on every goal.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top scorer for the selected season, with the runners-up stacked below.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 

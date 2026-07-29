@@ -159,7 +159,7 @@ order by sort_order
 
 ## Teams of the Round
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Standout clubs from this round — one team recognised per category based on the highest single-match figure. The feed publishes no player-level data, so the award is made at club level.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Standout clubs from this round — one team recognised per category based on the highest single-match figure.</p>
 
 <div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
   {#each totr as p}

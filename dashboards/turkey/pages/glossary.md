@@ -108,7 +108,7 @@ The calculation has two steps: every underlying measure is percent-ranked across
 
 Rates are preferred over volumes throughout, so a club under constant pressure is not rewarded for the sheer number of defensive actions it is forced into.
 
-**An axis can be blank.** Four of the six depend on measures the feed only began publishing in 2025/26. When a filter selects seasons without them, that axis is drawn at the centre with an em dash rather than being scored — an unscored axis is shown as unknown, never as zero.
+**An axis can be blank.** Four of the six are built on measures that start in 2025/26. When a filter selects earlier seasons, that axis is drawn at the centre with an em dash rather than being scored — an unscored axis is shown as unknown, never as zero.
 
 <div class="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
   <div class="p-3">
@@ -154,7 +154,7 @@ Rates are preferred over volumes throughout, so a club under constant pressure i
   <div class="p-3"><div class="font-semibold text-sm">Comeback Wins</div><div class="text-sm text-gray-500 mt-0.5">Matches won after having trailed at some point</div></div>
   <div class="p-3"><div class="font-semibold text-sm">Points from Trailing</div><div class="text-sm text-gray-500 mt-0.5">Points collected in matches where the team fell behind — a measure of what a squad rescues rather than what it protects</div></div>
   <div class="p-3"><div class="font-semibold text-sm">Leads Lost</div><div class="text-sm text-gray-500 mt-0.5">Matches lost despite having led at some point</div></div>
-  <div class="p-3"><div class="font-semibold text-sm">VAR Review</div><div class="text-sm text-gray-500 mt-0.5">A recorded video review during a match. Review counts are dependable from 2020/21, but what the review decided is only categorised reliably from 2024/25.</div></div>
+  <div class="p-3"><div class="font-semibold text-sm">VAR Review</div><div class="text-sm text-gray-500 mt-0.5">A recorded video review during a match. Review counts run from 2020/21; what each review decided is categorised from 2024/25.</div></div>
 </div>
 
 ---
