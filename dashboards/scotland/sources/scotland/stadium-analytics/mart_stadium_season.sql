@@ -40,6 +40,8 @@ SELECT
     COUNT(DISTINCT m.match_id) FILTER (WHERE ts.team_side = 'Home')::int                             AS home_matches,
     ROUND(100.0 * COUNT(*) FILTER (WHERE ts.team_side = 'Home' AND r.match_result = 'Win')
           / NULLIF(COUNT(*) FILTER (WHERE ts.team_side = 'Home'), 0), 1)                             AS home_win_pct,
+    -- offset so a 0% stadium still renders a visible bubble on the map
+    home_win_pct - (MIN(home_win_pct) OVER (PARTITION BY d.season_scotland) - 5)                     AS home_win_pct_scaled,
     ROUND(100.0 * COUNT(*) FILTER (WHERE r.match_result = 'Draw')
           / COUNT(*), 1)                                                                              AS draw_pct,
     ROUND(SUM(f.goals_scored) FILTER (WHERE ts.team_side = 'Home')::double
