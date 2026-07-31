@@ -66,7 +66,7 @@ select * from ${fortress_ranking} limit 3
 
 ```sql stadium_kpis
 with s as (
-    select distinct stadium_name, stadium_capacity, total_goals
+    select distinct stadium_name, stadium_capacity, home_wins, home_matches, home_win_pct
     from superligaen.mart_stadium_season
     where season = '${inputs.season.value}'
       and ('All Stadiums' in ${inputs.stadium.value} OR stadium_name in ${inputs.stadium.value})
@@ -78,11 +78,11 @@ select
     max(stadium_capacity)                        as max_capacity,
     arg_min(stadium_name, stadium_capacity)      as min_cap_stadium,
     min(stadium_capacity)                        as min_capacity,
-    sum(total_goals)                             as total_goals,
-    arg_max(stadium_name, total_goals)           as top_goals_stadium,
-    max(total_goals)                             as top_goals,
-    arg_min(stadium_name, total_goals)           as low_goals_stadium,
-    min(total_goals)                             as low_goals
+    round(100.0 * sum(home_wins) / nullif(sum(home_matches), 0), 1) as home_win_rate,
+    arg_max(stadium_name, home_win_pct)          as top_win_stadium,
+    max(home_win_pct)                            as top_win_pct,
+    arg_min(stadium_name, home_win_pct)          as low_win_stadium,
+    min(home_win_pct)                            as low_win_pct
 from s
 ```
 
@@ -145,16 +145,16 @@ order by n desc
   </div>
 
   <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col">
-    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Goals Scored</div>
-    <div class="text-4xl font-black text-gray-900 leading-none text-center">{stadium_kpis[0]?.total_goals != null ? stadium_kpis[0].total_goals.toLocaleString('en-US') : '—'}</div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Home Win Rate</div>
+    <div class="text-4xl font-black text-gray-900 leading-none text-center">{stadium_kpis[0]?.home_win_rate != null ? stadium_kpis[0].home_win_rate.toFixed(1) + '%' : '—'}</div>
     <div class="mt-3 text-xs text-gray-500 flex flex-col justify-center gap-1" style="min-height:64px;">
       <div class="flex items-center justify-between gap-2">
-        <span><span class="text-green-600 font-bold">▲</span> Most: <span class="font-semibold text-gray-700">{stadium_kpis[0]?.top_goals_stadium ?? '—'}</span></span>
-        <span class="font-semibold text-gray-700 whitespace-nowrap">{stadium_kpis[0]?.top_goals ?? '—'}</span>
+        <span><span class="text-green-600 font-bold">▲</span> Best: <span class="font-semibold text-gray-700">{stadium_kpis[0]?.top_win_stadium ?? '—'}</span></span>
+        <span class="font-semibold text-gray-700 whitespace-nowrap">{stadium_kpis[0]?.top_win_pct != null ? stadium_kpis[0].top_win_pct.toFixed(1) + '%' : '—'}</span>
       </div>
       <div class="flex items-center justify-between gap-2">
-        <span><span class="text-red-500 font-bold">▼</span> Fewest: <span class="font-semibold text-gray-700">{stadium_kpis[0]?.low_goals_stadium ?? '—'}</span></span>
-        <span class="font-semibold text-gray-700 whitespace-nowrap">{stadium_kpis[0]?.low_goals ?? '—'}</span>
+        <span><span class="text-red-500 font-bold">▼</span> Worst: <span class="font-semibold text-gray-700">{stadium_kpis[0]?.low_win_stadium ?? '—'}</span></span>
+        <span class="font-semibold text-gray-700 whitespace-nowrap">{stadium_kpis[0]?.low_win_pct != null ? stadium_kpis[0].low_win_pct.toFixed(1) + '%' : '—'}</span>
       </div>
     </div>
   </div>
@@ -165,13 +165,13 @@ order by n desc
 
 ## Stadium Map
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Bubble size = total goals scored. Color = playing surface type.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Bubble size = home win rate. Color = playing surface type.</p>
 
 <BubbleMap
     data={stadium_stats}
     lat=lat
     long=lon
-    size=total_goals_scaled
+    size=home_win_pct_scaled
     value=stadium_surface
     pointName=stadium_name
     tooltipType=click
@@ -179,7 +179,7 @@ order by n desc
     legendType=categorical
     legendTitle="Stadium Surface"
     title="Superligaen Stadiums — {inputs.season.value}"
-    tooltip={[{id: 'stadium_name', showColumnName: false, valueClass: 'font-bold text-sm'}, {id: 'stadium_surface'}, {id: 'total_goals'}, {id: 'goals_per_match', fmt: '0.0'}]}
+    tooltip={[{id: 'stadium_name', showColumnName: false, valueClass: 'font-bold text-sm'}, {id: 'stadium_surface'}, {id: 'home_win_pct', title: 'Home Win %', fmt: '0.0"%"'}, {id: 'home_matches', title: 'Home Matches'}]}
 />
 
 ---
