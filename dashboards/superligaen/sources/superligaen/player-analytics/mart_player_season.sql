@@ -122,7 +122,7 @@ pct_input AS (
         fouls_drawn * 90.0 / NULLIF(minutes_played, 0)                     AS fouls_drawn_per90_r,
         100.0 * aerials_won / NULLIF(aerials_won + aerials_lost, 0)         AS aerial_success_pct
     FROM base
-    WHERE minutes_played >= 450
+    WHERE minutes_played >= 90
 ),
 pct_ranks AS (
     SELECT
