@@ -768,7 +768,7 @@ where season = '${inputs.season.value}'
 
 ## Player Characteristics
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Composite percentile score among all players with 450+ minutes in {inputs.season.value}. Each axis combines multiple rate metrics weighted by their importance to that dimension. Higher = better relative to the league.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Composite percentile score among all players with 90+ minutes in {inputs.season.value}. Each axis combines multiple rate metrics weighted by their importance to that dimension. Higher = better relative to the league.</p>
 
 {#each league_context as lc}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-center">
