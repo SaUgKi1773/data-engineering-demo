@@ -79,5 +79,4 @@ WHERE d.season_scotland >= '2020/21'
   AND st.stadium_name NOT LIKE '%Unknown%'
   AND st.stadium_name NOT LIKE '%Applicable%'
 GROUP BY d.season_scotland, st.stadium_name
-HAVING COUNT(DISTINCT m.match_id) >= 4
 ORDER BY d.season_scotland DESC, home_win_pct DESC
