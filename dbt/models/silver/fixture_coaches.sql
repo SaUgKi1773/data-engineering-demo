@@ -1,10 +1,13 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key=['coach_id', 'fixture_id']
+    unique_key=['fixture_id', 'team_id']
 ) }}
 
--- Match-day coach per team per fixture.
+-- Match-day coach per team per fixture. The key is the grain, not the coach:
+-- when a club changes coach the replacement arrives under a new coach_id, so
+-- keying on it would leave the outgoing coach behind and fan out every gold
+-- fact that joins coaches on (fixture_id, team_id).
 WITH src AS MATERIALIZED (
     SELECT *
     FROM {{ source('bronze', 'sportmonks__fixtures') }}
