@@ -1,9 +1,16 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key='id'
+    unique_key='fixture_id'
 ) }}
 
+-- unique_key is a delete SCOPE, not a row identity: one bronze row carries a
+-- fixture's complete lineup, so re-processing it replaces the whole thing.
+-- Sportmonks publishes a provisional XI before kick-off and reissues the
+-- confirmed one under NEW lineup ids, so keying on the lineup id would leave
+-- every superseded row behind. Gold picks type_id 11 over 12 per player, so a
+-- leftover pre-match starter outranks the bench row that replaced them and the
+-- match shows more than eleven starters — two goalkeepers included.
 WITH src AS MATERIALIZED (
     SELECT *
     FROM {{ source('bronze', 'sportmonks__fixtures') }}

@@ -1,10 +1,15 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='delete+insert',
-    unique_key='id'
+    unique_key='fixture_id'
 ) }}
 
 -- EAV table: one row per player per stat per fixture. Join with silver.types on type_id for metric name.
+-- unique_key is a delete SCOPE for the same reason as fixture_lineups: details
+-- hang off a lineup entry, so a reissued lineup brings new detail ids with it
+-- and keying on the detail id would strand the superseded stats. Gold reads
+-- these on (fixture_id, player_id), where a stranded row would hand minutes to
+-- a player who never came on.
 WITH src AS MATERIALIZED (
     SELECT *
     FROM {{ source('bronze', 'sportmonks__fixtures') }}
