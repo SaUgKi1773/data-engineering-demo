@@ -220,7 +220,7 @@ with ranked as (
     select
         player_name, player_photo, team_name,
         round(avg(rating), 2)                        as avg_rating,
-        count(distinct match_id)::int                as matches,
+        sum(minutes_played)::int                     as minutes_played,
         row_number() over (order by avg(rating) desc) as rn
     from scotland.mart_player_facts
     where season = '${inputs.season.value}'
@@ -233,7 +233,7 @@ with ranked as (
       and rating is not null
       and rating > 0
     group by player_name, player_photo, team_name
-    having count(distinct match_id) >= 5
+    having sum(minutes_played) >= 90
 )
 select * from ranked where rn <= 3 order by rn
 ```
@@ -657,7 +657,7 @@ order by case period_of_day
 
 ## Season Awards
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top scorer, top assister, and best-rated player for the selected season (minimum 5 appearances). Runner-up cards are stacked below each winner.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top scorer, top assister, and best-rated player for the selected season (minimum 90 minutes played). Runner-up cards are stacked below each winner.</p>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
@@ -772,7 +772,7 @@ order by case period_of_day
 
   <!-- Rated rank 1 -->
   <div class="rounded-2xl bg-gradient-to-br from-purple-50 to-violet-100 border border-purple-200 shadow-lg p-5" style="position: relative; z-index: 3;">
-    <div class="text-xs uppercase tracking-widest text-purple-600 font-bold mb-3">⭐ Best Rated <span class="normal-case tracking-normal text-purple-400 font-normal">· min 5 matches</span></div>
+    <div class="text-xs uppercase tracking-widest text-purple-600 font-bold mb-3">⭐ Best Rated <span class="normal-case tracking-normal text-purple-400 font-normal">· min 90 minutes</span></div>
     <div class="flex items-center gap-4">
       <img src="{top_rated[0].player_photo}" alt="{top_rated[0].player_name}" class="w-16 h-16 rounded-full object-cover border-2 border-purple-300 shadow" onerror="this.style.display='none'" />
       <div>
