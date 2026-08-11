@@ -268,6 +268,7 @@ with base as (
     where season = '${inputs.season.value}'
       and ('All Teams' in ${inputs.team.value} OR team_name in ${inputs.team.value})
       and ('All Positions' in ${inputs.position.value} OR player_main_position in ${inputs.position.value})
+      and matches >= 5
       and minutes_played >= 90
 ),
 ranked as (
@@ -612,7 +613,7 @@ where season = '${inputs.season.value}'
 
 ## Top Players
 
-<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top 3 players with at least 90 minutes played in the selected season, ranked by the chosen measure. Season, team, and position filters all apply.</p>
+<p style="font-size:0.75rem;color:#6b7280;margin:0 0 1rem 0;font-style:italic;">Top 3 players with at least 5 appearances in the selected season, ranked by the chosen measure. Season, team, and position filters all apply.</p>
 
 <Dropdown data={podium_measures} name=podium_measure value=value label=label defaultValue="goals" title="Measure" />
 
