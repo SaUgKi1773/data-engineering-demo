@@ -43,6 +43,7 @@ select * from spain.mart_home_summary
           <span class="text-white/50 text-[11px] uppercase" style="letter-spacing: 0.14em;">Spain</span>
         </div>
         <div class="text-3xl xl:text-4xl font-bold tracking-tight text-white leading-none">La Liga</div>
+        <div class="text-white/50 text-xs mt-1 tracking-wide italic">Powered by data. Built for football.</div>
         <div class="text-white/60 text-[13px] mt-1.5">
           <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1.5" style="background:{summary[0].season_is_live ? '#4ade80' : '#cbd5e1'};"></span>{summary[0].season} · {summary[0].season_is_live ? 'Live' : 'Ended'}
         </div>
