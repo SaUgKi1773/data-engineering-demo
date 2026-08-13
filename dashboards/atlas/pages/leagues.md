@@ -112,7 +112,7 @@ group by 1
 
 <div class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-gray-200 bg-white px-2 py-1.5 mb-2 rounded-[3px]">
   <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
-  <DateRange name=period data={day_range} dates=match_date />
+  <DateRange name=period data={day_range} dates=match_date defaultValue="Year to Today" />
   <span class="ml-auto text-[10px] text-gray-400">All five leagues, always. Per match, both teams combined.</span>
 </div>
 
@@ -176,7 +176,6 @@ select
 from atlas.mart_club_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2
-having sum(matches) / 2 >= 20
 order by yr, league_name
 ```
 

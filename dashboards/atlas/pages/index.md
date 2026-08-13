@@ -78,6 +78,10 @@ description: Five top-flight leagues on three continents, measured the same way.
 
 </script>
 
+```sql last_updated
+select strftime(last_match, '%d %b %Y') as last_updated from atlas.mart_last_updated
+```
+
 ```sql day_range
 select distinct match_date from atlas.mart_club_day order by match_date
 ```
@@ -113,7 +117,7 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 
 <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[3px] border border-gray-200 bg-white px-2 py-1.5">
   <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
-  <DateRange name=period data={day_range} dates=match_date />
+  <DateRange name=period data={day_range} dates=match_date defaultValue="Year to Today" />
   <span class="ml-auto text-[10px] tabular-nums text-gray-400">
     <Value data={scope} column=matches fmt='#,##0' /> matches ·
     <Value data={scope} column=goals fmt='#,##0' /> goals ·
@@ -157,7 +161,7 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
         <div class="flex h-full flex-col gap-1">
           {#each rank(D, MEASURES[0]) as r}
             <a href={KEY.find((l) => l.code === r.code).site_url} target="_blank" rel="noopener"
-               class="flex items-center gap-2 rounded-[2px] border border-gray-200 px-2 py-[7px] no-underline hover:border-gray-400">
+               class="flex flex-1 items-center gap-2 rounded-[2px] border border-gray-200 px-2 no-underline hover:border-gray-400">
               <span class="h-7 w-[3px] flex-none rounded-[1px]" style="background:{r.colour}"></span>
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-[12px] font-medium text-gray-900">{r.name}</span>
@@ -175,19 +179,19 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 
 ```sql trend
 select
-    calendar_year::int::varchar                                     as yr,
+    strftime(date_trunc('month', match_date), '%b %y')              as ym,
+    date_trunc('month', match_date)                                 as month_start,
     league_name,
     round(1.0 * sum(goals_for) / nullif(sum(matches) / 2, 0), 3)    as value
 from atlas.mart_club_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
-group by 1, 2
-having sum(matches) / 2 >= 20
-order by yr, league_name
+group by 1, 2, 3
+order by month_start, league_name
 ```
 
-      <Panel title="Goals per match" qualifier="by calendar year" href="/leagues">
-        <LineChart data={trend} x=yr y=value series=league_name yAxisTitle=""
-          seriesColors={SERIES} markers=true sort=false legend=false chartAreaHeight=296
+      <Panel title="Goals per match" qualifier="by month" href="/leagues">
+        <LineChart data={trend} x=ym y=value series=league_name yAxisTitle=""
+          seriesColors={SERIES} markers=true sort=false legend=false chartAreaHeight=330
           echartsOptions={{tooltip: {formatter: function(p) {
             const r = p.filter(x => x.value && x.value[1] != null && !isNaN(x.value[1])).sort((a,b) => b.value[1]-a.value[1]);
             if (!r.length) return '';
@@ -295,8 +299,8 @@ from ${clock} group by 1, 2 order by minute_bucket_sort
 <div class="grid grid-cols-1 gap-2 xl:grid-cols-12">
   <div class="xl:col-span-8">
     <Panel title="When goals are scored" qualifier="share of each league's goals, by quarter-hour" href="/matches">
-      <LineChart data={clock} x=minute_bucket y=share series=league_name yAxisTitle=""
-        seriesColors={SERIES} markers=true sort=false legend=false chartAreaHeight=210
+      <BarChart data={clock} x=minute_bucket y=share series=league_name type=stacked
+        yAxisTitle="" seriesColors={SERIES} sort=false legend=false chartAreaHeight=210
         echartsOptions={{tooltip: {formatter: function(p) {
           const r = p.filter(x => x.value && x.value[1] != null && !isNaN(x.value[1])).sort((a,b) => b.value[1]-a.value[1]);
           if (!r.length) return '';
@@ -310,14 +314,14 @@ from ${clock} group by 1, 2 order by minute_bucket_sort
     <Panel title="Share of goals" qualifier="%, shaded down each column" pad={false}>
       <DataTable data={clock_table} rows=8 rowShading=false>
         <Column id="Minute" />
-        <Column id="ESP" fmt='0.0' contentType=colorscale colorScale=#1f3f6b />
-        <Column id="MEX" fmt='0.0' contentType=colorscale colorScale=#1f3f6b />
-        <Column id="SCO" fmt='0.0' contentType=colorscale colorScale=#1f3f6b />
-        <Column id="DEN" fmt='0.0' contentType=colorscale colorScale=#1f3f6b />
-        <Column id="TUR" fmt='0.0' contentType=colorscale colorScale=#1f3f6b />
+        <Column id="ESP" title="ESP" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="MEX" title="MEX" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="SCO" title="SCO" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="DEN" title="DEN" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="TUR" title="TUR" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
       </DataTable>
     </Panel>
   </div>
 </div>
 
-<SiteFooter />
+<SiteFooter lastUpdated={last_updated[0]?.last_updated} />

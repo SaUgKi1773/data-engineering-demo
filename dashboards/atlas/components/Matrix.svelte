@@ -31,8 +31,8 @@
   }
 </script>
 
-<div class="-mx-2 overflow-x-auto px-2">
-<table class="w-full min-w-[19rem] border-collapse">
+<div class="-mx-2 h-full overflow-x-auto px-2">
+<table class="h-full w-full min-w-[19rem] border-collapse">
   <thead>
     <tr>
       <th class="sticky left-0 z-10 w-[6.5rem] bg-white px-1 pb-1 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-400">Measure</th>
