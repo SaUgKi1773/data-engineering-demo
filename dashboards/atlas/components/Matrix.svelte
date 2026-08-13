@@ -57,7 +57,7 @@
             {:else}
               {@const w = weight(v, row.values)}
               <span class="block rounded-[2px] px-1 py-[2px] text-right"
-                    style="background:rgba(29,29,31,{(0.04 + 0.84 * w).toFixed(3)});">
+                    style="background:rgba(31,63,107,{(0.05 + 0.88 * w).toFixed(3)});">
                 <span class="text-[11px] tabular-nums {w > 0.5 ? 'font-semibold text-white' : rk[c.code] === 1 ? 'font-semibold text-gray-900' : 'text-gray-700'}">{(row.format || ((x) => x.toFixed(2)))(v)}</span>
               </span>
             {/if}

@@ -309,11 +309,11 @@ from ${clock} group by 1, 2 order by minute_bucket_sort
     <Panel title="Share of goals" qualifier="%, shaded down each column" pad={false}>
       <DataTable data={clock_table} rows=8 rowShading=false>
         <Column id="Minute" />
-        <Column id="ESP" fmt='0.0' contentType=colorscale colorScale=#1d1d1f />
-        <Column id="MEX" fmt='0.0' contentType=colorscale colorScale=#1d1d1f />
-        <Column id="SCO" fmt='0.0' contentType=colorscale colorScale=#1d1d1f />
-        <Column id="DEN" fmt='0.0' contentType=colorscale colorScale=#1d1d1f />
-        <Column id="TUR" fmt='0.0' contentType=colorscale colorScale=#1d1d1f />
+        <Column id="ESP" fmt='0.0' contentType=colorscale colorScale=#1f3f6b />
+        <Column id="MEX" fmt='0.0' contentType=colorscale colorScale=#1f3f6b />
+        <Column id="SCO" fmt='0.0' contentType=colorscale colorScale=#1f3f6b />
+        <Column id="DEN" fmt='0.0' contentType=colorscale colorScale=#1f3f6b />
+        <Column id="TUR" fmt='0.0' contentType=colorscale colorScale=#1f3f6b />
       </DataTable>
     </Panel>
   </div>
