@@ -12,6 +12,7 @@
   export let format = (v) => v;
   export let showRank = true;
   export let compact = false;
+  export let measure = '';   // named in the tooltip, so a bar is never a bare number
   export let dense = false;   // 3px bars, 11px text — 25 rows in 430px
 
   // Bars are proportional to the largest value, always from zero.
@@ -24,7 +25,7 @@
 
 <div class="flex flex-col {gap}">
   {#each rows as row, i}
-    <div class="group flex items-center gap-3">
+    <div class="group relative flex items-center gap-3">
       {#if showRank}
         <span class="w-5 flex-none text-right text-[11px] font-medium tabular-nums text-gray-400">{i + 1}</span>
       {/if}
@@ -47,6 +48,14 @@
 
       <span class="w-14 flex-none text-right {txt} font-semibold tabular-nums text-gray-900">
         {format(row.value)}
+      </span>
+
+      <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-[3px] bg-[#1d1d1f] px-2 py-1.5 text-[11px] leading-tight text-white shadow-lg group-hover:block">
+        <span class="block font-semibold">{row.label}</span>
+        <span class="block">{measure ? measure + ' · ' : ''}{format(row.value)}</span>
+        {#if row.hint || row.sublabel}
+          <span class="block text-white/60">{row.hint ?? row.sublabel}</span>
+        {/if}
       </span>
     </div>
   {/each}

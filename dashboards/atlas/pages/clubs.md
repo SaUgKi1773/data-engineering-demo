@@ -16,6 +16,11 @@ hide_title: true
   const f2 = (v) => Number(v).toFixed(2);
   const f0 = (v) => Math.round(Number(v)).toLocaleString();
 
+  // One series per club is the configuration that renders; the league hue is
+  // kept by colouring each club's series with its league's colour.
+  const clubColours = (rows) =>
+    Object.fromEntries([...rows].map((r) => [r.team_name, colourOf[r.league_name]]));
+
   // Which league's clubs occupy the top of the ranking — the question a flat
   // club list cannot answer on its own.
   function ownership(rows) {
@@ -54,11 +59,6 @@ select distinct match_date from atlas.mart_club_day order by match_date
       <DropdownOption value="yellow_cards" valueLabel="Yellow cards" />
       <DropdownOption value="saves" valueLabel="Saves" />
   </Dropdown>
-  <Dropdown name=minmatches title="Minimum matches" defaultValue="10">
-      <DropdownOption value="10" valueLabel="10+" />
-      <DropdownOption value="20" valueLabel="20+" />
-      <DropdownOption value="50" valueLabel="50+" />
-  </Dropdown>
 </div>
 
 ```sql clubs
@@ -66,22 +66,22 @@ with c as (
     select
         team_name, league_name,
         sum(matches)                                            as matches,
-        1.0 * sum(goals_for)      / nullif(sum(matches), 0)     as goals_for,
-        1.0 * sum(goals_against)  / nullif(sum(matches), 0)     as goals_against,
-        1.0 * sum(points)         / nullif(sum(matches), 0)     as points,
-        100.0 * sum(clean_sheets) / nullif(sum(matches), 0)     as clean_sheets,
-        1.0 * sum(shots_on_target)/ nullif(sum(n_shots), 0)     as shots,
-        1.0 * sum(passes)         / nullif(sum(n_passes), 0)    as passes,
-        100.0 * sum(passes_accurate) / nullif(sum(passes), 0)   as pass_accuracy,
-        1.0 * sum(corners)        / nullif(sum(n_corners), 0)   as corners,
-        1.0 * sum(fouls)          / nullif(sum(n_fouls), 0)     as fouls,
-        1.0 * sum(yellow_cards)   / nullif(sum(n_cards), 0)     as yellow_cards,
-        1.0 * sum(saves)          / nullif(sum(n_saves), 0)     as saves,
-        100.0 * sum(wins)         / nullif(sum(matches), 0)     as win_pct
+        (1.0 * sum(goals_for)      / nullif(sum(matches), 0))::double     as goals_for,
+        (1.0 * sum(goals_against)  / nullif(sum(matches), 0))::double     as goals_against,
+        (1.0 * sum(points)         / nullif(sum(matches), 0))::double     as points,
+        (100.0 * sum(clean_sheets) / nullif(sum(matches), 0))::double     as clean_sheets,
+        (1.0 * sum(shots_on_target)/ nullif(sum(n_shots), 0))::double     as shots,
+        (1.0 * sum(passes)         / nullif(sum(n_passes), 0))::double    as passes,
+        (100.0 * sum(passes_accurate) / nullif(sum(passes), 0))::double   as pass_accuracy,
+        (1.0 * sum(corners)        / nullif(sum(n_corners), 0))::double   as corners,
+        (1.0 * sum(possession)     / nullif(sum(n_possession), 0))::double as possession,
+        (1.0 * sum(fouls)          / nullif(sum(n_fouls), 0))::double     as fouls,
+        (1.0 * sum(yellow_cards)   / nullif(sum(n_cards), 0))::double     as yellow_cards,
+        (1.0 * sum(saves)          / nullif(sum(n_saves), 0))::double     as saves,
+        (100.0 * sum(wins)         / nullif(sum(matches), 0))::double     as win_pct
     from atlas.mart_club_day
     where match_date between '${inputs.period.start}' and '${inputs.period.end}'
     group by 1, 2
-    having sum(matches) >= try_cast('${inputs.minmatches.value}' as int)
 )
 select *,
     case '${inputs.measure.value}'
@@ -90,7 +90,7 @@ select *,
         when 'shots'          then shots          when 'passes'        then passes
         when 'pass_accuracy'  then pass_accuracy  when 'corners'       then corners
         when 'fouls'          then fouls          when 'yellow_cards'  then yellow_cards
-        when 'saves'          then saves          when 'possession'    then pass_accuracy
+        when 'saves'          then saves          when 'possession'    then possession
     end                                                         as value
 from c
 where value is not null
@@ -134,9 +134,10 @@ from ${clubs}
 <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
 
   <div class="xl:col-span-2">
-    <Panel title="Top 20 clubs" qualifier="on the selected measure" scope="all five leagues pooled">
+    <Panel title="Top 20 clubs" qualifier="on the selected measure">
       <Rank dense={true}
-            rows={[...clubs].slice(0, 20).map((r) => ({ label: r.team_name, sublabel: codeOf[r.league_name], value: r.value, colour: colourOf[r.league_name] }))}
+            measure={inputs.measure.label}
+            rows={[...clubs].slice(0, 20).map((r) => ({ label: r.team_name, sublabel: codeOf[r.league_name], value: r.value, colour: colourOf[r.league_name], hint: r.league_name }))}
             format={f2} />
     </Panel>
   </div>
@@ -178,6 +179,7 @@ select
     round(corners, 2)               as "Corners",
     round(passes, 0)                as "Passes",
     round(pass_accuracy, 1)         as "Pass accuracy %",
+    round(possession, 1)            as "Possession %",
     round(fouls, 1)                 as "Fouls",
     round(yellow_cards, 2)          as "Yellow cards",
     round(saves, 2)                 as "Saves"
@@ -199,6 +201,7 @@ order by "Goals for" desc
     <Column id="Corners" fmt='0.00' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
     <Column id="Passes" fmt='#,##0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
     <Column id="Pass accuracy %" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+    <Column id="Possession %" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
     <Column id="Fouls" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
     <Column id="Yellow cards" fmt='0.00' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
     <Column id="Saves" fmt='0.00' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
@@ -215,17 +218,46 @@ select team_name, league_name, round(goals_against, 2) as value
 from ${clubs} where goals_against is not null order by goals_against asc limit 10
 ```
 
-<div class="mt-2 grid grid-cols-1 gap-2 xl:grid-cols-2">
+<div class="mt-2 mb-2 grid grid-cols-1 gap-2 xl:grid-cols-2">
   <Panel title="Best attacks" qualifier="goals scored per match">
-    <Rank dense={true}
-          rows={[...best_attack].map((r) => ({ label: r.team_name, sublabel: codeOf[r.league_name], value: r.value, colour: colourOf[r.league_name] }))}
+    <Rank dense={true} measure="Goals scored per match"
+          rows={[...best_attack].map((r) => ({ label: r.team_name, sublabel: codeOf[r.league_name], value: r.value, colour: colourOf[r.league_name], hint: r.league_name }))}
           format={f2} />
   </Panel>
   <Panel title="Best defences" qualifier="goals conceded per match, fewest first" scope="bar length is goals conceded">
-    <Rank dense={true}
-          rows={[...best_defence].map((r) => ({ label: r.team_name, sublabel: codeOf[r.league_name], value: r.value, colour: colourOf[r.league_name] }))}
+    <Rank dense={true} measure="Goals conceded per match"
+          rows={[...best_defence].map((r) => ({ label: r.team_name, sublabel: codeOf[r.league_name], value: r.value, colour: colourOf[r.league_name], hint: r.league_name }))}
           format={f2} />
   </Panel>
 </div>
+
+```sql scatter
+select team_name, league_name,
+       round(goals_for, 3)::double     as goals_for,
+       round(goals_against, 3)::double as goals_against,
+       matches
+from ${clubs}
+where goals_for is not null and goals_against is not null
+```
+
+```sql scatter_bounds
+select
+    (floor(min(goals_for) * 10) / 10)::double      as x_min,
+    (ceil(max(goals_for) * 10) / 10)::double       as x_max,
+    (floor(min(goals_against) * 10) / 10)::double  as y_min,
+    (ceil(max(goals_against) * 10) / 10)::double   as y_max
+from ${scatter}
+```
+
+<Panel title="Attack against defence" qualifier="one dot per club" scope="bottom right is where champions sit">
+  <ScatterPlot data={scatter} x=goals_for y=goals_against series=league_name
+    xAxisTitle="Goals scored per match" yAxisTitle="Goals conceded per match"
+    tooltipColumns={[{id: 'team_name', title: 'Club'}, {id: 'league_name', title: 'League'}, {id: 'goals_for', title: 'Scored'}, {id: 'goals_against', title: 'Conceded'}, {id: 'matches', title: 'Matches'}]}
+    xMin={scatter_bounds[0].x_min} xMax={scatter_bounds[0].x_max}
+    yMin={scatter_bounds[0].y_min} yMax={scatter_bounds[0].y_max}
+    seriesColors={ {'La Liga':'#2a78d6','Liga MX':'#eb6834','Premiership':'#1baf7a','Superliga':'#eda100','Süper Lig':'#e87ba4'} }
+    tooltipTitle=team_name
+    legend=false chartAreaHeight=300 />
+</Panel>
 
 <SiteFooter lastUpdated={last_updated[0]?.last_updated} />

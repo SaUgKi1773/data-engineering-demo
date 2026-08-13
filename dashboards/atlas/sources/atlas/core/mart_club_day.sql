@@ -35,6 +35,7 @@ SELECT
     COUNT(*) FILTER (WHERE f.goals_conceded = 0)        AS clean_sheets,
     SUM(f.points_earned)                                AS points,
     SUM(f.corner_kicks)                                 AS corners,     COUNT(f.corner_kicks) AS n_corners,
+    SUM(f.ball_possession_pct)                          AS possession,  COUNT(f.ball_possession_pct) AS n_possession,
     SUM(f.yellow_cards)                                 AS yellow_cards,
     SUM(f.red_cards)                                    AS red_cards,   COUNT(f.yellow_cards) AS n_cards,
     SUM(COALESCE(f.shots_on_target, p.shots_on_target))   AS shots_on_target,
