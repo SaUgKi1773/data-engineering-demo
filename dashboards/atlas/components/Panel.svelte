@@ -10,7 +10,7 @@
   export let pad = true;
 </script>
 
-<div class="flex min-w-0 flex-col rounded-[3px] border border-gray-200 bg-white">
+<div class="flex h-full min-w-0 flex-col rounded-[3px] border border-gray-200 bg-white">
   <div class="flex h-[22px] flex-none items-center gap-1.5 border-b border-gray-200 bg-[#fafafa] px-2">
     {#if href}
       <a {href} class="flex-none text-[10px] font-semibold uppercase tracking-wider text-gray-700 no-underline hover:text-gray-900">{title} →</a>

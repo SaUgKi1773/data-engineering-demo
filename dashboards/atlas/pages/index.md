@@ -154,15 +154,15 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
   </div>
 
   <!-- ══ B · LEADERS · TREND · LEAGUES ═══════════════════════════════════ -->
-  <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
+  <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
 
-    <div class="xl:col-span-5">
+    <div>
       <Panel title="Every measure">
         <Matrix codes={CODES} rows={matrixRows(D)} />
       </Panel>
     </div>
 
-    <div class="xl:col-span-4">
+    <div>
 
 ```sql trend
 select
@@ -189,12 +189,12 @@ order by yr, league_name
       </Panel>
     </div>
 
-    <div class="xl:col-span-3">
+    <div>
       <Panel title="The five leagues" qualifier="sorted by goals per match" scope="↗ own site">
-        <div class="flex flex-col gap-1">
+        <div class="flex h-full flex-col gap-1">
           {#each rank(D, MEASURES[0]) as r}
             <a href={KEY.find((l) => l.code === r.code).site_url} target="_blank" rel="noopener"
-               class="flex items-center gap-2 rounded-[2px] border border-gray-200 px-2 py-[7px] no-underline hover:border-gray-400">
+               class="flex flex-1 items-center gap-2 rounded-[2px] border border-gray-200 px-2 no-underline hover:border-gray-400">
               <span class="h-7 w-[3px] flex-none rounded-[1px]" style="background:{r.colour}"></span>
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-[12px] font-medium text-gray-900">{r.name}</span>
@@ -235,7 +235,7 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
 
 <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
   <Panel title="Biggest wins" qualifier="by margin" href="/matches">
-    <div class="flex flex-col">
+    <div class="flex h-full flex-col justify-between">
       {#each [...big_wins] as m}
         <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0">
           <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
@@ -248,7 +248,7 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
   </Panel>
 
   <Panel title="Most goals in a match" href="/matches">
-    <div class="flex flex-col">
+    <div class="flex h-full flex-col justify-between">
       {#each [...high_scoring] as m}
         <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0">
           <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
@@ -261,7 +261,7 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
   </Panel>
 
   <Panel title="Comebacks" qualifier="trailed at the break, won" href="/matches">
-    <div class="flex flex-col">
+    <div class="flex h-full flex-col justify-between">
       {#each [...comebacks] as m}
         <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0">
           <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>

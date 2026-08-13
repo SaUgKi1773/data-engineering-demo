@@ -32,10 +32,10 @@
 </script>
 
 <div class="-mx-2 overflow-x-auto px-2">
-<table class="w-full min-w-[26rem] border-collapse">
+<table class="w-full min-w-[19rem] border-collapse">
   <thead>
     <tr>
-      <th class="sticky left-0 z-10 w-[7.5rem] bg-white px-1 pb-1 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-400">Measure</th>
+      <th class="sticky left-0 z-10 w-[6.5rem] bg-white px-1 pb-1 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-400">Measure</th>
       {#each codes as c}
         <th class="px-0.5 pb-1 text-center">
           <span class="mx-auto mb-0.5 block h-[3px] w-full rounded-[1px]" style="background:{c.colour}"></span>
@@ -48,10 +48,10 @@
     {#each rows as row}
       {@const rk = ranked(row.values)}
       <tr class="border-t border-gray-100">
-        <td class="sticky left-0 z-10 bg-white px-1 py-[3px] text-[11px] leading-tight text-gray-700">{row.measure}</td>
+        <td class="sticky left-0 z-10 whitespace-nowrap bg-white px-1 py-[3px] text-[11px] leading-tight text-gray-700">{row.measure}</td>
         {#each codes as c}
           {@const v = row.values[c.code]}
-          <td class="px-[1px] py-[2px]">
+          <td class="px-[1px] py-[2px] min-w-[2.4rem]">
             {#if v == null || isNaN(v)}
               <span class="block px-1 text-right text-[11px] text-gray-300">–</span>
             {:else}
