@@ -4,9 +4,9 @@
   // measure, so "Goals 33,104" also answers "and whose goals are they".
   export let label = '';
   export let value = '';
-  export let delta = null;      // signed number, already computed
-  export let deltaFmt = (v) => (v > 0 ? '+' : '') + Number(v).toFixed(2);
   export let split = [];        // [{ colour, share }] summing to 100
+  export let foot = '';         // who leads this measure
+  export let footColour = null;
 </script>
 
 <div class="flex h-[76px] flex-col justify-between bg-white px-2.5 py-1.5">
@@ -23,7 +23,8 @@
     <div class="h-[4px]"></div>
   {/if}
 
-  <div class="text-[11px] leading-none tabular-nums {delta == null ? 'text-transparent' : delta < 0 ? 'text-[#c0392b]' : 'text-gray-500'}">
-    {delta == null ? '·' : deltaFmt(delta)}
+  <div class="flex items-center gap-1 text-[11px] leading-none text-gray-500">
+    {#if footColour}<span class="h-1.5 w-1.5 flex-none rounded-full" style="background:{footColour}"></span>{/if}
+    <span class="truncate">{foot}</span>
   </div>
 </div>
