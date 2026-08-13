@@ -147,10 +147,10 @@ group by 1
 
   <!-- ══ B · THE MATRIX ══════════════════════════════════════════════════ -->
   <div class="grid grid-cols-1 gap-2 xl:grid-cols-2 mb-2">
-    <Panel title="Attack & volume" qualifier="per match, both teams" scope="rank ① = highest">
+    <Panel title="Attack & volume">
       <Matrix codes={CODES} rows={matrixRows(D, ['attack'])} />
     </Panel>
-    <Panel title="Discipline, control & results" qualifier="per match, both teams" scope="rank ① = highest">
+    <Panel title="Discipline, control & results">
       <Matrix codes={CODES} rows={matrixRows(D, ['discipline', 'control', 'results'])} />
     </Panel>
   </div>

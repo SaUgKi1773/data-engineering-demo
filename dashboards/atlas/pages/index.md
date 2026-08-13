@@ -22,8 +22,8 @@ description: Five top-flight leagues on three continents, measured the same way.
   // rate, Σnum/Σden across the five — not the mean of five means, which would
   // weight a 468-match league the same as a 2,280-match one and disagree with
   // the totals in the scope bar.
-  const M = (label, num, den, scale = 1, format = f2, shareable = true) =>
-    ({ label, num, den, scale, format, shareable });
+  const M = (label, num, den, scale = 1, format = f2) =>
+    ({ label, num, den, scale, format });
   const MEASURES = [
     M('Goals',           (d) => d.goals,           (d) => d.matches),
     M('Shots on target', (d) => d.shots,           (d) => d.n_shots),
@@ -32,12 +32,12 @@ description: Five top-flight leagues on three continents, measured the same way.
     M('Fouls',           (d) => d.fouls,           (d) => d.n_fouls,  1, f1),
     M('Yellow cards',    (d) => d.yellow_cards,    (d) => d.n_cards),
     M('Saves',           (d) => d.saves,           (d) => d.n_saves),
-    M('Home win %',      (d) => d.home_wins,       (d) => d.matches, 100, f1, false),
+    M('Home win %',      (d) => d.home_wins,       (d) => d.matches, 100, f1),
     M('Pass accuracy %', (d) => d.passes_accurate, (d) => d.passes,  100, f1, false),
     M('Red cards',       (d) => d.red_cards,       (d) => d.n_cards),
     M('Offsides',        (d) => d.offsides,        (d) => d.n_offsides),
-    M('Draw %',          (d) => d.draws,           (d) => d.matches, 100, f1, false),
-    M('Clean sheet %',   (d) => d.clean_sheets,    (d) => (d.matches * 2), 100, f1, false)
+    M('Draw %',          (d) => d.draws,           (d) => d.matches, 100, f1),
+    M('Clean sheet %',   (d) => d.clean_sheets,    (d) => (d.matches * 2), 100, f1)
   ];
 
   const CODES = KEY.map((l) => ({ code: l.code, colour: l.colour }));
@@ -54,6 +54,14 @@ description: Five top-flight leagues on three continents, measured the same way.
       .sort((a, b) => b.value - a.value);
   }
   // Σnum / Σden across the leagues in view.
+  // Segment widths are each league's share of the five rates, so the bar
+  // describes the same number the tile reports. `r` arrives sorted highest
+  // first, which puts the leader on the left.
+  const split = (r) => {
+    const sum = r.reduce((a, b) => a + b.value, 0) || 1;
+    return r.map((x) => ({ colour: x.colour, share: (x.value / sum) * 100 }));
+  };
+
   function pooled(d, m) {
     let n = 0, dd = 0;
     for (const l of KEY) {
@@ -72,12 +80,6 @@ description: Five top-flight leagues on three continents, measured the same way.
     values: Object.fromEntries(KEY.map((l) => [l.code, rate(m, d[l.league_name])]))
   }));
 
-  function split(d, m) {
-    if (!m.shareable) return [];
-    const vals = KEY.map((l) => ({ colour: l.colour, v: d[l.league_name] ? Number(m.num(d[l.league_name])) || 0 : 0 }));
-    const sum = vals.reduce((a, b) => a + b.v, 0) || 1;
-    return vals.map((x) => ({ colour: x.colour, share: (x.v / sum) * 100 }));
-  }
 </script>
 
 ```sql day_range
@@ -135,13 +137,16 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
         <div class="text-[22px] font-semibold leading-none tabular-nums text-gray-900">
           {pooled(D, m) == null ? '–' : m.format(pooled(D, m))}
         </div>
-        <div class="flex h-[4px] w-full overflow-hidden rounded-[1px]">
-          {#each split(D, m) as s}<span style="width:{s.share}%; background:{s.colour};"></span>{/each}
+        <div class="flex h-[5px] w-full overflow-hidden rounded-[1px]">
+          {#each split(r) as seg}<span style="width:{seg.share}%; background:{seg.colour};"></span>{/each}
         </div>
-        <div class="flex items-center gap-1 truncate text-[11px] leading-none text-gray-500">
+        <div class="flex items-center gap-1.5 truncate text-[11px] leading-none">
           {#if r.length}
-            <span class="h-1.5 w-1.5 flex-none rounded-full" style="background:{r[0].colour}"></span>
-            <span class="font-semibold text-gray-700">{r[0].code}</span> {m.format(r[0].value)}
+            <span class="flex items-center gap-1">
+              <span class="h-1.5 w-1.5 flex-none rounded-full" style="background:{r[0].colour}"></span>
+              <span class="font-semibold text-gray-700">{r[0].code}</span>
+              <span class="tabular-nums text-gray-900">{m.format(r[0].value)}</span>
+            </span>
           {/if}
         </div>
       </div>
@@ -152,7 +157,7 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
   <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
 
     <div class="xl:col-span-5">
-      <Panel title="Every measure" qualifier="per match, both teams" scope="darkest wins the row">
+      <Panel title="Every measure">
         <Matrix codes={CODES} rows={matrixRows(D)} />
       </Panel>
     </div>
