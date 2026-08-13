@@ -240,13 +240,15 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
   <Panel title="Biggest wins" qualifier="by margin" href="/matches">
     <div class="flex h-full flex-col justify-between">
       {#each [...big_wins] as m}
-        <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0"
-             title="{m.home_team} v {m.away_team} · {m.home_goals}–{m.away_goals} · {m.played_on}{m.round_name ? ' · ' + m.round_name : ''} · {m.league_name}">
+        <div class="group relative flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0 hover:bg-gray-50">
           <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
           <span class="w-7 flex-none text-[10px] font-semibold text-gray-400">{m.code}</span>
           <span class="min-w-0 flex-1 truncate text-[12px] text-gray-800">{m.home_team} v {m.away_team}</span>
-          <span class="flex-none text-[10px] tabular-nums text-gray-400">{m.played_on}</span>
           <span class="text-[13px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
+          <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-[3px] bg-[#1d1d1f] px-2 py-1.5 text-[11px] leading-tight text-white shadow-lg group-hover:block">
+            <span class="block font-semibold">{m.home_team} {m.home_goals}–{m.away_goals} {m.away_team}</span>
+            <span class="block text-white/60">{m.played_on} · {m.round_name ?? '—'} · {m.league_name}</span>
+          </span>
         </div>
       {/each}
     </div>
@@ -255,13 +257,15 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
   <Panel title="Most goals in a match" href="/matches">
     <div class="flex h-full flex-col justify-between">
       {#each [...high_scoring] as m}
-        <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0"
-             title="{m.home_team} v {m.away_team} · {m.home_goals}–{m.away_goals} · {m.played_on}{m.round_name ? ' · ' + m.round_name : ''} · {m.league_name}">
+        <div class="group relative flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0 hover:bg-gray-50">
           <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
           <span class="w-7 flex-none text-[10px] font-semibold text-gray-400">{m.code}</span>
           <span class="min-w-0 flex-1 truncate text-[12px] text-gray-800">{m.home_team} v {m.away_team}</span>
-          <span class="flex-none text-[10px] tabular-nums text-gray-400">{m.played_on}</span>
           <span class="text-[13px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
+          <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-[3px] bg-[#1d1d1f] px-2 py-1.5 text-[11px] leading-tight text-white shadow-lg group-hover:block">
+            <span class="block font-semibold">{m.home_team} {m.home_goals}–{m.away_goals} {m.away_team}</span>
+            <span class="block text-white/60">{m.played_on} · {m.round_name ?? '—'} · {m.league_name}</span>
+          </span>
         </div>
       {/each}
     </div>
@@ -270,14 +274,16 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
   <Panel title="Comebacks" qualifier="trailed at the break, won" href="/matches">
     <div class="flex h-full flex-col justify-between">
       {#each [...comebacks] as m}
-        <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0"
-             title="{m.home_team} v {m.away_team} · {m.home_goals_ht}–{m.away_goals_ht} at the break, {m.home_goals}–{m.away_goals} final · {m.played_on}{m.round_name ? ' · ' + m.round_name : ''} · {m.league_name}">
+        <div class="group relative flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0 hover:bg-gray-50">
           <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
           <span class="w-7 flex-none text-[10px] font-semibold text-gray-400">{m.code}</span>
           <span class="min-w-0 flex-1 truncate text-[12px] text-gray-800">{m.comeback_by}</span>
-          <span class="flex-none text-[10px] tabular-nums text-gray-400">{m.played_on}</span>
           <span class="text-[10px] tabular-nums text-gray-400">{m.home_goals_ht}–{m.away_goals_ht} HT</span>
           <span class="text-[13px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
+          <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-[3px] bg-[#1d1d1f] px-2 py-1.5 text-[11px] leading-tight text-white shadow-lg group-hover:block">
+            <span class="block font-semibold">{m.home_team} {m.home_goals}–{m.away_goals} {m.away_team}</span>
+            <span class="block text-white/60">{m.home_goals_ht}–{m.away_goals_ht} at the break · {m.played_on} · {m.round_name ?? '—'} · {m.league_name}</span>
+          </span>
         </div>
       {/each}
     </div>
