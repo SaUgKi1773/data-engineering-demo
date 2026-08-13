@@ -31,14 +31,10 @@ description: Five top-flight leagues on three continents, measured the same way.
     M('Passes',          (d) => d.passes,          (d) => d.n_passes, 1, f0),
     M('Fouls',           (d) => d.fouls,           (d) => d.n_fouls,  1, f1),
     M('Yellow cards',    (d) => d.yellow_cards,    (d) => d.n_cards),
-    M('Saves',           (d) => d.saves,           (d) => d.n_saves),
     M('Home win %',      (d) => d.home_wins,       (d) => d.matches, 100, f1),
-    M('Pass accuracy %', (d) => d.passes_accurate, (d) => d.passes,  100, f1, false),
-    M('Red cards',       (d) => d.red_cards,       (d) => d.n_cards),
-    M('Offsides',        (d) => d.offsides,        (d) => d.n_offsides),
-    M('Draw %',          (d) => d.draws,           (d) => d.matches, 100, f1),
-    M('Clean sheet %',   (d) => d.clean_sheets,    (d) => (d.matches * 2), 100, f1)
+    M('Draw %',          (d) => d.draws,           (d) => d.matches, 100, f1)
   ];
+
 
   const CODES = KEY.map((l) => ({ code: l.code, colour: l.colour }));
   const byLeague = (q) => Object.fromEntries([...q].map((r) => [r.league_name, r]));
@@ -157,7 +153,7 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
   <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
 
     <div>
-      <Panel title="Every measure">
+      <Panel title="Key measures" href="/leagues" scope="all 20 on Leagues">
         <Matrix codes={CODES} rows={matrixRows(D)} />
       </Panel>
     </div>
