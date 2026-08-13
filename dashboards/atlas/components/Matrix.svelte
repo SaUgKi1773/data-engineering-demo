@@ -55,9 +55,10 @@
             {#if v == null || isNaN(v)}
               <span class="block px-1 text-right text-[11px] text-gray-300">–</span>
             {:else}
+              {@const w = weight(v, row.values)}
               <span class="block rounded-[2px] px-1 py-[2px] text-right"
-                    style="background:{c.colour}{Math.round((0.08 + 0.62 * weight(v, row.values)) * 255).toString(16).padStart(2, '0')};">
-                <span class="text-[11px] tabular-nums {rk[c.code] === 1 ? 'font-semibold text-gray-900' : 'text-gray-700'}">{(row.format || ((x) => x.toFixed(2)))(v)}</span>
+                    style="background:rgba(29,29,31,{(0.04 + 0.84 * w).toFixed(3)});">
+                <span class="text-[11px] tabular-nums {w > 0.5 ? 'font-semibold text-white' : rk[c.code] === 1 ? 'font-semibold text-gray-900' : 'text-gray-700'}">{(row.format || ((x) => x.toFixed(2)))(v)}</span>
               </span>
             {/if}
           </td>
