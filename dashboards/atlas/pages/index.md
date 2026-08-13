@@ -153,8 +153,21 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
   <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
 
     <div>
-      <Panel title="Key measures" href="/leagues" scope="all 20 on Leagues">
-        <Matrix codes={CODES} rows={matrixRows(D)} />
+      <Panel title="The five leagues" qualifier="sorted by goals per match" scope="↗ own site">
+        <div class="flex h-full flex-col gap-1">
+          {#each rank(D, MEASURES[0]) as r}
+            <a href={KEY.find((l) => l.code === r.code).site_url} target="_blank" rel="noopener"
+               class="flex items-center gap-2 rounded-[2px] border border-gray-200 px-2 py-[7px] no-underline hover:border-gray-400">
+              <span class="h-7 w-[3px] flex-none rounded-[1px]" style="background:{r.colour}"></span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-[12px] font-medium text-gray-900">{r.name}</span>
+                <span class="block text-[10px] tabular-nums text-gray-400">{f0(D[r.name].matches)} matches</span>
+              </span>
+              <span class="text-[13px] font-semibold tabular-nums text-gray-900">{f2(r.value)}</span>
+              <span class="text-[10px] text-gray-300">↗</span>
+            </a>
+          {/each}
+        </div>
       </Panel>
     </div>
 
@@ -186,21 +199,8 @@ order by yr, league_name
     </div>
 
     <div>
-      <Panel title="The five leagues" qualifier="sorted by goals per match" scope="↗ own site">
-        <div class="flex h-full flex-col gap-1">
-          {#each rank(D, MEASURES[0]) as r}
-            <a href={KEY.find((l) => l.code === r.code).site_url} target="_blank" rel="noopener"
-               class="flex flex-1 items-center gap-2 rounded-[2px] border border-gray-200 px-2 no-underline hover:border-gray-400">
-              <span class="h-7 w-[3px] flex-none rounded-[1px]" style="background:{r.colour}"></span>
-              <span class="min-w-0 flex-1">
-                <span class="block truncate text-[12px] font-medium text-gray-900">{r.name}</span>
-                <span class="block text-[10px] tabular-nums text-gray-400">{f0(D[r.name].matches)} matches</span>
-              </span>
-              <span class="text-[13px] font-semibold tabular-nums text-gray-900">{f2(r.value)}</span>
-              <span class="text-[10px] text-gray-300">↗</span>
-            </a>
-          {/each}
-        </div>
+      <Panel title="Key measures" href="/leagues" scope="all 20 on Leagues">
+        <Matrix codes={CODES} rows={matrixRows(D)} />
       </Panel>
     </div>
   </div>
