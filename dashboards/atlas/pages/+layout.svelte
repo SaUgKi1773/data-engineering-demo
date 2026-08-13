@@ -32,7 +32,7 @@
       <span class="text-[11px] font-semibold tracking-wide text-white">KROGVAD</span>
       <span class="hidden text-[10px] uppercase tracking-[0.18em] text-white/35 sm:inline">Cross-League Analytics</span>
     </a>
-    <span class="ml-auto flex-none truncate text-[10px] tabular-nums text-white/40">
+    <span class="ml-auto hidden flex-none truncate text-[10px] tabular-nums text-white/40 md:inline">
       5 leagues · Denmark · Scotland · Spain · Turkey · Mexico
     </span>
   </div>
@@ -63,6 +63,11 @@
     margin: 0 auto;
     padding: 8px 16px 32px;
   }
+  @media (max-width: 640px) {
+    :global(.console) { padding: 8px 8px 24px; }
+  }
+  /* Nothing may push the page sideways; wide panels scroll inside themselves. */
+  :global(body) { overflow-x: hidden; }
   /* The page's own prose defaults fight a dense grid; neutralise them. */
   :global(.console p) { margin: 0; }
   :global(.console > div + div) { margin-top: 0; }

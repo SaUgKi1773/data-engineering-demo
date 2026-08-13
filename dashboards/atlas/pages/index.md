@@ -8,6 +8,7 @@ description: Five top-flight leagues on three continents, measured the same way.
 
 <script>
   import Panel from '../components/Panel.svelte';
+  import Matrix from '../components/Matrix.svelte';
   import SiteFooter from '../components/SiteFooter.svelte';
   import { leagues as KEY } from '../components/navItems.js';
 
@@ -39,6 +40,7 @@ description: Five top-flight leagues on three continents, measured the same way.
     M('Clean sheet %',   (d) => d.clean_sheets,    (d) => (d.matches * 2), 100, f1, false)
   ];
 
+  const CODES = KEY.map((l) => ({ code: l.code, colour: l.colour }));
   const byLeague = (q) => Object.fromEntries([...q].map((r) => [r.league_name, r]));
 
   const rate = (m, row) => {
@@ -62,6 +64,14 @@ description: Five top-flight leagues on three continents, measured the same way.
     }
     return dd ? (m.scale * n) / dd : null;
   }
+  // Which league tops each measure, counted. No derived statistic: a league
+  // either has the highest figure on a measure or it does not.
+  const matrixRows = (d) => MEASURES.map((m) => ({
+    measure: m.label,
+    format: m.format,
+    values: Object.fromEntries(KEY.map((l) => [l.code, rate(m, d[l.league_name])]))
+  }));
+
   function split(d, m) {
     if (!m.shareable) return [];
     const vals = KEY.map((l) => ({ colour: l.colour, v: d[l.league_name] ? Number(m.num(d[l.league_name])) || 0 : 0 }));
@@ -142,29 +152,8 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
   <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
 
     <div class="xl:col-span-5">
-      <Panel title="Who leads what" qualifier="per match, both teams" scope="value · margin over 2nd">
-        <table class="w-full border-collapse">
-          <tbody>
-            {#each MEASURES as m}
-              {@const r = rank(D, m)}
-              <tr class="border-b border-gray-100 last:border-0">
-                <td class="py-[3px] pr-1 text-[11px] leading-tight text-gray-600">{m.label}</td>
-                {#each r as x, i}
-                  <td class="px-[3px] py-[3px]">
-                    <span class="flex items-center justify-center gap-[3px]">
-                      <span class="h-1.5 w-1.5 flex-none rounded-full" style="background:{x.colour}; opacity:{i === 0 ? 1 : 0.35}"></span>
-                      <span class="text-[10px] {i === 0 ? 'font-semibold text-gray-900' : 'text-gray-400'}">{x.code}</span>
-                    </span>
-                  </td>
-                {/each}
-                <td class="pl-1 text-right text-[11px] font-semibold tabular-nums text-gray-900">{r.length ? m.format(r[0].value) : '–'}</td>
-                <td class="pl-1.5 text-right text-[10px] tabular-nums text-gray-400">
-                  {r.length > 1 ? '+' + m.format(r[0].value - r[1].value) : '–'}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
+      <Panel title="Every measure" qualifier="per match, both teams" scope="darkest wins the row">
+        <Matrix codes={CODES} rows={matrixRows(D)} />
       </Panel>
     </div>
 

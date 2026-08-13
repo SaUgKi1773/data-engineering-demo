@@ -14,21 +14,28 @@
   export let codes = [];   // [{ code, colour }] fixed order
   export let rows = [];    // [{ measure, values: { CODE: number } , format }]
 
-  const RANKS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
-
   function ranked(values) {
     return Object.entries(values)
       .filter(([, v]) => v != null && !isNaN(v))
       .sort((a, b) => b[1] - a[1])
       .reduce((acc, [k], i) => ({ ...acc, [k]: i + 1 }), {});
   }
-  const maxOf = (values) => Math.max(...Object.values(values).filter((v) => v != null && !isNaN(v)), 0) || 1;
+  const nums = (values) => Object.values(values).filter((v) => v != null && !isNaN(v));
+  // 0 for the row's lowest league, 1 for its highest, cubed.
+  function weight(v, values) {
+    const n = nums(values);
+    if (!n.length) return 0;
+    const lo = Math.min(...n), hi = Math.max(...n);
+    if (hi === lo) return 1;
+    return Math.pow((v - lo) / (hi - lo), 3);
+  }
 </script>
 
-<table class="w-full border-collapse">
+<div class="-mx-2 overflow-x-auto px-2">
+<table class="w-full min-w-[26rem] border-collapse">
   <thead>
     <tr>
-      <th class="w-[7.5rem] px-1 pb-1 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-400">Measure</th>
+      <th class="sticky left-0 z-10 w-[7.5rem] bg-white px-1 pb-1 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-400">Measure</th>
       {#each codes as c}
         <th class="px-0.5 pb-1 text-center">
           <span class="mx-auto mb-0.5 block h-[3px] w-full rounded-[1px]" style="background:{c.colour}"></span>
@@ -40,21 +47,17 @@
   <tbody>
     {#each rows as row}
       {@const rk = ranked(row.values)}
-      {@const mx = maxOf(row.values)}
       <tr class="border-t border-gray-100">
-        <td class="px-1 py-[3px] text-[11px] leading-tight text-gray-700">{row.measure}</td>
+        <td class="sticky left-0 z-10 bg-white px-1 py-[3px] text-[11px] leading-tight text-gray-700">{row.measure}</td>
         {#each codes as c}
           {@const v = row.values[c.code]}
           <td class="px-[1px] py-[2px]">
             {#if v == null || isNaN(v)}
               <span class="block px-1 text-right text-[11px] text-gray-300">–</span>
             {:else}
-              <span class="relative block overflow-hidden rounded-[2px]">
-                <span class="absolute inset-y-0 left-0" style="width:{Math.max(v / mx * 100, 3)}%; background:{c.colour}; opacity:{rk[c.code] === 1 ? 0.42 : 0.16};"></span>
-                <span class="relative flex items-baseline justify-end gap-0.5 px-1 py-[2px]">
-                  <span class="text-[11px] tabular-nums {rk[c.code] === 1 ? 'font-semibold text-gray-900' : 'text-gray-700'}">{(row.format || ((x) => x.toFixed(2)))(v)}</span>
-                  <span class="text-[8px] text-gray-400">{RANKS[rk[c.code] - 1]}</span>
-                </span>
+              <span class="block rounded-[2px] px-1 py-[2px] text-right"
+                    style="background:{c.colour}{Math.round((0.08 + 0.62 * weight(v, row.values)) * 255).toString(16).padStart(2, '0')};">
+                <span class="text-[11px] tabular-nums {rk[c.code] === 1 ? 'font-semibold text-gray-900' : 'text-gray-700'}">{(row.format || ((x) => x.toFixed(2)))(v)}</span>
               </span>
             {/if}
           </td>
@@ -63,3 +66,4 @@
     {/each}
   </tbody>
 </table>
+</div>
