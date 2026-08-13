@@ -5,7 +5,8 @@
 WITH sides AS (
     SELECT
         f.match_sk, l.league_name, d.date AS match_date, d.year AS calendar_year,
-        ts.team_side, t.team_name, f.goals_scored, f.goals_ht_scored, r.match_result
+        ts.team_side, t.team_name, f.goals_scored, f.goals_ht_scored, r.match_result,
+        m.match_round_name
     FROM superligaen.gold.fct_team_matches f
     JOIN superligaen.gold.dim_league       l  ON l.league_sk       = f.league_sk
     JOIN superligaen.gold.dim_date         d  ON d.date_sk         = f.date_sk
@@ -19,6 +20,7 @@ WITH sides AS (
 SELECT
     match_sk,
     league_name, match_date, calendar_year,
+    MAX(match_round_name)                                   AS round_name,
     MAX(team_name)    FILTER (WHERE team_side = 'Home')     AS home_team,
     MAX(team_name)    FILTER (WHERE team_side = 'Away')     AS away_team,
     MAX(goals_scored) FILTER (WHERE team_side = 'Home')     AS home_goals,

@@ -211,22 +211,25 @@ order by month_start, league_name
 {/await}
 
 ```sql big_wins
-select m.league_name, l.colour, l.code, m.home_team, m.away_team, m.home_goals, m.away_goals
+select m.league_name, l.colour, l.code, m.home_team, m.away_team, m.home_goals, m.away_goals,
+       strftime(m.match_date, '%d %b %Y') as played_on, m.round_name
 from atlas.mart_matches m join atlas.mart_leagues l on l.league_name = m.league_name
 where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
 order by m.winning_margin desc, m.total_goals desc limit 7
 ```
 
 ```sql high_scoring
-select m.league_name, l.colour, l.code, m.home_team, m.away_team, m.home_goals, m.away_goals
+select m.league_name, l.colour, l.code, m.home_team, m.away_team, m.home_goals, m.away_goals,
+       strftime(m.match_date, '%d %b %Y') as played_on, m.round_name
 from atlas.mart_matches m join atlas.mart_leagues l on l.league_name = m.league_name
 where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
 order by m.total_goals desc, m.winning_margin desc limit 7
 ```
 
 ```sql comebacks
-select m.league_name, l.colour, l.code, m.comeback_by,
-       m.home_goals, m.away_goals, m.home_goals_ht, m.away_goals_ht
+select m.league_name, l.colour, l.code, m.comeback_by, m.home_team, m.away_team,
+       m.home_goals, m.away_goals, m.home_goals_ht, m.away_goals_ht,
+       strftime(m.match_date, '%d %b %Y') as played_on, m.round_name
 from atlas.mart_matches m join atlas.mart_leagues l on l.league_name = m.league_name
 where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
   and m.comeback_by is not null
@@ -237,10 +240,12 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
   <Panel title="Biggest wins" qualifier="by margin" href="/matches">
     <div class="flex h-full flex-col justify-between">
       {#each [...big_wins] as m}
-        <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0">
+        <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0"
+             title="{m.home_team} v {m.away_team} · {m.home_goals}–{m.away_goals} · {m.played_on}{m.round_name ? ' · ' + m.round_name : ''} · {m.league_name}">
           <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
           <span class="w-7 flex-none text-[10px] font-semibold text-gray-400">{m.code}</span>
           <span class="min-w-0 flex-1 truncate text-[12px] text-gray-800">{m.home_team} v {m.away_team}</span>
+          <span class="flex-none text-[10px] tabular-nums text-gray-400">{m.played_on}</span>
           <span class="text-[13px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
         </div>
       {/each}
@@ -250,10 +255,12 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
   <Panel title="Most goals in a match" href="/matches">
     <div class="flex h-full flex-col justify-between">
       {#each [...high_scoring] as m}
-        <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0">
+        <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0"
+             title="{m.home_team} v {m.away_team} · {m.home_goals}–{m.away_goals} · {m.played_on}{m.round_name ? ' · ' + m.round_name : ''} · {m.league_name}">
           <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
           <span class="w-7 flex-none text-[10px] font-semibold text-gray-400">{m.code}</span>
           <span class="min-w-0 flex-1 truncate text-[12px] text-gray-800">{m.home_team} v {m.away_team}</span>
+          <span class="flex-none text-[10px] tabular-nums text-gray-400">{m.played_on}</span>
           <span class="text-[13px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
         </div>
       {/each}
@@ -263,10 +270,12 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
   <Panel title="Comebacks" qualifier="trailed at the break, won" href="/matches">
     <div class="flex h-full flex-col justify-between">
       {#each [...comebacks] as m}
-        <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0">
+        <div class="flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0"
+             title="{m.home_team} v {m.away_team} · {m.home_goals_ht}–{m.away_goals_ht} at the break, {m.home_goals}–{m.away_goals} final · {m.played_on}{m.round_name ? ' · ' + m.round_name : ''} · {m.league_name}">
           <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
           <span class="w-7 flex-none text-[10px] font-semibold text-gray-400">{m.code}</span>
           <span class="min-w-0 flex-1 truncate text-[12px] text-gray-800">{m.comeback_by}</span>
+          <span class="flex-none text-[10px] tabular-nums text-gray-400">{m.played_on}</span>
           <span class="text-[10px] tabular-nums text-gray-400">{m.home_goals_ht}–{m.away_goals_ht} HT</span>
           <span class="text-[13px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
         </div>
