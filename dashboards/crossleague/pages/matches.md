@@ -43,11 +43,11 @@ hide_title: true
 </script>
 
 ```sql last_updated
-select strftime(last_match, '%d %b %Y') as last_updated from cross_league.mart_last_updated
+select strftime(last_match, '%d %b %Y') as last_updated from crossleague.mart_last_updated
 ```
 
 ```sql day_range
-select distinct match_date from cross_league.mart_matches order by match_date
+select distinct match_date from crossleague.mart_matches order by match_date
 ```
 
 <div class="mb-2 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-[3px] border border-gray-200 bg-white px-2 py-1.5">
@@ -66,7 +66,7 @@ select
     count(*) filter (where comeback_by is not null)             as comebacks,
     count(*) filter (where home_goals_ht is not null
                        and away_goals_ht is not null)           as half_time_known
-from cross_league.mart_matches
+from crossleague.mart_matches
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1
 ```
@@ -101,7 +101,7 @@ select
     least(home_goals, 5)::int::varchar || case when home_goals >= 5 then '+' else '' end as home_score,
     least(away_goals, 5)::int::varchar || case when away_goals >= 5 then '+' else '' end as away_score,
     round(100.0 * count(*) / sum(count(*)) over (), 2)                                   as share
-from cross_league.mart_matches
+from crossleague.mart_matches
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2
 ```
@@ -111,7 +111,7 @@ select
     l.code,
     case when m.winning_margin >= 4 then '4+' else m.winning_margin::int::varchar end   as margin,
     round(100.0 * count(*) / sum(count(*)) over (partition by l.code), 2)               as share
-from cross_league.mart_matches m join cross_league.mart_leagues l on l.league_name = m.league_name
+from crossleague.mart_matches m join crossleague.mart_leagues l on l.league_name = m.league_name
 where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2
 order by margin, l.code
@@ -122,7 +122,7 @@ select
     l.code,
     case when m.total_goals >= 6 then '6+' else m.total_goals::int::varchar end          as goals,
     round(100.0 * count(*) / sum(count(*)) over (partition by l.code), 2)                as share
-from cross_league.mart_matches m join cross_league.mart_leagues l on l.league_name = m.league_name
+from crossleague.mart_matches m join crossleague.mart_leagues l on l.league_name = m.league_name
 where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2
 order by goals, l.code
@@ -160,7 +160,7 @@ select
     case when home_goals > away_goals then 'Home win'
          when home_goals < away_goals then 'Away win'  else 'Draw' end           as ft,
     round(100.0 * count(*) / sum(count(*)) over (), 2)                           as share
-from cross_league.mart_matches
+from crossleague.mart_matches
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
   and home_goals_ht is not null and away_goals_ht is not null
 group by 1, 2
@@ -171,7 +171,7 @@ select
     l.code, l.colour, m.league_name,
     round(100.0 * count(*) filter (where m.comeback_by is not null)
         / nullif(count(*) filter (where m.home_goals_ht is not null and m.away_goals_ht is not null), 0), 2) as rate
-from cross_league.mart_matches m join cross_league.mart_leagues l on l.league_name = m.league_name
+from crossleague.mart_matches m join crossleague.mart_leagues l on l.league_name = m.league_name
 where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2, 3
 order by rate desc
@@ -185,7 +185,7 @@ select
     strftime(match_date, '%d %b %Y')                                as played,
     abs(home_goals_ht - away_goals_ht)::int                         as deficit,
     home_goals_ht::int || '–' || away_goals_ht::int                 as at_the_break
-from cross_league.mart_matches
+from crossleague.mart_matches
 where comeback_by is not null
   and match_date between '${inputs.period.start}' and '${inputs.period.end}'
 order by deficit desc, abs(home_goals - away_goals) desc
@@ -234,7 +234,7 @@ limit 10
 select
     minute_bucket, minute_bucket_sort, league_name,
     round(100.0 * sum(events) / nullif(sum(sum(events)) over (partition by league_name), 0), 2) as share
-from cross_league.mart_event_clock
+from crossleague.mart_event_clock
 where event_group = 'Goal' and match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2, 3
 order by minute_bucket_sort, league_name
@@ -290,7 +290,7 @@ select
     coalesce(home_goals_ht::int || '–' || away_goals_ht::int, '–')  as "Half-time",
     total_goals::int                                                as "Goals",
     winning_margin::int                                             as "Margin"
-from cross_league.mart_matches
+from crossleague.mart_matches
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 order by match_date desc, "Home"
 ```
@@ -313,7 +313,7 @@ order by match_date desc, "Home"
 select
     home_team || ' ' || home_goals::int || '–' || away_goals::int || ' ' || away_team as fixture,
     league_name, strftime(match_date, '%d %b %Y') as played, winning_margin::int as margin
-from cross_league.mart_matches
+from crossleague.mart_matches
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 order by winning_margin desc, total_goals desc limit 10
 ```
@@ -322,7 +322,7 @@ order by winning_margin desc, total_goals desc limit 10
 select
     home_team || ' ' || home_goals::int || '–' || away_goals::int || ' ' || away_team as fixture,
     league_name, strftime(match_date, '%d %b %Y') as played, total_goals::int as goals
-from cross_league.mart_matches
+from crossleague.mart_matches
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 order by total_goals desc, winning_margin desc limit 10
 ```
