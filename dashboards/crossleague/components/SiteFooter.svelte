@@ -11,7 +11,7 @@
      The links sit in two tiers: the three things we want clicked, then the
      about-and-support set in a lighter weight. Seven links at one size read as
      a wall, especially on a phone where the row wraps to three lines. -->
-<div class="mt-4 border-t border-gray-200 pt-8 pb-12 text-center">
+<div class="mt-16 border-t border-gray-200 pt-8 pb-12 text-center">
   <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-2.5">
     <a href="https://forms.gle/vPCoCNZvehu5yyze8" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Build with us</a>
     <a href="https://forms.gle/2wDZcfwm8jk6aWGS9" target="_blank" class="text-sm font-medium text-gray-500 hover:text-gray-900 no-underline">Request Data Access</a>
