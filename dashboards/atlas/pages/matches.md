@@ -230,6 +230,55 @@ limit 10
   </div>
 </div>
 
+```sql clock
+select
+    minute_bucket, minute_bucket_sort, league_name,
+    round(100.0 * sum(events) / nullif(sum(sum(events)) over (partition by league_name), 0), 2) as share
+from atlas.mart_event_clock
+where event_group = 'Goal' and match_date between '${inputs.period.start}' and '${inputs.period.end}'
+group by 1, 2, 3
+order by minute_bucket_sort, league_name
+```
+
+```sql clock_table
+select
+    minute_bucket as "Minute", minute_bucket_sort,
+    max(case when league_name = 'La Liga'     then share end) as "ESP",
+    max(case when league_name = 'Liga MX'     then share end) as "MEX",
+    max(case when league_name = 'Premiership' then share end) as "SCO",
+    max(case when league_name = 'Superliga'   then share end) as "DEN",
+    max(case when league_name = 'Süper Lig'   then share end) as "TUR"
+from ${clock} group by 1, 2 order by minute_bucket_sort
+```
+
+<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
+  <div class="xl:col-span-8">
+    <Panel title="When goals are scored" qualifier="share of each league's goals, by quarter-hour">
+      <BarChart data={clock} x=minute_bucket y=share series=league_name type=stacked
+        yAxisTitle="" seriesColors={SERIES} sort=false legend=false chartAreaHeight=210
+        echartsOptions={{tooltip: {formatter: function(p) {
+          const r = p.filter(x => x.value && x.value[1] != null && !isNaN(x.value[1])).sort((a,b) => b.value[1]-a.value[1]);
+          if (!r.length) return '';
+          let o = '<span style="font-weight:600;">' + p[0].axisValueLabel + '</span>';
+          for (const x of r) o += '<br><span style="font-size:11px;">' + x.marker + ' ' + x.seriesName + '</span><span style="float:right;margin-left:14px;font-weight:600;">' + Number(x.value[1]).toFixed(1) + '%</span>';
+          return o; }}}}
+      />
+    </Panel>
+  </div>
+  <div class="xl:col-span-4">
+    <Panel title="Share of goals" qualifier="%, shaded down each column" pad={false}>
+      <DataTable data={clock_table} rows=8 rowShading=false>
+        <Column id="Minute" />
+        <Column id="ESP" title="ESP" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="MEX" title="MEX" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="SCO" title="SCO" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="DEN" title="DEN" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="TUR" title="TUR" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+      </DataTable>
+    </Panel>
+  </div>
+</div>
+
 ```sql match_table
 select
     strftime(match_date, '%Y-%m-%d')                                as "Date",

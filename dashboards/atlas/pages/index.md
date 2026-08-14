@@ -9,6 +9,7 @@ description: Five top-flight leagues on three continents, measured the same way.
 <script>
   import Panel from '../components/Panel.svelte';
   import Matrix from '../components/Matrix.svelte';
+  import Rank from '../components/Rank.svelte';
   import SiteFooter from '../components/SiteFooter.svelte';
   import { leagues as KEY } from '../components/navItems.js';
 
@@ -153,7 +154,13 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
     {/each}
   </div>
 
-  <!-- ══ B · LEADERS · TREND · LEAGUES ═══════════════════════════════════ -->
+  <!-- ══ B · LEAGUES ═════════════════════════════════════════════════════ -->
+  <a href="/leagues" class="group mb-1 mt-3 flex items-baseline gap-2 no-underline">
+    <span class="flex-none text-[10px] font-semibold uppercase tracking-wider text-gray-700 group-hover:text-gray-900">Leagues</span>
+    <span class="flex-none text-[10px] text-gray-400">all five side by side, on every measure →</span>
+    <span class="h-px flex-1 bg-gray-200"></span>
+  </a>
+
   <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
 
     <div>
@@ -210,6 +217,183 @@ order by month_start, league_name
   </div>
 {/await}
 
+<!-- ══ C · CLUBS ═══════════════════════════════════════════════════════ -->
+
+```sql home_clubs
+select
+    team_name, league_name,
+    sum(matches)                                                as matches,
+    (1.0 * sum(goals_for)     / nullif(sum(matches), 0))::double as gpm,
+    (1.0 * sum(goals_against) / nullif(sum(matches), 0))::double as gapm
+from atlas.mart_club_day
+where match_date between '${inputs.period.start}' and '${inputs.period.end}'
+group by 1, 2
+```
+
+```sql home_top_clubs
+select c.*, l.code, l.colour
+from ${home_clubs} c join atlas.mart_leagues l on l.league_name = c.league_name
+where c.gpm is not null order by c.gpm desc limit 10
+```
+
+```sql home_club_owners
+with top20 as (select league_name from ${home_clubs} where gpm is not null order by gpm desc limit 20)
+select l.code, l.colour, l.league_name, count(*) as n,
+       round(100.0 * count(*) / sum(count(*)) over (), 2) as share
+from top20 t join atlas.mart_leagues l on l.league_name = t.league_name
+group by 1, 2, 3 order by n desc
+```
+
+```sql home_scatter_bounds
+select
+    (floor(min(gpm) * 10) / 10)::double  as x_min, (ceil(max(gpm) * 10) / 10)::double  as x_max,
+    (floor(min(gapm) * 10) / 10)::double as y_min, (ceil(max(gapm) * 10) / 10)::double as y_max
+from ${home_clubs} where gpm is not null and gapm is not null
+```
+
+<a href="/clubs" class="group mb-1 mt-3 flex items-baseline gap-2 no-underline">
+  <span class="flex-none text-[10px] font-semibold uppercase tracking-wider text-gray-700 group-hover:text-gray-900">Clubs</span>
+  <span class="flex-none text-[10px] text-gray-400">every club on one ranking, whatever the league →</span>
+  <span class="h-px flex-1 bg-gray-200"></span>
+</a>
+
+<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
+  <div class="xl:col-span-4">
+    <Panel title="Best attacks" qualifier="goals scored per match" href="/clubs">
+      <Rank dense={true} measure="Goals scored per match"
+            rows={[...home_top_clubs].map((r) => ({ label: r.team_name, sublabel: r.code, value: r.gpm, colour: r.colour, hint: r.league_name }))}
+            format={f2} />
+    </Panel>
+  </div>
+
+  <div class="xl:col-span-3">
+    <Panel title="Who owns the top 20" qualifier="clubs in the leading twenty" href="/clubs">
+      <div class="flex flex-col gap-2">
+        <div class="flex h-5 w-full overflow-hidden rounded-[2px]">
+          {#each [...home_club_owners] as o}
+            <span class="flex items-center justify-center text-[10px] font-semibold text-white" style="width:{o.share}%; background:{o.colour};">{o.n}</span>
+          {/each}
+        </div>
+        {#each [...home_club_owners] as o}
+          <div class="flex items-center gap-2 border-b border-gray-100 pb-1 last:border-0">
+            <span class="h-4 w-[3px] flex-none rounded-[1px]" style="background:{o.colour}"></span>
+            <span class="w-8 flex-none text-[10px] font-semibold text-gray-600">{o.code}</span>
+            <span class="min-w-0 flex-1 truncate text-[11px] text-gray-500">{o.league_name}</span>
+            <span class="text-[13px] font-semibold tabular-nums text-gray-900">{o.n}</span>
+          </div>
+        {/each}
+      </div>
+    </Panel>
+  </div>
+
+  <div class="xl:col-span-5">
+    <Panel title="Attack against defence" qualifier="one dot per club" scope="bottom right is where champions sit" href="/clubs">
+      <ScatterPlot data={home_clubs} x=gpm y=gapm series=league_name
+        xAxisTitle="Goals scored per match" yAxisTitle="Goals conceded per match"
+        tooltipColumns={[{id: 'team_name', title: 'Club'}, {id: 'league_name'}, {id: 'gpm', title: 'Scored'}, {id: 'gapm', title: 'Conceded'}]}
+        xMin={home_scatter_bounds[0].x_min} xMax={home_scatter_bounds[0].x_max}
+        yMin={home_scatter_bounds[0].y_min} yMax={home_scatter_bounds[0].y_max}
+        seriesColors={SERIES} tooltipTitle=team_name legend=false chartAreaHeight=240 />
+    </Panel>
+  </div>
+</div>
+
+<!-- ══ D · PLAYERS ═════════════════════════════════════════════════════ -->
+
+```sql home_scorers
+select p.player_name, p.league_name, sum(p.goals) as goals, l.code, l.colour
+from atlas.mart_player_day p join atlas.mart_leagues l on l.league_name = p.league_name
+where p.match_date between '${inputs.period.start}' and '${inputs.period.end}'
+group by 1, 2, 4, 5
+having sum(p.goals) > 0
+order by goals desc, p.player_name limit 10
+```
+
+```sql home_top_per_league
+select * from (
+    select player_name, league_name, sum(goals) as goals,
+           row_number() over (partition by league_name order by sum(goals) desc, player_name) as rn
+    from atlas.mart_player_day
+    where match_date between '${inputs.period.start}' and '${inputs.period.end}'
+    group by 1, 2
+)
+where rn <= 3 and goals > 0
+order by league_name, rn
+```
+
+```sql home_concentration
+with p as (
+    select league_name, player_name, sum(goals) as goals
+    from atlas.mart_player_day
+    where match_date between '${inputs.period.start}' and '${inputs.period.end}'
+    group by 1, 2 having sum(goals) > 0
+),
+r as (
+    select *, row_number() over (partition by league_name order by goals desc) as rn,
+           sum(goals) over (partition by league_name) as league_goals
+    from p
+)
+select l.code, l.colour, r.league_name,
+       round(100.0 * sum(r.goals) filter (where r.rn <= 10) / nullif(max(r.league_goals), 0), 1) as top10_share
+from r join atlas.mart_leagues l on l.league_name = r.league_name
+group by 1, 2, 3 order by top10_share desc
+```
+
+<a href="/players" class="group mb-1 mt-3 flex items-baseline gap-2 no-underline">
+  <span class="flex-none text-[10px] font-semibold uppercase tracking-wider text-gray-700 group-hover:text-gray-900">Players</span>
+  <span class="flex-none text-[10px] text-gray-400">who scores, who gets booked →</span>
+  <span class="h-px flex-1 bg-gray-200"></span>
+</a>
+
+<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
+  <div class="xl:col-span-4">
+    <Panel title="Top scorers" qualifier="all five leagues on one ranking" href="/players">
+      <Rank dense={true} measure="Goals"
+            rows={[...home_scorers].map((r) => ({ label: r.player_name, sublabel: r.code, value: r.goals, colour: r.colour, hint: r.league_name }))}
+            format={f0} />
+    </Panel>
+  </div>
+
+  <div class="xl:col-span-4">
+    <Panel title="Top three per league" qualifier="the same question, league by league" href="/players">
+      <div class="flex flex-col gap-2">
+        {#each KEY as l}
+          <div class="flex gap-2">
+            <span class="w-[3px] flex-none rounded-[1px]" style="background:{l.colour}"></span>
+            <div class="min-w-0 flex-1">
+              <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">{l.code}</div>
+              {#each [...home_top_per_league].filter((r) => r.league_name === l.league_name) as r, i}
+                <div class="flex items-baseline gap-2">
+                  <span class="min-w-0 flex-1 truncate text-[12px] {i === 0 ? 'font-medium text-gray-900' : 'text-gray-600'}">{r.player_name}</span>
+                  <span class="text-[13px] font-semibold tabular-nums text-gray-900">{r.goals}</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
+    </Panel>
+  </div>
+
+  <div class="xl:col-span-4">
+    <Panel title="How concentrated is scoring" qualifier="share of league goals from its top ten" href="/players">
+      <div class="flex flex-col gap-2">
+        {#each [...home_concentration] as c}
+          <div class="flex items-center gap-2">
+            <span class="w-8 flex-none text-[11px] font-semibold text-gray-600">{c.code}</span>
+            <span class="flex h-5 min-w-0 flex-1 overflow-hidden rounded-[2px] bg-gray-100">
+              <span class="flex items-center justify-center text-[10px] font-semibold text-white"
+                    style="width:{c.top10_share}%; background:{c.colour};">{c.top10_share}%</span>
+            </span>
+          </div>
+        {/each}
+      </div>
+    </Panel>
+  </div>
+</div>
+
+<!-- ══ E · MATCHES ═════════════════════════════════════════════════════ -->
+
 ```sql big_wins
 select m.league_name, l.colour, l.code, m.home_team, m.away_team, m.home_goals, m.away_goals,
        strftime(m.match_date, '%d %b %Y') as played_on, m.round_name
@@ -235,6 +419,12 @@ where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
   and m.comeback_by is not null
 order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
 ```
+
+<a href="/matches" class="group mb-1 mt-3 flex items-baseline gap-2 no-underline">
+  <span class="flex-none text-[10px] font-semibold uppercase tracking-wider text-gray-700 group-hover:text-gray-900">Matches</span>
+  <span class="flex-none text-[10px] text-gray-400">the shape of a match, scoreline by scoreline →</span>
+  <span class="h-px flex-1 bg-gray-200"></span>
+</a>
 
 <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
   <Panel title="Biggest wins" qualifier="by margin" href="/matches">
@@ -288,55 +478,6 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
       {/each}
     </div>
   </Panel>
-</div>
-
-```sql clock
-select
-    minute_bucket, minute_bucket_sort, league_name,
-    round(100.0 * sum(events) / nullif(sum(sum(events)) over (partition by league_name), 0), 2) as share
-from atlas.mart_event_clock
-where event_group = 'Goal' and match_date between '${inputs.period.start}' and '${inputs.period.end}'
-group by 1, 2, 3
-order by minute_bucket_sort, league_name
-```
-
-```sql clock_table
-select
-    minute_bucket as "Minute", minute_bucket_sort,
-    max(case when league_name = 'La Liga'     then share end) as "ESP",
-    max(case when league_name = 'Liga MX'     then share end) as "MEX",
-    max(case when league_name = 'Premiership' then share end) as "SCO",
-    max(case when league_name = 'Superliga'   then share end) as "DEN",
-    max(case when league_name = 'Süper Lig'   then share end) as "TUR"
-from ${clock} group by 1, 2 order by minute_bucket_sort
-```
-
-<div class="grid grid-cols-1 gap-2 xl:grid-cols-12">
-  <div class="xl:col-span-8">
-    <Panel title="When goals are scored" qualifier="share of each league's goals, by quarter-hour" href="/matches">
-      <BarChart data={clock} x=minute_bucket y=share series=league_name type=stacked
-        yAxisTitle="" seriesColors={SERIES} sort=false legend=false chartAreaHeight=210
-        echartsOptions={{tooltip: {formatter: function(p) {
-          const r = p.filter(x => x.value && x.value[1] != null && !isNaN(x.value[1])).sort((a,b) => b.value[1]-a.value[1]);
-          if (!r.length) return '';
-          let o = '<span style="font-weight:600;">' + p[0].axisValueLabel + '</span>';
-          for (const x of r) o += '<br><span style="font-size:11px;">' + x.marker + ' ' + x.seriesName + '</span><span style="float:right;margin-left:14px;font-weight:600;">' + Number(x.value[1]).toFixed(1) + '%</span>';
-          return o; }}}}
-      />
-    </Panel>
-  </div>
-  <div class="xl:col-span-4">
-    <Panel title="Share of goals" qualifier="%, shaded down each column" pad={false}>
-      <DataTable data={clock_table} rows=8 rowShading=false>
-        <Column id="Minute" />
-        <Column id="ESP" title="ESP" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
-        <Column id="MEX" title="MEX" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
-        <Column id="SCO" title="SCO" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
-        <Column id="DEN" title="DEN" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
-        <Column id="TUR" title="TUR" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
-      </DataTable>
-    </Panel>
-  </div>
 </div>
 
 <SiteFooter lastUpdated={last_updated[0]?.last_updated} />
