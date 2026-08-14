@@ -26,32 +26,32 @@
 <div class="flex min-w-0 gap-1 overflow-x-auto">
   {#if rowTitle}
     <div class="flex flex-none items-center">
-      <span class="whitespace-nowrap text-[9px] font-semibold uppercase tracking-wider text-gray-400"
+      <span class="whitespace-nowrap text-[11px] font-semibold uppercase tracking-wider text-gray-400"
             style="writing-mode:vertical-rl; transform:rotate(180deg);">{rowTitle}</span>
     </div>
   {/if}
 
   <div class="min-w-0 flex-1">
     {#if colTitle}
-      <div class="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-gray-400">{colTitle}</div>
+      <div class="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{colTitle}</div>
     {/if}
 
     <div class="grid gap-px" style="grid-template-columns: 1.6rem repeat({cols.length}, minmax(1.9rem, 1fr));">
       <span></span>
       {#each cols as c}
-        <span class="pb-0.5 text-center text-[10px] font-semibold text-gray-500">{c}</span>
+        <span class="pb-0.5 text-center text-[11px] font-semibold text-gray-500">{c}</span>
       {/each}
 
       {#each rows as r}
-        <span class="flex items-center justify-end pr-1 text-[10px] font-semibold text-gray-500">{r}</span>
+        <span class="flex items-center justify-end pr-1 text-[11px] font-semibold text-gray-500">{r}</span>
         {#each cols as c}
           {@const v = Number(cells[`${r}|${c}`] ?? 0)}
           {@const w = weight(v, max)}
-          <span class="group relative flex h-7 items-center justify-center rounded-[2px] text-[11px] tabular-nums"
+          <span class="group relative flex h-7 items-center justify-center rounded-md text-[12px] tabular-nums"
                 style="background: rgba(31, 63, 107, {(0.04 + 0.92 * w).toFixed(3)});
                        color: {w > 0.55 ? '#ffffff' : '#111827'};">
             {v > 0 ? format(v) : empty}
-            <span class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-[3px] bg-[#1d1d1f] px-2 py-1.5 text-[11px] leading-tight text-white shadow-lg group-hover:block">
+            <span class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-xl bg-[#1d1d1f] px-2 py-1.5 text-[12px] leading-tight text-white shadow-lg group-hover:block">
               <span class="block font-semibold">{r} – {c}</span>
               <span class="block">{v > 0 ? format(v) : '0'}</span>
             </span>

@@ -1,6 +1,7 @@
 <svelte:head>
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Krogvad" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Cross-League" />
   <meta name="theme-color" content="#1d1d1f" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta property="og:site_name" content="Krogvad Cross-League Analytics" />
@@ -12,69 +13,48 @@
   import '../app.css';
   import { EvidenceDefaultLayout } from '@evidence-dev/core-components';
   import { onMount } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import { inject } from '@vercel/analytics';
-  import TopTabs from '../components/TopTabs.svelte';
-  import { tabs } from '../components/navItems.js';
+  import HeaderMenuButton from '../components/HeaderMenuButton.svelte';
+  import SideNav from '../components/SideNav.svelte';
+  import BottomNav from '../components/BottomNav.svelte';
 
   export let data;
+
+  let menuOpen = false;
+
+  afterNavigate(() => {
+    menuOpen = false;
+    setTimeout(() => window.scrollTo(0, 0), 0);
+  });
+
   onMount(() => inject());
 </script>
 
-<!-- ══ THE SHELL ═══════════════════════════════════════════════════════════
-     Two dark bands carrying identity and navigation, sticky to the top of the
-     window. Evidence's own header is hidden below; it costs ~64px and offers a
-     drawer icon where this needs permanent tabs. -->
-<div class="sticky top-0 z-50">
-  <div class="flex h-8 items-center gap-3 bg-[#1d1d1f] px-4">
-    <a href="/" class="flex flex-none items-center gap-2 no-underline">
-      <img src="/logo-circle.svg" alt="" class="h-[18px] w-[18px]" />
-      <span class="text-[11px] font-semibold tracking-wide text-white">KROGVAD</span>
-      <span class="hidden text-[10px] uppercase tracking-[0.18em] text-white/35 sm:inline">Cross-League Analytics</span>
-    </a>
-    <span class="ml-auto hidden flex-none truncate text-[10px] tabular-nums text-white/40 md:inline">
-      5 leagues · Denmark · Scotland · Spain · Turkey · Mexico
-    </span>
-  </div>
-
-  <div class="flex h-[34px] items-stretch gap-4 border-b border-black/40 bg-[#26262a] px-4">
-    <TopTabs {tabs} />
-  </div>
-</div>
-
-<EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true} hideMenu={true}>
-  <div slot="content" class="console">
+<EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true} hideMenu={true} logo="/header-logo.svg">
+  <div slot="content" class="nav-content">
     <slot />
   </div>
 </EvidenceDefaultLayout>
 
+<HeaderMenuButton on:open={() => (menuOpen = true)} />
+<SideNav open={menuOpen} on:close={() => (menuOpen = false)} />
+<BottomNav />
+
 <style>
-  /* Evidence's own header and title block are replaced by the bands above. */
-  :global(header) { display: none !important; }
-  :global(.markdown h1:first-of-type) { display: none; }
-
-  /* A console is a flat instrument on a grey ground, not cards on white. */
-  :global(body) { background: #f5f5f7; }
-  :global(.console) {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 8px 16px 32px;
+  /* Keep page content clear of the fixed bottom nav bar (mobile only, where it shows). */
+  @media (max-width: 767px) {
+    .nav-content {
+      padding-bottom: calc(4rem + env(safe-area-inset-bottom) + 1rem);
+    }
   }
-  @media (max-width: 640px) {
-    :global(.console) { padding: 8px 8px 24px; }
+  :global(header img[alt="Home"]) {
+    height: 2.5rem;
   }
-  /* Nothing may push the page sideways; wide panels scroll inside themselves. */
+  /* Hide Evidence's built-in kebab; navigation is the custom side pane + bottom bar. */
+  :global(header button[aria-label="Menu"]) {
+    display: none;
+  }
+  /* Wide panels scroll inside themselves rather than pushing the page sideways. */
   :global(body) { overflow-x: hidden; }
-  /* The page's own prose defaults fight a dense grid; neutralise them. */
-  :global(.console p) { margin: 0; }
-  :global(.console > div + div) { margin-top: 0; }
-
-  /* Evidence's content wrapper reserves room for the page title and breadcrumb
-     bar this layout removes; without these the first panel starts ~100px down. */
-  :global(article) { padding-top: 0 !important; margin-top: 0 !important; }
-  /* Evidence reserves 74px of margin for its fixed header; this layout hides
-     that header and supplies its own sticky bands, so the reservation is dead
-     space above the first panel. */
-  :global(main) { padding-top: 0 !important; margin-top: 0 !important; }
-  :global(.markdown) { padding-top: 0 !important; }
-  :global(#evidence-main-content) { padding-top: 0 !important; }
 </style>

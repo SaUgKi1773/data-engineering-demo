@@ -19,7 +19,7 @@
   $: max = Math.max(...rows.map((r) => Number(r.value) || 0), 0) || 1;
   $: gap = dense ? 'gap-0.5' : compact ? 'gap-1' : 'gap-1.5';
   $: barH = dense ? 'h-3' : compact ? 'h-4' : 'h-5';
-  $: txt = dense ? 'text-[11px]' : compact ? 'text-[13px]' : 'text-sm';
+  $: txt = dense ? 'text-[12px]' : compact ? 'text-[14px]' : 'text-sm';
   $: labelW = dense ? 'w-[8rem]' : 'w-[9.5rem]';
 </script>
 
@@ -27,7 +27,7 @@
   {#each rows as row, i}
     <div class="group relative flex items-center gap-3">
       {#if showRank}
-        <span class="w-5 flex-none text-right text-[11px] font-medium tabular-nums text-gray-400">{i + 1}</span>
+        <span class="w-5 flex-none text-right text-[12px] font-medium tabular-nums text-gray-400">{i + 1}</span>
       {/if}
 
       <span class="{labelW} flex-none truncate {txt} font-medium text-gray-900" title={row.label}>
@@ -37,12 +37,12 @@
           {row.label}
         {/if}
         {#if row.sublabel}
-          <span class="ml-1.5 text-[11px] font-normal text-gray-400">{row.sublabel}</span>
+          <span class="ml-1.5 text-[12px] font-normal text-gray-400">{row.sublabel}</span>
         {/if}
       </span>
 
       <span class="relative min-w-0 flex-1">
-        <span class="block rounded-[2px] transition-all duration-300 {barH}"
+        <span class="block rounded-md transition-all duration-300 {barH}"
               style="width: {Math.max((Number(row.value) || 0) / max * 100, 1.5)}%; background: {row.colour || '#1d1d1f'};"></span>
       </span>
 
@@ -50,7 +50,7 @@
         {format(row.value)}
       </span>
 
-      <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-[3px] bg-[#1d1d1f] px-2 py-1.5 text-[11px] leading-tight text-white shadow-lg group-hover:block">
+      <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-xl bg-[#1d1d1f] px-2 py-1.5 text-[12px] leading-tight text-white shadow-lg group-hover:block">
         <span class="block font-semibold">{row.label}</span>
         <span class="block">{measure ? measure + ' · ' : ''}{format(row.value)}</span>
         {#if row.hint || row.sublabel}

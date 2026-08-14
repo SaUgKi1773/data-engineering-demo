@@ -11,6 +11,7 @@ description: Five top-flight leagues on three continents, measured the same way.
   import Matrix from '../components/Matrix.svelte';
   import Rank from '../components/Rank.svelte';
   import BandLink from '../components/BandLink.svelte';
+  import Hero from '../components/Hero.svelte';
   import SiteFooter from '../components/SiteFooter.svelte';
   import { leagues as KEY } from '../components/navItems.js';
 
@@ -117,32 +118,30 @@ from crossleague.mart_club_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 ```
 
-<div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[3px] border border-gray-200 bg-white px-2 py-1.5">
-  <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
+<Hero matches={scope[0]?.matches} goals={scope[0]?.goals} clubs={scope[0]?.clubs}
+      lastUpdated={last_updated[0]?.last_updated} />
+
+<div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+  <span class="text-[12px] font-semibold uppercase tracking-widest text-gray-400">Date range</span>
   <DateRange name=period data={day_range} dates=match_date defaultValue="Year to Today" />
-  <span class="ml-auto text-[10px] tabular-nums text-gray-400">
-    <Value data={scope} column=matches fmt='#,##0' /> matches ·
-    <Value data={scope} column=goals fmt='#,##0' /> goals ·
-    <Value data={scope} column=clubs /> clubs
-  </span>
 </div>
 
 {#await Promise.resolve() then _}
   {@const D = byLeague(club_totals)}
 
   <!-- ══ A · HEADLINE ════════════════════════════════════════════════════ -->
-  <div class="mb-2 grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-gray-200 bg-gray-200 md:grid-cols-4 xl:grid-cols-8">
+  <div class="mb-5 grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-8">
     {#each MEASURES.slice(0, 8) as m}
       {@const r = rank(D, m)}
-      <div class="flex h-[76px] flex-col justify-between bg-white px-2.5 py-1.5">
-        <div class="truncate text-[10px] font-semibold uppercase tracking-wider text-gray-500">{m.label}</div>
-        <div class="text-[22px] font-semibold leading-none tabular-nums text-gray-900">
+      <div class="flex h-[86px] flex-col justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+        <div class="truncate text-[11px] font-semibold uppercase tracking-wider text-gray-500">{m.label}</div>
+        <div class="text-[26px] font-semibold leading-none tabular-nums text-gray-900">
           {pooled(D, m) == null ? '–' : m.format(pooled(D, m))}
         </div>
-        <div class="flex h-[5px] w-full overflow-hidden rounded-[1px]">
+        <div class="flex h-[5px] w-full overflow-hidden rounded-sm">
           {#each split(r) as seg}<span style="width:{seg.share}%; background:{seg.colour};"></span>{/each}
         </div>
-        <div class="flex items-center gap-1.5 truncate text-[11px] leading-none">
+        <div class="flex items-center gap-1.5 truncate text-[12px] leading-none">
           {#if r.length}
             <span class="flex items-center gap-1">
               <span class="h-1.5 w-1.5 flex-none rounded-full" style="background:{r[0].colour}"></span>
@@ -158,21 +157,21 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
   <!-- ══ B · LEAGUES ═════════════════════════════════════════════════════ -->
 <BandLink href="/leagues" name="Leagues" note="all five side by side, on every measure" />
 
-  <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
+  <div class="mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-3">
 
     <div>
       <Panel title="The five leagues" qualifier="sorted by goals per match" scope="↗ own site">
         <div class="flex h-full flex-col gap-1">
           {#each rank(D, MEASURES[0]) as r}
             <a href={KEY.find((l) => l.code === r.code).site_url} target="_blank" rel="noopener"
-               class="flex flex-1 items-center gap-2 rounded-[2px] border border-gray-200 px-2 no-underline hover:border-gray-400">
-              <span class="h-7 w-[3px] flex-none rounded-[1px]" style="background:{r.colour}"></span>
+               class="flex flex-1 items-center gap-2.5 rounded-md border border-gray-200 px-2 no-underline hover:border-gray-400">
+              <span class="h-7 w-[3px] flex-none rounded-sm" style="background:{r.colour}"></span>
               <span class="min-w-0 flex-1">
-                <span class="block truncate text-[12px] font-medium text-gray-900">{r.name}</span>
-                <span class="block text-[10px] tabular-nums text-gray-400">{f0(D[r.name].matches)} matches</span>
+                <span class="block truncate text-[13px] font-medium text-gray-900">{r.name}</span>
+                <span class="block text-[11px] tabular-nums text-gray-400">{f0(D[r.name].matches)} matches</span>
               </span>
-              <span class="text-[13px] font-semibold tabular-nums text-gray-900">{f2(r.value)}</span>
-              <span class="text-[10px] text-gray-300">↗</span>
+              <span class="text-[14px] font-semibold tabular-nums text-gray-900">{f2(r.value)}</span>
+              <span class="text-[11px] text-gray-300">↗</span>
             </a>
           {/each}
         </div>
@@ -250,7 +249,7 @@ from ${home_clubs} where gpm is not null and gapm is not null
 
 <BandLink href="/clubs" name="Clubs" note="every club on one ranking, whatever the league" />
 
-<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
+<div class="mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-12">
   <div class="xl:col-span-4">
     <Panel title="Best attacks" qualifier="goals scored per match" href="/clubs">
       <Rank dense={true} measure="Goals scored per match"
@@ -261,18 +260,18 @@ from ${home_clubs} where gpm is not null and gapm is not null
 
   <div class="xl:col-span-3">
     <Panel title="Who owns the top 20" qualifier="clubs in the leading twenty" href="/clubs">
-      <div class="flex flex-col gap-2">
-        <div class="flex h-5 w-full overflow-hidden rounded-[2px]">
+      <div class="flex flex-col gap-2.5">
+        <div class="flex h-5 w-full overflow-hidden rounded-md">
           {#each [...home_club_owners] as o}
-            <span class="flex items-center justify-center text-[10px] font-semibold text-white" style="width:{o.share}%; background:{o.colour};">{o.n}</span>
+            <span class="flex items-center justify-center text-[11px] font-semibold text-white" style="width:{o.share}%; background:{o.colour};">{o.n}</span>
           {/each}
         </div>
         {#each [...home_club_owners] as o}
-          <div class="flex items-center gap-2 border-b border-gray-100 pb-1 last:border-0">
-            <span class="h-4 w-[3px] flex-none rounded-[1px]" style="background:{o.colour}"></span>
-            <span class="w-8 flex-none text-[10px] font-semibold text-gray-600">{o.code}</span>
-            <span class="min-w-0 flex-1 truncate text-[11px] text-gray-500">{o.league_name}</span>
-            <span class="text-[13px] font-semibold tabular-nums text-gray-900">{o.n}</span>
+          <div class="flex items-center gap-2.5 border-b border-gray-100 pb-1 last:border-0">
+            <span class="h-4 w-[3px] flex-none rounded-sm" style="background:{o.colour}"></span>
+            <span class="w-8 flex-none text-[11px] font-semibold text-gray-600">{o.code}</span>
+            <span class="min-w-0 flex-1 truncate text-[12px] text-gray-500">{o.league_name}</span>
+            <span class="text-[14px] font-semibold tabular-nums text-gray-900">{o.n}</span>
           </div>
         {/each}
       </div>
@@ -334,7 +333,7 @@ group by 1, 2, 3 order by top10_share desc
 
 <BandLink href="/players" name="Players" note="who scores, who gets booked" />
 
-<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
+<div class="mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-12">
   <div class="xl:col-span-4">
     <Panel title="Top scorers" qualifier="all five leagues on one ranking" href="/players">
       <Rank dense={true} measure="Goals"
@@ -345,16 +344,16 @@ group by 1, 2, 3 order by top10_share desc
 
   <div class="xl:col-span-4">
     <Panel title="Top three per league" qualifier="the same question, league by league" href="/players">
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-2.5">
         {#each KEY as l}
-          <div class="flex gap-2">
-            <span class="w-[3px] flex-none rounded-[1px]" style="background:{l.colour}"></span>
+          <div class="flex gap-2.5">
+            <span class="w-[3px] flex-none rounded-sm" style="background:{l.colour}"></span>
             <div class="min-w-0 flex-1">
-              <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">{l.code}</div>
+              <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{l.code}</div>
               {#each [...home_top_per_league].filter((r) => r.league_name === l.league_name) as r, i}
-                <div class="flex items-baseline gap-2">
-                  <span class="min-w-0 flex-1 truncate text-[12px] {i === 0 ? 'font-medium text-gray-900' : 'text-gray-600'}">{r.player_name}</span>
-                  <span class="text-[13px] font-semibold tabular-nums text-gray-900">{r.goals}</span>
+                <div class="flex items-baseline gap-2.5">
+                  <span class="min-w-0 flex-1 truncate text-[13px] {i === 0 ? 'font-medium text-gray-900' : 'text-gray-600'}">{r.player_name}</span>
+                  <span class="text-[14px] font-semibold tabular-nums text-gray-900">{r.goals}</span>
                 </div>
               {/each}
             </div>
@@ -366,12 +365,12 @@ group by 1, 2, 3 order by top10_share desc
 
   <div class="xl:col-span-4">
     <Panel title="How concentrated is scoring" qualifier="share of league goals from its top ten" href="/players">
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-2.5">
         {#each [...home_concentration] as c}
-          <div class="flex items-center gap-2">
-            <span class="w-8 flex-none text-[11px] font-semibold text-gray-600">{c.code}</span>
-            <span class="flex h-5 min-w-0 flex-1 overflow-hidden rounded-[2px] bg-gray-100">
-              <span class="flex items-center justify-center text-[10px] font-semibold text-white"
+          <div class="flex items-center gap-2.5">
+            <span class="w-8 flex-none text-[12px] font-semibold text-gray-600">{c.code}</span>
+            <span class="flex h-5 min-w-0 flex-1 overflow-hidden rounded-md bg-gray-100">
+              <span class="flex items-center justify-center text-[11px] font-semibold text-white"
                     style="width:{c.top10_share}%; background:{c.colour};">{c.top10_share}%</span>
             </span>
           </div>
@@ -411,16 +410,16 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
 
 <BandLink href="/matches" name="Matches" note="the shape of a match, scoreline by scoreline" />
 
-<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
+<div class="mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-3">
   <Panel title="Biggest wins" qualifier="by margin" href="/matches">
     <div class="flex h-full flex-col justify-between">
       {#each [...big_wins] as m}
-        <div class="group relative flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0 hover:bg-gray-50">
-          <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
-          <span class="w-7 flex-none text-[10px] font-semibold text-gray-400">{m.code}</span>
-          <span class="min-w-0 flex-1 truncate text-[12px] text-gray-800">{m.home_team} v {m.away_team}</span>
-          <span class="text-[13px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
-          <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-[3px] bg-[#1d1d1f] px-2 py-1.5 text-[11px] leading-tight text-white shadow-lg group-hover:block">
+        <div class="group relative flex items-center gap-2.5 border-b border-gray-100 py-[3px] last:border-0 hover:bg-gray-50">
+          <span class="h-5 w-[3px] flex-none rounded-sm" style="background:{m.colour}"></span>
+          <span class="w-7 flex-none text-[11px] font-semibold text-gray-400">{m.code}</span>
+          <span class="min-w-0 flex-1 truncate text-[13px] text-gray-800">{m.home_team} v {m.away_team}</span>
+          <span class="text-[14px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
+          <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-xl bg-[#1d1d1f] px-2 py-1.5 text-[12px] leading-tight text-white shadow-lg group-hover:block">
             <span class="block font-semibold">{m.home_team} {m.home_goals}–{m.away_goals} {m.away_team}</span>
             <span class="block text-white/60">{m.played_on} · {m.round_name ?? '—'} · {m.league_name}</span>
           </span>
@@ -432,12 +431,12 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
   <Panel title="Most goals in a match" href="/matches">
     <div class="flex h-full flex-col justify-between">
       {#each [...high_scoring] as m}
-        <div class="group relative flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0 hover:bg-gray-50">
-          <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
-          <span class="w-7 flex-none text-[10px] font-semibold text-gray-400">{m.code}</span>
-          <span class="min-w-0 flex-1 truncate text-[12px] text-gray-800">{m.home_team} v {m.away_team}</span>
-          <span class="text-[13px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
-          <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-[3px] bg-[#1d1d1f] px-2 py-1.5 text-[11px] leading-tight text-white shadow-lg group-hover:block">
+        <div class="group relative flex items-center gap-2.5 border-b border-gray-100 py-[3px] last:border-0 hover:bg-gray-50">
+          <span class="h-5 w-[3px] flex-none rounded-sm" style="background:{m.colour}"></span>
+          <span class="w-7 flex-none text-[11px] font-semibold text-gray-400">{m.code}</span>
+          <span class="min-w-0 flex-1 truncate text-[13px] text-gray-800">{m.home_team} v {m.away_team}</span>
+          <span class="text-[14px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
+          <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-xl bg-[#1d1d1f] px-2 py-1.5 text-[12px] leading-tight text-white shadow-lg group-hover:block">
             <span class="block font-semibold">{m.home_team} {m.home_goals}–{m.away_goals} {m.away_team}</span>
             <span class="block text-white/60">{m.played_on} · {m.round_name ?? '—'} · {m.league_name}</span>
           </span>
@@ -449,13 +448,13 @@ order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
   <Panel title="Comebacks" qualifier="trailed at the break, won" href="/matches">
     <div class="flex h-full flex-col justify-between">
       {#each [...comebacks] as m}
-        <div class="group relative flex items-center gap-2 border-b border-gray-100 py-[3px] last:border-0 hover:bg-gray-50">
-          <span class="h-5 w-[3px] flex-none rounded-[1px]" style="background:{m.colour}"></span>
-          <span class="w-7 flex-none text-[10px] font-semibold text-gray-400">{m.code}</span>
-          <span class="min-w-0 flex-1 truncate text-[12px] text-gray-800">{m.comeback_by}</span>
-          <span class="text-[10px] tabular-nums text-gray-400">{m.home_goals_ht}–{m.away_goals_ht} HT</span>
-          <span class="text-[13px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
-          <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-[3px] bg-[#1d1d1f] px-2 py-1.5 text-[11px] leading-tight text-white shadow-lg group-hover:block">
+        <div class="group relative flex items-center gap-2.5 border-b border-gray-100 py-[3px] last:border-0 hover:bg-gray-50">
+          <span class="h-5 w-[3px] flex-none rounded-sm" style="background:{m.colour}"></span>
+          <span class="w-7 flex-none text-[11px] font-semibold text-gray-400">{m.code}</span>
+          <span class="min-w-0 flex-1 truncate text-[13px] text-gray-800">{m.comeback_by}</span>
+          <span class="text-[11px] tabular-nums text-gray-400">{m.home_goals_ht}–{m.away_goals_ht} HT</span>
+          <span class="text-[14px] font-semibold tabular-nums text-gray-900">{m.home_goals}–{m.away_goals}</span>
+          <span class="pointer-events-none absolute bottom-full left-8 z-30 mb-1 hidden whitespace-nowrap rounded-xl bg-[#1d1d1f] px-2 py-1.5 text-[12px] leading-tight text-white shadow-lg group-hover:block">
             <span class="block font-semibold">{m.home_team} {m.home_goals}–{m.away_goals} {m.away_team}</span>
             <span class="block text-white/60">{m.home_goals_ht}–{m.away_goals_ht} at the break · {m.played_on} · {m.round_name ?? '—'} · {m.league_name}</span>
           </span>

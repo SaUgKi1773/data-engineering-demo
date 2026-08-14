@@ -49,14 +49,14 @@ select strftime(last_match, '%d %b %Y') as last_updated from crossleague.mart_la
 select distinct match_date from crossleague.mart_player_day order by match_date
 ```
 
-<div class="mb-2 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-[3px] border border-gray-200 bg-white px-2 py-1.5">
-  <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
+<div class="mb-5 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+  <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
   <DateRange name=period data={day_range} dates=match_date defaultValue="Year to Today" />
   <Dropdown name=rank_by title="Rank scorers by" defaultValue="goals">
       <DropdownOption value="goals" valueLabel="Goals" />
       <DropdownOption value="share" valueLabel="Share of league goals" />
   </Dropdown>
-  <span class="ml-auto text-[10px] text-gray-400">Goals are those credited to a player; a player's totals span every club he turned out for.</span>
+  <span class="ml-auto text-[11px] text-gray-400">Goals are those credited to a player; a player's totals span every club he turned out for.</span>
 </div>
 
 ```sql players
@@ -101,7 +101,7 @@ where goals > 0 and match_date between '${inputs.period.start}' and '${inputs.pe
   {@const T = [...league_events]}
 
   <!-- ══ A · KPI STRIP ═══════════════════════════════════════════════════ -->
-  <div class="mb-2 grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-gray-200 bg-gray-200 md:grid-cols-5">
+  <div class="mb-5 grid grid-cols-2 gap-2.5 md:grid-cols-5">
     <Kpi label="Goals" value={f0(total(T, 'goals'))}
          split={split(T, 'goals')} foot={leads(T, 'goals', 'scored most')}
          footColour={leader(T, 'goals')?.colour} />
@@ -150,7 +150,7 @@ select * from (
 ) where rn <= 3 order by league_name, rn
 ```
 
-<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
+<div class="mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-12">
   <div class="xl:col-span-8">
     <Panel title="Top 20 scorers" qualifier="all five leagues on one ranking" scope={inputs.rank_by.label}>
       {#if inputs.rank_by.value === 'share'}
@@ -165,22 +165,22 @@ select * from (
 
   <div class="xl:col-span-4">
     <Panel title="Top three per league" qualifier="the same question, league by league">
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-2.5">
         {#each KEY as l}
           {@const three = [...top_per_league].filter((r) => r.league_name === l.league_name)}
-          <div class="flex gap-2">
-            <span class="w-[3px] flex-none rounded-[1px]" style="background:{l.colour}"></span>
+          <div class="flex gap-2.5">
+            <span class="w-[3px] flex-none rounded-sm" style="background:{l.colour}"></span>
             <div class="min-w-0 flex-1">
-              <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">{l.code} · {l.league_name}</div>
+              <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{l.code} · {l.league_name}</div>
               {#each three as r, i}
-                <div class="flex items-baseline gap-2">
-                  <span class="w-3 flex-none text-[10px] tabular-nums text-gray-400">{i + 1}</span>
-                  <span class="min-w-0 flex-1 truncate text-[12px] {i === 0 ? 'font-medium text-gray-900' : 'text-gray-600'}" title={r.team_name}>{r.player_name}</span>
-                  <span class="text-[13px] font-semibold tabular-nums text-gray-900">{r.goals}</span>
+                <div class="flex items-baseline gap-2.5">
+                  <span class="w-3 flex-none text-[11px] tabular-nums text-gray-400">{i + 1}</span>
+                  <span class="min-w-0 flex-1 truncate text-[13px] {i === 0 ? 'font-medium text-gray-900' : 'text-gray-600'}" title={r.team_name}>{r.player_name}</span>
+                  <span class="text-[14px] font-semibold tabular-nums text-gray-900">{r.goals}</span>
                 </div>
               {/each}
               {#if !three.length}
-                <div class="text-[12px] text-gray-400">–</div>
+                <div class="text-[13px] text-gray-400">–</div>
               {/if}
             </div>
           </div>
@@ -247,7 +247,7 @@ select
 from ranked group by 1 order by top10_share desc
 ```
 
-<div class="mt-2 mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
+<div class="mt-5 mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-3">
   <Panel title="Most booked" qualifier="yellow cards">
     <Rank dense={true} measure="Yellow cards" rows={asRank([...most_yellows], 'yellow_cards')} format={f0} />
   </Panel>
@@ -257,18 +257,18 @@ from ranked group by 1 order by top10_share desc
   </Panel>
 
   <Panel title="How concentrated is scoring" qualifier="share of league goals from its top ten scorers">
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2.5">
       {#each [...concentration] as c}
-        <div class="flex items-center gap-2">
-          <span class="w-8 flex-none text-[11px] font-semibold text-gray-600">{codeOf[c.league_name]}</span>
-          <span class="flex h-5 min-w-0 flex-1 overflow-hidden rounded-[2px] bg-gray-100">
-            <span class="flex items-center justify-center text-[10px] font-semibold text-white"
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 flex-none text-[12px] font-semibold text-gray-600">{codeOf[c.league_name]}</span>
+          <span class="flex h-5 min-w-0 flex-1 overflow-hidden rounded-md bg-gray-100">
+            <span class="flex items-center justify-center text-[11px] font-semibold text-white"
                   style="width:{c.top10_share}%; background:{colourOf[c.league_name]};">{c.top10_share}%</span>
           </span>
-          <span class="w-16 flex-none text-right text-[11px] tabular-nums text-gray-400">{f0(c.top10_goals)} / {f0(c.league_goals)}</span>
+          <span class="w-16 flex-none text-right text-[12px] tabular-nums text-gray-400">{f0(c.top10_goals)} / {f0(c.league_goals)}</span>
         </div>
       {/each}
-      <div class="mt-0.5 text-[10px] text-gray-400">Bar is the top ten's share; the figures are their goals against the league's total.</div>
+      <div class="mt-0.5 text-[11px] text-gray-400">Bar is the top ten's share; the figures are their goals against the league's total.</div>
     </div>
   </Panel>
 </div>
@@ -293,7 +293,7 @@ group by 1, 2, 3
 order by minute_bucket_sort, league_name
 ```
 
-<div class="grid grid-cols-1 gap-2 xl:grid-cols-2">
+<div class="grid grid-cols-1 gap-2.5 xl:grid-cols-2">
   <Panel title="When players are booked" qualifier="share of each league's cards, by quarter-hour">
     <BarChart data={booking_clock} x=minute_bucket y=share series=league_name type=stacked
       yAxisTitle="" seriesColors={SERIES} sort=false legend=false chartAreaHeight=210

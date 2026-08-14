@@ -50,10 +50,10 @@ select strftime(last_match, '%d %b %Y') as last_updated from crossleague.mart_la
 select distinct match_date from crossleague.mart_matches order by match_date
 ```
 
-<div class="mb-2 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-[3px] border border-gray-200 bg-white px-2 py-1.5">
-  <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
+<div class="mb-5 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+  <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
   <DateRange name=period data={day_range} dates=match_date defaultValue="Year to Today" />
-  <span class="ml-auto text-[10px] text-gray-400">One row per match. Home side is named first throughout.</span>
+  <span class="ml-auto text-[11px] text-gray-400">One row per match. Home side is named first throughout.</span>
 </div>
 
 ```sql league_totals
@@ -75,7 +75,7 @@ group by 1
   {@const T = [...league_totals]}
 
   <!-- ══ A · KPI STRIP ═══════════════════════════════════════════════════ -->
-  <div class="mb-2 grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-gray-200 bg-gray-200 md:grid-cols-5">
+  <div class="mb-5 grid grid-cols-2 gap-2.5 md:grid-cols-5">
     <Kpi label="Matches" value={f0(total(T, 'matches'))}
          split={split(T, 'matches')} foot={leads(T, 'matches', 'played most')}
          footColour={leader(T, 'matches')?.colour} />
@@ -128,7 +128,7 @@ group by 1, 2
 order by goals, l.code
 ```
 
-<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
+<div class="mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-12">
   <div class="xl:col-span-5">
     <Panel title="Every scoreline" qualifier="% of all matches" scope="home down, away across">
       <HeatGrid rows={SCORES} cols={SCORES} cells={toCells(scoreline, 'home_score', 'away_score', 'share')}
@@ -192,7 +192,7 @@ order by deficit desc, abs(home_goals - away_goals) desc
 limit 10
 ```
 
-<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
+<div class="mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-12">
   <div class="xl:col-span-4">
     <Panel title="Half-time to full-time" qualifier="% of all matches" scope="break down, final across">
       <HeatGrid rows={HT_STATES} cols={FT_STATES} cells={toCells(ht_ft, 'ht', 'ft', 'share')}
@@ -212,16 +212,16 @@ limit 10
     <Panel title="Biggest turnarounds" qualifier="deepest half-time deficit overturned" pad={false}>
       <div class="flex flex-col">
         {#each [...turnarounds] as t, i}
-          <div class="flex items-center gap-2 border-b border-gray-100 px-2 py-1 last:border-0">
-            <span class="w-4 flex-none text-right text-[10px] tabular-nums text-gray-400">{i + 1}</span>
-            <span class="h-4 w-[3px] flex-none rounded-[1px]" style="background:{colourOf[t.league_name]}"></span>
+          <div class="flex items-center gap-2.5 border-b border-gray-100 px-2 py-1 last:border-0">
+            <span class="w-4 flex-none text-right text-[11px] tabular-nums text-gray-400">{i + 1}</span>
+            <span class="h-4 w-[3px] flex-none rounded-sm" style="background:{colourOf[t.league_name]}"></span>
             <div class="min-w-0 flex-1">
-              <div class="truncate text-[12px] font-medium text-gray-900">{t.fixture}</div>
-              <div class="text-[10px] text-gray-400">{codeOf[t.league_name]} · {t.played} · {t.at_the_break} at the break</div>
+              <div class="truncate text-[13px] font-medium text-gray-900">{t.fixture}</div>
+              <div class="text-[11px] text-gray-400">{codeOf[t.league_name]} · {t.played} · {t.at_the_break} at the break</div>
             </div>
             <span class="flex-none text-right">
-              <span class="text-[13px] font-semibold tabular-nums text-gray-900">{t.deficit}</span>
-              <span class="text-[10px] text-gray-400"> down</span>
+              <span class="text-[14px] font-semibold tabular-nums text-gray-900">{t.deficit}</span>
+              <span class="text-[11px] text-gray-400"> down</span>
             </span>
           </div>
         {/each}
@@ -251,7 +251,7 @@ select
 from ${clock} group by 1, 2 order by minute_bucket_sort
 ```
 
-<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
+<div class="mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-12">
   <div class="xl:col-span-8">
     <Panel title="When goals are scored" qualifier="share of each league's goals, by quarter-hour">
       <BarChart data={clock} x=minute_bucket y=share series=league_name type=stacked
@@ -327,7 +327,7 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 order by total_goals desc, winning_margin desc limit 10
 ```
 
-<div class="mt-2 grid grid-cols-1 gap-2 xl:grid-cols-2">
+<div class="mt-5 grid grid-cols-1 gap-2.5 xl:grid-cols-2">
   <Panel title="Biggest wins" qualifier="widest winning margin">
     <Rank dense={true} measure="Winning margin" showRank={true}
           rows={[...biggest_wins].map((r) => ({ label: r.fixture, sublabel: codeOf[r.league_name], value: r.margin, colour: colourOf[r.league_name], hint: r.played }))}

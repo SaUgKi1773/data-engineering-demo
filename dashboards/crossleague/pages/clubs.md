@@ -42,8 +42,8 @@ select strftime(last_match, '%d %b %Y') as last_updated from crossleague.mart_la
 select distinct match_date from crossleague.mart_club_day order by match_date
 ```
 
-<div class="mb-2 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-[3px] border border-gray-200 bg-white px-2 py-1.5">
-  <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
+<div class="mb-5 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+  <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
   <DateRange name=period data={day_range} dates=match_date defaultValue="Year to Today" />
   <Dropdown name=measure title="Measure" defaultValue="goals_for">
       <DropdownOption value="goals_for" valueLabel="Goals scored" />
@@ -108,30 +108,30 @@ select
 from ${clubs}
 ```
 
-<div class="mb-2 grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-gray-200 bg-gray-200 md:grid-cols-4">
-  <div class="flex h-[70px] flex-col justify-between bg-white px-2.5 py-1.5">
-    <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Clubs in view</div>
-    <div class="text-[22px] font-semibold leading-none tabular-nums text-gray-900"><Value data={scope} column=clubs /></div>
-    <div class="text-[11px] text-gray-500"><Value data={scope} column=leagues /> leagues</div>
+<div class="mb-5 grid grid-cols-2 gap-2.5 md:grid-cols-4">
+  <div class="flex h-[86px] flex-col justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+    <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Clubs in view</div>
+    <div class="text-[26px] font-semibold leading-none tabular-nums text-gray-900"><Value data={scope} column=clubs /></div>
+    <div class="text-[12px] text-gray-500"><Value data={scope} column=leagues /> leagues</div>
   </div>
-  <div class="flex h-[70px] flex-col justify-between bg-white px-2.5 py-1.5">
-    <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Highest</div>
-    <div class="text-[22px] font-semibold leading-none tabular-nums text-gray-900"><Value data={scope} column=best fmt='#,##0.00' /></div>
-    <div class="truncate text-[11px] text-gray-500">{clubs[0]?.team_name ?? '–'}</div>
+  <div class="flex h-[86px] flex-col justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+    <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Highest</div>
+    <div class="text-[26px] font-semibold leading-none tabular-nums text-gray-900"><Value data={scope} column=best fmt='#,##0.00' /></div>
+    <div class="truncate text-[12px] text-gray-500">{clubs[0]?.team_name ?? '–'}</div>
   </div>
-  <div class="flex h-[70px] flex-col justify-between bg-white px-2.5 py-1.5">
-    <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Average club</div>
-    <div class="text-[22px] font-semibold leading-none tabular-nums text-gray-900"><Value data={scope} column=average fmt='#,##0.00' /></div>
-    <div class="text-[11px] text-gray-500">across all clubs</div>
+  <div class="flex h-[86px] flex-col justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+    <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Average club</div>
+    <div class="text-[26px] font-semibold leading-none tabular-nums text-gray-900"><Value data={scope} column=average fmt='#,##0.00' /></div>
+    <div class="text-[12px] text-gray-500">across all clubs</div>
   </div>
-  <div class="flex h-[70px] flex-col justify-between bg-white px-2.5 py-1.5">
-    <div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Lowest</div>
-    <div class="text-[22px] font-semibold leading-none tabular-nums text-gray-900"><Value data={scope} column=worst fmt='#,##0.00' /></div>
-    <div class="truncate text-[11px] text-gray-500">{[...clubs].at(-1)?.team_name ?? '–'}</div>
+  <div class="flex h-[86px] flex-col justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+    <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Lowest</div>
+    <div class="text-[26px] font-semibold leading-none tabular-nums text-gray-900"><Value data={scope} column=worst fmt='#,##0.00' /></div>
+    <div class="truncate text-[12px] text-gray-500">{[...clubs].at(-1)?.team_name ?? '–'}</div>
   </div>
 </div>
 
-<div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
+<div class="mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-3">
 
   <div class="xl:col-span-2">
     <Panel title="Top 20 clubs" qualifier="on the selected measure">
@@ -144,20 +144,20 @@ from ${clubs}
 
   <div>
     <Panel title="Who owns the top 20" qualifier="clubs in the leading twenty">
-      <div class="flex flex-col gap-2">
-        <div class="flex h-5 w-full overflow-hidden rounded-[2px]">
+      <div class="flex flex-col gap-2.5">
+        <div class="flex h-5 w-full overflow-hidden rounded-md">
           {#each ownership([...clubs].slice(0, 20)) as o}
             {#if o.n}
-              <span class="flex items-center justify-center text-[10px] font-semibold text-white" style="width:{o.share}%; background:{o.colour};">{o.n}</span>
+              <span class="flex items-center justify-center text-[11px] font-semibold text-white" style="width:{o.share}%; background:{o.colour};">{o.n}</span>
             {/if}
           {/each}
         </div>
         {#each ownership([...clubs].slice(0, 20)) as o}
-          <div class="flex items-center gap-2 border-b border-gray-100 pb-1 last:border-0">
-            <span class="h-4 w-[3px] flex-none rounded-[1px]" style="background:{o.colour}"></span>
-            <span class="w-8 flex-none text-[10px] font-semibold text-gray-600">{o.code}</span>
-            <span class="min-w-0 flex-1 truncate text-[11px] text-gray-500">{o.name}</span>
-            <span class="text-[13px] font-semibold tabular-nums text-gray-900">{o.n}</span>
+          <div class="flex items-center gap-2.5 border-b border-gray-100 pb-1 last:border-0">
+            <span class="h-4 w-[3px] flex-none rounded-sm" style="background:{o.colour}"></span>
+            <span class="w-8 flex-none text-[11px] font-semibold text-gray-600">{o.code}</span>
+            <span class="min-w-0 flex-1 truncate text-[12px] text-gray-500">{o.name}</span>
+            <span class="text-[14px] font-semibold tabular-nums text-gray-900">{o.n}</span>
           </div>
         {/each}
       </div>
@@ -218,7 +218,7 @@ select team_name, league_name, round(goals_against, 2) as value
 from ${clubs} where goals_against is not null order by goals_against asc limit 10
 ```
 
-<div class="mt-2 mb-2 grid grid-cols-1 gap-2 xl:grid-cols-2">
+<div class="mt-5 mb-5 grid grid-cols-1 gap-2.5 xl:grid-cols-2">
   <Panel title="Best attacks" qualifier="goals scored per match">
     <Rank dense={true} measure="Goals scored per match"
           rows={[...best_attack].map((r) => ({ label: r.team_name, sublabel: codeOf[r.league_name], value: r.value, colour: colourOf[r.league_name], hint: r.league_name }))}

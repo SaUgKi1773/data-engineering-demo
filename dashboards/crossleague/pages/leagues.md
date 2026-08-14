@@ -110,43 +110,43 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1
 ```
 
-<div class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-gray-200 bg-white px-2 py-1.5 mb-2 rounded-[3px]">
-  <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-gray-200 bg-white px-2 py-1.5 mb-5 rounded-xl">
+  <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
   <DateRange name=period data={day_range} dates=match_date defaultValue="Year to Today" />
-  <span class="ml-auto text-[10px] text-gray-400">All five leagues, always. Per match, both teams combined.</span>
+  <span class="ml-auto text-[11px] text-gray-400">All five leagues, always. Per match, both teams combined.</span>
 </div>
 
 {#await Promise.resolve() then _}
   {@const D = build([...club_totals], [...match_totals])}
 
   <!-- ══ A · LEAGUE HEADERS ══════════════════════════════════════════════ -->
-  <div class="grid grid-cols-2 gap-2 md:grid-cols-5 mb-2">
+  <div class="grid grid-cols-2 gap-2.5 md:grid-cols-5 mb-5">
     {#each KEY as l}
       {@const d = D[l.league_name]}
       {@const gpm = d ? d.goals / d.matches : null}
       {@const rank = KEY.map((x) => D[x.league_name]).filter(Boolean)
                         .map((x) => x.goals / x.matches).sort((a, b) => b - a)
                         .indexOf(gpm) + 1}
-      <div class="overflow-hidden rounded-[3px] border border-gray-200 bg-white">
+      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div class="h-[3px] w-full" style="background:{l.colour}"></div>
         <div class="px-2 py-1.5">
           <div class="flex items-baseline gap-1.5">
-            <span class="text-[11px] font-semibold text-gray-500">{l.code}</span>
-            <span class="truncate text-[12px] font-medium text-gray-900">{l.league_name}</span>
+            <span class="text-[12px] font-semibold text-gray-500">{l.code}</span>
+            <span class="truncate text-[13px] font-medium text-gray-900">{l.league_name}</span>
           </div>
-          <div class="mt-0.5 flex items-baseline gap-2">
-            <span class="text-[15px] font-semibold tabular-nums text-gray-900">{d ? f2(gpm) : '–'}</span>
-            <span class="text-[10px] text-gray-400">goals/match</span>
-            {#if d}<span class="ml-auto text-[10px] font-semibold text-gray-500">#{rank}</span>{/if}
+          <div class="mt-0.5 flex items-baseline gap-2.5">
+            <span class="text-[17px] font-semibold tabular-nums text-gray-900">{d ? f2(gpm) : '–'}</span>
+            <span class="text-[11px] text-gray-400">goals/match</span>
+            {#if d}<span class="ml-auto text-[11px] font-semibold text-gray-500">#{rank}</span>{/if}
           </div>
-          <div class="text-[10px] tabular-nums text-gray-400">{d ? f0(d.matches) : '–'} matches</div>
+          <div class="text-[11px] tabular-nums text-gray-400">{d ? f0(d.matches) : '–'} matches</div>
         </div>
       </div>
     {/each}
   </div>
 
   <!-- ══ B · THE MATRIX ══════════════════════════════════════════════════ -->
-  <div class="grid grid-cols-1 gap-2 xl:grid-cols-2 mb-2">
+  <div class="grid grid-cols-1 gap-2.5 xl:grid-cols-2 mb-5">
     <Panel title="Attack & volume">
       <Matrix codes={CODES} rows={matrixRows(D, ['attack'])} />
     </Panel>
@@ -165,7 +165,7 @@ group by 1
   </Panel>
 {/await}
 
-<div class="mt-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
+<div class="mt-5 grid grid-cols-1 gap-2.5 xl:grid-cols-3">
   <div class="xl:col-span-2">
 
 ```sql trend
@@ -211,16 +211,16 @@ order by home_share desc
     <Panel title="Result mix" qualifier="share of matches" scope="sorted by home wins">
       <div class="flex flex-col gap-1.5">
         {#each [...venue] as v}
-          <div class="flex items-center gap-2">
-            <span class="w-8 flex-none text-[11px] font-semibold text-gray-600">{v.code}</span>
-            <span class="flex h-4 min-w-0 flex-1 overflow-hidden rounded-[2px]">
-              <span class="flex items-center justify-center text-[9px] font-semibold text-white" style="width:{v.home_share}%; background:{v.colour};">{v.home_share}</span>
-              <span class="flex items-center justify-center bg-gray-300 text-[9px] font-semibold text-gray-700" style="width:{v.draw_share}%;">{v.draw_share}</span>
-              <span class="flex items-center justify-center bg-gray-100 text-[9px] font-semibold text-gray-500" style="width:{v.away_share}%;">{v.away_share}</span>
+          <div class="flex items-center gap-2.5">
+            <span class="w-8 flex-none text-[12px] font-semibold text-gray-600">{v.code}</span>
+            <span class="flex h-4 min-w-0 flex-1 overflow-hidden rounded-md">
+              <span class="flex items-center justify-center text-[11px] font-semibold text-white" style="width:{v.home_share}%; background:{v.colour};">{v.home_share}</span>
+              <span class="flex items-center justify-center bg-gray-300 text-[11px] font-semibold text-gray-700" style="width:{v.draw_share}%;">{v.draw_share}</span>
+              <span class="flex items-center justify-center bg-gray-100 text-[11px] font-semibold text-gray-500" style="width:{v.away_share}%;">{v.away_share}</span>
             </span>
           </div>
         {/each}
-        <div class="mt-0.5 flex gap-3 text-[9px] text-gray-400">
+        <div class="mt-0.5 flex gap-3 text-[11px] text-gray-400">
           <span>■ home win</span><span>■ draw</span><span>■ away win</span>
         </div>
       </div>
