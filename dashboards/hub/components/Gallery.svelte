@@ -16,7 +16,6 @@
   // render nothing at all when there are no photos. A marketing page with a
   // visibly empty gallery reads as broken, and the hub's index.md has no
   // script block to test the array from.
-  import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import { gallery } from './galleryItems.js';
 
@@ -25,91 +24,19 @@
   let atEnd = false;
   let open = -1;
 
-  // ── the drift ───────────────────────────────────────────────────────────
-  // The strip creeps sideways on its own, slowly enough to read as ambient
-  // rather than as a thing demanding to be watched. It reverses at each end
-  // instead of snapping back to the start: a jump is far more noticeable than
-  // the movement it interrupts, and reversing needs no duplicated DOM.
-  // Under prefers-reduced-motion the strip slows right down rather than
-  // stopping, which is how Globe.svelte handles the same question: a frozen
-  // globe reads as a broken one, and so does a strip that never moves while
-  // carrying arrows that say it should. The ratio is the globe's — roughly
-  // three and a half times slower.
-  const SPEED = 30;            // px per second
-  const REDUCED_SPEED = 20;
-  const GLIDE = 900;           // px per second while catching up to an arrow
-  let dir = 1;
-  // Deliberately NOT paused on hover. The pointer rests over or near the strip
-  // for most of the time anyone is looking at it, so hover-pausing stops the
-  // drift exactly when it is being watched — it reads as broken rather than as
-  // polite. A press, keyboard focus or the lightbox still stops it.
-  let paused = false;          // a press in progress, or focus inside the strip
-  let reduced = false;         // the viewer asked for less motion
-  // The drift's own position, kept here rather than read back from the DOM.
-  // scrollLeft quantises to whole (device) pixels, so a sub-pixel step written
-  // into it rounds away — read it back and the movement never accumulates and
-  // the strip sits still. Holding the float here and only writing to the DOM
-  // is what makes a slow drift possible at all.
-  let pos = 0;
-  // Where an arrow press is taking us, eased by the same loop as the drift.
-  // The browser's own scrollBy({behavior:'smooth'}) cannot be used: under
-  // prefers-reduced-motion Chrome does not merely skip the animation, it drops
-  // the scroll entirely, so the arrows did nothing at all on a machine with
-  // that setting on. Animating the position ourselves works either way.
-  let target = null;
-
-  onMount(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    reduced = mq.matches;
-    const onPref = (e) => (reduced = e.matches);
-    mq.addEventListener('change', onPref);
-
-    let frame;
-    let last = performance.now();
-    const step = (now) => {
-      const dt = (now - last) / 1000;
-      last = now;
-      // Anything that means a person is looking on purpose stops the drift:
-      // hovering, keyboard focus, the lightbox, or a hidden tab.
-      const halt = paused || open >= 0 || document.hidden || !track;
-      if (!halt) {
-        const max = track.scrollWidth - track.clientWidth;
-        if (max > 0) {
-          const speed = reduced ? REDUCED_SPEED : SPEED;
-          let next = track.scrollLeft + dir * speed * dt;
-          if (next <= 0) { next = 0; dir = 1; }
-          else if (next >= max) { next = max; dir = -1; }
-          track.scrollLeft = next;
-        }
-      }
-      frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      mq.removeEventListener('change', onPref);
-    };
-  });
-
   // A nudge is most of the visible width, so the eye keeps a photo of context.
-  // It also sets the drift's direction, so the strip carries on the way the
-  // reader just pushed it rather than immediately fighting them.
-  function slide(d) {
+  // behavior:'auto', not 'smooth': Chrome drops a smooth scroll entirely when
+  // prefers-reduced-motion is set rather than making it instant, so the arrows
+  // did nothing at all on a machine with that setting on.
+  function slide(dir) {
     if (!track) return;
-    dir = d;
-    const max = track.scrollWidth - track.clientWidth;
-    target = Math.max(0, Math.min(max, pos + d * track.clientWidth * 0.8));
+    track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: 'auto' });
   }
 
   function onScroll() {
     if (!track) return;
     atStart = track.scrollLeft <= 2;
     atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
-    // A swipe or an arrow moves the strip by more than the drift ever does in
-    // one frame, so a gap that size means a person moved it — adopt their
-    // position rather than yanking the strip back to ours.
-    if (Math.abs(track.scrollLeft - pos) > 2) { pos = track.scrollLeft; target = null; }
   }
 
   const close = () => (open = -1);
@@ -140,17 +67,12 @@
       <div
         bind:this={track}
         on:scroll={onScroll}
-        on:pointerdown={() => (paused = true)}
-        on:pointerup={() => (paused = false)}
-        on:pointercancel={() => (paused = false)}
-        on:focusin={() => (paused = true)}
-        on:focusout={() => (paused = false)}
-        class="track flex gap-3 overflow-x-auto pb-1 md:gap-4"
+        class="track flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 md:gap-4"
       >
         {#each gallery as photo, i}
           <button
             type="button"
-            class="group relative h-56 shrink-0 overflow-hidden rounded-2xl border-0 p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 md:h-72"
+            class="group relative h-56 shrink-0 snap-start overflow-hidden rounded-2xl border-0 p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 md:h-72"
             style="background:#f5f5f7;"
             on:click={() => (open = i)}
             aria-label="Enlarge: {photo.alt}"
@@ -158,6 +80,8 @@
             <img
               src={photo.src}
               alt={photo.alt}
+              width={photo.w}
+              height={photo.h}
               loading="lazy"
               decoding="async"
               class="block h-full w-auto max-w-none transition-transform duration-300 group-hover:scale-[1.03]"

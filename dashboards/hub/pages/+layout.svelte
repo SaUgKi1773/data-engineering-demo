@@ -39,16 +39,6 @@
 <SideNav open={menuOpen} on:close={() => (menuOpen = false)} />
 
 <style>
-  /* Evidence injects html{scroll-behavior:smooth} globally. Chrome does not
-     downgrade a smooth scroll to an instant one under prefers-reduced-motion —
-     it drops the scroll entirely, so every in-page anchor silently does nothing
-     for those readers, the hero's own "Explore our platforms" included.
-     Verified: with smooth the anchor moved the page 0px, with auto it moved
-     1,715px. */
-  @media (prefers-reduced-motion: reduce) {
-    :global(html) { scroll-behavior: auto !important; }
-  }
-
   :global(header img[alt="Home"]) {
     height: 2.5rem;
   }
