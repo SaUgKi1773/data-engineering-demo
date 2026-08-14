@@ -30,7 +30,13 @@
   // rather than as a thing demanding to be watched. It reverses at each end
   // instead of snapping back to the start: a jump is far more noticeable than
   // the movement it interrupts, and reversing needs no duplicated DOM.
+  // Under prefers-reduced-motion the strip slows right down rather than
+  // stopping, which is how Globe.svelte handles the same question: a frozen
+  // globe reads as a broken one, and so does a strip that never moves while
+  // carrying arrows that say it should. The ratio is the globe's — roughly
+  // three and a half times slower.
   const SPEED = 18;            // px per second
+  const REDUCED_SPEED = 5;
   let dir = 1;
   let paused = false;          // pointer over the strip, or focus inside it
   let reduced = false;         // the viewer asked for less motion
@@ -48,11 +54,12 @@
       last = now;
       // Anything that means a person is looking on purpose stops the drift:
       // hovering, keyboard focus, the lightbox, or a hidden tab.
-      const halt = paused || reduced || open >= 0 || document.hidden || !track;
+      const halt = paused || open >= 0 || document.hidden || !track;
       if (!halt) {
         const max = track.scrollWidth - track.clientWidth;
         if (max > 0) {
-          let next = track.scrollLeft + dir * SPEED * dt;
+          const speed = reduced ? REDUCED_SPEED : SPEED;
+          let next = track.scrollLeft + dir * speed * dt;
           if (next <= 0) { next = 0; dir = 1; }
           else if (next >= max) { next = max; dir = -1; }
           track.scrollLeft = next;
