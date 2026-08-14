@@ -243,11 +243,11 @@ order by minute_bucket_sort, league_name
 ```sql clock_table
 select
     minute_bucket as "Minute", minute_bucket_sort,
-    max(case when league_name = 'La Liga'     then share end) as "ESP",
-    max(case when league_name = 'Liga MX'     then share end) as "MEX",
-    max(case when league_name = 'Premiership' then share end) as "SCO",
     max(case when league_name = 'Superliga'   then share end) as "DEN",
-    max(case when league_name = 'Süper Lig'   then share end) as "TUR"
+    max(case when league_name = 'Premiership' then share end) as "SCO",
+    max(case when league_name = 'Liga MX'     then share end) as "MEX",
+    max(case when league_name = 'Süper Lig'   then share end) as "TUR",
+    max(case when league_name = 'La Liga'     then share end) as "ESP"
 from ${clock} group by 1, 2 order by minute_bucket_sort
 ```
 
@@ -269,11 +269,11 @@ from ${clock} group by 1, 2 order by minute_bucket_sort
     <Panel title="Share of goals" qualifier="%, shaded down each column" pad={false}>
       <DataTable data={clock_table} rows=8 rowShading=false>
         <Column id="Minute" />
-        <Column id="ESP" title="ESP" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
-        <Column id="MEX" title="MEX" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
-        <Column id="SCO" title="SCO" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
         <Column id="DEN" title="DEN" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="SCO" title="SCO" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="MEX" title="MEX" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
         <Column id="TUR" title="TUR" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+        <Column id="ESP" title="ESP" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
       </DataTable>
     </Panel>
   </div>

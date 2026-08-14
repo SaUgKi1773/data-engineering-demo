@@ -42,14 +42,20 @@ export const bottomItems = [
   { href: '/matches', label: 'Matches', emoji: '⚽' }
 ];
 
-// Alphabetical by league name, which is how the hues were assigned — so a
-// filter can never repaint a league.
+// Launch order, matching the platform shelf on the Hub home page.
+//
+// Order and colour are separate decisions and only one of them is free. The
+// hues were handed out alphabetically by league name once and are frozen to
+// the league from then on, so no filter, sort or reorder can ever repaint one;
+// this array only decides where each league APPEARS. It was alphabetical too,
+// which sorted on the league name while the screen showed the country code —
+// a list sorted by something invisible.
 export const leagues = [
-  { code: 'ESP', league_name: 'La Liga',     colour: '#2a78d6', site_url: 'https://spanishlaligaanalytics.vercel.app' },
-  { code: 'MEX', league_name: 'Liga MX',     colour: '#eb6834', site_url: 'https://mexicanligamxanalytics.vercel.app' },
-  { code: 'SCO', league_name: 'Premiership', colour: '#1baf7a', site_url: 'https://scottishpremiershipanalytics.vercel.app' },
   { code: 'DEN', league_name: 'Superliga',   colour: '#eda100', site_url: 'https://superligaanalytics.vercel.app' },
-  { code: 'TUR', league_name: 'Süper Lig',   colour: '#e87ba4', site_url: 'https://turkishsuperliganalytics.vercel.app' }
+  { code: 'SCO', league_name: 'Premiership', colour: '#1baf7a', site_url: 'https://scottishpremiershipanalytics.vercel.app' },
+  { code: 'MEX', league_name: 'Liga MX',     colour: '#eb6834', site_url: 'https://mexicanligamxanalytics.vercel.app' },
+  { code: 'TUR', league_name: 'Süper Lig',   colour: '#e87ba4', site_url: 'https://turkishsuperliganalytics.vercel.app' },
+  { code: 'ESP', league_name: 'La Liga',     colour: '#2a78d6', site_url: 'https://spanishlaligaanalytics.vercel.app' }
 ];
 
 // Name -> code and name -> colour, for pages that get league_name from SQL.
