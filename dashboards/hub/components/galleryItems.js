@@ -8,10 +8,10 @@
 // and what shows if the file fails to load. Describe the picture, not the
 // occasion — the caption already carries the occasion.
 //
-// Any shape is fine. The grid is a masonry that keeps each photo's own
-// proportions, so a portrait phone shot and a landscape one sit together
-// without either being cropped. Keep files under ~400KB; they load on every
-// visit to the home page.
+// Any shape is fine. The strip is a fixed-height row and each photo keeps its
+// own proportions, so a portrait phone shot sits as a narrow tile beside a wide
+// landscape one and neither is cropped. Order here is the order on screen.
+// Keep files under ~400KB; they load on every visit to the home page.
 
 export const gallery = [
 	{
