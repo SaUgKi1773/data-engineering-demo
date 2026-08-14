@@ -67,20 +67,20 @@ export const gallery = [
 		w: 1200,
 		h: 1600,
 		alt: 'Someone crouching and smiling beside a freshly planted shrub in a sunny garden, a beech hedge behind',
-		caption: 'Off-season, Farum'
+		caption: 'Gardening break, Farum'
 	},
 	{
 		src: '/gallery/home-screen-folder.jpeg',
 		w: 946,
 		h: 2048,
 		alt: 'A phone home-screen folder named Data Products holding two app icons, DataSat DK and Superligaen',
-		caption: 'Superligaen, on the home screen'
+		caption: 'Superligaen, an old logo on the home screen'
 	},
 	{
 		src: '/gallery/install-prompt.jpeg',
 		w: 945,
 		h: 2048,
 		alt: 'The Superligaen site on a phone, showing the season summary and a prompt offering to add it to the home screen',
-		caption: 'The install prompt, doing its job'
+		caption: 'The install prompt, first tests on the feature'
 	}
 ];
