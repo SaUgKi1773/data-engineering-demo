@@ -14,8 +14,7 @@
   import { onMount } from 'svelte';
   import { inject } from '@vercel/analytics';
   import TopTabs from '../components/TopTabs.svelte';
-  import LeagueKey from '../components/LeagueKey.svelte';
-  import { tabs, leagues } from '../components/navItems.js';
+  import { tabs } from '../components/navItems.js';
 
   export let data;
   onMount(() => inject());
@@ -39,9 +38,6 @@
 
   <div class="flex h-[34px] items-stretch gap-4 border-b border-black/40 bg-[#26262a] px-4">
     <TopTabs {tabs} />
-    <div class="ml-auto flex flex-none items-center">
-      <LeagueKey {leagues} />
-    </div>
   </div>
 </div>
 
