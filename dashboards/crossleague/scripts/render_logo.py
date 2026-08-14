@@ -9,10 +9,13 @@ what it writes.
     python3 scripts/render_logo.py
 
 The mark is the Krogvad Analytics Hub badge — near-black disc, white football,
-five red analytics bars — with an arc of five white stars over the ball, one
-per league.
+five analytics bars — with the bars carrying the five league hues instead of
+the Hub's reds. Nothing is added: the Hub already draws exactly five bars, so
+colour alone does the differentiating, in the same palette every chart on the
+site uses. An earlier attempt hung a third row on the badge, an arc of stars.
+Two problems killed it — stars over a crest already mean titles won, and a
+two-row mark stops reading at favicon size once it becomes three.
 """
-import math
 import os
 
 from PIL import Image, ImageDraw
@@ -22,8 +25,14 @@ OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
 # ── palette ─────────────────────────────────────────────────────────────────
 INK = (0x1D, 0x1D, 0x1F)          # near-black badge, straight from the Hub
 WHITE = (0xFF, 0xFF, 0xFF)
-REDS = [(0xFF, 0x5A, 0x6A), (0xFF, 0x46, 0x57), (0xF5, 0x23, 0x3A),
-        (0xFF, 0x46, 0x57), (0xFF, 0x5A, 0x6A)]
+
+# One bar per league, left to right in launch order — the same order and the
+# same hues as `leagues` in components/navItems.js. Keep the two in step.
+BAR_HUES = [(0xED, 0xA1, 0x00),   # DEN  Superliga
+            (0x1B, 0xAF, 0x7A),   # SCO  Premiership
+            (0xEB, 0x68, 0x34),   # MEX  Liga MX
+            (0xE8, 0x7B, 0xA4),   # TUR  Süper Lig
+            (0x2A, 0x78, 0xD6)]   # ESP  La Liga
 
 # ── geometry, in the 512x512 viewBox every asset shares ─────────────────────
 # Ball, patches and bars are lifted verbatim from the Hub's icon.svg.
@@ -36,30 +45,6 @@ PATCHES = [[(256, 145), (290, 170), (278, 208), (234, 208), (222, 170)],
 BARS = [(148, 380, 30, 64), (196, 360, 30, 84), (244, 340, 30, 104),
         (292, 355, 30, 89), (340, 370, 30, 74)]
 
-# Five stars on an arc over the ball — struck from the ball's own centre, so
-# the arc stays concentric with it however the ball moves. White, matching the
-# ball rather than the bars: on the near-black disc the stars then read as one
-# object with the ball, and the red is left to mean "analytics" alone.
-STAR_COUNT = 5            # one per league
-STAR_FILL = WHITE
-STAR_ARC_R = 148.0
-STAR_A0, STAR_A1 = -160.0, -20.0
-STAR_R = 24.0
-
-
-def star_centres():
-    n = STAR_COUNT
-    return [(BALL[0] + STAR_ARC_R * math.cos(math.radians(a)),
-             BALL[1] + STAR_ARC_R * math.sin(math.radians(a)))
-            for a in (STAR_A0 + (STAR_A1 - STAR_A0) * i / (n - 1) for i in range(n))]
-
-
-def star_points(cx, cy, r):
-    """Five-pointed star, one point up."""
-    return [(cx + (r if k % 2 == 0 else r * 0.382) * math.cos(math.radians(-90 + k * 36)),
-             cy + (r if k % 2 == 0 else r * 0.382) * math.sin(math.radians(-90 + k * 36)))
-            for k in range(10)]
-
 
 def hexof(c):
     return "#%02X%02X%02X" % tuple(c[:3])
@@ -67,38 +52,34 @@ def hexof(c):
 
 # ── SVG ─────────────────────────────────────────────────────────────────────
 def mark_body(indent="  "):
-    """Everything inside the badge: stars, ball, bars."""
+    """Everything inside the badge: ball, then bars."""
     bx, by, br = BALL
-    L = []
-    for cx, cy in star_centres():
-        pts = " ".join(f"{x:.1f},{y:.1f}" for x, y in star_points(cx, cy, STAR_R))
-        L.append(f'{indent}<polygon points="{pts}" fill="{hexof(STAR_FILL)}"/>')
-    L.append(f'{indent}<circle cx="{bx:.0f}" cy="{by:.0f}" r="{br:.0f}" fill="{hexof(WHITE)}"/>')
-    L.append(f'{indent}<g clip-path="url(#ball)">')
+    L = [f'{indent}<circle cx="{bx:.0f}" cy="{by:.0f}" r="{br:.0f}" fill="{hexof(WHITE)}"/>',
+         f'{indent}<g clip-path="url(#ball)">']
     for p in PATCHES:
         pts = " ".join(f"{x},{y}" for x, y in p)
         L.append(f'{indent}  <polygon points="{pts}" fill="{hexof(INK)}"/>')
     L.append(f'{indent}</g>')
     L.append(f'{indent}<circle cx="{bx:.0f}" cy="{by:.0f}" r="{br:.0f}" fill="none" '
              f'stroke="{hexof(INK)}" stroke-width="6"/>')
-    for (x, y, w, h), col in zip(BARS, REDS):
+    for (x, y, w, h), col in zip(BARS, BAR_HUES):
         L.append(f'{indent}<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="6" '
                  f'fill="{hexof(col)}"/>')
     return L
 
 
 DEFS = ['  <defs>',
-        f'    <clipPath id="ball"><circle cx="{BALL[0]:.0f}" cy="{BALL[1]:.0f}" r="{BALL[2]:.0f}"/></clipPath>',
+        f'    <clipPath id="ball"><circle cx="{BALL[0]:.0f}" cy="{BALL[1]:.0f}" '
+        f'r="{BALL[2]:.0f}"/></clipPath>',
         '  </defs>']
+
+CIRCLE_SHELL = [f'  <circle cx="256" cy="256" r="256" fill="{hexof(INK)}"/>']
+TILE_SHELL = [f'  <rect width="512" height="512" rx="96" fill="{hexof(INK)}"/>']
 
 
 def build_svg(shell, indent="  "):
     return "\n".join(['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">']
                      + DEFS + shell + mark_body(indent) + ['</svg>', ''])
-
-
-CIRCLE_SHELL = [f'  <circle cx="256" cy="256" r="256" fill="{hexof(INK)}"/>']
-TILE_SHELL = [f'  <rect width="512" height="512" rx="96" fill="{hexof(INK)}"/>']
 
 
 def write_svgs():
@@ -136,10 +117,6 @@ def draw_mark(n, tile=False):
     else:
         d.ellipse([0, 0, n - 1, n - 1], fill=INK + (255,))
 
-    for cx, cy in star_centres():
-        d.polygon([(sc(x), sc(y)) for x, y in star_points(cx, cy, STAR_R)],
-                  fill=STAR_FILL + (255,))
-
     bx, by, br = BALL
     box = [sc(bx - br), sc(by - br), sc(bx + br), sc(by + br)]
     d.ellipse(box, fill=WHITE + (255,))
@@ -155,7 +132,7 @@ def draw_mark(n, tile=False):
 
     d = ImageDraw.Draw(img)
     d.ellipse(box, outline=INK + (255,), width=max(1, int(round(6 * s))))
-    for (x, y, w, h), col in zip(BARS, REDS):
+    for (x, y, w, h), col in zip(BARS, BAR_HUES):
         d.rounded_rectangle([sc(x), sc(y), sc(x + w), sc(y + h)], radius=sc(6), fill=col + (255,))
     return img
 
