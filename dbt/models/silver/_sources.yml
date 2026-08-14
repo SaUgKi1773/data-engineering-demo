@@ -40,6 +40,7 @@ sources:
       - name: sportmonks__core_regions
       - name: highlightly__matches
       - name: highlightly__match_details
+        freshness: null
       - name: highlightly__standings
       - name: groq__llm_match_discussions
         description: Raw Groq API responses for fan forum discussions, one row per match.
