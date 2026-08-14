@@ -35,10 +35,15 @@
   // globe reads as a broken one, and so does a strip that never moves while
   // carrying arrows that say it should. The ratio is the globe's — roughly
   // three and a half times slower.
-  const SPEED = 18;            // px per second
-  const REDUCED_SPEED = 8;
+  const SPEED = 30;            // px per second
+  const REDUCED_SPEED = 20;
+  const GLIDE = 900;           // px per second while catching up to an arrow
   let dir = 1;
-  let paused = false;          // pointer over the strip, or focus inside it
+  // Deliberately NOT paused on hover. The pointer rests over or near the strip
+  // for most of the time anyone is looking at it, so hover-pausing stops the
+  // drift exactly when it is being watched — it reads as broken rather than as
+  // polite. A press, keyboard focus or the lightbox still stops it.
+  let paused = false;          // a press in progress, or focus inside the strip
   let reduced = false;         // the viewer asked for less motion
   // The drift's own position, kept here rather than read back from the DOM.
   // scrollLeft quantises to whole (device) pixels, so a sub-pixel step written
@@ -46,6 +51,12 @@
   // the strip sits still. Holding the float here and only writing to the DOM
   // is what makes a slow drift possible at all.
   let pos = 0;
+  // Where an arrow press is taking us, eased by the same loop as the drift.
+  // The browser's own scrollBy({behavior:'smooth'}) cannot be used: under
+  // prefers-reduced-motion Chrome does not merely skip the animation, it drops
+  // the scroll entirely, so the arrows did nothing at all on a machine with
+  // that setting on. Animating the position ourselves works either way.
+  let target = null;
 
   onMount(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -87,7 +98,8 @@
   function slide(d) {
     if (!track) return;
     dir = d;
-    track.scrollBy({ left: d * track.clientWidth * 0.8, behavior: 'smooth' });
+    const max = track.scrollWidth - track.clientWidth;
+    target = Math.max(0, Math.min(max, pos + d * track.clientWidth * 0.8));
   }
 
   function onScroll() {
@@ -97,7 +109,7 @@
     // A swipe or an arrow moves the strip by more than the drift ever does in
     // one frame, so a gap that size means a person moved it — adopt their
     // position rather than yanking the strip back to ours.
-    if (Math.abs(track.scrollLeft - pos) > 2) pos = track.scrollLeft;
+    if (Math.abs(track.scrollLeft - pos) > 2) { pos = track.scrollLeft; target = null; }
   }
 
   const close = () => (open = -1);
@@ -128,8 +140,6 @@
       <div
         bind:this={track}
         on:scroll={onScroll}
-        on:pointerenter={() => (paused = true)}
-        on:pointerleave={() => (paused = false)}
         on:pointerdown={() => (paused = true)}
         on:pointerup={() => (paused = false)}
         on:pointercancel={() => (paused = false)}
