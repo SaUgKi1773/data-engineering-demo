@@ -42,9 +42,6 @@ order by launch_order
 select * from hub.group_stats
 ```
 
-```sql crossleague
-select * from hub.crossleague_summary
-```
 
 ```sql last_updated
 select * from hub.last_updated
@@ -168,13 +165,10 @@ select * from hub.last_updated
           <div class="flex flex-col md:flex-row items-center gap-3 md:gap-5">
             <img src="/logos/crossleague.svg" alt="Cross-League Analytics" class="h-14 w-auto flex-shrink-0" />
             <div>
-              <div class="mb-1 text-gray-400 text-[11px] uppercase" style="letter-spacing: 0.14em;">Across every league</div>
               <div class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 leading-none">Cross-League Analytics</div>
-              <div class="text-gray-400 text-[13px] mt-1.5">Leagues, clubs, players and matches — measured the same way.</div>
             </div>
           </div>
           <div class="flex flex-col items-center md:items-end gap-2">
-            <div class="text-gray-500 text-sm"><span class="font-semibold text-gray-900">{crossleague[0]?.leagues}</span> leagues · <span class="font-semibold text-gray-900">{crossleague[0]?.matches}</span> matches · <span class="font-semibold text-gray-900">{crossleague[0]?.goals}</span> goals</div>
             <div class="text-[15px] font-medium text-gray-900">Explore Cross-League <span style="color:#c8102e;">›</span></div>
           </div>
         </div>
