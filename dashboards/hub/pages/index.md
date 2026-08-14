@@ -42,6 +42,11 @@ order by launch_order
 select * from hub.group_stats
 ```
 
+```sql crossleague
+select * from hub.crossleague_summary
+```
+
+
 ```sql last_updated
 select * from hub.last_updated
 ```
@@ -148,6 +153,32 @@ select * from hub.last_updated
       </div>
     </a>
 {/each}
+
+    <!-- Not a league card: no flag, no season, no club count. The five hues
+         along the top are the ones the site itself uses for the five leagues. -->
+    <a href="https://crossleagueanalytics.vercel.app/" class="block no-underline group">
+      <div class="overflow-hidden rounded-2xl" style="background:#f5f5f7;">
+        <div class="flex h-1.5 w-full">
+          <span class="flex-1" style="background:#eda100;"></span>
+          <span class="flex-1" style="background:#1baf7a;"></span>
+          <span class="flex-1" style="background:#eb6834;"></span>
+          <span class="flex-1" style="background:#e87ba4;"></span>
+          <span class="flex-1" style="background:#2a78d6;"></span>
+        </div>
+        <div class="px-6 py-8 md:px-10 md:py-8 text-center md:text-left flex flex-col md:flex-row items-center md:justify-between gap-4 md:gap-6 transition-transform duration-200 group-hover:scale-[1.005]">
+          <div class="flex flex-col md:flex-row items-center gap-3 md:gap-5">
+            <img src="/logos/crossleague.svg" alt="Cross-League Analytics" class="h-14 w-auto flex-shrink-0" />
+            <div>
+              <div class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 leading-none">Cross-League Analytics</div>
+            </div>
+          </div>
+          <div class="flex flex-col items-center md:items-end gap-2">
+            <div class="text-gray-500 text-sm"><span class="font-semibold text-gray-900">{crossleague[0]?.leagues}</span> leagues · <span class="font-semibold text-gray-900">{crossleague[0]?.matches}</span> matches · <span class="font-semibold text-gray-900">{crossleague[0]?.goals}</span> goals</div>
+            <div class="text-[15px] font-medium text-gray-900">Explore Cross-League <span style="color:#c8102e;">›</span></div>
+          </div>
+        </div>
+      </div>
+    </a>
 
     <div class="rounded-2xl border border-dashed border-gray-300 px-6 py-5 text-center text-gray-400 text-sm">
       Next platform in scouting — wherever in the world the next league plays, the foundation is ready.
