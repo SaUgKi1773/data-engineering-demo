@@ -244,6 +244,12 @@ select * from hub.last_updated
   <p class="text-gray-400 text-xs mt-3 mb-0">Not on the list? Say so on the form — if you can move the platform forward, we want to hear it.</p>
 </div>
 
+<!-- ══ GALLERY — photos from the group ═══════════════════════════════════ -->
+<!-- The component owns the whole section, heading included, so it can render
+     nothing at all until there are photos. An empty gallery on a marketing
+     page reads as broken, which is the opposite of the point. -->
+<Gallery />
+
 <!-- ══ FOOTER ════════════════════════════════════════════════════════════ -->
 <div class="border-t border-gray-200 pt-8 pb-12 text-center">
   <!-- Two tiers: the three things we want clicked, then the about-and-support
