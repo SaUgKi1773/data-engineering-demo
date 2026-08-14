@@ -17,8 +17,11 @@ hide_title: true
   const SERIES   = Object.fromEntries(KEY.map((l) => [l.league_name, l.colour]));
   const f0 = (v) => Math.round(Number(v)).toLocaleString();
   const f1 = (v) => Number(v).toFixed(1);
+  const f2 = (v) => Number(v).toFixed(2);
 
-  // Each league's share of a measure, widest first, for the KPI split bar.
+  // The split bar always divides on the measure the tile is showing, so its
+  // segment lengths and the headline answer the same question. Splitting a
+  // rate on totals would make the biggest league look like the leader.
   function split(rows, key) {
     const total = rows.reduce((s, r) => s + Number(r[key] ?? 0), 0) || 1;
     return rows
@@ -27,6 +30,12 @@ hide_title: true
       .sort((a, b) => b.share - a.share);
   }
   const total = (rows, key) => rows.reduce((s, r) => s + Number(r[key] ?? 0), 0);
+  // Pooled rate: sum the numerators and sum the denominators. Averaging five
+  // league rates would weight a 228-match league like a 380-match one.
+  const pooled = (rows, num, den, scale = 1) => {
+    const d = total(rows, den);
+    return d ? (scale * total(rows, num)) / d : 0;
+  };
   const leader = (rows, key) => split(rows, key).find((s) => s.value > 0) ?? null;
   // Never let an empty range print "undefined leads".
   const leads = (rows, key, verb) => {
@@ -51,7 +60,11 @@ select distinct match_date from atlas.mart_player_day order by match_date
 <div class="mb-2 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-[3px] border border-gray-200 bg-white px-2 py-1.5">
   <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Date range</span>
   <DateRange name=period data={day_range} dates=match_date defaultValue="Year to Today" />
-  <span class="ml-auto text-[10px] text-gray-400">Totals across every club a player turned out for.</span>
+  <Dropdown name=rank_by title="Rank scorers by" defaultValue="goals">
+      <DropdownOption value="goals" valueLabel="Goals" />
+      <DropdownOption value="share" valueLabel="Share of league goals" />
+  </Dropdown>
+  <span class="ml-auto text-[10px] text-gray-400">Rates are per match, both teams. Goals are those credited to a player; a player's totals span every club he turned out for.</span>
 </div>
 
 ```sql players
@@ -70,7 +83,7 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2
 ```
 
-```sql league_totals
+```sql league_events
 select
     league_name,
     sum(goals)                                          as goals,
@@ -81,6 +94,29 @@ select
 from atlas.mart_player_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1
+```
+
+```sql league_matches
+-- The denominator every rate on this page divides by. Verified against the
+-- event stream: the two agree on match count league by league, so a rate is
+-- never goals from covered matches over a longer fixture list.
+select league_name, sum(matches) / 2 as matches
+from atlas.mart_club_day
+where match_date between '${inputs.period.start}' and '${inputs.period.end}'
+group by 1
+```
+
+```sql league_totals
+select
+    e.*,
+    m.matches,
+    (1.0 * e.goals         / nullif(m.matches, 0))::double  as goals_per_match,
+    (1.0 * e.penalty_goals / nullif(m.matches, 0))::double  as penalties_per_match,
+    (1.0 * e.yellow_cards  / nullif(m.matches, 0))::double  as yellows_per_match,
+    (100.0 * e.sent_off    / nullif(m.matches, 0))::double  as sent_off_per_100,
+    (1.0 * e.goals         / nullif(e.scorers, 0))::double  as goals_per_scorer
+from ${league_events} e
+join ${league_matches} m on m.league_name = e.league_name
 ```
 
 ```sql overall
@@ -96,28 +132,48 @@ where goals > 0 and match_date between '${inputs.period.start}' and '${inputs.pe
 
   <!-- ══ A · KPI STRIP ═══════════════════════════════════════════════════ -->
   <div class="mb-2 grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-gray-200 bg-gray-200 md:grid-cols-5">
-    <Kpi label="Goals" value={f0(total(T, 'goals'))}
-         split={split(T, 'goals')} foot={leads(T, 'goals', 'scored most')}
-         footColour={leader(T, 'goals')?.colour} />
-    <Kpi label="Scorers" value={f0(overall[0]?.scorers ?? 0)}
-         split={split(T, 'scorers')} foot="players who found the net"
-         footColour={leader(T, 'scorers')?.colour} />
-    <Kpi label="Penalty goals" value={f0(total(T, 'penalty_goals'))}
-         split={split(T, 'penalty_goals')}
-         foot="{f1(100 * total(T, 'penalty_goals') / (total(T, 'goals') || 1))}% of all goals"
-         footColour={leader(T, 'penalty_goals')?.colour} />
-    <Kpi label="Yellow cards" value={f0(total(T, 'yellow_cards'))}
-         split={split(T, 'yellow_cards')} foot={leads(T, 'yellow_cards', 'booked most')}
-         footColour={leader(T, 'yellow_cards')?.colour} />
-    <Kpi label="Sent off" value={f0(total(T, 'sent_off'))}
-         split={split(T, 'sent_off')} foot="reds and second yellows"
-         footColour={leader(T, 'sent_off')?.colour} />
+    <Kpi label="Goals per match" value={f2(pooled(T, 'goals', 'matches'))}
+         split={split(T, 'goals_per_match')}
+         foot="{leads(T, 'goals_per_match', 'leads')} · {f0(total(T, 'goals'))} in all"
+         footColour={leader(T, 'goals_per_match')?.colour} />
+    <Kpi label="Goals per scorer" value={f2(total(T, 'goals') / (overall[0]?.scorers || 1))}
+         split={split(T, 'goals_per_scorer')}
+         foot="{leads(T, 'goals_per_scorer', 'leads')} · {f0(overall[0]?.scorers ?? 0)} scorers"
+         footColour={leader(T, 'goals_per_scorer')?.colour} />
+    <Kpi label="Penalties per match" value={f2(pooled(T, 'penalty_goals', 'matches'))}
+         split={split(T, 'penalties_per_match')}
+         foot="{f1(100 * total(T, 'penalty_goals') / (total(T, 'goals') || 1))}% of every goal"
+         footColour={leader(T, 'penalties_per_match')?.colour} />
+    <Kpi label="Yellows per match" value={f2(pooled(T, 'yellow_cards', 'matches'))}
+         split={split(T, 'yellows_per_match')}
+         foot="{leads(T, 'yellows_per_match', 'leads')} · {f0(total(T, 'yellow_cards'))} in all"
+         footColour={leader(T, 'yellows_per_match')?.colour} />
+    <Kpi label="Sent off per 100 matches" value={f1(pooled(T, 'sent_off', 'matches', 100))}
+         split={split(T, 'sent_off_per_100')}
+         foot="{leads(T, 'sent_off_per_100', 'leads')} · {f0(total(T, 'sent_off'))} in all"
+         footColour={leader(T, 'sent_off_per_100')?.colour} />
   </div>
 {/await}
 
+```sql players_ranked
+-- Share of their own league's goals is the only fair cross-league player rate
+-- available: goals per match would need appearances, and those exist for two
+-- leagues of the five. Numerator and denominator come from the same window, so
+-- a player is measured against exactly the football he played in.
+select
+    p.*,
+    (100.0 * p.goals / nullif(e.goals, 0))::double as league_goal_share
+from ${players} p
+join ${league_events} e on e.league_name = p.league_name
+```
+
 ```sql top_scorers
-select player_name, league_name, team_name, goals, penalty_goals
-from ${players} where goals > 0 order by goals desc, player_name limit 20
+select player_name, league_name, team_name, goals, penalty_goals, league_goal_share
+from ${players_ranked}
+where goals > 0
+order by case '${inputs.rank_by.value}' when 'share' then league_goal_share else goals end desc,
+         player_name
+limit 20
 ```
 
 ```sql top_per_league
@@ -130,8 +186,14 @@ select * from (
 
 <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
   <div class="xl:col-span-8">
-    <Panel title="Top 20 scorers" qualifier="all five leagues on one ranking" scope="goals">
-      <Rank dense={true} measure="Goals" rows={asRank([...top_scorers], 'goals')} format={f0} />
+    <Panel title="Top 20 scorers" qualifier="all five leagues on one ranking" scope={inputs.rank_by.label}>
+      {#if inputs.rank_by.value === 'share'}
+        <Rank dense={true} measure="Share of league goals"
+              rows={asRank([...top_scorers], 'league_goal_share')}
+              format={(v) => Number(v).toFixed(2) + '%'} />
+      {:else}
+        <Rank dense={true} measure="Goals" rows={asRank([...top_scorers], 'goals')} format={f0} />
+      {/if}
     </Panel>
   </div>
 
@@ -168,12 +230,13 @@ select
     team_name                                                       as "Club",
     league_name                                                     as "League",
     goals                                                           as "Goals",
+    round(league_goal_share, 2)                                     as "Share of league goals %",
     open_play_goals                                                 as "Open play",
     penalty_goals                                                   as "Penalties",
     round(100.0 * penalty_goals / nullif(goals, 0), 1)              as "Penalty %",
     yellow_cards                                                    as "Yellow cards",
     sent_off                                                        as "Sent off"
-from ${players}
+from ${players_ranked}
 where goals > 0 or yellow_cards > 0 or sent_off > 0
 order by "Goals" desc, "Player"
 ```
@@ -184,6 +247,7 @@ order by "Goals" desc, "Player"
     <Column id="Club" />
     <Column id="League" />
     <Column id="Goals" fmt='#,##0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
+    <Column id="Share of league goals %" fmt='0.00' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
     <Column id="Open play" fmt='#,##0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
     <Column id="Penalties" fmt='#,##0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
     <Column id="Penalty %" fmt='0.0' contentType=colorscale colorScale={['#eef2f7', '#1f3f6b']} />
