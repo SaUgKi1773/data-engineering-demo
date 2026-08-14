@@ -42,6 +42,10 @@ order by launch_order
 select * from hub.group_stats
 ```
 
+```sql crossleague
+select * from hub.crossleague_summary
+```
+
 
 ```sql last_updated
 select * from hub.last_updated
@@ -120,7 +124,7 @@ select * from hub.last_updated
 <!-- scroll-margin clears the fixed 3rem header so the heading isn't hidden on #platforms -->
 <div id="platforms" class="mb-14 text-center" style="scroll-margin-top: 4.5rem;">
   <div class="text-gray-400 text-xs font-semibold uppercase mb-1" style="letter-spacing: 0.14em;">Our platforms</div>
-  <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-6" style="margin-top:0.25rem;">One platform per league — and one across them all.</h2>
+  <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-6" style="margin-top:0.25rem;">Purpose-built for each league.</h2>
 
   <div class="flex flex-col gap-4">
 {#each leagues as lg}
@@ -169,6 +173,7 @@ select * from hub.last_updated
             </div>
           </div>
           <div class="flex flex-col items-center md:items-end gap-2">
+            <div class="text-gray-500 text-sm"><span class="font-semibold text-gray-900">{crossleague[0]?.leagues}</span> leagues · <span class="font-semibold text-gray-900">{crossleague[0]?.matches}</span> matches · <span class="font-semibold text-gray-900">{crossleague[0]?.goals}</span> goals</div>
             <div class="text-[15px] font-medium text-gray-900">Explore Cross-League <span style="color:#c8102e;">›</span></div>
           </div>
         </div>
