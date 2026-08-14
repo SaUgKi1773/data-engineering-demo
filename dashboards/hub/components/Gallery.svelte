@@ -16,6 +16,7 @@
   // render nothing at all when there are no photos. A marketing page with a
   // visibly empty gallery reads as broken, and the hub's index.md has no
   // script block to test the array from.
+  import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import { gallery } from './galleryItems.js';
 
@@ -24,10 +25,56 @@
   let atEnd = false;
   let open = -1;
 
+  // ── the drift ───────────────────────────────────────────────────────────
+  // The strip creeps sideways on its own, slowly enough to read as ambient
+  // rather than as a thing demanding to be watched. It reverses at each end
+  // instead of snapping back to the start: a jump is far more noticeable than
+  // the movement it interrupts, and reversing needs no duplicated DOM.
+  const SPEED = 18;            // px per second
+  let dir = 1;
+  let paused = false;          // pointer over the strip, or focus inside it
+  let reduced = false;         // the viewer asked for less motion
+
+  onMount(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    reduced = mq.matches;
+    const onPref = (e) => (reduced = e.matches);
+    mq.addEventListener('change', onPref);
+
+    let frame;
+    let last = performance.now();
+    const step = (now) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      // Anything that means a person is looking on purpose stops the drift:
+      // hovering, keyboard focus, the lightbox, or a hidden tab.
+      const halt = paused || reduced || open >= 0 || document.hidden || !track;
+      if (!halt) {
+        const max = track.scrollWidth - track.clientWidth;
+        if (max > 0) {
+          let next = track.scrollLeft + dir * SPEED * dt;
+          if (next <= 0) { next = 0; dir = 1; }
+          else if (next >= max) { next = max; dir = -1; }
+          track.scrollLeft = next;
+        }
+      }
+      frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      mq.removeEventListener('change', onPref);
+    };
+  });
+
   // A nudge is most of the visible width, so the eye keeps a photo of context.
-  function slide(dir) {
+  // It also sets the drift's direction, so the strip carries on the way the
+  // reader just pushed it rather than immediately fighting them.
+  function slide(d) {
     if (!track) return;
-    track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: 'smooth' });
+    dir = d;
+    track.scrollBy({ left: d * track.clientWidth * 0.8, behavior: 'smooth' });
   }
 
   function onScroll() {
@@ -64,12 +111,17 @@
       <div
         bind:this={track}
         on:scroll={onScroll}
-        class="track flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 md:gap-4"
+        on:pointerenter={() => (paused = true)}
+        on:pointerleave={() => (paused = false)}
+        on:pointerdown={() => (paused = true)}
+        on:focusin={() => (paused = true)}
+        on:focusout={() => (paused = false)}
+        class="track flex gap-3 overflow-x-auto pb-1 md:gap-4"
       >
         {#each gallery as photo, i}
           <button
             type="button"
-            class="group relative h-56 shrink-0 snap-start overflow-hidden rounded-2xl border-0 p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 md:h-72"
+            class="group relative h-56 shrink-0 overflow-hidden rounded-2xl border-0 p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 md:h-72"
             style="background:#f5f5f7;"
             on:click={() => (open = i)}
             aria-label="Enlarge: {photo.alt}"
