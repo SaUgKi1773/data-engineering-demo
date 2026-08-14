@@ -10,6 +10,7 @@ description: Five top-flight leagues on three continents, measured the same way.
   import Panel from '../components/Panel.svelte';
   import Matrix from '../components/Matrix.svelte';
   import Rank from '../components/Rank.svelte';
+  import BandLink from '../components/BandLink.svelte';
   import SiteFooter from '../components/SiteFooter.svelte';
   import { leagues as KEY } from '../components/navItems.js';
 
@@ -155,11 +156,7 @@ where match_date between '${inputs.period.start}' and '${inputs.period.end}'
   </div>
 
   <!-- ══ B · LEAGUES ═════════════════════════════════════════════════════ -->
-  <a href="/leagues" class="group mb-1 mt-3 flex items-baseline gap-2 no-underline">
-    <span class="flex-none text-[10px] font-semibold uppercase tracking-wider text-gray-700 group-hover:text-gray-900">Leagues</span>
-    <span class="flex-none text-[10px] text-gray-400">all five side by side, on every measure →</span>
-    <span class="h-px flex-1 bg-gray-200"></span>
-  </a>
+<BandLink href="/leagues" name="Leagues" note="all five side by side, on every measure" />
 
   <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
 
@@ -251,11 +248,7 @@ select
 from ${home_clubs} where gpm is not null and gapm is not null
 ```
 
-<a href="/clubs" class="group mb-1 mt-3 flex items-baseline gap-2 no-underline">
-  <span class="flex-none text-[10px] font-semibold uppercase tracking-wider text-gray-700 group-hover:text-gray-900">Clubs</span>
-  <span class="flex-none text-[10px] text-gray-400">every club on one ranking, whatever the league →</span>
-  <span class="h-px flex-1 bg-gray-200"></span>
-</a>
+<BandLink href="/clubs" name="Clubs" note="every club on one ranking, whatever the league" />
 
 <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
   <div class="xl:col-span-4">
@@ -339,11 +332,7 @@ from r join atlas.mart_leagues l on l.league_name = r.league_name
 group by 1, 2, 3 order by top10_share desc
 ```
 
-<a href="/players" class="group mb-1 mt-3 flex items-baseline gap-2 no-underline">
-  <span class="flex-none text-[10px] font-semibold uppercase tracking-wider text-gray-700 group-hover:text-gray-900">Players</span>
-  <span class="flex-none text-[10px] text-gray-400">who scores, who gets booked →</span>
-  <span class="h-px flex-1 bg-gray-200"></span>
-</a>
+<BandLink href="/players" name="Players" note="who scores, who gets booked" />
 
 <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-12">
   <div class="xl:col-span-4">
@@ -420,11 +409,7 @@ where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
 order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7
 ```
 
-<a href="/matches" class="group mb-1 mt-3 flex items-baseline gap-2 no-underline">
-  <span class="flex-none text-[10px] font-semibold uppercase tracking-wider text-gray-700 group-hover:text-gray-900">Matches</span>
-  <span class="flex-none text-[10px] text-gray-400">the shape of a match, scoreline by scoreline →</span>
-  <span class="h-px flex-1 bg-gray-200"></span>
-</a>
+<BandLink href="/matches" name="Matches" note="the shape of a match, scoreline by scoreline" />
 
 <div class="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
   <Panel title="Biggest wins" qualifier="by margin" href="/matches">
