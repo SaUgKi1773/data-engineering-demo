@@ -10,7 +10,8 @@
 //
 // Any shape is fine. The strip is a fixed-height row and each photo keeps its
 // own proportions, so a portrait phone shot sits as a narrow tile beside a wide
-// landscape one and neither is cropped. Order here is the order on screen.
+// landscape one and neither is cropped. Order here is the order on screen, and
+// the first one is the one everybody sees without scrolling — lead with it.
 // Keep files under ~400KB; they load on every visit to the home page.
 
 export const gallery = [
@@ -20,9 +21,34 @@ export const gallery = [
 		caption: 'Matchday at Right to Dream Park, Farum'
 	},
 	{
+		src: '/gallery/the-desk.jpeg',
+		alt: 'A desk under a sloped attic window looking onto pine trees, a monitor showing the fixtures page, a laptop below, and a cat’s tail curling out from behind the screen',
+		caption: 'The office, and the tail of its supervisor'
+	},
+	{
+		src: '/gallery/explaining-league-intelligence.jpeg',
+		alt: 'Hands raised towards a monitor showing season awards and a points-race chart, a laptop of code below, all backlit by a bright sloped window',
+		caption: 'Talking through the league intelligence page'
+	},
+	{
 		src: '/gallery/building-superligaen.jpeg',
 		alt: 'Someone working at a desk beneath a sloped attic window with pine trees outside, an external monitor showing the Superligaen site and a tablet of draft charts in hand',
 		caption: 'Building the Superligaen site'
+	},
+	{
+		src: '/gallery/rainy-day-fixtures.jpeg',
+		alt: 'Rain on a sloped window above a monitor split between the upcoming fixtures page and a video stream, a laptop of terminal output below, and a cat asleep beside it',
+		caption: 'A wet afternoon on the fixtures page'
+	},
+	{
+		src: '/gallery/reviewing-superligaen.jpeg',
+		alt: 'Someone pointing a stylus at a monitor showing the Superligaen home page, a tablet of chart drafts in the other hand',
+		caption: 'Reviewing the season summary'
+	},
+	{
+		src: '/gallery/garden-off-season.jpeg',
+		alt: 'Someone crouching and smiling beside a freshly planted shrub in a sunny garden, a beech hedge behind',
+		caption: 'Off-season, Farum'
 	},
 	{
 		src: '/gallery/home-screen-folder.jpeg',
