@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate AI round discussions using Groq (Llama).
+Generate AI round discussions using Groq.
 
 Reads match data and persona definitions from the gold layer, calls Groq
 once per match, and writes the raw API response to bronze.groq__llm_match_discussions.
@@ -28,6 +28,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger(__name__)
 
 DB_DEFAULT = "superligaen"
+
+# Replaces llama-3.3-70b-versatile, decommissioned by Groq on 2026-08-16.
+# The silver model drops any response that does not parse as JSON, so a model that
+# writes its reasoning into the message content (qwen3.6-27b does) empties the Fan
+# Forum silently rather than failing loudly. gpt-oss-120b keeps reasoning in a
+# separate field, so the content stays a clean JSON array.
+GROQ_MODEL = "openai/gpt-oss-120b"
 
 # Discussions are generated for the Danish Superliga only. The gold layer now
 # holds multiple leagues, and d.season / round numbers collide across leagues —
@@ -328,7 +335,7 @@ def build_prompt(match_context: str, personas: list[dict]) -> str:
 def call_groq(client: Groq, match_context: str, personas: list[dict]) -> str:
     prompt = build_prompt(match_context, personas)
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.8,
     )
