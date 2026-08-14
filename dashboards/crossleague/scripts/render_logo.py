@@ -9,9 +9,8 @@ what it writes.
     python3 scripts/render_logo.py
 
 The mark is the Krogvad Analytics Hub badge — near-black disc, white football,
-five red analytics bars — with an arc of five red stars over the ball, one per
-league. The stars take the bars' own reds, palest at the ends and strongest in
-the middle, so the two rows read as the same family rather than two ideas.
+five red analytics bars — with an arc of five white stars over the ball, one
+per league.
 """
 import math
 import os
@@ -38,14 +37,18 @@ BARS = [(148, 380, 30, 64), (196, 360, 30, 84), (244, 340, 30, 104),
         (292, 355, 30, 89), (340, 370, 30, 74)]
 
 # Five stars on an arc over the ball — struck from the ball's own centre, so
-# the arc stays concentric with it however the ball moves.
+# the arc stays concentric with it however the ball moves. White, matching the
+# ball rather than the bars: on the near-black disc the stars then read as one
+# object with the ball, and the red is left to mean "analytics" alone.
+STAR_COUNT = 5            # one per league
+STAR_FILL = WHITE
 STAR_ARC_R = 148.0
 STAR_A0, STAR_A1 = -160.0, -20.0
 STAR_R = 24.0
 
 
 def star_centres():
-    n = len(REDS)
+    n = STAR_COUNT
     return [(BALL[0] + STAR_ARC_R * math.cos(math.radians(a)),
              BALL[1] + STAR_ARC_R * math.sin(math.radians(a)))
             for a in (STAR_A0 + (STAR_A1 - STAR_A0) * i / (n - 1) for i in range(n))]
@@ -67,9 +70,9 @@ def mark_body(indent="  "):
     """Everything inside the badge: stars, ball, bars."""
     bx, by, br = BALL
     L = []
-    for (cx, cy), col in zip(star_centres(), REDS):
+    for cx, cy in star_centres():
         pts = " ".join(f"{x:.1f},{y:.1f}" for x, y in star_points(cx, cy, STAR_R))
-        L.append(f'{indent}<polygon points="{pts}" fill="{hexof(col)}"/>')
+        L.append(f'{indent}<polygon points="{pts}" fill="{hexof(STAR_FILL)}"/>')
     L.append(f'{indent}<circle cx="{bx:.0f}" cy="{by:.0f}" r="{br:.0f}" fill="{hexof(WHITE)}"/>')
     L.append(f'{indent}<g clip-path="url(#ball)">')
     for p in PATCHES:
@@ -133,8 +136,9 @@ def draw_mark(n, tile=False):
     else:
         d.ellipse([0, 0, n - 1, n - 1], fill=INK + (255,))
 
-    for (cx, cy), col in zip(star_centres(), REDS):
-        d.polygon([(sc(x), sc(y)) for x, y in star_points(cx, cy, STAR_R)], fill=col + (255,))
+    for cx, cy in star_centres():
+        d.polygon([(sc(x), sc(y)) for x, y in star_points(cx, cy, STAR_R)],
+                  fill=STAR_FILL + (255,))
 
     bx, by, br = BALL
     box = [sc(bx - br), sc(by - br), sc(bx + br), sc(by + br)]
