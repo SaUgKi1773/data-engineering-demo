@@ -35,11 +35,11 @@ hide_title: true
 </script>
 
 ```sql last_updated
-select strftime(last_match, '%d %b %Y') as last_updated from atlas.mart_last_updated
+select strftime(last_match, '%d %b %Y') as last_updated from cross_league.mart_last_updated
 ```
 
 ```sql day_range
-select distinct match_date from atlas.mart_club_day order by match_date
+select distinct match_date from cross_league.mart_club_day order by match_date
 ```
 
 <div class="mb-2 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-[3px] border border-gray-200 bg-white px-2 py-1.5">
@@ -79,7 +79,7 @@ with c as (
         (1.0 * sum(yellow_cards)   / nullif(sum(n_cards), 0))::double     as yellow_cards,
         (1.0 * sum(saves)          / nullif(sum(n_saves), 0))::double     as saves,
         (100.0 * sum(wins)         / nullif(sum(matches), 0))::double     as win_pct
-    from atlas.mart_club_day
+    from cross_league.mart_club_day
     where match_date between '${inputs.period.start}' and '${inputs.period.end}'
     group by 1, 2
 )

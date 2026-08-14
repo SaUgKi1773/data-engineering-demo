@@ -81,11 +81,11 @@ description: Five top-flight leagues on three continents, measured the same way.
 </script>
 
 ```sql last_updated
-select strftime(last_match, '%d %b %Y') as last_updated from atlas.mart_last_updated
+select strftime(last_match, '%d %b %Y') as last_updated from cross_league.mart_last_updated
 ```
 
 ```sql day_range
-select distinct match_date from atlas.mart_club_day order by match_date
+select distinct match_date from cross_league.mart_club_day order by match_date
 ```
 
 ```sql club_totals
@@ -103,7 +103,7 @@ select
     sum(fouls) as fouls,               sum(n_fouls) / 2 as n_fouls,
     sum(offsides) as offsides,         sum(n_offsides) / 2 as n_offsides,
     sum(saves) as saves,               sum(n_saves) / 2 as n_saves
-from atlas.mart_club_day
+from cross_league.mart_club_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1
 ```
@@ -113,7 +113,7 @@ select
     sum(matches) / 2            as matches,
     sum(goals_for)              as goals,
     count(distinct team_name)   as clubs
-from atlas.mart_club_day
+from cross_league.mart_club_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 ```
 
@@ -187,7 +187,7 @@ select
     date_trunc('month', match_date)                                 as month_start,
     league_name,
     round(1.0 * sum(goals_for) / nullif(sum(matches) / 2, 0), 3)    as value
-from atlas.mart_club_day
+from cross_league.mart_club_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2, 3
 order by month_start, league_name
@@ -222,14 +222,14 @@ select
     sum(matches)                                                as matches,
     (1.0 * sum(goals_for)     / nullif(sum(matches), 0))::double as gpm,
     (1.0 * sum(goals_against) / nullif(sum(matches), 0))::double as gapm
-from atlas.mart_club_day
+from cross_league.mart_club_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2
 ```
 
 ```sql home_top_clubs
 select c.*, l.code, l.colour
-from ${home_clubs} c join atlas.mart_leagues l on l.league_name = c.league_name
+from ${home_clubs} c join cross_league.mart_leagues l on l.league_name = c.league_name
 where c.gpm is not null order by c.gpm desc limit 10
 ```
 
@@ -237,7 +237,7 @@ where c.gpm is not null order by c.gpm desc limit 10
 with top20 as (select league_name from ${home_clubs} where gpm is not null order by gpm desc limit 20)
 select l.code, l.colour, l.league_name, count(*) as n,
        round(100.0 * count(*) / sum(count(*)) over (), 2) as share
-from top20 t join atlas.mart_leagues l on l.league_name = t.league_name
+from top20 t join cross_league.mart_leagues l on l.league_name = t.league_name
 group by 1, 2, 3 order by n desc
 ```
 
@@ -295,7 +295,7 @@ from ${home_clubs} where gpm is not null and gapm is not null
 
 ```sql home_scorers
 select p.player_name, p.league_name, sum(p.goals) as goals, l.code, l.colour
-from atlas.mart_player_day p join atlas.mart_leagues l on l.league_name = p.league_name
+from cross_league.mart_player_day p join cross_league.mart_leagues l on l.league_name = p.league_name
 where p.match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2, 4, 5
 having sum(p.goals) > 0
@@ -306,7 +306,7 @@ order by goals desc, p.player_name limit 10
 select * from (
     select player_name, league_name, sum(goals) as goals,
            row_number() over (partition by league_name order by sum(goals) desc, player_name) as rn
-    from atlas.mart_player_day
+    from cross_league.mart_player_day
     where match_date between '${inputs.period.start}' and '${inputs.period.end}'
     group by 1, 2
 )
@@ -317,7 +317,7 @@ order by league_name, rn
 ```sql home_concentration
 with p as (
     select league_name, player_name, sum(goals) as goals
-    from atlas.mart_player_day
+    from cross_league.mart_player_day
     where match_date between '${inputs.period.start}' and '${inputs.period.end}'
     group by 1, 2 having sum(goals) > 0
 ),
@@ -328,7 +328,7 @@ r as (
 )
 select l.code, l.colour, r.league_name,
        round(100.0 * sum(r.goals) filter (where r.rn <= 10) / nullif(max(r.league_goals), 0), 1) as top10_share
-from r join atlas.mart_leagues l on l.league_name = r.league_name
+from r join cross_league.mart_leagues l on l.league_name = r.league_name
 group by 1, 2, 3 order by top10_share desc
 ```
 
@@ -386,7 +386,7 @@ group by 1, 2, 3 order by top10_share desc
 ```sql big_wins
 select m.league_name, l.colour, l.code, m.home_team, m.away_team, m.home_goals, m.away_goals,
        strftime(m.match_date, '%d %b %Y') as played_on, m.round_name
-from atlas.mart_matches m join atlas.mart_leagues l on l.league_name = m.league_name
+from cross_league.mart_matches m join cross_league.mart_leagues l on l.league_name = m.league_name
 where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
 order by m.winning_margin desc, m.total_goals desc limit 7
 ```
@@ -394,7 +394,7 @@ order by m.winning_margin desc, m.total_goals desc limit 7
 ```sql high_scoring
 select m.league_name, l.colour, l.code, m.home_team, m.away_team, m.home_goals, m.away_goals,
        strftime(m.match_date, '%d %b %Y') as played_on, m.round_name
-from atlas.mart_matches m join atlas.mart_leagues l on l.league_name = m.league_name
+from cross_league.mart_matches m join cross_league.mart_leagues l on l.league_name = m.league_name
 where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
 order by m.total_goals desc, m.winning_margin desc limit 7
 ```
@@ -403,7 +403,7 @@ order by m.total_goals desc, m.winning_margin desc limit 7
 select m.league_name, l.colour, l.code, m.comeback_by, m.home_team, m.away_team,
        m.home_goals, m.away_goals, m.home_goals_ht, m.away_goals_ht,
        strftime(m.match_date, '%d %b %Y') as played_on, m.round_name
-from atlas.mart_matches m join atlas.mart_leagues l on l.league_name = m.league_name
+from cross_league.mart_matches m join cross_league.mart_leagues l on l.league_name = m.league_name
 where m.match_date between '${inputs.period.start}' and '${inputs.period.end}'
   and m.comeback_by is not null
 order by abs(m.home_goals_ht - m.away_goals_ht) desc, m.total_goals desc limit 7

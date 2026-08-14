@@ -72,7 +72,7 @@ hide_title: true
 </script>
 
 ```sql day_range
-select distinct match_date from atlas.mart_club_day order by match_date
+select distinct match_date from cross_league.mart_club_day order by match_date
 ```
 
 ```sql club_totals
@@ -91,7 +91,7 @@ select
     sum(fouls) as fouls,               sum(n_fouls) / 2 as n_fouls,
     sum(offsides) as offsides,         sum(n_offsides) / 2 as n_offsides,
     sum(saves) as saves,               sum(n_saves) / 2 as n_saves
-from atlas.mart_club_day
+from cross_league.mart_club_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1
 ```
@@ -105,7 +105,7 @@ select
     count(*) filter (where home_goals > 0 and away_goals > 0)       as btts,
     count(*) filter (where total_goals = 0)                         as nil_nil,
     count(*) filter (where comeback_by is not null)                 as comebacks
-from atlas.mart_matches
+from cross_league.mart_matches
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1
 ```
@@ -173,7 +173,7 @@ select
     calendar_year::int::varchar                                     as yr,
     league_name,
     round(1.0 * sum(goals_for) / nullif(sum(matches) / 2, 0), 3)    as value
-from atlas.mart_club_day
+from cross_league.mart_club_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2
 order by yr, league_name
@@ -202,7 +202,7 @@ select
     round(100.0 * sum(c.wins) filter (where c.team_side = 'Home') / nullif(sum(c.matches) / 2, 0), 1) as home_share,
     round(100.0 * sum(c.draws) / 2 / nullif(sum(c.matches) / 2, 0), 1)                                as draw_share,
     round(100.0 * sum(c.wins) filter (where c.team_side = 'Away') / nullif(sum(c.matches) / 2, 0), 1) as away_share
-from atlas.mart_club_day c join atlas.mart_leagues l on l.league_name = c.league_name
+from cross_league.mart_club_day c join cross_league.mart_leagues l on l.league_name = c.league_name
 where c.match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2
 order by home_share desc

@@ -42,11 +42,11 @@ hide_title: true
 </script>
 
 ```sql last_updated
-select strftime(last_match, '%d %b %Y') as last_updated from atlas.mart_last_updated
+select strftime(last_match, '%d %b %Y') as last_updated from cross_league.mart_last_updated
 ```
 
 ```sql day_range
-select distinct match_date from atlas.mart_player_day order by match_date
+select distinct match_date from cross_league.mart_player_day order by match_date
 ```
 
 <div class="mb-2 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-[3px] border border-gray-200 bg-white px-2 py-1.5">
@@ -70,7 +70,7 @@ select
     sum(goals) - sum(penalty_goals)         as open_play_goals,
     sum(yellow_cards)                       as yellow_cards,
     sum(sent_off)                           as sent_off
-from atlas.mart_player_day
+from cross_league.mart_player_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2
 ```
@@ -83,7 +83,7 @@ select
     sum(yellow_cards)                                   as yellow_cards,
     sum(sent_off)                                       as sent_off,
     count(distinct player_name) filter (where goals > 0) as scorers
-from atlas.mart_player_day
+from cross_league.mart_player_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1
 ```
@@ -93,7 +93,7 @@ group by 1
 -- Counted across leagues, not summed from them: a player who moved between
 -- leagues in the window is one scorer, not two.
 select count(distinct player_name) as scorers
-from atlas.mart_player_day
+from cross_league.mart_player_day
 where goals > 0 and match_date between '${inputs.period.start}' and '${inputs.period.end}'
 ```
 
@@ -277,7 +277,7 @@ from ranked group by 1 order by top10_share desc
 select
     minute_bucket, minute_bucket_sort, league_name,
     round(100.0 * sum(events) / nullif(sum(sum(events)) over (partition by league_name), 0), 2) as share
-from atlas.mart_event_clock
+from cross_league.mart_event_clock
 where event_group = 'Card' and match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2, 3
 order by minute_bucket_sort, league_name
@@ -287,7 +287,7 @@ order by minute_bucket_sort, league_name
 select
     minute_bucket, minute_bucket_sort, league_name,
     round(100.0 * sum(events) / nullif(sum(sum(events)) over (partition by league_name), 0), 2) as share
-from atlas.mart_event_clock
+from cross_league.mart_event_clock
 where event_group = 'Substitution' and match_date between '${inputs.period.start}' and '${inputs.period.end}'
 group by 1, 2, 3
 order by minute_bucket_sort, league_name
