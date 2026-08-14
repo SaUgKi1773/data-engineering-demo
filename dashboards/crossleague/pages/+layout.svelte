@@ -18,6 +18,7 @@
   import HeaderMenuButton from '../components/HeaderMenuButton.svelte';
   import SideNav from '../components/SideNav.svelte';
   import BottomNav from '../components/BottomNav.svelte';
+  import InstallBanner from '../components/InstallBanner.svelte';
 
   export let data;
 
@@ -28,7 +29,14 @@
     setTimeout(() => window.scrollTo(0, 0), 0);
   });
 
-  onMount(() => inject());
+  onMount(() => {
+    inject();
+    const script = document.createElement('script');
+    script.defer = true;
+    script.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+    script.dataset.cfBeacon = JSON.stringify({ token: '167db4d57c9742e1883b3e1ea858bccc' });
+    document.head.appendChild(script);
+  });
 </script>
 
 <EvidenceDefaultLayout {data} hideBreadcrumbs={true} neverShowQueries={true} hideMenu={true} logo="/header-logo.svg">
@@ -40,6 +48,8 @@
 <HeaderMenuButton on:open={() => (menuOpen = true)} />
 <SideNav open={menuOpen} on:close={() => (menuOpen = false)} />
 <BottomNav />
+
+<InstallBanner />
 
 <style>
   /* Keep page content clear of the fixed bottom nav bar (mobile only, where it shows). */

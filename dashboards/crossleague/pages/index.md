@@ -82,7 +82,7 @@ description: Five top-flight leagues on three continents, measured the same way.
 </script>
 
 ```sql last_updated
-select strftime(last_match, '%d %b %Y') as last_updated from crossleague.mart_last_updated
+select last_updated from crossleague.last_updated
 ```
 
 ```sql day_range
