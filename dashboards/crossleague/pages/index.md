@@ -118,8 +118,7 @@ from crossleague.mart_club_day
 where match_date between '${inputs.period.start}' and '${inputs.period.end}'
 ```
 
-<Hero matches={scope[0]?.matches} goals={scope[0]?.goals} clubs={scope[0]?.clubs}
-      lastUpdated={last_updated[0]?.last_updated} />
+<Hero matches={scope[0]?.matches} goals={scope[0]?.goals} clubs={scope[0]?.clubs} />
 
 <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
   <span class="text-[12px] font-semibold uppercase tracking-widest text-gray-400">Date range</span>

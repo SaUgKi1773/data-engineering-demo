@@ -8,10 +8,10 @@
   // header used to carry.
   import { leagues } from './navItems.js';
 
+  // The refresh date is not repeated here; the footer already carries it.
   export let matches = null;
   export let goals = null;
   export let clubs = null;
-  export let lastUpdated = '';
 
   const stops = leagues.map((l, i) => `${l.colour} ${(i * 100) / (leagues.length - 1)}%`).join(', ');
   const fmt = (v) => (v == null ? '–' : Math.round(Number(v)).toLocaleString());
@@ -34,12 +34,7 @@
     <div>
       <div class="mb-1 text-[11px] uppercase text-white/50" style="letter-spacing: 0.14em;">Krogvad Analytics Hub</div>
       <div class="text-3xl font-bold leading-none tracking-tight text-white xl:text-4xl">Cross-League Analytics</div>
-      <div class="mt-1.5 text-xs italic tracking-wide text-white/50">Five leagues. One set of measures.</div>
-      {#if lastUpdated}
-        <div class="mt-2 text-[13px] text-white/60">
-          <span class="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style="background:#4ade80;"></span>Updated {lastUpdated}
-        </div>
-      {/if}
+      <div class="mt-1 text-xs italic tracking-wide text-white/50">Powered by data. Built for football.</div>
     </div>
 
     <div class="flex flex-col items-center gap-3 xl:items-end">
