@@ -36,10 +36,16 @@
   // carrying arrows that say it should. The ratio is the globe's — roughly
   // three and a half times slower.
   const SPEED = 18;            // px per second
-  const REDUCED_SPEED = 5;
+  const REDUCED_SPEED = 8;
   let dir = 1;
   let paused = false;          // pointer over the strip, or focus inside it
   let reduced = false;         // the viewer asked for less motion
+  // The drift's own position, kept here rather than read back from the DOM.
+  // scrollLeft quantises to whole (device) pixels, so a sub-pixel step written
+  // into it rounds away — read it back and the movement never accumulates and
+  // the strip sits still. Holding the float here and only writing to the DOM
+  // is what makes a slow drift possible at all.
+  let pos = 0;
 
   onMount(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -88,6 +94,10 @@
     if (!track) return;
     atStart = track.scrollLeft <= 2;
     atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+    // A swipe or an arrow moves the strip by more than the drift ever does in
+    // one frame, so a gap that size means a person moved it — adopt their
+    // position rather than yanking the strip back to ours.
+    if (Math.abs(track.scrollLeft - pos) > 2) pos = track.scrollLeft;
   }
 
   const close = () => (open = -1);
@@ -121,6 +131,8 @@
         on:pointerenter={() => (paused = true)}
         on:pointerleave={() => (paused = false)}
         on:pointerdown={() => (paused = true)}
+        on:pointerup={() => (paused = false)}
+        on:pointercancel={() => (paused = false)}
         on:focusin={() => (paused = true)}
         on:focusout={() => (paused = false)}
         class="track flex gap-3 overflow-x-auto pb-1 md:gap-4"
