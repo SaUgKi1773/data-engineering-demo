@@ -3,15 +3,17 @@
   //
   // The league sites fill it with one flag's colours. This site has five
   // countries and no flag of its own, so the gradient is built from the five
-  // league hues in their fixed alphabetical order — the same order and the
-  // same colours the charts use, which makes the banner double as the key the
-  // header used to carry.
+  // league hues in launch order — the same order and the same colours the
+  // charts use, which makes the banner double as the key the header used to
+  // carry.
   import { leagues } from './navItems.js';
 
-  // The refresh date is not repeated here; the footer already carries it.
+  // Leagues first: it is the one number that says what this site is, and the
+  // only one the five per-league sites cannot show. The refresh date is not
+  // repeated here; the footer already carries it.
+  export let leagueCount = null;
   export let matches = null;
   export let goals = null;
-  export let clubs = null;
 
   const stops = leagues.map((l, i) => `${l.colour} ${(i * 100) / (leagues.length - 1)}%`).join(', ');
   const fmt = (v) => (v == null ? '–' : Math.round(Number(v)).toLocaleString());
@@ -39,9 +41,9 @@
 
     <div class="flex flex-col items-center gap-3 xl:items-end">
       <div class="text-sm text-white/70 xl:text-base">
+        <span class="font-semibold text-white">{fmt(leagueCount)}</span> leagues ·
         <span class="font-semibold text-white">{fmt(matches)}</span> matches ·
-        <span class="font-semibold text-white">{fmt(goals)}</span> goals ·
-        <span class="font-semibold text-white">{fmt(clubs)}</span> clubs
+        <span class="font-semibold text-white">{fmt(goals)}</span> goals
       </div>
       <!-- The five, in the fixed order the hues were assigned. Doubles as the key. -->
       <div class="flex flex-wrap items-center justify-center gap-2">
