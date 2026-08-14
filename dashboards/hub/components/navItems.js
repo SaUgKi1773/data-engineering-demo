@@ -44,6 +44,14 @@ export const leagues = [
     label: 'La Liga',
     country: 'Spain',
     logo: '/logos/spain.svg'
+  },
+  // Not a league platform — it compares all five against each other, so it
+  // sits last, after the per-league sites it is built from.
+  {
+    href: 'https://crossleagueanalytics.vercel.app/',
+    label: 'Cross-League Analytics',
+    country: 'All five leagues',
+    logo: '/logos/crossleague.svg'
   }
 ];
 
