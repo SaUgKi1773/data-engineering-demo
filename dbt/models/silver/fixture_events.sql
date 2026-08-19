@@ -57,7 +57,7 @@ unnest(f.events) AS t(event)
 UNION ALL
 
 -- Highlightly branch: events are strings mapped onto the Sportmonks type
--- vocabulary via the event_types_highlightly seed (the three VAR variants
+-- vocabulary via the event_types_highlightly seed (the four VAR variants
 -- land as type VAR with the detail in addition/info, matching the Sportmonks
 -- lower()-matched sub-type convention). Substitutions: player = coming on,
 -- substituted = going off (its id arrives in assistingPlayerId); goals:
