@@ -175,6 +175,8 @@ order by n desc
     value=stadium_surface
     pointName=stadium_name
     tooltipType=click
+    basemap={'https://tile.openstreetmap.org/{z}/{x}/{y}.png'}
+    attribution={'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
     colorPalette={['#22c55e','#6366f1','#f59e0b']}
     legendType=categorical
     legendTitle="Stadium Surface"
