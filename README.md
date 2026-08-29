@@ -601,7 +601,7 @@ Marts are many small, purpose-built SQL sources rather than a few shared ones: e
 
 ## Nightly pipeline
 
-`master.yml` runs at 01:00 UTC, after the day is over, and is also dispatchable with a full-load flag.
+`master.yml` runs at 02:37 UTC, after the day is over, and is also dispatchable with a full-load flag.
 
 | Stage | Jobs | Notes |
 |---|---|---|
