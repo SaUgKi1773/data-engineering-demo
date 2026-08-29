@@ -6,6 +6,21 @@ title: Stadium Intelligence
 
 <script>
   import SiteFooter from '../../components/SiteFooter.svelte';
+
+  // The map colours categorical values positionally — the nth distinct value in the
+  // data gets colorPalette[n] — so the palette has to be rebuilt in that same order,
+  // otherwise grass takes whatever colour the first row happens to land on.
+  const SURFACE_COLORS = [
+    [/grass|natural/i, '#22c55e'],
+    [/artif|turf/i,    '#6366f1'],
+  ];
+  const OTHER_SURFACE_COLOR = '#f59e0b';
+
+  const surfaceColor = (s) =>
+    SURFACE_COLORS.find(([re]) => re.test(s ?? ''))?.[1] ?? OTHER_SURFACE_COLOR;
+
+  const surfacePalette = (rows) =>
+    [...new Set(Array.from(rows ?? [], (r) => r.stadium_surface))].map(surfaceColor);
 </script>
 
 ```sql season_options
@@ -115,13 +130,13 @@ order by n desc
     <div class="text-xs text-gray-500 uppercase tracking-wide mb-1 text-center">Stadiums</div>
     <div class="text-4xl font-black text-gray-900 leading-none text-center">{stadium_kpis[0]?.total_stadiums ?? '—'}</div>
     <div class="mt-3 flex items-center justify-center gap-3" style="min-height:64px;">
-      <div style="width:56px;height:56px;border-radius:50%;flex-shrink:0;background:conic-gradient({(function(){ const arr = surface_breakdown ?? []; const t = arr.reduce((a, d) => a + d.n, 0) || 1; let acc = 0; return arr.map(d => { const col = d.surface === 'Grass' ? '#22c55e' : d.surface === 'Artificial' ? '#f59e0b' : '#6366f1'; const s = (acc / t * 100).toFixed(2); acc += d.n; const e = (acc / t * 100).toFixed(2); return col + ' ' + s + '% ' + e + '%'; }).join(', '); })()});">
+      <div style="width:56px;height:56px;border-radius:50%;flex-shrink:0;background:conic-gradient({(function(){ const arr = surface_breakdown ?? []; const t = arr.reduce((a, d) => a + d.n, 0) || 1; let acc = 0; return arr.map(d => { const col = surfaceColor(d.surface); const s = (acc / t * 100).toFixed(2); acc += d.n; const e = (acc / t * 100).toFixed(2); return col + ' ' + s + '% ' + e + '%'; }).join(', '); })()});">
         <div style="width:34px;height:34px;background:#fff;border-radius:50%;margin:11px;"></div>
       </div>
       <div class="text-xs text-gray-500 flex flex-col gap-1">
         {#each surface_breakdown as sf}
         <span class="inline-flex items-center gap-1.5">
-          <span class="inline-block w-2 h-2 rounded-full" style="background:{sf.surface === 'Grass' ? '#22c55e' : sf.surface === 'Artificial' ? '#f59e0b' : '#6366f1'}"></span>
+          <span class="inline-block w-2 h-2 rounded-full" style="background:{surfaceColor(sf.surface)}"></span>
           {sf.surface} <span class="font-semibold text-gray-700">{sf.n}</span>
         </span>
         {/each}
@@ -175,7 +190,9 @@ order by n desc
     value=stadium_surface
     pointName=stadium_name
     tooltipType=click
-    colorPalette={['#22c55e','#6366f1','#f59e0b']}
+    basemap={'https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=cb1_2in6_1_8b3a8f5c5310792e13801c7f'}
+    attribution={'&copy; <a href="https://carto.com/attributions">CARTO</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
+    colorPalette={surfacePalette(stadium_stats)}
     legendType=categorical
     legendTitle="Stadium Surface"
     title="Premiership Stadiums — {inputs.season.value}"
