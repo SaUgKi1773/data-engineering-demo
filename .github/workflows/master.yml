@@ -2,7 +2,7 @@ name: Nightly pipeline
 
 on:
   schedule:
-    - cron: "37 2 * * *"  # 02:37 UTC = 03:37 CET / 04:37 CEST — off-peak minute; :00 slots get queued for hours
+    - cron: "0 23 * * *"  # 23:00 UTC = midnight Danish time (CET) — after matches finish
   workflow_dispatch:
     inputs:
       full_load:
