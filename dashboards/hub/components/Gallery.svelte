@@ -1,5 +1,7 @@
 <script>
-  // A single sliding row of photos, with a click-to-enlarge lightbox.
+  // A single sliding row of photos and video clips, with a click-to-enlarge
+  // lightbox. A clip rides in the strip as its poster frame and only becomes a
+  // player once the lightbox opens it.
   //
   // A row rather than a grid, because the collection grows. The strip is a
   // fixed height whatever the count, so photo thirty costs the page no more
@@ -46,6 +48,9 @@
   function onKey(e) {
     if (open < 0) return;
     if (e.key === 'Escape') close();
+    // The arrow keys scrub a focused video player. Let it keep them, or a
+    // viewer trying to skip back ten seconds jumps to the previous photo.
+    if (e.target instanceof HTMLVideoElement) return;
     if (e.key === 'ArrowLeft') prev();
     if (e.key === 'ArrowRight') next();
   }
@@ -75,7 +80,7 @@
             class="group relative h-56 shrink-0 snap-start overflow-hidden rounded-2xl border-0 p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 md:h-72"
             style="background:#f5f5f7;"
             on:click={() => (open = i)}
-            aria-label="Enlarge: {photo.alt}"
+            aria-label={photo.video ? `Play video: ${photo.alt}` : `Enlarge: ${photo.alt}`}
           >
             <img
               src={photo.src}
@@ -86,6 +91,16 @@
               decoding="async"
               class="block h-full w-auto max-w-none transition-transform duration-300 group-hover:scale-[1.03]"
             />
+            {#if photo.video}
+              <!-- A video tile is the poster frame plus this badge. No player
+                   is built here, so the clip itself costs the page nothing
+                   until someone opens it. -->
+              <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span class="flex h-12 w-12 items-center justify-center rounded-full bg-black/45 text-white transition-transform duration-300 group-hover:scale-110">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.4v13.2L19 12z"/></svg>
+                </span>
+              </span>
+            {/if}
             {#if photo.caption}
               <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2.5 pt-8 text-left text-[12px] leading-snug text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:text-[13px]">
                 {photo.caption}
@@ -120,7 +135,30 @@
       <button type="button" class="absolute inset-0 cursor-default border-0 bg-transparent p-0" aria-label="Close" on:click={close}></button>
 
       <figure class="relative z-10 max-h-full max-w-4xl">
-        <img src={gallery[open].src} alt={gallery[open].alt} class="max-h-[78vh] w-auto rounded-xl object-contain" />
+        <!-- Keyed on `open`: stepping to the next item destroys the player
+             rather than leaving a clip running behind the photo after it. -->
+        {#key open}
+          {#if gallery[open].video}
+            <!-- muted, because the autoplay attribute does not inherit the
+                 click that opened the lightbox: Chrome blocks a clip that
+                 would start with sound and then leaves it at readyState 0,
+                 which shows as a spinner over the poster and reads as broken.
+                 Muted always starts, and the controls put sound one click
+                 away. -->
+            <video
+              src={gallery[open].video}
+              poster={gallery[open].src}
+              class="max-h-[78vh] w-auto rounded-xl"
+              controls
+              autoplay
+              muted
+              playsinline
+              aria-label={gallery[open].alt}
+            ></video>
+          {:else}
+            <img src={gallery[open].src} alt={gallery[open].alt} class="max-h-[78vh] w-auto rounded-xl object-contain" />
+          {/if}
+        {/key}
         {#if gallery[open].caption}
           <figcaption class="mt-3 text-center text-sm text-white/80">{gallery[open].caption}</figcaption>
         {/if}
@@ -131,10 +169,10 @@
       </button>
 
       {#if gallery.length > 1}
-        <button type="button" class="absolute left-2 z-20 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 md:left-6" aria-label="Previous photo" on:click={prev}>
+        <button type="button" class="absolute left-2 z-20 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 md:left-6" aria-label="Previous item" on:click={prev}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <button type="button" class="absolute right-2 z-20 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 md:right-6" aria-label="Next photo" on:click={next}>
+        <button type="button" class="absolute right-2 z-20 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 md:right-6" aria-label="Next item" on:click={next}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
       {/if}
