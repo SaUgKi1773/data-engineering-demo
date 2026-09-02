@@ -4,7 +4,10 @@
     unique_key='id'
 ) }}
 
-SELECT
+-- DISTINCT ON: bronze is loaded by date window nightly and by team walk on a
+-- full backfill, so one transfer can arrive twice — once from each path — and
+-- delete+insert would carry both through. Newest ingest wins.
+SELECT DISTINCT ON (id)
     id,
     (raw_json->>'sport_id')::INTEGER             AS sport_id,
     (raw_json->>'player_id')::INTEGER            AS player_id,
@@ -48,3 +51,4 @@ FROM {{ source('bronze', 'sportmonks__transfers') }}
 {% if is_incremental() %}
 WHERE _ingested_at > (SELECT MAX(_ingested_at) FROM {{ this }})
 {% endif %}
+ORDER BY id, _ingested_at DESC
