@@ -18,6 +18,14 @@
 // landscape one and neither is cropped. Order here is the order on screen, and
 // the first one is the one everybody sees without scrolling — lead with it.
 // Keep files under ~400KB; they load on every visit to the home page.
+//
+// A video is the same entry with one extra field: `video` is the clip, and
+// `src` becomes its poster frame — the still that stands in for it in the
+// strip. w and h are the poster's dimensions and must match the video's own,
+// or the tile changes size when the player opens. The strip never builds a
+// player, only the poster image, so a visitor who does not click a clip
+// downloads none of it. Keep clips short and under ~5MB, and export .mp4
+// (H.264 + AAC), which every browser can play.
 
 export const gallery = [
 	{
@@ -82,5 +90,20 @@ export const gallery = [
 		h: 2048,
 		alt: 'The Superligaen site on a phone, showing the season summary and a prompt offering to add it to the home screen',
 		caption: 'The install prompt, first tests on the feature'
+	},
+	{
+		src: '/gallery/opening-goal-farum-poster.jpeg',
+		video: '/gallery/opening-goal-farum.mp4',
+		w: 576,
+		h: 1024,
+		alt: 'Video from the stand at a floodlit stadium: players in red walking back towards the halfway line after a goal, a packed away end behind the goal, and two children watching from the row in front',
+		caption: 'The opening goal, from the row behind the barrier'
+	},
+	{
+		src: '/gallery/floodlights-farum.jpeg',
+		w: 1536,
+		h: 2048,
+		alt: 'A floodlight pylon burning against a heavy dusk sky over a yellow stand of supporters, the scoreboard reading two–nil, and the empty green pitch stretching away in the foreground',
+		caption: 'Two–nil at Right to Dream Park, Farum'
 	}
 ];
