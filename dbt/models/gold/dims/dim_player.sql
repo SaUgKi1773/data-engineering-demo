@@ -11,53 +11,32 @@
     )
 }}
 
-WITH from_players AS (
-    SELECT DISTINCT ON (id)
-        id             AS player_id,
-        display_name   AS player_name,
-        firstname      AS player_firstname,
-        lastname       AS player_lastname,
-        nationality_name AS player_nationality,
-        date_of_birth  AS player_birth_date,
-        city_name      AS player_birth_place,
-        country_name   AS player_birth_country,
-        height         AS player_height,
-        weight         AS player_weight,
-        image_path     AS player_photo,
-        position_name  AS player_position,
-        detailed_position_name AS player_detailed_position,
-        CASE position_name
-            WHEN 'Goalkeeper'   THEN 'Goalkeeper'
-            WHEN 'Centre Back'  THEN 'Defender'
-            WHEN 'Defender'     THEN 'Defender'
-            WHEN 'Central Midfield' THEN 'Midfielder'
-            WHEN 'Midfielder'   THEN 'Midfielder'
-            WHEN 'Attacker'     THEN 'Attacker'
-            WHEN 'Centre Forward' THEN 'Attacker'
-            WHEN 'Not Applicable Player Position' THEN 'Not Applicable Main Position'
-            ELSE 'Unknown Main Position'
-        END AS player_main_position
-    FROM {{ ref('players') }}
-    WHERE id IS NOT NULL
-      AND position_name != 'Coach'
-    ORDER BY id, _ingested_at DESC
+-- Player attributes come from the lineup rows themselves. Sportmonks' /players
+-- endpoint was dropped from ingestion (see ingestion/sportmonks/config.py): it
+-- cannot be paged inside the provider's per-entity hourly request budget, and
+-- every attribute it served is embedded in each fixture's lineups[].player.
+-- The trade is birth place, which needs a cities endpoint we do not ingest, and
+-- players who never appeared in a fixture, which no mart selects.
+WITH countries AS (
+    SELECT id, name FROM {{ ref('core_countries') }}
 ),
 from_lineups AS (
-    SELECT DISTINCT ON (player_id)
-        player_id,
-        player_name,
-        NULL::VARCHAR  AS player_firstname,
-        NULL::VARCHAR  AS player_lastname,
-        NULL::VARCHAR  AS player_nationality,
-        NULL::DATE     AS player_birth_date,
-        NULL::VARCHAR  AS player_birth_place,
-        NULL::VARCHAR  AS player_birth_country,
-        NULL::INTEGER  AS player_height,
-        NULL::INTEGER  AS player_weight,
-        NULL::VARCHAR  AS player_photo,
-        position_name  AS player_position,
-        detailed_position_name AS player_detailed_position,
-        CASE position_name
+    SELECT DISTINCT ON (l.player_id)
+        l.player_id,
+        COALESCE(l.player_display_name, l.player_name) AS player_name,
+        l.player_firstname,
+        l.player_lastname,
+        nat.name              AS player_nationality,
+        l.player_date_of_birth AS player_birth_date,
+        -- birth place needs a city lookup the pipeline does not ingest
+        NULL::VARCHAR         AS player_birth_place,
+        ctry.name             AS player_birth_country,
+        l.player_height,
+        l.player_weight,
+        l.player_image_path   AS player_photo,
+        l.position_name       AS player_position,
+        l.detailed_position_name AS player_detailed_position,
+        CASE l.position_name
             WHEN 'Goalkeeper'   THEN 'Goalkeeper'
             WHEN 'Centre Back'  THEN 'Defender'
             WHEN 'Defender'     THEN 'Defender'
@@ -68,10 +47,13 @@ from_lineups AS (
             WHEN 'Not Applicable Player Position' THEN 'Not Applicable Main Position'
             ELSE 'Unknown Main Position'
         END AS player_main_position
-    FROM {{ ref('fixture_lineups') }}
-    WHERE player_id IS NOT NULL
-      AND player_id NOT IN (SELECT player_id FROM from_players)
-    ORDER BY player_id, _ingested_at DESC
+    FROM {{ ref('fixture_lineups') }} l
+    LEFT JOIN countries nat  ON nat.id  = l.player_nationality_id
+    LEFT JOIN countries ctry ON ctry.id = l.player_country_id
+    WHERE l.player_id IS NOT NULL
+      AND (l.position_name IS NULL OR l.position_name <> 'Coach')
+    -- newest appearance wins: position and photo follow the player's latest club
+    ORDER BY l.player_id, l._ingested_at DESC
 ),
 from_transfers AS (
     -- Players we only know from a transfer (e.g. foreign signings who never
@@ -105,7 +87,6 @@ from_transfers AS (
     FROM {{ ref('transfers') }}
     WHERE player_id IS NOT NULL
       AND (position_name IS NULL OR position_name <> 'Coach')
-      AND player_id NOT IN (SELECT player_id FROM from_players)
       AND player_id NOT IN (SELECT player_id FROM from_lineups)
     ORDER BY player_id, transfer_date DESC NULLS LAST
 ),
@@ -156,8 +137,6 @@ from_highlightly AS (
     FROM from_highlightly_events
 ),
 combined AS (
-    SELECT *, 'sportmonks'  AS _source FROM from_players
-    UNION ALL
     SELECT *, 'sportmonks'  AS _source FROM from_lineups
     UNION ALL
     SELECT *, 'sportmonks'  AS _source FROM from_transfers

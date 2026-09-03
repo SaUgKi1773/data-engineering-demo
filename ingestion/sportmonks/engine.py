@@ -95,6 +95,20 @@ def _all_team_ids(team_map: dict) -> set:
     return {t["id"] for teams in team_map.values() for t in teams}
 
 
+def _ensure_team_ids(conn, ctx) -> set:
+    """
+    Team ids for entries that iterate or filter by team.
+
+    Normally seeded when the `teams` entry runs, but a scoped run (--tables
+    sportmonks__transfers) skips that entry, which would leave the set empty —
+    silently iterating no teams, or filtering every record away. Fall back to
+    whatever the DB already knows.
+    """
+    if not ctx.all_team_ids:
+        ctx.all_team_ids = _resolve_all_team_ids(conn, ctx.team_map)
+    return ctx.all_team_ids
+
+
 def _resolve_all_team_ids(conn, team_map: dict) -> set:
     """
     Return the union of team IDs from team_map (just-loaded seasons) and every
@@ -317,7 +331,8 @@ def _handle_round_based(conn, entry: dict, seasons: list, ctx: _Context) -> int:
 
 def _handle_team_based(conn, entry: dict, ctx: _Context) -> int:
     """Iterate all unique team IDs across every season; deduplicates entities."""
-    team_ids = ctx.all_team_ids
+    team_ids = _ensure_team_ids(conn, ctx)
+    date_field = entry.get("date_field")
     delete_global(conn, entry["table"])
     rows, seen = [], set()
     for team_id in sorted(team_ids):
@@ -329,8 +344,11 @@ def _handle_team_based(conn, entry: dict, ctx: _Context) -> int:
             if r["id"] not in seen:
                 seen.add(r["id"])
                 # league left NULL — a team (and its transfers/rivals) is not
-                # bound to a single league
-                rows.append((r["id"], json.dumps(r), None, None, None))
+                # bound to a single league.  date_field is stamped when the
+                # same table is also loaded by date window incrementally, so
+                # those deletes can match the rows this backfill wrote.
+                row_date = ((r.get(date_field) or "")[:10] or None) if date_field else None
+                rows.append((r["id"], json.dumps(r), None, row_date, None))
     insert_batch(conn, entry["table"], rows)
     log.info("%-46s %d rows (%d teams)", entry["table"] + ":", len(rows), len(team_ids))
     return len(rows)
@@ -344,6 +362,11 @@ def _fetch_date_window(conn, entry: dict, ctx: _Context,
     manifest keys:
       league_filter (bool, default True)  — keep only records whose league_id
                                             is in the run's league scope
+      team_filter   (bool, default False) — keep only records touching an
+                                            in-scope team, either side of the
+                                            move (for endpoints that are global
+                                            and carry no league_id, e.g.
+                                            transfers)
       date_field    (str, default "starting_at") — field to store as _fixture_date
     Returns 400 from the API if the window is empty — treated as zero rows.
     """
@@ -364,12 +387,17 @@ def _fetch_date_window(conn, entry: dict, ctx: _Context,
         raise
 
     league_filter = entry.get("league_filter", True)
+    team_filter   = entry.get("team_filter", False)
     date_field    = entry.get("date_field", "starting_at")
 
     if league_filter:
         kept = [f for f in records if f.get("league_id") in ctx.league_scope]
     else:
         kept = records
+    if team_filter:
+        team_ids = _ensure_team_ids(conn, ctx)
+        kept = [f for f in kept
+                if f.get("from_team_id") in team_ids or f.get("to_team_id") in team_ids]
 
     rows = [
         (f["id"], json.dumps(f), f.get("season_id"),
@@ -379,7 +407,10 @@ def _fetch_date_window(conn, entry: dict, ctx: _Context,
     ]
     insert_batch(conn, entry["table"], rows)
     filtered = len(records) - len(kept)
-    if league_filter:
+    if team_filter:
+        log.info("%-46s %s → %s  %d rows (%d out-of-scope filtered)",
+                 entry["table"] + ":", from_date, to_date, len(rows), filtered)
+    elif league_filter:
         log.info("%-46s %s → %s  %d rows (%d other-league filtered)",
                  entry["table"] + ":", from_date, to_date, len(rows), filtered)
     else:

@@ -10,11 +10,25 @@ LEAGUE_IDS        = [271, 501]
 FIRST_SEASON_YEAR = 2010
 MAX_RETRIES       = 8
 REQUEST_TIMEOUT   = 120  # seconds per HTTP request
-PER_PAGE          = 100
+PER_PAGE          = 25   # the API silently caps page size at 25 — asking for more
+                         # just wastes the request budget below
 DATE_CHUNK_DAYS   = 90   # stay under the ~100-day API window limit
-API_CALL_DELAY    = 0.3  # seconds between every API request; rate limit is per entity type
-                         # (~3000/hour per entity), so 0.3s is well within budget.
-                         # Retry/backoff in api.py handles any 429s gracefully.
+API_CALL_DELAY    = 0.3  # seconds between every API request
+
+# ── Rate limiting ──────────────────────────────────────────────────────────────
+# The budget is 180 requests per entity type (Player, Fixture, Type, …) per
+# wall-clock hour, and every response reports that entity's remaining count.
+# (/my/usage reports in 5-minute buckets, but `remaining` accumulates across
+# them and only resets on the hour — the buckets are reporting granularity,
+# not the window.)  Spending the budget locks the entity out for the rest of
+# the hour, so api.py stops RATE_LIMIT_FLOOR short and waits for the reset.
+#
+# /players is the one endpoint that cannot fit in a single hour: 5.9k players
+# at 25 per page is ~236 requests against a budget of 180, so the fetch
+# deliberately spans two hourly windows.
+RATE_WINDOW_SECONDS  = 3600
+RATE_LIMIT_FLOOR     = 3
+MAX_RATE_LIMIT_WAITS = 3    # hour-long waits tolerated per request before giving up
 INCREMENTAL_DAYS_BACK    = int(os.environ.get("INCREMENTAL_DAYS_BACK", 7))
 INCREMENTAL_DAYS_FORWARD = 60
 
@@ -27,8 +41,8 @@ DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "superligaen_dev.duckdb")
 #   highlights, predictions, ballCoordinates, prematchNews, postmatchNews
 #
 # API quirks to keep in mind when extending the manifest:
-#   - Pagination: per_page max 100; API returns HTTP 400 past the last page
-#     (not a real error — api.py treats it as the stop signal)
+#   - Pagination: per_page is capped at 25; API returns HTTP 400 past the last
+#     page (not a real error — api.py treats it as the stop signal)
 #   - Fixture date-range endpoint: max ~100 days per window → use 90-day chunks
 #   - Fixture date-range endpoint: ignores the leagueIds query param →
 #     filter client-side on league_id ∈ LEAGUE_IDS
@@ -171,23 +185,18 @@ ENDPOINT_MANIFEST = [
     },
 
     # ══════════════════════════════════════════════════════════════════════════
-    # FOOTBALL API — Players  (delete: global)
-    # Subscription-scoped; provides positions, transfers, statistics etc.
-    # Full truncate + reload on every run.
+    # FOOTBALL API — Players  (REMOVED — do not re-add)
+    # /players is subscription-scoped but not league-scoped: ~5.9k players at
+    # the API's 25-per-page cap is ~236 requests against a budget of 180 per
+    # entity per hour, so it can no longer complete inside a single window.
+    #
+    # Nothing is lost by dropping it.  Every field the warehouse read off it is
+    # already embedded in each fixture's lineups[].player object, which this
+    # manifest ingests anyway — silver/fixture_lineups.sql now unpacks it and
+    # gold/dims/dim_player.sql builds the dimension from there.  The only
+    # casualty is birth place (city), which needs a cities endpoint we do not
+    # ingest, and players who never appeared in a fixture, which no mart reads.
     # ══════════════════════════════════════════════════════════════════════════
-
-    {
-        "table":    "sportmonks__players",
-        "path":     "/players",
-        "strategy": "static",
-        "delete":   "global",
-        "includes": (
-            "sport;country;city;nationality;"
-            "transfers;pendingTransfers;teams;"
-            "statistics;position;detailedPosition;trophies;metadata"
-        ),
-        "modes":    ["full", "incremental"],
-    },
 
     # ══════════════════════════════════════════════════════════════════════════
     # FOOTBALL API — Seasonal tables  (delete: seasonal)
@@ -303,12 +312,41 @@ ENDPOINT_MANIFEST = [
         # the embedded objects are the only source for its name/logo/country.
         # Fee `amount` (EUR) is populated only for a subset of permanent moves
         # from ~2025 onward; loans / free transfers / end-of-loan have none.
-        "table":    "sportmonks__transfers",
-        "path":     "/transfers/teams/{team_id}",
-        "strategy": "team_based",
-        "delete":   "global",
-        "includes": "player;fromTeam;toTeam;type;position;detailedPosition",
-        "modes":    ["full", "incremental"],
+        #
+        # FULL ONLY.  Walking all 36 teams' complete history is ~505 requests at
+        # the 25-per-page cap — nearly three times the hourly budget for the
+        # Transfer entity — so it is reserved for backfills, where spanning
+        # several windows is acceptable. The nightly uses the date entry below.
+        # date_field stamps _fixture_date on every row so those date-window
+        # deletes can find and replace what this backfill wrote.
+        "table":      "sportmonks__transfers",
+        "path":       "/transfers/teams/{team_id}",
+        "strategy":   "team_based",
+        "delete":     "global",
+        "includes":   "player;fromTeam;toTeam;type;position;detailedPosition",
+        "date_field": "date",
+        "modes":      ["full"],
+    },
+    {
+        # INCREMENTAL ONLY.  The same transfers, reached by date instead of by
+        # team: ~8 pages covers a week of transfers worldwide, against ~505 for
+        # the team walk. The endpoint is global and carries no league_id, so the
+        # window is filtered down to the in-scope teams client-side.
+        #
+        # The API rejects a range wider than 31 days, so days_back + days_forward
+        # must stay inside it. 21 back catches late-registered moves, 7 forward
+        # catches future-dated ones.
+        "table":        "sportmonks__transfers",
+        "path":         "/transfers/between/{from_date}/{to_date}",
+        "strategy":     "date_based",
+        "delete":       "date_window",
+        "includes":     "player;fromTeam;toTeam;type;position;detailedPosition",
+        "date_field":   "date",
+        "league_filter": False,   # transfers carry no league_id
+        "team_filter":   True,    # keep moves involving an in-scope team
+        "days_back":     21,
+        "days_forward":  7,
+        "modes":        ["incremental"],
     },
 
     # ══════════════════════════════════════════════════════════════════════════

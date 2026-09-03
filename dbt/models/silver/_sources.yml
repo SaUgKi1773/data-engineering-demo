@@ -19,7 +19,6 @@ sources:
       - name: sportmonks__venues
       - name: sportmonks__referees
         freshness: null
-      - name: sportmonks__players
       - name: sportmonks__fixtures
         freshness: null
       - name: sportmonks__standings

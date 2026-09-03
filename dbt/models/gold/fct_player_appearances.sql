@@ -94,13 +94,19 @@ formations AS (
     SELECT fixture_id, team_id, formation
     FROM {{ ref('fixture_formations') }}
 ),
+-- Fallback for lineup rows that carry no detailed position: the most recent
+-- one the player was given in any other appearance. This used to come from the
+-- /players endpoint, which is no longer ingested (see ingestion/sportmonks/
+-- config.py) — the lineups it would have been reconciled against are now the
+-- source, so the fallback is derived from them directly.
 player_detail AS (
-    SELECT DISTINCT ON (id)
-        id AS player_id,
+    SELECT DISTINCT ON (player_id)
+        player_id,
         detailed_position_name
-    FROM {{ ref('players') }}
-    WHERE id IS NOT NULL
-    ORDER BY id, _ingested_at DESC
+    FROM {{ ref('fixture_lineups') }}
+    WHERE player_id IS NOT NULL
+      AND detailed_position_name IS NOT NULL
+    ORDER BY player_id, _ingested_at DESC
 ),
 lineup_minutes AS (
     SELECT fixture_id, player_id, MAX(value::INTEGER) AS minutes_played

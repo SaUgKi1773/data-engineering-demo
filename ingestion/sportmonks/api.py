@@ -4,12 +4,22 @@ All modules call get() or get_paginated() — nothing else touches requests dire
 """
 
 import logging
+import math
 import os
 import time
 
 import requests
 
-from config import API_BASE, API_CALL_DELAY, MAX_RETRIES, PER_PAGE, REQUEST_TIMEOUT  # noqa: F401
+from config import (  # noqa: F401
+    API_BASE,
+    API_CALL_DELAY,
+    MAX_RATE_LIMIT_WAITS,
+    MAX_RETRIES,
+    PER_PAGE,
+    RATE_LIMIT_FLOOR,
+    RATE_WINDOW_SECONDS,
+    REQUEST_TIMEOUT,
+)
 
 log = logging.getLogger(__name__)
 
@@ -23,9 +33,42 @@ def _headers() -> dict:
     return {"Authorization": _API_KEY}
 
 
+def _seconds_to_window_end() -> float:
+    """Seconds until the entity budgets reset at the top of the hour.
+
+    The window is aligned to the wall clock, so the boundary is derivable
+    without asking the API.  A small buffer keeps us clear of the edge.
+    """
+    now = time.time()
+    return math.ceil(now / RATE_WINDOW_SECONDS) * RATE_WINDOW_SECONDS - now + 5
+
+
+def _respect_budget(body: dict) -> None:
+    """Pause for the hourly reset before the per-entity budget runs out.
+
+    Every response carries rate_limit.remaining for the entity it served.
+    Spending it locks that entity out for the rest of the hour, so we stop
+    just short and wait for the reset instead.  /players needs ~236 requests
+    against a budget of 180 and so always pauses once, mid-fetch.
+    """
+    limits = body.get("rate_limit")
+    if not isinstance(limits, dict):
+        return
+    remaining = limits.get("remaining")
+    if not isinstance(remaining, int) or remaining > RATE_LIMIT_FLOOR:
+        return
+    wait = _seconds_to_window_end()
+    log.info(
+        "Budget nearly spent for entity=%s (%d left) — waiting %.0fs for the hourly reset",
+        limits.get("requested_entity", "unknown"), remaining, wait,
+    )
+    time.sleep(wait)
+
+
 def get(path: str, params: dict = None, base: str = API_BASE) -> dict:
     url = f"{base}{path}"
     params = params or {}
+    rate_limit_waits = 0
     for attempt in range(MAX_RETRIES):
         try:
             r = requests.get(url, headers=_headers(), params=params, timeout=REQUEST_TIMEOUT)
@@ -39,28 +82,32 @@ def get(path: str, params: dict = None, base: str = API_BASE) -> dict:
             time.sleep(wait)
             continue
         if r.status_code == 429:
-            # Use retry_after from the API response if present; otherwise fall back
-            # to exponential backoff capped at 600 s
-            try:
-                body = r.json()
-                retry_after = (
-                    body.get("retry_after")
-                    or body.get("message", {}).get("retry_after")
-                    or 0
+            # Budget already spent — the entity is locked out until the hour
+            # rolls over, so short backoffs are wasted.  _respect_budget should
+            # normally keep us out of here; a 429 means something else spent
+            # the budget (an overlapping run, or a manual dispatch).
+            rate_limit_waits += 1
+            if rate_limit_waits > MAX_RATE_LIMIT_WAITS:
+                raise RuntimeError(
+                    f"Rate limited on {url} after {MAX_RATE_LIMIT_WAITS} hourly waits"
                 )
-                entity = body.get("requested_entity", "unknown")
-            except (ValueError, AttributeError, KeyError):
-                retry_after, entity = 0, "unknown"
-            wait = int(retry_after) if retry_after else min(60 * (attempt + 1), 600)
+            try:
+                limits = r.json().get("rate_limit") or {}
+                entity = limits.get("requested_entity", "unknown")
+            except (ValueError, AttributeError):
+                entity = "unknown"
+            wait = _seconds_to_window_end()
             log.warning(
-                "Rate limited (entity=%s) — sleeping %ds (attempt %d/%d)",
-                entity, wait, attempt + 1, MAX_RETRIES,
+                "Rate limited (entity=%s) — waiting %.0fs for the hourly reset (%d/%d)",
+                entity, wait, rate_limit_waits, MAX_RATE_LIMIT_WAITS,
             )
             time.sleep(wait)
             continue
         r.raise_for_status()
+        body = r.json()
         time.sleep(API_CALL_DELAY)  # throttle: keep well below rate-limit ceiling
-        return r.json()
+        _respect_budget(body)
+        return body
     raise RuntimeError(f"Max retries ({MAX_RETRIES}) exceeded for {url}")
 
 
