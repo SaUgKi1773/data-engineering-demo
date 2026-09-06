@@ -1,7 +1,6 @@
 ---
 sidebar: never
 hide_toc: true
-full_width: true
 title: Krogvad Analytics Hub — Football intelligence for the whole world
 hide_title: true
 description: Free, open football analytics platforms from Farum, Denmark. A dedicated home for every league, one shared data warehouse, refreshed every night.
