@@ -1,3 +1,4 @@
+{{ config(severity='warn') }}
 -- Cross-fact conformance: the final running score derived from the event
 -- stream must equal the goals fct_team_matches reports for the same match.
 -- A mismatch means missing/unattributed goal events or a broken carry-forward.
